@@ -124,6 +124,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 indicatorColor: C.teal,
                 indicatorWeight: 2.5,
                 indicatorSize: TabBarIndicatorSize.label,
+                labelPadding: EdgeInsets.symmetric(horizontal: 10),
                 labelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
                 unselectedLabelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                 tabs: [
@@ -283,6 +284,12 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   }
 
   List<String> _extractFiles(dynamic p) {
+    try {
+      final b = jsonDecode(p['body'] ?? '');
+      if (b['files'] is List && (b['files'] as List).isNotEmpty) {
+        return (b['files'] as List).map((f) => _fixFileUrl(f.toString())).toList();
+      }
+    } catch (_) {}
     final body = p['body'] ?? '';
     final matches = RegExp(r'https?://[^\s"<>]+\.(pdf|doc|docx|txt|png|jpg|jpeg|pptx?|xlsx?)', caseSensitive: false).allMatches(body);
     return matches.map((m) => _fixFileUrl(m.group(0)!)).toList();
@@ -556,14 +563,27 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           _chip(Icons.star, '${a['max_score'] ?? 100} баллов', C.teal, adaptiveTealLt(context)),
           if (a['deadline'] != null) _chip(Icons.calendar_today, _fmtDate(a['deadline']), C.text4, adaptiveSurface2(context)),
         ]),
-        if (a['description'] != null) ...[
+        if (a['description'] != null && _cleanContent(a['description'].toString()).isNotEmpty) ...[
           SizedBox(height: 16),
-          if (_cleanContent(a['description']).isNotEmpty)
-            Text(_cleanContent(a['description']), style: TextStyle(fontSize: 14, height: 1.6)),
-          // Show attached files from description
-          if (_extractFilesFromText(a['description']).isNotEmpty) ...[
-            SizedBox(height: 12),
-            ..._extractFilesFromText(a['description']).map((f) {
+          Text(_cleanContent(a['description'].toString()), style: TextStyle(fontSize: 14, height: 1.6)),
+        ],
+        // Attached files: from file_urls field OR legacy regex in description
+        ...() {
+          List<String> fromField = [];
+          final raw = a['file_urls'];
+          if (raw is List) {
+            fromField = raw.map((f) => _fixFileUrl(f.toString())).toList();
+          } else if (raw is String && raw.isNotEmpty) {
+            try { fromField = (jsonDecode(raw) as List).map((f) => _fixFileUrl(f.toString())).toList(); } catch (_) {}
+          }
+          final fromDesc = a['description'] != null ? _extractFilesFromText(a['description'].toString()) : <String>[];
+          final allFiles = {...fromField, ...fromDesc}.toList();
+          if (allFiles.isEmpty) return <Widget>[];
+          return [
+            SizedBox(height: 16),
+            Text('Прикреплённые файлы', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: C.text3)),
+            SizedBox(height: 8),
+            ...allFiles.map((f) {
               final name = Uri.parse(f).pathSegments.last;
               final ext = name.split('.').last.toLowerCase();
               final icon = ext == 'pdf' ? Icons.picture_as_pdf : ext == 'pptx' || ext == 'ppt' ? Icons.slideshow : ext == 'doc' || ext == 'docx' ? Icons.description : Icons.insert_drive_file;
@@ -577,8 +597,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     Icon(Icons.open_in_new_rounded, size: 14, color: C.teal),
                   ])));
             }),
-          ],
-        ],
+          ];
+        }(),
         // Criteria: collapsible for teachers/admins
         if (isTeacherOrAdmin && criteria.isNotEmpty) ...[
           SizedBox(height: 16),
@@ -1030,8 +1050,24 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               onPressed: () async {
                 if (tc.text.trim().isEmpty) return;
                 final prefix = type == 'lecture' ? '[LECTURE][${widget.classId}]' : '[HW][${widget.classId}]';
-                try { await context.read<ApiService>().createPost('$prefix ${tc.text.trim()}', jsonEncode({'content': cc.text})); Navigator.pop(ctx); _load(); showToast(context, 'Опубликовано'); }
-                catch (_) { showToast(context, 'Ошибка', error: true); }
+                try {
+                  final api = context.read<ApiService>();
+                  final fileUrls = <String>[];
+                  for (final pf in lectureFiles) {
+                    if (pf.path != null) {
+                      try {
+                        final res = await api.uploadFile(pf.path!, pf.name);
+                        final url = res['url'] ?? res['file_url'] ?? res['path'];
+                        if (url != null) fileUrls.add(url.toString());
+                      } catch (_) {}
+                    }
+                  }
+                  await api.createPost('$prefix ${tc.text.trim()}', jsonEncode({
+                    'content': cc.text,
+                    if (fileUrls.isNotEmpty) 'files': fileUrls,
+                  }));
+                  Navigator.pop(ctx); _load(); showToast(context, 'Опубликовано');
+                } catch (_) { showToast(context, 'Ошибка', error: true); }
               })),
           ]),
         ]))));

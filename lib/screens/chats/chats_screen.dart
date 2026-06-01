@@ -23,6 +23,8 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
   List<dynamic> _searchResults = [];
   Timer? _poller;
   late AnimationController _listAnim;
+  // Tracks the created_at of the last message seen per chat
+  final Map<int, String> _lastReadAt = {};
 
   static const _avatarColors = [C.teal, Color(0xFF6366F1), Color(0xFFF59E0B), Color(0xFF0891B2), Color(0xFFEC4899), Color(0xFF059669), Color(0xFFD97706), Color(0xFF64748B)];
 
@@ -50,7 +52,13 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
 
   Future<void> _pollMessages() async {
     if (_activeChatId == null) return;
-    try { final msgs = await context.read<ApiService>().getMessages(_activeChatId!); if (mounted) setState(() => _messages[_activeChatId!] = msgs); } catch (_) {}
+    try {
+      final msgs = await context.read<ApiService>().getMessages(_activeChatId!);
+      if (mounted) setState(() {
+        _messages[_activeChatId!] = msgs;
+        if (msgs.isNotEmpty) _lastReadAt[_activeChatId!] = msgs.last['created_at'] ?? '';
+      });
+    } catch (_) {}
   }
 
   String _chatTitle(dynamic chat) {
@@ -75,7 +83,20 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
     } catch (_) { return ''; }
   }
 
-  bool _hasUnread(int id) { final msgs = _messages[id] ?? []; if (msgs.isEmpty) return false; final auth = context.read<AuthProvider>(); return msgs.last['user_id'] != auth.userId && msgs.last['is_read'] == false; }
+  bool _hasUnread(int id) {
+    final msgs = _messages[id] ?? [];
+    if (msgs.isEmpty) return false;
+    final auth = context.read<AuthProvider>();
+    final last = msgs.last;
+    if (last['user_id'] == auth.userId) return false;
+    final lastReadAt = _lastReadAt[id];
+    if (lastReadAt == null || lastReadAt.isEmpty) return true;
+    try {
+      return DateTime.parse(last['created_at']).isAfter(DateTime.parse(lastReadAt));
+    } catch (_) {
+      return false;
+    }
+  }
 
   void _searchUsers(String q) async {
     if (q.trim().isEmpty) { setState(() => _searchResults = []); return; }
@@ -177,7 +198,14 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
                     curve: Curves.easeOutCubic,
                     builder: (_, t, child) => Transform.translate(offset: Offset(0, 20 * (1 - t)), child: Opacity(opacity: t, child: child)),
                     child: GestureDetector(
-                      onTap: () { HapticFeedback.selectionClick(); setState(() => _activeChatId = id); },
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        setState(() {
+                          _activeChatId = id;
+                          final msgs = _messages[id] ?? [];
+                          if (msgs.isNotEmpty) _lastReadAt[id] = msgs.last['created_at'] ?? '';
+                        });
+                      },
                       child: Container(
                         margin: EdgeInsets.only(bottom: 8),
                         decoration: BoxDecoration(
@@ -252,7 +280,16 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
           boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.05), blurRadius: 8)],
         ),
         child: SafeArea(child: Padding(padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8), child: Row(children: [
-          IconButton(icon: Icon(Icons.arrow_back_ios_new, size: 18), onPressed: () { HapticFeedback.lightImpact(); setState(() => _activeChatId = null); }),
+          IconButton(icon: Icon(Icons.arrow_back_ios_new, size: 18), onPressed: () {
+            HapticFeedback.lightImpact();
+            setState(() {
+              if (_activeChatId != null) {
+                final msgs = _messages[_activeChatId!] ?? [];
+                if (msgs.isNotEmpty) _lastReadAt[_activeChatId!] = msgs.last['created_at'] ?? '';
+              }
+              _activeChatId = null;
+            });
+          }),
           Container(width: 38, height: 38, decoration: BoxDecoration(gradient: RadialGradient(colors: [color.withOpacity(0.3), color.withOpacity(0.12)]), shape: BoxShape.circle),
             child: Center(child: Text(title.isNotEmpty ? title[0].toUpperCase() : '?', style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 15)))),
           SizedBox(width: 10),

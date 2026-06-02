@@ -56,4 +56,4 @@ ios/Pods/
 ios/.symlinks/
 
 # flutter-plugins (старый формат)
-.flutter-plugins
+.flutter-plugins.claude/

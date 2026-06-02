@@ -243,11 +243,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Map<String, dynamic> _config(_NType type) {
     switch (type) {
       case _NType.grade:
-        return {'icon': Icons.star_rounded, 'color': C.teal, 'bg': C.teal.withOpacity(0.06)};
+        return {'icon': Icons.star_rounded, 'color': C.teal, 'bg': C.teal.withOpacity(0.08)};
       case _NType.deadline:
-        return {'icon': Icons.timer_rounded, 'color': C.red, 'bg': C.redLt};
+        return {'icon': Icons.timer_rounded, 'color': Color(0xFFEF4444), 'bg': Color(0xFFEF4444).withOpacity(0.10)};
       case _NType.newAssignment:
-        return {'icon': Icons.assignment_rounded, 'color': Color(0xFF6366F1), 'bg': Color(0xFF6366F1).withOpacity(0.06)};
+        return {'icon': Icons.assignment_rounded, 'color': Color(0xFF6366F1), 'bg': Color(0xFF6366F1).withOpacity(0.08)};
     }
   }
 

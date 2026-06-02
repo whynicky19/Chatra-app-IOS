@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -24,18 +26,48 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
   List<dynamic> _searchResults = [];
   Timer? _poller;
   late AnimationController _listAnim;
-  // Tracks the created_at of the last message seen per chat
-  final Map<int, String> _lastReadAt = {};
+  // Tracks the id of the last message seen per chat (persisted)
+  final Map<int, int> _lastSeenMsgId = {};
+  final ScrollController _chatScrollCtrl = ScrollController();
 
   static const _avatarColors = [C.teal, Color(0xFF6366F1), Color(0xFFF59E0B), Color(0xFF0891B2), Color(0xFFEC4899), Color(0xFF059669), Color(0xFFD97706), Color(0xFF64748B)];
 
   @override void initState() {
     super.initState();
     _listAnim = AnimationController(vsync: this, duration: Duration(milliseconds: 600));
-    _loadChats();
+    _loadSeenMsgIds().then((_) => _loadChats());
     _poller = Timer.periodic(Duration(seconds: 5), (_) => _pollMessages());
   }
-  @override void dispose() { _poller?.cancel(); _listAnim.dispose(); super.dispose(); }
+  @override void dispose() { _poller?.cancel(); _listAnim.dispose(); _chatScrollCtrl.dispose(); super.dispose(); }
+
+  Future<void> _loadSeenMsgIds() async {
+    try {
+      final uid = context.read<AuthProvider>().userId ?? 0;
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('chat_seen_$uid');
+      if (raw != null) {
+        final map = jsonDecode(raw) as Map<String, dynamic>;
+        _lastSeenMsgId.addAll(map.map((k, v) => MapEntry(int.parse(k), v as int)));
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _saveSeenMsgIds() async {
+    try {
+      final uid = context.read<AuthProvider>().userId ?? 0;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('chat_seen_$uid',
+          jsonEncode(_lastSeenMsgId.map((k, v) => MapEntry('$k', v))));
+    } catch (_) {}
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_chatScrollCtrl.hasClients) {
+        _chatScrollCtrl.jumpTo(_chatScrollCtrl.position.maxScrollExtent);
+      }
+    });
+  }
 
   Future<void> _loadChats() async {
     if (!mounted) return; setState(() => _loading = true);
@@ -57,8 +89,9 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
       final msgs = await context.read<ApiService>().getMessages(_activeChatId!);
       if (mounted) setState(() {
         _messages[_activeChatId!] = msgs;
-        if (msgs.isNotEmpty) _lastReadAt[_activeChatId!] = msgs.last['created_at'] ?? '';
+        if (msgs.isNotEmpty) _lastSeenMsgId[_activeChatId!] = msgs.last['id'] as int;
       });
+      _saveSeenMsgIds();
     } catch (_) {}
   }
 
@@ -90,13 +123,9 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
     final auth = context.read<AuthProvider>();
     final last = msgs.last;
     if (last['user_id'] == auth.userId) return false;
-    final lastReadAt = _lastReadAt[id];
-    if (lastReadAt == null || lastReadAt.isEmpty) return true;
-    try {
-      return DateTime.parse(last['created_at']).isAfter(DateTime.parse(lastReadAt));
-    } catch (_) {
-      return false;
-    }
+    final lastSeenId = _lastSeenMsgId[id];
+    if (lastSeenId == null) return true;
+    return (last['id'] as int) > lastSeenId;
   }
 
   void _searchUsers(String q) async {
@@ -205,8 +234,10 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
                         setState(() {
                           _activeChatId = id;
                           final msgs = _messages[id] ?? [];
-                          if (msgs.isNotEmpty) _lastReadAt[id] = msgs.last['created_at'] ?? '';
+                          if (msgs.isNotEmpty) _lastSeenMsgId[id] = msgs.last['id'] as int;
                         });
+                        _saveSeenMsgIds();
+                        _scrollToBottom();
                       },
                       child: Container(
                         margin: EdgeInsets.only(bottom: 8),
@@ -265,8 +296,6 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final title = _chatTitle(chat);
     final color = _avatarColors[(_activeChatId ?? 0) % _avatarColors.length];
-    final scrollCtrl = ScrollController();
-
     void send() async {
       if (msgCtrl.text.trim().isEmpty) return;
       HapticFeedback.lightImpact();
@@ -274,7 +303,9 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
         await context.read<ApiService>().sendMessage(_activeChatId!, msgCtrl.text.trim());
         msgCtrl.clear();
         _pollMessages();
-        Future.delayed(Duration(milliseconds: 100), () { if (scrollCtrl.hasClients) scrollCtrl.animateTo(scrollCtrl.position.maxScrollExtent, duration: Duration(milliseconds: 300), curve: Curves.easeOut); });
+        Future.delayed(Duration(milliseconds: 100), () {
+          if (_chatScrollCtrl.hasClients) _chatScrollCtrl.animateTo(_chatScrollCtrl.position.maxScrollExtent, duration: Duration(milliseconds: 300), curve: Curves.easeOut);
+        });
       } catch (_) {}
     }
 
@@ -291,10 +322,11 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
             setState(() {
               if (_activeChatId != null) {
                 final msgs = _messages[_activeChatId!] ?? [];
-                if (msgs.isNotEmpty) _lastReadAt[_activeChatId!] = msgs.last['created_at'] ?? '';
+                if (msgs.isNotEmpty) _lastSeenMsgId[_activeChatId!] = msgs.last['id'] as int;
               }
               _activeChatId = null;
             });
+            _saveSeenMsgIds();
           }),
           Container(width: 38, height: 38, decoration: BoxDecoration(gradient: RadialGradient(colors: [color.withOpacity(0.3), color.withOpacity(0.12)]), shape: BoxShape.circle),
             child: Center(child: Text(title.isNotEmpty ? title[0].toUpperCase() : '?', style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 15)))),
@@ -309,7 +341,7 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
               Text(l.t('start_dialog'), style: TextStyle(fontSize: 16, color: C.text4, fontWeight: FontWeight.w500)),
             ]))
           : ListView.builder(
-              controller: scrollCtrl,
+              controller: _chatScrollCtrl,
               padding: EdgeInsets.fromLTRB(12, 16, 12, 8),
               itemCount: msgs.length,
               itemBuilder: (ctx, i) {

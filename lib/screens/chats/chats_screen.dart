@@ -299,10 +299,7 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
           Container(width: 38, height: 38, decoration: BoxDecoration(gradient: RadialGradient(colors: [color.withOpacity(0.3), color.withOpacity(0.12)]), shape: BoxShape.circle),
             child: Center(child: Text(title.isNotEmpty ? title[0].toUpperCase() : '?', style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 15)))),
           SizedBox(width: 10),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-            Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800), overflow: TextOverflow.ellipsis),
-            Text(l.t('online'), style: TextStyle(fontSize: 11, color: C.teal)),
-          ])),
+          Expanded(child: Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800), overflow: TextOverflow.ellipsis)),
         ]))))),
       body: Column(children: [
         Expanded(child: msgs.isEmpty

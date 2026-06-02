@@ -14,7 +14,8 @@ import '../../widgets/toast.dart';
 
 class ClassDetailScreen extends StatefulWidget {
   final int classId;
-  const ClassDetailScreen({super.key, required this.classId});
+  final int initialTab;
+  const ClassDetailScreen({super.key, required this.classId, this.initialTab = 0});
   @override State<ClassDetailScreen> createState() => _ClassDetailState();
 }
 
@@ -29,7 +30,13 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   Set<int> _expandedCriteria = {};
 
   @override
-  void initState() { super.initState(); _tabCtrl = TabController(length: 4, vsync: this); _tabCtrl.addListener(() { if (_tabCtrl.index == 2 && _assignments.isEmpty) _loadAssignments(); }); _load(); }
+  void initState() {
+    super.initState();
+    _tabCtrl = TabController(length: 4, vsync: this, initialIndex: widget.initialTab);
+    _tabCtrl.addListener(() { if (_tabCtrl.index == 2 && _assignments.isEmpty) _loadAssignments(); });
+    _load();
+    if (widget.initialTab == 2) _loadAssignments();
+  }
 
   Future<void> _load() async {
     if (!mounted) return; setState(() => _loading = true);
@@ -879,8 +886,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             ];
           })(),
         ],
-        // Retract button (students, submitted but not graded)
-        if (!isTeacherOrAdmin && sub != null && sub['status'] != 'graded') ...[
+        // Retract button (students, submitted but not graded and no grade yet)
+        if (!isTeacherOrAdmin && sub != null && sub['status'] != 'graded' && sub['grade'] == null) ...[
           SizedBox(height: 12),
           GestureDetector(
             onTap: busy ? null : () async {

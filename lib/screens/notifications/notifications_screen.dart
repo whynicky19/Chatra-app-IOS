@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
+import '../classes/class_detail_screen.dart';
 
 enum _NType { newAssignment, deadline, grade }
 
@@ -15,7 +16,8 @@ class _Notif {
   final String body;
   final DateTime date;
   final bool isRead;
-  const _Notif({required this.type, required this.title, required this.body, required this.date, this.isRead = false});
+  final int? classId;
+  const _Notif({required this.type, required this.title, required this.body, required this.date, this.isRead = false, this.classId});
 }
 
 class NotificationsScreen extends StatefulWidget {
@@ -75,12 +77,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       final aId = (sub['assignment_id'] as num?)?.toInt();
       final assignment = aId != null ? allAssignments.firstWhere((a) => a['id'] == aId, orElse: () => null) : null;
       final aTitle = assignment?['title']?.toString() ?? l.t('assignment');
+      final cid = (assignment?['class_id'] as num?)?.toInt();
       notifs.add(_Notif(
         type: _NType.grade,
         title: l.t('notif_graded'),
         body: '"$aTitle" — $score ${l.t('pts')}',
         date: sub['submitted_at'] != null ? (DateTime.tryParse(sub['submitted_at']) ?? now) : now,
         isRead: seenGrade.contains(subId),
+        classId: cid,
       ));
       newSeenGrade.add(subId);
     }
@@ -107,6 +111,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           body: '"$aTitle"${cName.isNotEmpty ? '  •  $cName' : ''}',
           date: createdAt,
           isRead: seenAsgn.contains(aId),
+          classId: cid,
         ));
         newSeenAsgn.add(aId);
       }
@@ -121,6 +126,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           body: '"$aTitle"  •  $timeStr',
           date: deadline,
           isRead: false,
+          classId: cid,
         ));
       }
     }
@@ -190,30 +196,42 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   itemBuilder: (ctx, i) {
                     final n = _notifs[i];
                     final cfg = _config(n.type);
-                    return Container(
-                      margin: EdgeInsets.only(bottom: 10),
-                      decoration: BoxDecoration(
-                        color: n.isRead ? surface : cfg['bg'] as Color,
-                        borderRadius: BorderRadius.circular(16),
-                        border: n.isRead ? null : Border.all(color: (cfg['color'] as Color).withOpacity(0.25)),
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.12 : 0.04), blurRadius: 8, offset: Offset(0, 2))],
-                      ),
-                      child: Padding(padding: EdgeInsets.all(14), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Container(width: 42, height: 42,
-                          decoration: BoxDecoration(color: (cfg['color'] as Color).withOpacity(n.isRead ? 0.08 : 0.15), borderRadius: BorderRadius.circular(12)),
-                          child: Icon(cfg['icon'] as IconData, size: 20, color: cfg['color'] as Color)),
-                        SizedBox(width: 12),
-                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Row(children: [
-                            Expanded(child: Text(n.title, style: TextStyle(fontSize: 14, fontWeight: n.isRead ? FontWeight.w600 : FontWeight.w800, color: adaptiveText1(context)))),
-                            if (!n.isRead) Container(width: 8, height: 8, decoration: BoxDecoration(color: cfg['color'] as Color, shape: BoxShape.circle)),
-                          ]),
-                          SizedBox(height: 3),
-                          Text(n.body, style: TextStyle(fontSize: 13, color: C.text4, height: 1.4)),
-                          SizedBox(height: 6),
-                          Text(_timeAgo(n.date, l), style: TextStyle(fontSize: 11, color: C.text4.withOpacity(0.7), fontWeight: FontWeight.w500)),
+                    final canNavigate = n.classId != null;
+                    return GestureDetector(
+                      onTap: canNavigate ? () {
+                        Navigator.push(context, MaterialPageRoute(
+                          builder: (_) => ClassDetailScreen(
+                            classId: n.classId!,
+                            initialTab: 2, // Assignments tab
+                          ),
+                        ));
+                      } : null,
+                      child: Container(
+                        margin: EdgeInsets.only(bottom: 10),
+                        decoration: BoxDecoration(
+                          color: n.isRead ? surface : cfg['bg'] as Color,
+                          borderRadius: BorderRadius.circular(16),
+                          border: n.isRead ? null : Border.all(color: (cfg['color'] as Color).withOpacity(0.25)),
+                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.12 : 0.04), blurRadius: 8, offset: Offset(0, 2))],
+                        ),
+                        child: Padding(padding: EdgeInsets.all(14), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Container(width: 42, height: 42,
+                            decoration: BoxDecoration(color: (cfg['color'] as Color).withOpacity(n.isRead ? 0.08 : 0.15), borderRadius: BorderRadius.circular(12)),
+                            child: Icon(cfg['icon'] as IconData, size: 20, color: cfg['color'] as Color)),
+                          SizedBox(width: 12),
+                          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Row(children: [
+                              Expanded(child: Text(n.title, style: TextStyle(fontSize: 14, fontWeight: n.isRead ? FontWeight.w600 : FontWeight.w800, color: adaptiveText1(context)))),
+                              if (!n.isRead) Container(width: 8, height: 8, decoration: BoxDecoration(color: cfg['color'] as Color, shape: BoxShape.circle)),
+                              if (canNavigate) Padding(padding: EdgeInsets.only(left: 6), child: Icon(Icons.arrow_forward_ios, size: 12, color: C.text4)),
+                            ]),
+                            SizedBox(height: 3),
+                            Text(n.body, style: TextStyle(fontSize: 13, color: C.text4, height: 1.4)),
+                            SizedBox(height: 6),
+                            Text(_timeAgo(n.date, l), style: TextStyle(fontSize: 11, color: C.text4.withOpacity(0.7), fontWeight: FontWeight.w500)),
+                          ])),
                         ])),
-                      ])),
+                      ),
                     );
                   },
                 ),

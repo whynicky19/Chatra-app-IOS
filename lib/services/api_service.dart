@@ -195,12 +195,17 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> aiGrade(int submissionId) async {
-    final response = await _dio.post('/submissions/$submissionId/ai-grade');
-    return response.data;
+    try {
+      final response = await _dio.post('/submissions/$submissionId/ai-grade');
+      return response.data;
+    } on DioException catch (e) {
+      final detail = (e.response?.data is Map) ? e.response!.data['detail']?.toString() : null;
+      throw Exception(detail ?? 'Ошибка оценки ИИ');
+    }
   }
 
   Future<void> retractSubmission(int submissionId) async {
-    await _dio.delete('/submissions/$submissionId/retract');
+    await _dio.delete('/submissions/$submissionId');
   }
 
   Future<Map<String, dynamic>> getSubmission(int id) async {

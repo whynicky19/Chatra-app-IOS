@@ -69,9 +69,9 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
     final l = context.watch<L10n>();
 
     return Scaffold(
-      body: SafeArea(child: Column(children: [
+      body: Column(children: [
         // Header
-        Container(
+        SafeArea(bottom: false, child: Container(
           padding: EdgeInsets.fromLTRB(16, 14, 16, 14),
           decoration: BoxDecoration(
             gradient: LinearGradient(colors: [surface, isDark ? Color(0xFF0D1A1E) : Color(0xFFF0FAFB)], begin: Alignment.topCenter, end: Alignment.bottomCenter),
@@ -97,7 +97,7 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
               decoration: BoxDecoration(gradient: LinearGradient(colors: [C.green.withOpacity(0.15), C.green.withOpacity(0.05)]), borderRadius: BorderRadius.circular(20)),
               child: Row(mainAxisSize: MainAxisSize.min, children: [Container(width: 6, height: 6, decoration: BoxDecoration(color: C.green, shape: BoxShape.circle)), SizedBox(width: 4), Text(l.t('online'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: C.green))])),
           ]),
-        ),
+        )),
         // Body
         Expanded(child: Container(
           decoration: BoxDecoration(
@@ -125,7 +125,7 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
                 child: Icon(_loading ? Icons.hourglass_top : Icons.send_rounded, color: _ctrl.text.trim().isNotEmpty && !_loading ? Colors.white : C.text4, size: 20))),
           ]),
         ),
-      ])),
+      ]),
     );
   }
 

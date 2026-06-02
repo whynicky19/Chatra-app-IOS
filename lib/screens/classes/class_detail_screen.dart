@@ -260,27 +260,77 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   void _editPost(dynamic p) {
     final tc = TextEditingController(text: _clean(p['title'] ?? ''));
     final cc = TextEditingController(text: (() { try { return jsonDecode(p['body'])['content'] ?? ''; } catch (_) { return p['body'] ?? ''; } })());
+    // Preserve existing files from the body
+    final Map<String, dynamic> existingBody = (() { try { return jsonDecode(p['body']) as Map<String, dynamic>; } catch (_) { return <String, dynamic>{}; } })();
+    final List<dynamic> existingFiles = existingBody['files'] is List ? existingBody['files'] as List : [];
+
+    final List<dynamic> editFiles = List<dynamic>.from(existingFiles);
+
     showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => Padding(padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Container(width: 40, height: 4, decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2))),
-          SizedBox(height: 20), Text('Edit', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-          SizedBox(height: 16), TextField(controller: tc, decoration: InputDecoration(labelText: 'Title')),
-          SizedBox(height: 12), TextField(controller: cc, decoration: InputDecoration(labelText: 'Content'), maxLines: 5),
-          SizedBox(height: 20),
-          Row(children: [
-            Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel'))),
-            SizedBox(width: 12),
-            Expanded(child: ElevatedButton(onPressed: () async {
-              try {
-                final prefix = (p['title'] ?? '').startsWith('[LECTURE]') ? '[LECTURE][${widget.classId}] ' : '[HW][${widget.classId}] ';
-                await context.read<ApiService>().updatePost(p['id'], '$prefix${tc.text.trim()}', jsonEncode({'content': cc.text}));
-                Navigator.pop(ctx); _load(); showToast(context, 'Updated');
-              } catch (_) { showToast(context, 'Error', error: true); }
-            }, child: Text('Save'))),
-          ]),
-        ])));
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setS) {
+        return Padding(padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
+          child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2))),
+            SizedBox(height: 20), Text('Редактировать', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+            SizedBox(height: 16), TextField(controller: tc, decoration: InputDecoration(labelText: 'Заголовок')),
+            SizedBox(height: 12), TextField(controller: cc, decoration: InputDecoration(labelText: 'Содержание'), maxLines: 5),
+            if (editFiles.isNotEmpty) ...[
+              SizedBox(height: 16),
+              Align(alignment: Alignment.centerLeft, child: Text('Прикреплённые файлы', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: C.text3))),
+              SizedBox(height: 8),
+              ...editFiles.map((f) {
+                final name = Uri.parse(f.toString()).pathSegments.last;
+                return Container(
+                  margin: EdgeInsets.only(bottom: 6),
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(color: C.teal.withOpacity(0.06), borderRadius: BorderRadius.circular(10)),
+                  child: Row(children: [
+                    Icon(Icons.insert_drive_file_outlined, size: 14, color: C.teal),
+                    SizedBox(width: 6),
+                    Expanded(child: Text(name, style: TextStyle(fontSize: 12, color: C.teal), overflow: TextOverflow.ellipsis)),
+                    GestureDetector(onTap: () => setS(() => editFiles.remove(f)), child: Icon(Icons.close, size: 14, color: C.text4)),
+                  ]),
+                );
+              }),
+            ],
+            SizedBox(height: 12),
+            GestureDetector(
+              onTap: () async {
+                final result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
+                if (result != null) {
+                  final api = context.read<ApiService>();
+                  for (final pf in result.files) {
+                    if (pf.path != null) {
+                      try {
+                        final res = await api.uploadFile(pf.path!, pf.name);
+                        final url = res['url'] ?? res['file_url'] ?? res['path'];
+                        if (url != null) setS(() => editFiles.add(url.toString()));
+                      } catch (_) {}
+                    }
+                  }
+                }
+              },
+              child: Container(padding: EdgeInsets.symmetric(vertical: 10), decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: C.teal.withOpacity(0.3))),
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.attach_file, size: 16, color: C.teal), SizedBox(width: 6), Text('Прикрепить файлы', style: TextStyle(fontSize: 13, color: C.teal, fontWeight: FontWeight.w600))])),
+            ),
+            SizedBox(height: 20),
+            Row(children: [
+              Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: Text('Отмена'))),
+              SizedBox(width: 12),
+              Expanded(child: ElevatedButton(onPressed: () async {
+                try {
+                  final prefix = (p['title'] ?? '').startsWith('[LECTURE]') ? '[LECTURE][${widget.classId}] ' : '[HW][${widget.classId}] ';
+                  await context.read<ApiService>().updatePost(p['id'], '$prefix${tc.text.trim()}', jsonEncode({
+                    'content': cc.text,
+                    if (editFiles.isNotEmpty) 'files': editFiles,
+                  }));
+                  Navigator.pop(ctx); _load(); showToast(context, 'Сохранено');
+                } catch (_) { showToast(context, 'Ошибка', error: true); }
+              }, child: Text('Сохранить'))),
+            ]),
+          ])));
+      }));
   }
 
   List<String> _extractFiles(dynamic p) {
@@ -506,7 +556,49 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
 
 
   // ── AI Chat tab ──
-  Widget _aiTab() => _AiChat(classId: widget.classId, className: _title);
+  String get _lectureContextForAI {
+    final all = [..._lectures, ..._materials].take(8);
+    final parts = <String>[];
+    for (final p in all) {
+      final title = _clean(p['title'] ?? '');
+      String content = '';
+      List<dynamic> files = [];
+      try {
+        final b = jsonDecode(p['body']);
+        content = (b['content'] ?? b['description'] ?? '').toString();
+        if (b['files'] is List) files = b['files'] as List;
+      } catch (_) { content = p['body'] ?? ''; }
+      content = content.replaceAll(RegExp(r'\n{3,}'), '\n\n').trim();
+      if (content.length > 1500) content = content.substring(0, 1500);
+      final sb = StringBuffer();
+      if (title.isNotEmpty) sb.write('### $title\n');
+      if (content.isNotEmpty) sb.write(content);
+      if (files.isNotEmpty) {
+        final names = files.map((f) { try { return Uri.parse(_fixFileUrl(f.toString())).pathSegments.last; } catch (_) { return f.toString(); } }).join(', ');
+        sb.write('\n[Прикреплённые файлы: $names]');
+      }
+      if (sb.isNotEmpty) parts.add(sb.toString());
+    }
+    return parts.join('\n\n');
+  }
+
+  List<String> get _lectureImageUrls {
+    final all = [..._lectures, ..._materials];
+    final urls = <String>[];
+    for (final p in all) {
+      for (final f in _extractFiles(p)) {
+        final ext = f.split('?').first.split('.').last.toLowerCase();
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(ext)) urls.add(f);
+        if (urls.length >= 3) return urls;
+      }
+    }
+    return urls;
+  }
+
+  Widget _aiTab() => NotificationListener<ScrollNotification>(
+    onNotification: (_) => true,
+    child: _AiChat(classId: widget.classId, className: _title, lectureContext: _lectureContextForAI, lectureImageUrls: _lectureImageUrls),
+  );
 
   // ── Show post detail ──
   void _showPost(dynamic p, String type) {
@@ -710,12 +802,41 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             ])),
         ],
         // Student answer preview (if submitted)
-        if (sub != null && sub['text_content'] != null) ...[
+        if (sub != null && (sub['text_content'] != null || sub['file_urls'] != null)) ...[
           SizedBox(height: 16),
           Text('ВАШ ОТВЕТ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
           SizedBox(height: 6),
-          Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
-            child: Text(sub['text_content'], style: TextStyle(fontSize: 13, height: 1.6), maxLines: 5, overflow: TextOverflow.ellipsis)),
+          if (sub['text_content'] != null && sub['text_content'].toString().isNotEmpty)
+            Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
+              child: Text(sub['text_content'], style: TextStyle(fontSize: 13, height: 1.6), maxLines: 5, overflow: TextOverflow.ellipsis)),
+          ...(() {
+            List<String> urls = [];
+            final raw = sub['file_urls'];
+            if (raw is String && raw.isNotEmpty) {
+              try { urls = (jsonDecode(raw) as List).map((f) => _fixFileUrl(f.toString())).toList(); } catch (_) {}
+            } else if (raw is List) {
+              urls = raw.map((f) => _fixFileUrl(f.toString())).toList();
+            }
+            if (urls.isEmpty) return <Widget>[];
+            return [
+              SizedBox(height: 8),
+              ...urls.map((url) {
+                final name = Uri.parse(url).pathSegments.last;
+                final ext = name.split('.').last.toLowerCase();
+                final icon = ext == 'pdf' ? Icons.picture_as_pdf : ext == 'pptx' || ext == 'ppt' ? Icons.slideshow : ext == 'doc' || ext == 'docx' ? Icons.description : Icons.insert_drive_file;
+                return GestureDetector(
+                  onTap: () async { try { await launchUrl(Uri.parse(url), mode: LaunchMode.inAppBrowserView); } catch (_) {} },
+                  child: Container(margin: EdgeInsets.only(bottom: 6), padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: C.teal.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
+                    child: Row(children: [
+                      Icon(icon, size: 16, color: C.teal), SizedBox(width: 8),
+                      Expanded(child: Text(name, style: TextStyle(fontSize: 13, color: C.teal, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis)),
+                      Icon(Icons.open_in_new_rounded, size: 14, color: C.teal),
+                    ])),
+                );
+              }),
+            ];
+          })(),
         ],
         // Retract button (students, submitted but not graded)
         if (!isTeacherOrAdmin && sub != null && sub['status'] != 'graded') ...[
@@ -846,7 +967,14 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               final score = grade?['score'];
               final feedback = grade?['feedback'];
               final criteria = grade?['criteria'] as List<dynamic>? ?? [];
-              final files = selectedSub['files'] as List<dynamic>? ?? [];
+              // Collect submitted file URLs from file_urls field
+              List<String> submittedFileUrls = [];
+              final rawUrls = selectedSub['file_urls'];
+              if (rawUrls is List) {
+                submittedFileUrls = rawUrls.map((f) => _fixFileUrl(f.toString())).toList();
+              } else if (rawUrls is String && rawUrls.isNotEmpty) {
+                try { submittedFileUrls = (jsonDecode(rawUrls) as List).map((f) => _fixFileUrl(f.toString())).toList(); } catch (_) {}
+              }
               return ListView(controller: sc, padding: EdgeInsets.all(20), children: [
                 Center(child: Container(width: 40, height: 4, margin: EdgeInsets.only(bottom: 16), decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2)))),
                 // Back button
@@ -863,17 +991,28 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     Text(selectedSub['submitted_at'] != null ? _fmtDate(selectedSub['submitted_at']) : '', style: TextStyle(fontSize: 12, color: C.text4)),
                   ])),
                 ]),
-                // Attached files
-                if (files.isNotEmpty || selectedSub['text_content'] != null) ...[
+                // Attached text and files
+                if (selectedSub['text_content'] != null || submittedFileUrls.isNotEmpty) ...[
                   SizedBox(height: 16),
-                  Text('ПРИКРЕПЛЁННЫЕ ФАЙЛЫ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
+                  Text('РАБОТА СТУДЕНТА', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
                   SizedBox(height: 8),
                   if (selectedSub['text_content'] != null) Container(padding: EdgeInsets.all(12), margin: EdgeInsets.only(bottom: 6),
                     decoration: BoxDecoration(color: C.teal.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
-                    child: Text(selectedSub['text_content'], style: TextStyle(fontSize: 13), maxLines: 3, overflow: TextOverflow.ellipsis)),
-                  ...files.map((f) => Container(padding: EdgeInsets.all(12), margin: EdgeInsets.only(bottom: 6),
-                    decoration: BoxDecoration(color: C.teal.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
-                    child: Row(children: [Icon(Icons.description, size: 18, color: C.teal), SizedBox(width: 8), Expanded(child: Text(f['filename'] ?? f.toString(), style: TextStyle(fontSize: 13, color: C.teal)))]))),
+                    child: Text(selectedSub['text_content'], style: TextStyle(fontSize: 13))),
+                  ...submittedFileUrls.map((url) {
+                    final name = Uri.parse(url).pathSegments.last;
+                    final ext = name.split('.').last.toLowerCase();
+                    final icon = ext == 'pdf' ? Icons.picture_as_pdf : ext == 'pptx' || ext == 'ppt' ? Icons.slideshow : ext == 'doc' || ext == 'docx' ? Icons.description : Icons.insert_drive_file;
+                    return GestureDetector(
+                      onTap: () async { try { await launchUrl(Uri.parse(url), mode: LaunchMode.inAppBrowserView); } catch (_) {} },
+                      child: Container(padding: EdgeInsets.all(12), margin: EdgeInsets.only(bottom: 6),
+                        decoration: BoxDecoration(color: C.teal.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
+                        child: Row(children: [
+                          Icon(icon, size: 18, color: C.teal), SizedBox(width: 8),
+                          Expanded(child: Text(name, style: TextStyle(fontSize: 13, color: C.teal), overflow: TextOverflow.ellipsis)),
+                          Icon(Icons.open_in_new_rounded, size: 14, color: C.teal),
+                        ])));
+                  }),
                 ],
                 // Score
                 if (score != null) ...[
@@ -921,7 +1060,15 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     label: Text('Перепроверить ИИ', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                     style: ElevatedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)),
                     onPressed: () async {
-                      try { await context.read<ApiService>().aiGrade(selectedSub['id']); showToast(context, 'Перепроверка запущена'); } catch (_) { showToast(context, 'Ошибка', error: true); }
+                      try {
+                        await context.read<ApiService>().aiGrade(selectedSub['id']);
+                        final updated = await context.read<ApiService>().getSubmission(selectedSub['id']);
+                        setS(() => selectedSub = updated);
+                        showToast(context, 'Переоценено!');
+                      } catch (e) {
+                        final msg = e.toString().contains('criteria') ? 'Нет критериев оценивания' : 'Ошибка оценки';
+                        showToast(context, msg, error: true);
+                      }
                     },
                   )),
                 ] else ...[
@@ -930,7 +1077,15 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     icon: Icon(Icons.bolt, size: 18, color: Colors.white),
                     label: Text('Оценить ИИ', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                     onPressed: () async {
-                      try { await context.read<ApiService>().aiGrade(selectedSub['id']); showToast(context, 'Оценка запущена'); } catch (_) { showToast(context, 'Ошибка', error: true); }
+                      try {
+                        await context.read<ApiService>().aiGrade(selectedSub['id']);
+                        final updated = await context.read<ApiService>().getSubmission(selectedSub['id']);
+                        setS(() => selectedSub = updated);
+                        showToast(context, 'Оценено!');
+                      } catch (e) {
+                        final msg = e.toString().contains('criteria') ? 'Нет критериев оценивания' : 'Ошибка оценки';
+                        showToast(context, msg, error: true);
+                      }
                     },
                   )),
                 ],
@@ -1230,10 +1385,15 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                       } catch (_) {}
                     }
                   }
+                  final maxScore = int.tryParse(sc.text) ?? 100;
+                  final filteredCriteria = criteria.where((c) => c['name'].toString().isNotEmpty).toList();
+                  final finalCriteria = filteredCriteria.isEmpty
+                      ? [{'name': 'Качество выполнения', 'weight': maxScore, 'description': ''}]
+                      : filteredCriteria.map((c) => {'name': c['name'], 'weight': c['weight'], 'description': c['desc']}).toList();
                   await api.createAssignment({
                     'class_id': widget.classId, 'title': tc.text.trim(), 'description': dc.text.trim(),
-                    'max_score': int.tryParse(sc.text) ?? 100,
-                    'criteria': criteria.where((c) => c['name'].toString().isNotEmpty).map((c) => {'name': c['name'], 'weight': c['weight'], 'description': c['desc']}).toList(),
+                    'max_score': maxScore,
+                    'criteria': finalCriteria,
                     if (deadline != null) 'deadline': deadline!.toIso8601String(),
                     if (fileUrls.isNotEmpty) 'file_urls': fileUrls,
                   });
@@ -1341,8 +1501,11 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
 
 // ── AI Chat widget ──
 class _AiChat extends StatefulWidget {
-  final int classId; final String className;
-  const _AiChat({required this.classId, required this.className});
+  final int classId;
+  final String className;
+  final String lectureContext;
+  final List<String> lectureImageUrls;
+  const _AiChat({required this.classId, required this.className, this.lectureContext = '', this.lectureImageUrls = const []});
   @override State<_AiChat> createState() => _AiChatState();
 }
 class _AiChatState extends State<_AiChat> {
@@ -1358,8 +1521,21 @@ class _AiChatState extends State<_AiChat> {
     Future.delayed(Duration(milliseconds: 100), () { if (_scroll.hasClients) _scroll.animateTo(_scroll.position.maxScrollExtent, duration: Duration(milliseconds: 200), curve: Curves.easeOut); });
     try {
       final api = context.read<ApiService>();
+      final lectureBlock = widget.lectureContext.isNotEmpty
+          ? '\n\nМАТЕРИАЛЫ КУРСА (используй эти знания при ответах):\n${widget.lectureContext}'
+          : '';
+      // Vision block for image files attached to lectures (gpt-4o-mini supports vision)
+      final imgs = widget.lectureImageUrls;
+      final List<Map<String, dynamic>> visionPre = imgs.isNotEmpty ? [
+        {'role': 'user', 'content': [
+          {'type': 'text', 'text': 'Прикреплённые файлы-изображения из материалов курса:'},
+          ...imgs.map((url) => {'type': 'image_url', 'image_url': {'url': url, 'detail': 'low'}}),
+        ]},
+        {'role': 'assistant', 'content': 'Ознакомился с прикреплёнными материалами курса.'},
+      ] : [];
       final apiMsgs = <Map<String, dynamic>>[
-        {'role': 'system', 'content': 'Ты AI-ассистент курса "${widget.className}". Отвечай на русском.'},
+        {'role': 'system', 'content': 'Ты AI-ассистент курса "${widget.className}". Отвечай на русском.$lectureBlock'},
+        ...visionPre,
         ..._msgs.map((m) => {'role': m['role']!, 'content': m['text']!}),
       ];
       final data = await api.aiChat(apiMsgs, classId: widget.classId);
@@ -1410,10 +1586,28 @@ class _AiChatState extends State<_AiChat> {
             ]));
           })),
       // Input
-      Container(padding: EdgeInsets.fromLTRB(12, 8, 12, 4), decoration: BoxDecoration(color: surface),
+      Container(
+        padding: EdgeInsets.fromLTRB(12, 8, 12, MediaQuery.of(context).padding.bottom + 8),
+        decoration: BoxDecoration(color: surface, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: Offset(0, -2))]),
         child: Row(children: [
           Expanded(child: Container(decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(22)),
-            child: TextField(controller: _ctrl, decoration: InputDecoration(hintText: 'Спросите...', border: InputBorder.none, enabledBorder: InputBorder.none, focusedBorder: InputBorder.none, filled: false, contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10)), onSubmitted: (_) => _send(), maxLines: 3, minLines: 1))),
+            child: TextField(
+              controller: _ctrl,
+              decoration: InputDecoration(hintText: 'Спросите...', border: InputBorder.none, enabledBorder: InputBorder.none, focusedBorder: InputBorder.none, filled: false, contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10)),
+              onSubmitted: (_) => _send(),
+              maxLines: 4,
+              minLines: 1,
+              onChanged: (_) {
+                if (_scroll.hasClients) {
+                  final pos = _scroll.position;
+                  if (pos.pixels >= pos.maxScrollExtent - 120) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (_scroll.hasClients) _scroll.jumpTo(_scroll.position.maxScrollExtent);
+                    });
+                  }
+                }
+              },
+            ))),
           SizedBox(width: 8),
           GestureDetector(onTap: _send, child: Container(width: 44, height: 44,
             decoration: BoxDecoration(gradient: LinearGradient(colors: [C.teal, C.tealDk]), borderRadius: BorderRadius.circular(14),

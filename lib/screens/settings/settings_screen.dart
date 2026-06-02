@@ -49,8 +49,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             SizedBox(height: 14),
             if (auth.group.isNotEmpty) ...[
               _label(l.t('group')),
-              Container(padding: EdgeInsets.symmetric(horizontal: 14, vertical: 14), decoration: BoxDecoration(color: fill, borderRadius: BorderRadius.circular(14)),
-                child: Text(auth.group, style: TextStyle(fontSize: 14, color: text1))),
+              TextField(enabled: false, decoration: InputDecoration(hintText: auth.group, prefixIcon: Icon(Icons.group_outlined, size: 18, color: C.teal))),
               SizedBox(height: 14),
             ],
             SizedBox(height: 20),

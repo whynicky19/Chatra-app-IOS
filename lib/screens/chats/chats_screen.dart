@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/toast.dart';
@@ -120,6 +121,7 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
   }
 
   Widget _buildChatList() {
+    final l = context.watch<L10n>();
     final surface = Theme.of(context).colorScheme.surface;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -129,13 +131,13 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
         // Header
         Padding(padding: EdgeInsets.fromLTRB(20, 24, 20, 0), child: Row(children: [
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Сообщения', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: C.teal)),
-            Text('Ваши переписки', style: TextStyle(fontSize: 13, color: C.text4)),
+            Text(l.t('messages_title'), style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: C.teal)),
+            Text(l.t('your_conversations'), style: TextStyle(fontSize: 13, color: C.text4)),
           ]),
           Spacer(),
           // New chat button
           GestureDetector(
-            onTap: () { FocusScope.of(context).requestFocus(FocusNode()); showToast(context, 'Найдите пользователя через поиск'); },
+            onTap: () { FocusScope.of(context).requestFocus(FocusNode()); showToast(context, l.t('find_user_hint')); },
             child: Container(width: 44, height: 44, decoration: BoxDecoration(color: C.teal, borderRadius: BorderRadius.circular(14)),
               child: Icon(Icons.edit_outlined, color: Colors.white, size: 20))),
         ])),
@@ -242,16 +244,20 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
     );
   }
 
-  Widget _emptyState() => Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-    Container(width: 80, height: 80, decoration: BoxDecoration(color: C.teal.withOpacity(0.1), shape: BoxShape.circle),
-      child: Icon(Icons.chat_bubble_outline_rounded, size: 36, color: C.teal)),
-    SizedBox(height: 16),
-    Text('Нет переписок', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
-    SizedBox(height: 6),
-    Text('Найдите кого-нибудь через поиск', style: TextStyle(fontSize: 14, color: C.text4)),
-  ]));
+  Widget _emptyState() {
+    final l = context.read<L10n>();
+    return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+      Container(width: 80, height: 80, decoration: BoxDecoration(color: C.teal.withOpacity(0.1), shape: BoxShape.circle),
+        child: Icon(Icons.chat_bubble_outline_rounded, size: 36, color: C.teal)),
+      SizedBox(height: 16),
+      Text(l.t('no_chats'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
+      SizedBox(height: 6),
+      Text(l.t('search_above'), style: TextStyle(fontSize: 14, color: C.text4)),
+    ]));
+  }
 
   Widget _buildChatView() {
+    final l = context.watch<L10n>();
     final msgs = _messages[_activeChatId] ?? [];
     final chat = _chats.firstWhere((c) => c['id'] == _activeChatId, orElse: () => {'name': 'Chat'});
     final msgCtrl = TextEditingController();
@@ -295,7 +301,7 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
           SizedBox(width: 10),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
             Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800), overflow: TextOverflow.ellipsis),
-            Text('В сети', style: TextStyle(fontSize: 11, color: C.teal)),
+            Text(l.t('online'), style: TextStyle(fontSize: 11, color: C.teal)),
           ])),
         ]))))),
       body: Column(children: [
@@ -303,7 +309,7 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
           ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
               Icon(Icons.waving_hand_outlined, size: 48, color: C.teal.withOpacity(0.4)),
               SizedBox(height: 12),
-              Text('Начните диалог', style: TextStyle(fontSize: 16, color: C.text4, fontWeight: FontWeight.w500)),
+              Text(l.t('start_dialog'), style: TextStyle(fontSize: 16, color: C.text4, fontWeight: FontWeight.w500)),
             ]))
           : ListView.builder(
               controller: scrollCtrl,
@@ -352,7 +358,7 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
               decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(24)),
               child: TextField(
                 controller: msgCtrl,
-                decoration: InputDecoration(hintText: 'Сообщение...', border: InputBorder.none, enabledBorder: InputBorder.none, focusedBorder: InputBorder.none, filled: false, contentPadding: EdgeInsets.symmetric(horizontal: 18, vertical: 12)),
+                decoration: InputDecoration(hintText: l.t('message'), border: InputBorder.none, enabledBorder: InputBorder.none, focusedBorder: InputBorder.none, filled: false, contentPadding: EdgeInsets.symmetric(horizontal: 18, vertical: 12)),
                 onSubmitted: (_) => send(),
                 maxLines: 4, minLines: 1,
               ))),

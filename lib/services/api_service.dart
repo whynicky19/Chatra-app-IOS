@@ -324,9 +324,12 @@ class ApiService {
   }
 
   Future<List<dynamic>> adminAiUsage({int? classId}) async {
-    final params = classId != null ? {'class_id': classId} : null;
+    final params = <String, dynamic>{'page_size': 200};
+    if (classId != null) params['class_id'] = classId;
     final response = await _dio.get('/admin/ai-usage', queryParameters: params);
-    return response.data;
+    final data = response.data;
+    if (data is Map && data['items'] is List) return List<dynamic>.from(data['items'] as List);
+    return data is List ? data : [];
   }
 
   Future<List<dynamic>> adminAiSummary() async {
@@ -345,6 +348,16 @@ class ApiService {
 
   Future<void> removeReaction(int msgId) async {
     await _dio.delete('/reactions/$msgId');
+  }
+
+  Future<String> fetchFileText(String url) async {
+    try {
+      final response = await _dio.get<String>(url,
+          options: Options(responseType: ResponseType.plain, receiveTimeout: const Duration(seconds: 10)));
+      return response.data ?? '';
+    } catch (_) {
+      return '';
+    }
   }
 
   String get wsBaseUrl {

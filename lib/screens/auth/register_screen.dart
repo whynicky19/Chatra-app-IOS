@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/toast.dart';
@@ -54,19 +55,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
         fullName: _name.text.trim(), group: _group);
     if (!mounted) return;
     if (ok) {
-      // Показываем toast внизу и переходим на логин
-      showToast(context, 'Аккаунт успешно создан! Войдите в систему.');
+      showToast(context, context.read<L10n>().t('account_created'));
       await Future.delayed(Duration(milliseconds: 1200));
       if (!mounted) return;
       widget.onGoLogin?.call();
     } else {
       _submitted = false;
-      showToast(context, auth.lastError ?? 'Ошибка', error: true);
+      final l = context.read<L10n>();
+      showToast(context, auth.lastError ?? l.t('error_generic'), error: true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = context.watch<L10n>();
     final auth = context.watch<AuthProvider>();
     final sc = _pwScore;
     final surface = Theme.of(context).colorScheme.surface;
@@ -80,20 +82,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
             decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), gradient: LinearGradient(colors: [C.teal, C.tealDk])),
             child: Icon(Icons.person_add_rounded, color: Colors.white, size: 30)),
           SizedBox(height: 16),
-          Text('Создать аккаунт', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+          Text(l.t('register'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
           SizedBox(height: 4),
-          Text('Присоединяйтесь к платформе', style: TextStyle(fontSize: 14, color: C.text4)),
+          Text(l.t('register_sub'), style: TextStyle(fontSize: 14, color: C.text4)),
           SizedBox(height: 24),
-          _label('Полное имя *'),
+          _label(l.t('full_name_label')),
           TextField(controller: _name, decoration: InputDecoration(hintText: 'Иванов Иван'), onChanged: (_) => setState(() {})),
           SizedBox(height: 14),
           _label('Email'),
           TextField(controller: _email, keyboardType: TextInputType.emailAddress,
             decoration: InputDecoration(hintText: 'you@example.com'), onChanged: (_) => setState(() {})),
           SizedBox(height: 14),
-          _label('Группа *'),
+          _label(l.t('group_label')),
           TextField(controller: _groupQ,
-            decoration: InputDecoration(hintText: 'Например: ИСУ-21',
+            decoration: InputDecoration(
               suffixIcon: _group.isNotEmpty ? Icon(Icons.check_circle, color: C.green, size: 20) : null),
             onChanged: (v) { _group = ''; _searchGroups(v); setState(() {}); }),
           if (_showSugg) Container(
@@ -103,28 +105,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
               dense: true, title: Text(g),
               onTap: () => setState(() { _group = g; _groupQ.text = g; _showSugg = false; }))).toList())),
           SizedBox(height: 14),
-          _label('Пароль'),
+          _label(l.t('password_label')),
           TextField(controller: _pw, obscureText: true,
-            decoration: InputDecoration(hintText: 'Минимум 6 символов'), onChanged: (_) => setState(() {})),
+            onChanged: (_) => setState(() {})),
           if (_pw.text.isNotEmpty) Padding(padding: EdgeInsets.only(top: 6), child: Row(children: [
             Expanded(flex: 2, child: ClipRRect(borderRadius: BorderRadius.circular(3),
               child: LinearProgressIndicator(value: sc / 100, backgroundColor: C.surface2,
                 color: sc <= 40 ? C.red : sc <= 60 ? C.yellow : C.green, minHeight: 3))),
             SizedBox(width: 8),
-            Text(sc <= 40 ? 'Слабый' : sc <= 60 ? 'Средний' : 'Сильный', style: TextStyle(fontSize: 11, color: C.text4)),
+            Text(sc <= 40 ? l.t('password_weak') : sc <= 60 ? l.t('password_medium') : l.t('password_strong'),
+              style: TextStyle(fontSize: 11, color: C.text4)),
           ])),
           SizedBox(height: 24),
           SizedBox(width: double.infinity, height: 50, child: ElevatedButton(
             onPressed: auth.isLoading || !_ok || _submitted ? null : _submit,
             child: auth.isLoading
               ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : Text('Зарегистрироваться'))),
+              : Text(l.t('register_btn')))),
           SizedBox(height: 20),
           Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Text('Уже есть аккаунт? ', style: TextStyle(fontSize: 13, color: C.text4)),
+            Text('${l.t('has_account')} ', style: TextStyle(fontSize: 13, color: C.text4)),
             GestureDetector(
               onTap: widget.onGoLogin,
-              child: Text('Войти', style: TextStyle(fontSize: 13, color: C.teal, fontWeight: FontWeight.w600))),
+              child: Text(l.t('login_link'), style: TextStyle(fontSize: 13, color: C.teal, fontWeight: FontWeight.w600))),
           ]),
         ]),
       ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -17,23 +18,21 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _busy = false;
 
   Future<void> _submit() async {
+    final l = context.read<L10n>();
     if (_email.text.trim().isEmpty || _pw.text.isEmpty) {
-      setState(() => _error = 'Заполните все поля');
+      setState(() => _error = l.t('fill_fields'));
       return;
     }
     setState(() { _error = null; _busy = true; });
     final ok = await context.read<AuthProvider>().login(_email.text.trim(), _pw.text);
     if (!mounted) return;
-    // При ok == true _AuthGate сам переключится на MainShell через auth.isAuthenticated
-    if (!ok) {
-      setState(() { _error = 'Неверный email или пароль'; _busy = false; });
-    }
-    // Если ok — просто ждём реактивного переключения, _busy сбрасываем на случай задержки
+    if (!ok) setState(() { _error = l.t('wrong_creds'); _busy = false; });
     if (ok) setState(() => _busy = false);
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = context.watch<L10n>();
     final surface = Theme.of(context).colorScheme.surface;
     return Scaffold(
       body: SafeArea(child: SingleChildScrollView(
@@ -45,15 +44,15 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Image.asset('assets/logo.png', width: 180, height: 180),
             SizedBox(height: 20),
-            Text('Добро пожаловать', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+            Text(l.t('welcome'), style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
             SizedBox(height: 4),
-            Text('Войдите в свой аккаунт', style: TextStyle(fontSize: 14, color: C.text4)),
+            Text(l.t('login_sub'), style: TextStyle(fontSize: 14, color: C.text4)),
             SizedBox(height: 28),
             _label('Email'),
             TextField(controller: _email, keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(hintText: 'you@example.com'), onSubmitted: (_) => _submit()),
             SizedBox(height: 14),
-            _label('Пароль'),
+            _label(l.t('password')),
             TextField(controller: _pw, obscureText: !_showPw,
               decoration: InputDecoration(hintText: '••••••••',
                 suffixIcon: IconButton(icon: Icon(_showPw ? Icons.visibility_off : Icons.visibility, color: C.text4, size: 20),
@@ -69,13 +68,13 @@ class _LoginScreenState extends State<LoginScreen> {
               onPressed: _busy ? null : _submit,
               child: _busy
                 ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : Text('Войти'))),
+                : Text(l.t('login')))),
             SizedBox(height: 20),
             Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Text('Нет аккаунта? ', style: TextStyle(fontSize: 13, color: C.text4)),
+              Text('${l.t('no_account')} ', style: TextStyle(fontSize: 13, color: C.text4)),
               GestureDetector(
                 onTap: widget.onGoRegister,
-                child: Text('Зарегистрируйтесь', style: TextStyle(fontSize: 13, color: C.teal, fontWeight: FontWeight.w600))),
+                child: Text(l.t('register_link'), style: TextStyle(fontSize: 13, color: C.teal, fontWeight: FontWeight.w600))),
             ]),
           ]),
         ),

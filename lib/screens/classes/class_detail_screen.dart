@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/toast.dart';
@@ -23,6 +24,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   List<dynamic> _assignments = [];
   List<dynamic> _mySubs = [];
   Map<String, dynamic> _rating = {};
+  Map<String, String> _fileTexts = {};
   bool _loading = true, _loadingAsg = false;
   Set<int> _expandedCriteria = {};
 
@@ -37,6 +39,31 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       try { _rating = await api.getMyRating(classId: widget.classId); } catch (_) {}
     }
     if (mounted) setState(() => _loading = false);
+    _loadFileTexts();
+  }
+
+  Future<void> _loadFileTexts() async {
+    if (!mounted) return;
+    final api = context.read<ApiService>();
+    final result = <String, String>{};
+    for (final p in [..._lectures, ..._materials]) {
+      List<dynamic> files = [];
+      try {
+        final b = jsonDecode(p['body'] ?? '');
+        if (b['files'] is List) files = b['files'] as List;
+      } catch (_) {}
+      for (final f in files) {
+        final url = _fixFileUrl(f.toString());
+        final ext = url.split('?').first.split('.').last.toLowerCase();
+        if (['txt', 'md'].contains(ext)) {
+          try {
+            final text = await api.fetchFileText(url);
+            if (text.isNotEmpty) result[url] = text;
+          } catch (_) {}
+        }
+      }
+    }
+    if (mounted) setState(() => _fileTexts = result);
   }
 
   Future<void> _loadAssignments() async {
@@ -67,6 +94,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
+    final l = context.watch<L10n>();
     final auth = context.watch<AuthProvider>();
     final meta = _meta;
     final coverImg = meta['cover_image'];
@@ -128,10 +156,10 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 labelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
                 unselectedLabelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                 tabs: [
-                  Tab(text: 'Лекции (${_lectures.length})'),
-                  Tab(text: 'Материалы'),
-                  Tab(text: 'Задания'),
-                  Tab(text: 'AI Chat'),
+                  Tab(text: '${l.t('lectures')} (${_lectures.length})'),
+                  Tab(text: l.t('materials')),
+                  Tab(text: l.t('assignments')),
+                  Tab(text: l.t('ai_chat')),
                 ],
               ),
               if (auth.isTeacher) AnimatedBuilder(animation: _tabCtrl, builder: (ctx, _) {
@@ -145,7 +173,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                         border: Border.all(color: C.teal.withOpacity(0.3))),
                       child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                         Icon(Icons.assignment_add, size: 16, color: C.teal), SizedBox(width: 6),
-                        Text('Задание', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: C.teal))])))),
+                        Text(l.t('assignment'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: C.teal))])))),
                   SizedBox(width: 10),
                   Expanded(child: GestureDetector(onTap: () => _showAddMenu(),
                     child: Container(padding: EdgeInsets.symmetric(vertical: 10),
@@ -153,7 +181,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                         boxShadow: [BoxShadow(color: C.teal.withOpacity(0.3), blurRadius: 8, offset: Offset(0, 3))]),
                       child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                         Icon(Icons.add, size: 16, color: Colors.white), SizedBox(width: 6),
-                        Text('Добавить', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white))])))),
+                        Text(l.t('add'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white))])))),
                 ]),
               );
               }),
@@ -173,6 +201,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
 
   // ── Posts list ──
   Widget _postList(List<dynamic> posts, String type) {
+    final l = context.read<L10n>();
     final surface = Theme.of(context).colorScheme.surface;
     final isTeacher = context.read<AuthProvider>().isTeacher;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -180,7 +209,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       Container(width: 72, height: 72, decoration: BoxDecoration(color: C.teal.withOpacity(0.1), shape: BoxShape.circle),
         child: Icon(type == 'lecture' ? Icons.menu_book_rounded : Icons.inventory_2_outlined, size: 32, color: C.teal)),
       SizedBox(height: 16),
-      Text(type == 'lecture' ? 'Лекций ещё нет' : 'Материалов ещё нет', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: C.text4)),
+      Text(type == 'lecture' ? l.t('no_lectures') : l.t('no_materials'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: C.text4)),
     ]));
     return ListView.builder(padding: EdgeInsets.fromLTRB(12, 12, 12, 90), itemCount: posts.length, itemBuilder: (ctx, i) {
       final p = posts[i]; final files = _extractFiles(p);
@@ -240,7 +269,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   ],
                   Spacer(),
                   Row(children: [
-                    Text('Открыть', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: C.teal)),
+                    Text(l.t('open'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: C.teal)),
                     SizedBox(width: 4), Icon(Icons.arrow_forward_ios, size: 12, color: C.teal),
                   ]),
                 ]),
@@ -370,6 +399,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
 
   // ── Assignments tab ──
   Widget _assignmentsTab(AuthProvider auth) {
+    final l = context.read<L10n>();
     if (_loadingAsg) return Center(child: CircularProgressIndicator(color: C.teal, strokeWidth: 2.5));
     final surface = Theme.of(context).colorScheme.surface;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -389,7 +419,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('МОЙ РЕЙТИНГ', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1)),
+              Text(l.t('your_rating'), style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1)),
               SizedBox(height: 8),
               RichText(text: TextSpan(children: [
                 TextSpan(text: '$avg', style: TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w900, height: 1)),
@@ -399,7 +429,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               ClipRRect(borderRadius: BorderRadius.circular(3), child: LinearProgressIndicator(
                 value: avg / 100, backgroundColor: Colors.white24, color: Colors.white, minHeight: 4)),
               SizedBox(height: 4),
-              Text('Успеваемость: $pct%', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w500)),
+              Text('${l.t('performance')}: $pct%', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w500)),
             ]),
           )),
           SizedBox(width: 10),
@@ -462,14 +492,14 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
         Text('Задания', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
         Spacer(),
         Container(padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(10)),
-          child: Row(children: [Icon(Icons.sort_rounded, size: 14, color: C.text4), SizedBox(width: 4), Text('По дедлайну', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: C.text4))])),
+          child: Row(children: [Icon(Icons.sort_rounded, size: 14, color: C.text4), SizedBox(width: 4), Text(l.t('sort_deadline'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: C.text4))])),
       ]),
       SizedBox(height: 12),
       if (_assignments.isEmpty) Container(padding: EdgeInsets.symmetric(vertical: 48), child: Center(child: Column(children: [
         Container(width: 64, height: 64, decoration: BoxDecoration(color: C.teal.withOpacity(0.1), shape: BoxShape.circle),
           child: Icon(Icons.assignment_outlined, size: 30, color: C.teal)),
         SizedBox(height: 12),
-        Text('Нет заданий', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: C.text4)),
+        Text(l.t('no_assignments'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: C.text4)),
       ]))),
       // Assignment cards
       ..._assignments.asMap().entries.map((entry) {
@@ -484,7 +514,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
 
         Color statusColor = isGraded ? C.green : isSubmitted ? C.teal : isLate ? C.red : C.text4;
         Color statusBg = isGraded ? C.greenLt : isSubmitted ? adaptiveTealLt(context) : isLate ? C.redLt : adaptiveSurface2(context);
-        String statusText = isGraded ? 'ОЦЕНЕНО' : isSubmitted ? 'СДАНО' : isLate ? 'ПРОСРОЧЕНО' : 'НОВОЕ';
+        String statusText = isGraded ? l.t('graded') : isSubmitted ? l.t('submitted') : isLate ? l.t('overdue') : l.t('new_status');
         IconData statusIcon = isGraded ? Icons.check_circle_rounded : isSubmitted ? Icons.upload_file : isLate ? Icons.schedule_rounded : Icons.edit_note_rounded;
 
         return TweenAnimationBuilder<double>(
@@ -527,7 +557,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                       ]),
                       Row(mainAxisSize: MainAxisSize.min, children: [
                         Icon(Icons.star_rounded, size: 14, color: C.teal), SizedBox(width: 3),
-                        Text('${a['max_score'] ?? 100} баллов', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: C.teal)),
+                        Text('${a['max_score'] ?? 100} ${l.t('pts')}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: C.teal)),
                       ]),
                       if (grade != null) Row(mainAxisSize: MainAxisSize.min, children: [
                         Icon(Icons.check_circle_rounded, size: 12, color: C.green), SizedBox(width: 3),
@@ -541,7 +571,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   decoration: BoxDecoration(color: adaptiveSurface2(context).withOpacity(0.4), borderRadius: BorderRadius.vertical(bottom: Radius.circular(18))),
                   child: Row(children: [
                     Icon(Icons.touch_app_outlined, size: 13, color: C.text4), SizedBox(width: 4),
-                    Text('Нажмите для подробностей', style: TextStyle(fontSize: 12, color: C.text4)),
+                    Text(l.t('tap_details'), style: TextStyle(fontSize: 12, color: C.text4)),
                     Spacer(),
                     Icon(Icons.arrow_forward_ios, size: 12, color: C.teal),
                   ]),
@@ -574,8 +604,20 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       if (title.isNotEmpty) sb.write('### $title\n');
       if (content.isNotEmpty) sb.write(content);
       if (files.isNotEmpty) {
-        final names = files.map((f) { try { return Uri.parse(_fixFileUrl(f.toString())).pathSegments.last; } catch (_) { return f.toString(); } }).join(', ');
-        sb.write('\n[Прикреплённые файлы: $names]');
+        for (final f in files) {
+          final url = _fixFileUrl(f.toString());
+          final name = (() { try { return Uri.parse(url).pathSegments.last; } catch (_) { return url; } })();
+          final ext = url.split('?').first.split('.').last.toLowerCase();
+          if (_fileTexts.containsKey(url)) {
+            var text = _fileTexts[url]!;
+            if (text.length > 2000) text = '${text.substring(0, 2000)}...';
+            sb.write('\n[Файл "$name"]\n$text');
+          } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(ext)) {
+            sb.write('\n[Изображение: $name]');
+          } else {
+            sb.write('\n[Прикреплённый файл: $name]');
+          }
+        }
       }
       if (sb.isNotEmpty) parts.add(sb.toString());
     }

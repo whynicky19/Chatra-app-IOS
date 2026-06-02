@@ -10,6 +10,7 @@ import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/toast.dart';
+import '../notifications/notifications_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,8 +21,13 @@ class _HomeScreenState extends State<HomeScreen> {
   List<dynamic> _posts = [];
   bool _loading = true;
   Set<int> _joinedClassIds = {};
+  int _unreadNotifCount = 0;
 
-  @override void initState() { super.initState(); _loadJoined().then((_) => _load()); }
+  @override void initState() {
+    super.initState();
+    _loadJoined().then((_) => _load());
+    _loadNotifBadge();
+  }
 
   // ── Persistence for joined classes (keyed by userId) ──────────────────────
   String _prefsKey() {
@@ -47,6 +53,23 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) showToast(context, 'Joined $title');
   }
 
+  // ── Notification badge ────────────────────────────────────────────────────
+  Future<void> _loadNotifBadge() async {
+    final auth = context.read<AuthProvider>();
+    if (auth.isTeacher) return; // only for students
+    try {
+      final uid = auth.userId ?? 0;
+      final prefs = await SharedPreferences.getInstance();
+      final seenGrade = (prefs.getStringList('notif_seen_grade_$uid') ?? []).map(int.parse).toSet();
+      final subs = await context.read<ApiService>().getMySubmissions();
+      final count = subs.where((s) =>
+        s['status'] == 'graded' &&
+        s['grade'] != null &&
+        !seenGrade.contains((s['id'] as num?)?.toInt())).length;
+      if (mounted) setState(() => _unreadNotifCount = count);
+    } catch (_) {}
+  }
+
   // ── Data ──────────────────────────────────────────────────────────────────
   Future<void> _load() async {
     if (!mounted) return; setState(() => _loading = true);
@@ -59,10 +82,18 @@ class _HomeScreenState extends State<HomeScreen> {
       .map((p) { try { final b = jsonDecode(p['body']); return {...p as Map<String, dynamic>, ...b as Map<String, dynamic>, 'title': p['title']}; } catch (_) { return p as Map<String, dynamic>; } }).toList();
   }
 
-  // Teachers see all their classes; students see only joined ones
+  // Admin sees all classes; teachers see their own + joined by code; students see joined only
   List<Map<String, dynamic>> get _classes {
     final auth = context.read<AuthProvider>();
-    if (auth.isTeacher) return _allClasses;
+    if (auth.isAdmin) return _allClasses;
+    if (auth.isTeacher) {
+      final myId = auth.userId;
+      return _allClasses.where((c) {
+        final isOwn = (c['user_id'] as num?)?.toInt() == myId;
+        final isJoined = _joinedClassIds.contains(c['id'] as int);
+        return isOwn || isJoined;
+      }).toList();
+    }
     return _allClasses.where((c) => _joinedClassIds.contains(c['id'] as int)).toList();
   }
 
@@ -87,18 +118,45 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(l.t('classes'), style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: C.teal)),
             Text(l.t('classes_sub'), style: TextStyle(fontSize: 13, color: C.text4)),
           ])),
-          if (auth.isTeacher)
+          if (auth.isTeacher) ...[
+            GestureDetector(onTap: _showJoinDialog,
+              child: Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: C.teal.withOpacity(0.4))),
+                child: Icon(Icons.vpn_key_rounded, color: C.teal, size: 18))),
+            SizedBox(width: 8),
             GestureDetector(onTap: () => _showCreateClass(),
               child: Container(padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(color: C.teal, borderRadius: BorderRadius.circular(14),
                   boxShadow: [BoxShadow(color: C.teal.withOpacity(0.35), blurRadius: 10, offset: Offset(0, 4))]),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.add, color: Colors.white, size: 18), SizedBox(width: 6), Text(l.t('create_class'), style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13))])))
-          else
+                child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.add, color: Colors.white, size: 18), SizedBox(width: 6), Text(l.t('create_class'), style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13))]))),
+          ] else ...[
+            // Notification bell with unread badge
+            GestureDetector(
+              onTap: () async {
+                await Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()));
+                _loadNotifBadge();
+              },
+              child: Stack(children: [
+                Container(width: 42, height: 42,
+                  decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(13),
+                    border: Border.all(color: C.teal.withOpacity(0.3))),
+                  child: Icon(Icons.notifications_rounded, color: C.teal, size: 20)),
+                if (_unreadNotifCount > 0)
+                  Positioned(top: 5, right: 5, child: Container(
+                    width: 10, height: 10,
+                    decoration: BoxDecoration(color: C.red, shape: BoxShape.circle, border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 1.5)),
+                  )),
+              ]),
+            ),
+            SizedBox(width: 8),
+            // Join by code (icon only)
             GestureDetector(onTap: _showJoinDialog,
-              child: Container(padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(color: C.teal, borderRadius: BorderRadius.circular(14),
+              child: Container(width: 42, height: 42,
+                decoration: BoxDecoration(color: C.teal, borderRadius: BorderRadius.circular(13),
                   boxShadow: [BoxShadow(color: C.teal.withOpacity(0.35), blurRadius: 10, offset: Offset(0, 4))]),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.vpn_key_rounded, color: Colors.white, size: 16), SizedBox(width: 6), Text(l.t('join_code'), style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13))]))),
+                child: Icon(Icons.vpn_key_rounded, color: Colors.white, size: 18))),
+          ],
         ]))),
 
         // Class cards
@@ -106,13 +164,28 @@ class _HomeScreenState extends State<HomeScreen> {
         else if (_classes.isEmpty) SliverFillRemaining(child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
           Container(width: 80, height: 80, decoration: BoxDecoration(gradient: LinearGradient(colors: [C.teal.withOpacity(0.15), C.teal.withOpacity(0.05)]), shape: BoxShape.circle),
             child: Icon(Icons.menu_book_rounded, color: C.teal, size: 36)),
-          SizedBox(height: 20), Text('Нет классов', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
-          SizedBox(height: 6), Text('Введите код от преподавателя', style: TextStyle(fontSize: 14, color: C.text4)),
-          SizedBox(height: 20), GestureDetector(onTap: _showJoinDialog,
-            child: Container(padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              decoration: BoxDecoration(color: C.teal, borderRadius: BorderRadius.circular(16),
-                boxShadow: [BoxShadow(color: C.teal.withOpacity(0.4), blurRadius: 12, offset: Offset(0, 4))]),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.vpn_key_rounded, color: Colors.white, size: 18), SizedBox(width: 8), Text('Войти по коду', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15))]))),
+          SizedBox(height: 20),
+          Text('Нет классов', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
+          SizedBox(height: 6),
+          Text(auth.isTeacher ? 'Создайте первый класс' : 'Введите код от преподавателя', style: TextStyle(fontSize: 14, color: C.text4)),
+          SizedBox(height: 20),
+          if (auth.isTeacher) ...[
+            GestureDetector(onTap: _showCreateClass,
+              child: Container(padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                decoration: BoxDecoration(color: C.teal, borderRadius: BorderRadius.circular(16),
+                  boxShadow: [BoxShadow(color: C.teal.withOpacity(0.4), blurRadius: 12, offset: Offset(0, 4))]),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.add, color: Colors.white, size: 18), SizedBox(width: 8), Text('Создать класс', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15))]))),
+            SizedBox(height: 12),
+            GestureDetector(onTap: _showJoinDialog,
+              child: Container(padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                decoration: BoxDecoration(border: Border.all(color: C.teal.withOpacity(0.5)), borderRadius: BorderRadius.circular(16)),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.vpn_key_rounded, color: C.teal, size: 16), SizedBox(width: 8), Text('Войти по коду', style: TextStyle(color: C.teal, fontWeight: FontWeight.w700, fontSize: 15))]))),
+          ] else
+            GestureDetector(onTap: _showJoinDialog,
+              child: Container(padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                decoration: BoxDecoration(color: C.teal, borderRadius: BorderRadius.circular(16),
+                  boxShadow: [BoxShadow(color: C.teal.withOpacity(0.4), blurRadius: 12, offset: Offset(0, 4))]),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.vpn_key_rounded, color: Colors.white, size: 18), SizedBox(width: 8), Text('Войти по коду', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15))]))),
         ])))
         else SliverPadding(padding: EdgeInsets.fromLTRB(16, 8, 16, 0), sliver: SliverList(delegate: SliverChildBuilderDelegate((ctx, i) {
           final cls = _classes[i];

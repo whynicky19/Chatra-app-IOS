@@ -1006,6 +1006,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
         builder: (ctx) {
           String search = '';
           dynamic selectedSub;
+          bool grading = false;
           return StatefulBuilder(builder: (ctx, setS) => DraggableScrollableSheet(expand: false, initialChildSize: 0.85, maxChildSize: 0.95, builder: (ctx, sc) {
             // Detail view for selected student
             if (selectedSub != null) {
@@ -1103,38 +1104,61 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   ],
                   SizedBox(height: 16),
                   // Re-grade button
-                  SizedBox(width: double.infinity, height: 50, child: ElevatedButton.icon(
-                    icon: Icon(Icons.bolt, size: 18, color: Colors.white),
-                    label: Text('Перепроверить ИИ', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                  SizedBox(width: double.infinity, height: 50, child: ElevatedButton(
                     style: ElevatedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)),
-                    onPressed: () async {
+                    onPressed: grading ? null : () async {
+                      setS(() => grading = true);
                       try {
                         await context.read<ApiService>().aiGrade(selectedSub['id']);
                         final updated = await context.read<ApiService>().getSubmission(selectedSub['id']);
-                        setS(() => selectedSub = updated);
+                        setS(() { selectedSub = updated; grading = false; });
                         showToast(context, 'Переоценено!');
                       } catch (e) {
+                        setS(() => grading = false);
                         final msg = e.toString().contains('criteria') ? 'Нет критериев оценивания' : 'Ошибка оценки';
                         showToast(context, msg, error: true);
                       }
                     },
+                    child: grading
+                      ? Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                          SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+                          SizedBox(width: 12),
+                          Text('ИИ оценивает...', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                        ])
+                      : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                          Icon(Icons.bolt, size: 18, color: Colors.white),
+                          SizedBox(width: 8),
+                          Text('Перепроверить ИИ', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                        ]),
                   )),
                 ] else ...[
                   SizedBox(height: 20),
-                  SizedBox(width: double.infinity, height: 50, child: ElevatedButton.icon(
-                    icon: Icon(Icons.bolt, size: 18, color: Colors.white),
-                    label: Text('Оценить ИИ', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                    onPressed: () async {
+                  SizedBox(width: double.infinity, height: 50, child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)),
+                    onPressed: grading ? null : () async {
+                      setS(() => grading = true);
                       try {
                         await context.read<ApiService>().aiGrade(selectedSub['id']);
                         final updated = await context.read<ApiService>().getSubmission(selectedSub['id']);
-                        setS(() => selectedSub = updated);
+                        setS(() { selectedSub = updated; grading = false; });
                         showToast(context, 'Оценено!');
                       } catch (e) {
+                        setS(() => grading = false);
                         final msg = e.toString().contains('criteria') ? 'Нет критериев оценивания' : 'Ошибка оценки';
                         showToast(context, msg, error: true);
                       }
                     },
+                    child: grading
+                      ? Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                          SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+                          SizedBox(width: 12),
+                          Text('ИИ оценивает...', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                        ])
+                      : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                          Icon(Icons.bolt, size: 18, color: Colors.white),
+                          SizedBox(width: 8),
+                          Text('Оценить ИИ', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                        ]),
                   )),
                 ],
                 SizedBox(height: 24),

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -22,7 +23,7 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _navAnim = AnimationController(vsync: this, duration: Duration(milliseconds: 600));
+    _navAnim = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
     _navAnim.forward();
   }
 
@@ -41,21 +42,20 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
     final l = context.watch<L10n>();
     final isAdmin = auth.isAdmin;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final navBg = isDark ? Color(0xFF111B1E) : Colors.white;
-    final shadow = isDark ? Colors.black38 : Colors.black12;
 
     final screens = <Widget>[
-      HomeScreen(), ChatsScreen(), AiScreen(),
-      if (isAdmin) AdminScreen(),
-      SettingsScreen(),
+      const HomeScreen(), const ChatsScreen(), const AiScreen(),
+      if (isAdmin) const AdminScreen(),
+      const SettingsScreen(),
     ];
 
     final items = <_NavItem>[
-      _NavItem(Icons.school_outlined, Icons.school_rounded, l.t('nav_classes')),
-      _NavItem(Icons.chat_bubble_outline_rounded, Icons.chat_bubble_rounded, l.t('nav_chats')),
-      _NavItem(Icons.auto_awesome_outlined, Icons.auto_awesome, l.t('nav_ai')),
-      if (isAdmin) _NavItem(Icons.admin_panel_settings_outlined, Icons.admin_panel_settings, l.t('nav_admin')),
-      _NavItem(Icons.settings_outlined, Icons.settings_rounded, l.t('nav_settings')),
+      _NavItem(Icons.school_outlined,              Icons.school_rounded,              l.t('nav_classes')),
+      _NavItem(Icons.chat_bubble_outline_rounded,  Icons.chat_bubble_rounded,         l.t('nav_chats')),
+      _NavItem(Icons.auto_awesome_outlined,        Icons.auto_awesome,                l.t('nav_ai')),
+      if (isAdmin)
+        _NavItem(Icons.admin_panel_settings_outlined, Icons.admin_panel_settings,     l.t('nav_admin')),
+      _NavItem(Icons.settings_outlined,            Icons.settings_rounded,            l.t('nav_settings')),
     ];
 
     if (_idx >= screens.length) _idx = 0;
@@ -63,54 +63,228 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
     return Scaffold(
       body: Stack(children: [
         Positioned.fill(child: IndexedStack(index: _idx, children: screens)),
-        // Floating nav bar
-        Positioned(left: 16, right: 16, bottom: 16,
+        Positioned(
+          left: 16, right: 16, bottom: 16,
           child: SlideTransition(
-            position: Tween<Offset>(begin: Offset(0, 2), end: Offset.zero)
+            position: Tween<Offset>(begin: const Offset(0, 2), end: Offset.zero)
                 .animate(CurvedAnimation(parent: _navAnim, curve: Curves.elasticOut)),
-            child: Container(
-              height: 64,
-              decoration: BoxDecoration(
-                color: navBg,
-                borderRadius: BorderRadius.circular(32),
-                boxShadow: [BoxShadow(color: shadow, blurRadius: 24, offset: Offset(0, 8))],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: List.generate(items.length, (i) {
-                  final sel = _idx == i;
-                  return GestureDetector(
-                    onTap: () => _onTap(i),
-                    behavior: HitTestBehavior.opaque,
-                    child: TweenAnimationBuilder<double>(
-                      tween: Tween(begin: sel ? 0.0 : 1.0, end: sel ? 1.0 : 0.0),
-                      duration: Duration(milliseconds: 250),
-                      curve: Curves.easeOutCubic,
-                      builder: (_, t, __) => Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8 + 14 * t, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: Color.lerp(Colors.transparent, C.teal, t),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(sel ? items[i].active : items[i].inactive,
-                            color: Color.lerp(isDark ? C.text4 : C.text4, Colors.white, t),
-                            size: 22),
-                          if (t > 0.5) ...[
-                            SizedBox(width: 6 * t),
-                            Opacity(opacity: (t - 0.5) * 2,
-                              child: Text(items[i].label,
-                                style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700))),
-                          ],
-                        ]),
-                      ),
-                    ),
-                  );
-                }),
-              ),
+            child: _LiquidGlassNavBar(
+              items: items,
+              selectedIndex: _idx,
+              onTap: _onTap,
+              isDark: isDark,
             ),
           ),
         ),
+      ]),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+//  Liquid Glass Nav Bar
+// ─────────────────────────────────────────────────────────
+class _LiquidGlassNavBar extends StatelessWidget {
+  final List<_NavItem> items;
+  final int selectedIndex;
+  final void Function(int) onTap;
+  final bool isDark;
+
+  const _LiquidGlassNavBar({
+    required this.items,
+    required this.selectedIndex,
+    required this.onTap,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 64,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          // Main depth shadow
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.45 : 0.18),
+            blurRadius: 36,
+            spreadRadius: -6,
+            offset: const Offset(0, 14),
+          ),
+          // Teal ambient glow
+          BoxShadow(
+            color: C.teal.withOpacity(isDark ? 0.14 : 0.10),
+            blurRadius: 28,
+            spreadRadius: -8,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(32),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+          child: Container(
+            decoration: BoxDecoration(
+              // Glass tint — lighter on light, darker on dark
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: isDark
+                    ? [
+                        Colors.white.withOpacity(0.11),
+                        Colors.white.withOpacity(0.05),
+                      ]
+                    : [
+                        Colors.white.withOpacity(0.78),
+                        Colors.white.withOpacity(0.56),
+                      ],
+              ),
+              borderRadius: BorderRadius.circular(32),
+              // Glass rim
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withOpacity(0.16)
+                    : Colors.white.withOpacity(0.88),
+                width: 0.8,
+              ),
+            ),
+            child: Stack(alignment: Alignment.center, children: [
+              // ── Specular highlight — top edge ──
+              Positioned(
+                top: 1, left: 20, right: 20, height: 1,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.transparent,
+                        Colors.white.withOpacity(isDark ? 0.30 : 0.95),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              // ── Nav items ──
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: List.generate(items.length, (i) {
+                    final sel = selectedIndex == i;
+                    return GestureDetector(
+                      onTap: () => onTap(i),
+                      behavior: HitTestBehavior.opaque,
+                      child: TweenAnimationBuilder<double>(
+                        tween: Tween(begin: sel ? 0.0 : 1.0, end: sel ? 1.0 : 0.0),
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOutCubic,
+                        builder: (_, t, __) => _GlassTabPill(
+                          item: items[i],
+                          progress: t,
+                          isDark: isDark,
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+//  Glass Tab Pill  (active item)
+// ─────────────────────────────────────────────────────────
+class _GlassTabPill extends StatelessWidget {
+  final _NavItem item;
+  final double progress; // 0 = unselected → 1 = selected
+  final bool isDark;
+
+  const _GlassTabPill({
+    required this.item,
+    required this.progress,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sel = progress > 0.5;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+      padding: EdgeInsets.symmetric(
+        horizontal: 8.0 + 12.0 * progress,
+        vertical: 10,
+      ),
+      decoration: BoxDecoration(
+        // Active pill: teal glass gradient
+        gradient: progress > 0.01
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  C.teal.withOpacity(0.82 * progress),
+                  C.tealDk.withOpacity(0.68 * progress),
+                ],
+              )
+            : null,
+        borderRadius: BorderRadius.circular(22),
+        // Rim highlight on active pill
+        border: progress > 0.01
+            ? Border.all(
+                color: Colors.white.withOpacity(0.32 * progress),
+                width: 0.8,
+              )
+            : null,
+        boxShadow: progress > 0.3
+            ? [
+                BoxShadow(
+                  color: C.teal.withOpacity(0.42 * progress),
+                  blurRadius: 18,
+                  spreadRadius: -3,
+                  offset: const Offset(0, 4),
+                ),
+                BoxShadow(
+                  color: C.teal.withOpacity(0.20 * progress),
+                  blurRadius: 8,
+                  spreadRadius: -1,
+                  offset: const Offset(0, 1),
+                ),
+              ]
+            : null,
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(
+          sel ? item.active : item.inactive,
+          size: 22,
+          color: progress > 0.01
+              ? Color.lerp(
+                  isDark ? Colors.white.withOpacity(0.45) : C.text4,
+                  Colors.white,
+                  progress,
+                )
+              : (isDark ? Colors.white.withOpacity(0.45) : C.text4),
+        ),
+        if (progress > 0.5) ...[
+          SizedBox(width: 6 * progress),
+          Opacity(
+            opacity: ((progress - 0.5) * 2).clamp(0.0, 1.0),
+            child: Text(
+              item.label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
       ]),
     );
   }

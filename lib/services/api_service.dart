@@ -1,15 +1,21 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiService {
   late final Dio _dio;
   String? _token;
   VoidCallback? onUnauthorized;
 
-  // Default baseUrl. В main.dart мы переопределяем его на лету через _resolveBaseUrl()
-  // в зависимости от платформы (iOS/Android/web). Это значение тут — на крайний случай.
   static const String defaultBaseUrl = 'http://127.0.0.1:8000';
+  static const _tokenKey = '_tk';
+
+  // Secure storage — encrypted on both Android (EncryptedSharedPreferences)
+  // and iOS (Keychain). Falls back gracefully if unavailable.
+  static const _storage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+  );
 
   String baseUrl;
 
@@ -27,39 +33,64 @@ class ApiService {
         }
         return handler.next(options);
       },
-      onError: (error, handler) {
-        if (error.response?.statusCode == 401) {
+      onError: (error, handler) async {
+        final status = error.response?.statusCode ?? 0;
+
+        // 401 → trigger logout immediately, no retry.
+        if (status == 401) {
           onUnauthorized?.call();
+          return handler.next(error);
         }
+
+        // Retry on network errors (no response) and 5xx server errors.
+        final isRetryable = error.type != DioExceptionType.badResponse || status >= 500;
+        final attempt = (error.requestOptions.extra['_retry'] ?? 0) as int;
+
+        if (isRetryable && attempt < 3) {
+          // Exponential backoff: 1 s, 2 s, 4 s.
+          await Future.delayed(Duration(seconds: 1 << attempt));
+          error.requestOptions.extra['_retry'] = attempt + 1;
+          try {
+            final response = await _dio.fetch(error.requestOptions);
+            return handler.resolve(response);
+          } on DioException catch (e) {
+            return handler.next(e);
+          }
+        }
+
         return handler.next(error);
       },
     ));
   }
 
-  void setToken(String? token) {
-    _token = token;
-  }
-
+  void setToken(String? token) => _token = token;
   String? get token => _token;
 
   Future<void> loadToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    _token = prefs.getString('_tk');
+    try {
+      _token = await _storage.read(key: _tokenKey);
+    } catch (_) {
+      // Secure storage unavailable on some emulators/environments.
+      _token = null;
+    }
   }
 
   Future<void> saveToken(String token) async {
     _token = token;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('_tk', token);
+    try {
+      await _storage.write(key: _tokenKey, value: token);
+    } catch (_) {}
   }
 
   Future<void> clearToken() async {
     _token = null;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('_tk');
+    try {
+      await _storage.delete(key: _tokenKey);
+    } catch (_) {}
   }
 
-  // ── Auth ──
+  // ── Auth ────────────────────────────────────────────────────────────────────
+
   Future<Map<String, dynamic>> login(String email, String password) async {
     final response = await _dio.post('/auth/login',
       data: 'username=${Uri.encodeComponent(email)}&password=${Uri.encodeComponent(password)}',
@@ -68,7 +99,8 @@ class ApiService {
     return response.data;
   }
 
-  Future<Map<String, dynamic>> register(String email, String password, String role, {String? fullName, String? group}) async {
+  Future<Map<String, dynamic>> register(String email, String password, String role,
+      {String? fullName, String? group}) async {
     final response = await _dio.post('/auth/register', data: {
       'email': email,
       'password': password,
@@ -97,10 +129,18 @@ class ApiService {
     return List<String>.from(response.data);
   }
 
-  // ── Posts (Classes storage) ──
-  Future<List<dynamic>> getPosts() async {
-    final response = await _dio.get('/posts/');
-    return response.data;
+  // ── Posts (class storage) ────────────────────────────────────────────────────
+  // Pagination params are passed to the backend; ignored if it doesn't support them.
+
+  Future<List<dynamic>> getPosts({int page = 1, int pageSize = 100}) async {
+    final response = await _dio.get('/posts/', queryParameters: {
+      'page': page,
+      'page_size': pageSize,
+    });
+    final data = response.data;
+    if (data is List) return data;
+    if (data is Map && data['items'] is List) return data['items'] as List;
+    return [];
   }
 
   Future<Map<String, dynamic>> createPost(String title, String body) async {
@@ -117,7 +157,8 @@ class ApiService {
     await _dio.delete('/posts/$id');
   }
 
-  // ── Classes ──
+  // ── Classes ──────────────────────────────────────────────────────────────────
+
   Future<List<dynamic>> getClasses() async {
     final response = await _dio.get('/classes/');
     return response.data;
@@ -138,21 +179,11 @@ class ApiService {
     return response.data is List ? response.data : [];
   }
 
-  Future<void> enrollPostClass(int postId) async {
-    await _dio.post('/posts/$postId/join');
-  }
+  Future<void> enrollPostClass(int postId) async => _dio.post('/posts/$postId/join');
+  Future<void> leavePostClass(int postId) async => _dio.delete('/posts/$postId/leave');
 
-  Future<void> leavePostClass(int postId) async {
-    await _dio.delete('/posts/$postId/leave');
-  }
-
-  Future<void> joinClass(int classId) async {
-    await _dio.post('/classes/$classId/join', data: {});
-  }
-
-  Future<void> leaveClass(int classId) async {
-    await _dio.delete('/classes/$classId/leave');
-  }
+  Future<void> joinClass(int classId) async => _dio.post('/classes/$classId/join', data: {});
+  Future<void> leaveClass(int classId) async => _dio.delete('/classes/$classId/leave');
 
   Future<Map<String, dynamic>> createClass(String name, {String? description}) async {
     final response = await _dio.post('/classes/', data: {
@@ -162,15 +193,18 @@ class ApiService {
     return response.data;
   }
 
-  Future<void> deleteClass(int classId) async {
-    await _dio.delete('/classes/$classId');
-  }
+  Future<void> deleteClass(int classId) async => _dio.delete('/classes/$classId');
 
-  // ── Assignments ──
-  Future<List<dynamic>> getAssignments({int? classId}) async {
-    final params = classId != null ? '?class_id=$classId' : '';
-    final response = await _dio.get('/assignments/$params');
-    return response.data;
+  // ── Assignments ───────────────────────────────────────────────────────────────
+
+  Future<List<dynamic>> getAssignments({int? classId, int page = 1, int pageSize = 50}) async {
+    final params = <String, dynamic>{'page': page, 'page_size': pageSize};
+    if (classId != null) params['class_id'] = classId;
+    final response = await _dio.get('/assignments/', queryParameters: params);
+    final data = response.data;
+    if (data is List) return data;
+    if (data is Map && data['items'] is List) return data['items'] as List;
+    return [];
   }
 
   Future<Map<String, dynamic>> getAssignment(int id) async {
@@ -188,9 +222,7 @@ class ApiService {
     return response.data;
   }
 
-  Future<void> deleteAssignment(int id) async {
-    await _dio.delete('/assignments/$id');
-  }
+  Future<void> deleteAssignment(int id) async => _dio.delete('/assignments/$id');
 
   Future<Map<String, dynamic>> submitAssignment(int assignmentId, Map<String, dynamic> body) async {
     final response = await _dio.post('/assignments/$assignmentId/submit', data: body);
@@ -217,9 +249,7 @@ class ApiService {
     }
   }
 
-  Future<void> retractSubmission(int submissionId) async {
-    await _dio.delete('/submissions/$submissionId');
-  }
+  Future<void> retractSubmission(int submissionId) async => _dio.delete('/submissions/$submissionId');
 
   Future<Map<String, dynamic>> getSubmission(int id) async {
     final response = await _dio.get('/submissions/$id');
@@ -232,7 +262,8 @@ class ApiService {
     return response.data;
   }
 
-  // ── Chats ──
+  // ── Chats ─────────────────────────────────────────────────────────────────────
+
   Future<List<dynamic>> getChats() async {
     final response = await _dio.get('/chats/');
     return response.data;
@@ -248,17 +279,17 @@ class ApiService {
     return response.data;
   }
 
-  Future<void> addChatUser(int chatId, int userId) async {
-    await _dio.post('/chats/$chatId/users/$userId');
-  }
+  Future<void> addChatUser(int chatId, int userId) async => _dio.post('/chats/$chatId/users/$userId');
+  Future<void> removeChatUser(int chatId, int userId) async => _dio.delete('/chats/$chatId/users/$userId');
 
-  Future<void> removeChatUser(int chatId, int userId) async {
-    await _dio.delete('/chats/$chatId/users/$userId');
-  }
+  // ── Messages ──────────────────────────────────────────────────────────────────
+  // [before]: message id cursor for older-message pagination (load before this id)
+  // [limit]: max number of messages to return
 
-  // ── Messages ──
-  Future<List<dynamic>> getMessages(int chatId) async {
-    final response = await _dio.get('/messages/chat/$chatId');
+  Future<List<dynamic>> getMessages(int chatId, {int? before, int limit = 50}) async {
+    final params = <String, dynamic>{'limit': limit};
+    if (before != null) params['before'] = before;
+    final response = await _dio.get('/messages/chat/$chatId', queryParameters: params);
     return response.data;
   }
 
@@ -267,12 +298,12 @@ class ApiService {
     return response.data;
   }
 
-  Future<void> deleteMessage(int id) async {
-    await _dio.delete('/messages/$id');
-  }
+  Future<void> deleteMessage(int id) async => _dio.delete('/messages/$id');
 
-  // ── AI ──
-  Future<Map<String, dynamic>> aiChat(List<Map<String, dynamic>> messages, {int? classId, int maxTokens = 1500, double temperature = 0.7}) async {
+  // ── AI ────────────────────────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> aiChat(List<Map<String, dynamic>> messages,
+      {int? classId, int maxTokens = 1500, double temperature = 0.7}) async {
     final data = <String, dynamic>{
       'messages': messages,
       'max_tokens': maxTokens,
@@ -283,7 +314,8 @@ class ApiService {
     return response.data;
   }
 
-  // ── Upload ──
+  // ── Upload ────────────────────────────────────────────────────────────────────
+
   Future<Map<String, dynamic>> uploadFile(String filePath, String fileName) async {
     final formData = FormData.fromMap({
       'file': await MultipartFile.fromFile(filePath, filename: fileName),
@@ -292,7 +324,8 @@ class ApiService {
     return response.data;
   }
 
-  // ── Users ──
+  // ── Users ─────────────────────────────────────────────────────────────────────
+
   Future<List<dynamic>> getUsers() async {
     try {
       final response = await _dio.get('/admin/users');
@@ -307,7 +340,8 @@ class ApiService {
     }
   }
 
-  // ── Admin ──
+  // ── Admin ─────────────────────────────────────────────────────────────────────
+
   Future<List<dynamic>> adminUsers() async {
     final response = await _dio.get('/admin/users');
     return response.data;
@@ -320,21 +354,12 @@ class ApiService {
     return response.data;
   }
 
-  Future<void> adminSetRole(int userId, String role) async {
-    await _dio.put('/admin/users/$userId/role', queryParameters: {'new_role': role});
-  }
+  Future<void> adminSetRole(int userId, String role) async =>
+      _dio.put('/admin/users/$userId/role', queryParameters: {'new_role': role});
 
-  Future<void> adminBlock(int userId) async {
-    await _dio.put('/admin/users/$userId/block');
-  }
-
-  Future<void> adminUnblock(int userId) async {
-    await _dio.put('/admin/users/$userId/unblock');
-  }
-
-  Future<void> adminDelete(int userId) async {
-    await _dio.delete('/admin/users/$userId');
-  }
+  Future<void> adminBlock(int userId) async => _dio.put('/admin/users/$userId/block');
+  Future<void> adminUnblock(int userId) async => _dio.put('/admin/users/$userId/unblock');
+  Future<void> adminDelete(int userId) async => _dio.delete('/admin/users/$userId');
 
   Future<List<dynamic>> adminAiUsage({int? classId}) async {
     final params = <String, dynamic>{'page_size': 200};
@@ -350,18 +375,17 @@ class ApiService {
     return response.data;
   }
 
-  Future<void> adminSetAiUnlimited(int userId, bool unlimited) async {
-    await _dio.put('/admin/users/$userId/ai_unlimited', data: {'unlimited': unlimited});
-  }
+  Future<void> adminSetAiUnlimited(int userId, bool unlimited) async =>
+      _dio.put('/admin/users/$userId/ai_unlimited', data: {'unlimited': unlimited});
 
-  // ── Reactions ──
-  Future<void> addReaction(int msgId, String emoji) async {
-    await _dio.post('/reactions/$msgId', queryParameters: {'emoji': emoji});
-  }
+  // ── Reactions ─────────────────────────────────────────────────────────────────
 
-  Future<void> removeReaction(int msgId) async {
-    await _dio.delete('/reactions/$msgId');
-  }
+  Future<void> addReaction(int msgId, String emoji) async =>
+      _dio.post('/reactions/$msgId', queryParameters: {'emoji': emoji});
+
+  Future<void> removeReaction(int msgId) async => _dio.delete('/reactions/$msgId');
+
+  // ── Files ─────────────────────────────────────────────────────────────────────
 
   Future<String> fetchFileText(String url) async {
     try {
@@ -373,9 +397,5 @@ class ApiService {
     }
   }
 
-  String get wsBaseUrl {
-    return baseUrl.replaceFirst('http', 'ws');
-  }
+  String get wsBaseUrl => baseUrl.replaceFirst('http', 'ws');
 }
-
-// VoidCallback is from Flutter SDK

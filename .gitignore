@@ -57,3 +57,6 @@ ios/.symlinks/
 
 # flutter-plugins (старый формат)
 .flutter-plugins.claude/
+.claude/skills/
+*.md.save
+ios/Podfile.lock

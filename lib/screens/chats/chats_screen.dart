@@ -280,7 +280,7 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
                   Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800), overflow: TextOverflow.ellipsis),
                   // Typing sub-label in the app bar
                   if (provider.someoneIsTyping)
-                    const Text('печатает...', style: TextStyle(fontSize: 11, color: C.teal, fontWeight: FontWeight.w500)),
+                    Text(context.read<L10n>().t('typing_indicator'), style: const TextStyle(fontSize: 11, color: C.teal, fontWeight: FontWeight.w500)),
                 ],
               )),
             ]),
@@ -407,14 +407,14 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
           Container(width: 36, height: 4,
             decoration: BoxDecoration(color: C.text4.withOpacity(0.3), borderRadius: BorderRadius.circular(2))),
           const SizedBox(height: 20),
-          _photoOption(ctx, Icons.photo_library_rounded, 'Галерея', () async {
+          _photoOption(ctx, Icons.photo_library_rounded, context.read<L10n>().t('gallery'), () async {
             Navigator.pop(ctx);
             final img = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1200, imageQuality: 85);
             if (!mounted) return;
             if (img != null) await _uploadAndSend(chatId, img);
           }),
           const SizedBox(height: 8),
-          _photoOption(ctx, Icons.camera_alt_rounded, 'Камера', () async {
+          _photoOption(ctx, Icons.camera_alt_rounded, context.read<L10n>().t('camera'), () async {
             Navigator.pop(ctx);
             final img = await ImagePicker().pickImage(source: ImageSource.camera, maxWidth: 1200, imageQuality: 85);
             if (!mounted) return;

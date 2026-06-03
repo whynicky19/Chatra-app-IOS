@@ -318,6 +318,61 @@ class L10n extends ChangeNotifier {
       'files': 'файлов',
       'yes': 'Да',
       'no': 'Нет',
+
+      // ── Join dialog ──
+      'join_class_title': 'Войти в класс по коду',
+      'join_class_hint': 'Введите 6-значный код класса, который вам дал преподаватель',
+      'join_enter_class': 'Войти в класс',
+      'enter_teacher_code': 'Введите код от преподавателя',
+
+      // ── Create class dialog ──
+      'create_class_title': 'Создать класс',
+      'class_name_required': 'НАЗВАНИЕ КЛАССА *',
+      'class_name_hint': 'Например: Математика 10А',
+      'class_desc_hint': 'Краткое описание курса',
+      'period_label': 'ПЕРИОД',
+      'period_hint': 'Например: 2024-2025',
+      'teacher_label': 'УЧИТЕЛЬ / ПРЕПОДАВАТЕЛЬ',
+      'your_name_hint': 'Ваше имя',
+      'group_hint': 'Например: ИСУ-21',
+      'click_to_upload': 'Нажмите для загрузки',
+      'leave_btn': 'Покинуть',
+
+      // ── Chats ──
+      'gallery': 'Галерея',
+      'camera': 'Камера',
+      'typing_indicator': 'печатает...',
+
+      // ── Connectivity ──
+      'no_connection': 'Нет соединения с интернетом',
+
+      // ── Class detail extras ──
+      'add_first_material': 'Добавьте первый материал',
+      'materials_appear_here': 'Здесь появятся материалы курса',
+      'tap_to_open': 'Нажмите для открытия',
+      'content_empty': 'Содержимое ещё не добавлено',
+      'loading_files': 'Загрузка файлов...',
+      'edit_title': 'Редактировать',
+      'title_label': 'Заголовок',
+      'content_label': 'Содержание',
+      'attached_files_edit': 'Прикреплённые файлы',
+      'attach_files_action': 'Прикрепить файлы',
+      'description_label': 'Описание',
+      'assignment_label': 'ЗАДАНИЕ',
+      'grading_criteria_label': 'Критерии оценивания',
+      'ai_grading_label': 'ИИ-проверка',
+      'ai_checking_label': 'ИИ проверяет вашу работу...',
+      'your_answer_label': 'ВАШ ОТВЕТ',
+      'feedback_short': 'ФИДБЕК',
+      'by_criteria_short': 'ПО КРИТЕРИЯМ',
+      'score_pts': 'баллов',
+      'retracted_ok_toast': 'Сдача отозвана — можно отправить заново',
+      'delete_assignment_confirm': 'Удалить задание?',
+      'irreversible_action': 'Это действие нельзя отменить',
+      'status_checked': 'Проверено',
+      'status_submitted_sheet': 'Сдано',
+      'status_overdue_sheet': 'Просрочено',
+      'status_new_sheet': 'Новое',
     },
     'KZ': {
       // ── Home / Classes ──
@@ -615,6 +670,61 @@ class L10n extends ChangeNotifier {
       'files': 'файл',
       'yes': 'Иә',
       'no': 'Жоқ',
+
+      // ── Join dialog ──
+      'join_class_title': 'Кодпен сыныпқа кіру',
+      'join_class_hint': 'Мұғалімнен алған 6 таңбалы кодты енгізіңіз',
+      'join_enter_class': 'Сыныпқа кіру',
+      'enter_teacher_code': 'Мұғалімнен кодты енгізіңіз',
+
+      // ── Create class dialog ──
+      'create_class_title': 'Сынып құру',
+      'class_name_required': 'СЫНЫП АТАУЫ *',
+      'class_name_hint': 'Мысалы: Математика 10А',
+      'class_desc_hint': 'Курстың қысқаша сипаттамасы',
+      'period_label': 'КЕЗЕҢ',
+      'period_hint': 'Мысалы: 2024-2025',
+      'teacher_label': 'МҰҒАЛІМ / ОҚЫТУШЫ',
+      'your_name_hint': 'Сіздің атыңыз',
+      'group_hint': 'Мысалы: ИСУ-21',
+      'click_to_upload': 'Жүктеу үшін басыңыз',
+      'leave_btn': 'Шығу',
+
+      // ── Chats ──
+      'gallery': 'Галерея',
+      'camera': 'Камера',
+      'typing_indicator': 'жазуда...',
+
+      // ── Connectivity ──
+      'no_connection': 'Интернет байланысы жоқ',
+
+      // ── Class detail extras ──
+      'add_first_material': 'Бірінші материалды қосыңыз',
+      'materials_appear_here': 'Курс материалдары осында пайда болады',
+      'tap_to_open': 'Ашу үшін басыңыз',
+      'content_empty': 'Мазмұн әлі қосылмаған',
+      'loading_files': 'Файлдар жүктелуде...',
+      'edit_title': 'Өзгерту',
+      'title_label': 'Тақырып',
+      'content_label': 'Мазмұны',
+      'attached_files_edit': 'Бекітілген файлдар',
+      'attach_files_action': 'Файлдарды бекіту',
+      'description_label': 'Сипаттама',
+      'assignment_label': 'ТАПСЫРМА',
+      'grading_criteria_label': 'Бағалау критерийлері',
+      'ai_grading_label': 'ЖИ-тексеру',
+      'ai_checking_label': 'ЖИ жұмысыңызды тексеруде...',
+      'your_answer_label': 'СІЗДІҢ ЖАУАБЫҢЫЗ',
+      'feedback_short': 'КЕРІ БАЙЛАНЫС',
+      'by_criteria_short': 'КРИТЕРИЙЛЕР БОЙЫНША',
+      'score_pts': 'балл',
+      'retracted_ok_toast': 'Тапсыру қайтарылды — қайта жіберуге болады',
+      'delete_assignment_confirm': 'Тапсырманы жою?',
+      'irreversible_action': 'Бұл әрекетті болдырмау мүмкін емес',
+      'status_checked': 'Тексерілді',
+      'status_submitted_sheet': 'Тапсырылды',
+      'status_overdue_sheet': 'Мерзімі өтті',
+      'status_new_sheet': 'Жаңа',
     },
     'EN': {
       // ── Home / Classes ──
@@ -912,6 +1022,61 @@ class L10n extends ChangeNotifier {
       'files': 'files',
       'yes': 'Yes',
       'no': 'No',
+
+      // ── Join dialog ──
+      'join_class_title': 'Join Class by Code',
+      'join_class_hint': 'Enter the 6-digit code your teacher gave you',
+      'join_enter_class': 'Join Class',
+      'enter_teacher_code': 'Enter code from teacher',
+
+      // ── Create class dialog ──
+      'create_class_title': 'Create Class',
+      'class_name_required': 'CLASS NAME *',
+      'class_name_hint': 'E.g.: Mathematics 10A',
+      'class_desc_hint': 'Brief course description',
+      'period_label': 'PERIOD',
+      'period_hint': 'E.g.: 2024-2025',
+      'teacher_label': 'TEACHER',
+      'your_name_hint': 'Your name',
+      'group_hint': 'E.g.: CS-21',
+      'click_to_upload': 'Tap to upload',
+      'leave_btn': 'Leave',
+
+      // ── Chats ──
+      'gallery': 'Gallery',
+      'camera': 'Camera',
+      'typing_indicator': 'typing...',
+
+      // ── Connectivity ──
+      'no_connection': 'No internet connection',
+
+      // ── Class detail extras ──
+      'add_first_material': 'Add the first material',
+      'materials_appear_here': 'Course materials will appear here',
+      'tap_to_open': 'Tap to open',
+      'content_empty': 'No content added yet',
+      'loading_files': 'Loading files...',
+      'edit_title': 'Edit',
+      'title_label': 'Title',
+      'content_label': 'Content',
+      'attached_files_edit': 'Attached files',
+      'attach_files_action': 'Attach files',
+      'description_label': 'Description',
+      'assignment_label': 'ASSIGNMENT',
+      'grading_criteria_label': 'Grading Criteria',
+      'ai_grading_label': 'AI Review',
+      'ai_checking_label': 'AI is reviewing your work...',
+      'your_answer_label': 'YOUR ANSWER',
+      'feedback_short': 'FEEDBACK',
+      'by_criteria_short': 'BY CRITERIA',
+      'score_pts': 'pts',
+      'retracted_ok_toast': 'Submission retracted — you can resubmit',
+      'delete_assignment_confirm': 'Delete assignment?',
+      'irreversible_action': 'This action cannot be undone',
+      'status_checked': 'Reviewed',
+      'status_submitted_sheet': 'Submitted',
+      'status_overdue_sheet': 'Overdue',
+      'status_new_sheet': 'New',
     },
   };
 }

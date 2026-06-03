@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import '../providers/auth_provider.dart';
 import '../providers/l10n_provider.dart';
 import '../theme/app_theme.dart';
@@ -20,15 +22,32 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
   int _idx = 0;
   late AnimationController _navAnim;
 
+  bool _isOnline = true;
+  StreamSubscription<List<ConnectivityResult>>? _connectSub;
+
   @override
   void initState() {
     super.initState();
     _navAnim = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
     _navAnim.forward();
+
+    Connectivity().checkConnectivity().then((results) {
+      if (mounted) setState(() => _isOnline = _online(results));
+    });
+    _connectSub = Connectivity().onConnectivityChanged.listen((results) {
+      if (mounted) setState(() => _isOnline = _online(results));
+    });
   }
 
+  static bool _online(List<ConnectivityResult> r) =>
+      r.any((v) => v != ConnectivityResult.none);
+
   @override
-  void dispose() { _navAnim.dispose(); super.dispose(); }
+  void dispose() {
+    _connectSub?.cancel();
+    _navAnim.dispose();
+    super.dispose();
+  }
 
   void _onTap(int i) {
     if (_idx == i) return;
@@ -63,6 +82,10 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
     return Scaffold(
       body: Stack(children: [
         Positioned.fill(child: IndexedStack(index: _idx, children: screens)),
+        if (!_isOnline) Positioned(
+          top: 0, left: 0, right: 0,
+          child: _OfflineBanner(message: l.t('no_connection')),
+        ),
         Positioned(
           left: 16, right: 16, bottom: 16,
           child: SlideTransition(
@@ -294,4 +317,40 @@ class _NavItem {
   final IconData inactive, active;
   final String label;
   _NavItem(this.inactive, this.active, this.label);
+}
+
+// ─────────────────────────────────────────────────────────
+//  Offline Banner
+// ─────────────────────────────────────────────────────────
+class _OfflineBanner extends StatelessWidget {
+  final String message;
+  const _OfflineBanner({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final topPad = MediaQuery.of(context).padding.top;
+    return Material(
+      color: Colors.transparent,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+        color: const Color(0xFFB71C1C),
+        padding: EdgeInsets.fromLTRB(16, topPad + 6, 16, 8),
+        child: Row(children: [
+          const Icon(Icons.wifi_off_rounded, size: 16, color: Colors.white),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
 }

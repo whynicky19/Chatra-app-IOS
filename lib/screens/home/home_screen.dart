@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -218,7 +217,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                               decoration: BoxDecoration(color: adaptiveTealLt(context), borderRadius: BorderRadius.circular(10)),
                               child: Row(mainAxisSize: MainAxisSize.min, children: [
-                                const Text('Открыть', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: C.teal)),
+                                Text(l.t('open'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: C.teal)),
                                 const SizedBox(width: 4),
                                 const Icon(Icons.arrow_forward_rounded, size: 14, color: C.teal),
                               ]),
@@ -227,41 +226,43 @@ class _HomeScreenState extends State<HomeScreen> {
                             if (auth.isTeacher) _ActionBtn(
                               icon: Icons.delete_outline_rounded, color: C.text4, isDark: isDark,
                               onTap: () async {
+                                final l = context.read<L10n>();
                                 final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                  title: const Text('Удалить класс?', style: TextStyle(fontWeight: FontWeight.w800)),
+                                  title: Text(l.t('delete_class'), style: const TextStyle(fontWeight: FontWeight.w800)),
                                   actions: [
-                                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Нет')),
+                                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l.t('no'))),
                                     ElevatedButton(
                                       style: ElevatedButton.styleFrom(backgroundColor: C.red),
-                                      onPressed: () => Navigator.pop(ctx, true), child: const Text('Удалить')),
+                                      onPressed: () => Navigator.pop(ctx, true), child: Text(l.t('delete'))),
                                   ],
                                 ));
                                 if (!mounted) return;
                                 if (ok == true) {
                                   await context.read<ClassesProvider>().deleteClass(id);
                                   if (!mounted) return;
-                                  showToast(context, 'Deleted');
+                                  showToast(context, context.read<L10n>().t('class_deleted'));
                                 }
                               },
                             ),
                             if (!auth.isTeacher) _ActionBtn(
                               icon: Icons.logout_rounded, color: C.text4, isDark: isDark,
                               onTap: () async {
+                                final l = context.read<L10n>();
                                 final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                  title: const Text('Покинуть класс?', style: TextStyle(fontWeight: FontWeight.w800)),
-                                  content: const Text('Вы сможете войти снова по коду.'),
+                                  title: Text(l.t('leave_class'), style: const TextStyle(fontWeight: FontWeight.w800)),
+                                  content: Text(l.t('leave_class_sub')),
                                   actions: [
-                                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Нет')),
-                                    ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Покинуть')),
+                                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l.t('no'))),
+                                    ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l.t('leave_btn'))),
                                   ],
                                 ));
                                 if (!mounted) return;
                                 if (ok == true) {
                                   await context.read<ClassesProvider>().leaveClass(id);
                                   if (!mounted) return;
-                                  showToast(context, 'Left class');
+                                  showToast(context, context.read<L10n>().t('left_class'));
                                 }
                               },
                             ),
@@ -302,9 +303,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         child: const Icon(Icons.add_rounded, color: C.teal, size: 26)),
                       const SizedBox(height: 12),
-                      Text('Добавить предмет', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
+                      Text(l.t('add_subject'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
                       const SizedBox(height: 3),
-                      const Text('Введите код от преподавателя', style: TextStyle(fontSize: 12, color: C.text4)),
+                      Text(l.t('enter_teacher_code'), style: const TextStyle(fontSize: 12, color: C.text4)),
                     ]),
                   ),
                 ),
@@ -320,6 +321,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // ── Join dialog ──────────────────────────────────────────────────────────────
   void _showJoinDialog() {
     final provider = context.read<ClassesProvider>();
+    final l = context.read<L10n>();
     final controllers = List.generate(6, (_) => TextEditingController());
     final focusNodes  = List.generate(6, (_) => FocusNode());
     bool busy = false;
@@ -350,10 +352,10 @@ class _HomeScreenState extends State<HomeScreen> {
             Container(width: 68, height: 68, decoration: BoxDecoration(color: adaptiveTealLt(context), borderRadius: BorderRadius.circular(20)),
               child: const Icon(Icons.lock_outline_rounded, color: C.teal, size: 32)),
             const SizedBox(height: 16),
-            const Text('Войти в класс по коду', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+            Text(l.t('join_class_title'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),
-            const Text('Введите 6-значный код класса, который вам дал преподаватель',
-              textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: C.text4, height: 1.5)),
+            Text(l.t('join_class_hint'),
+              textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, color: C.text4, height: 1.5)),
             const SizedBox(height: 24),
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: List.generate(6, (i) =>
               SizedBox(width: 44, height: 52, child: TextField(
@@ -377,7 +379,7 @@ class _HomeScreenState extends State<HomeScreen> {
               final found = provider.allClasses.where((c) => classCode(c['id']) == code).toList();
               if (found.isEmpty) return Padding(padding: const EdgeInsets.only(top: 16),
                 child: Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: C.redLt, borderRadius: BorderRadius.circular(12)),
-                  child: const Row(children: [Icon(Icons.error_outline, size: 16, color: C.red), SizedBox(width: 8), Text('Класс не найден', style: TextStyle(fontSize: 13, color: C.red, fontWeight: FontWeight.w500))])));
+                  child: Row(children: [const Icon(Icons.error_outline, size: 16, color: C.red), const SizedBox(width: 8), Text(l.t('not_found'), style: const TextStyle(fontSize: 13, color: C.red, fontWeight: FontWeight.w500))])));
               final cls = found.first;
               final coverImg = cls['cover_image'];
               final teacherName = cls['teacher_name'] ?? '';
@@ -406,13 +408,13 @@ class _HomeScreenState extends State<HomeScreen> {
               Expanded(child: OutlinedButton(
                 onPressed: () => Navigator.pop(ctx),
                 style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-                child: const Text('Отмена'))),
+                child: Text(l.t('cancel')))),
               const SizedBox(width: 12),
               Expanded(child: ElevatedButton(
                 style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
                 onPressed: busy ? null : () async {
                   final code = get6Code();
-                  if (code.length < 6) { showToast(context, 'Введите 6 символов', error: true); return; }
+                  if (code.length < 6) { showToast(context, l.t('enter_6_chars'), error: true); return; }
                   setS(() => busy = true);
                   final found = provider.allClasses.where((c) => classCode(c['id']) == code).toList();
                   if (found.isNotEmpty) {
@@ -422,13 +424,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     Navigator.pop(ctx);
                     await provider.joinClass(id);
                     if (!mounted) return;
-                    showToast(context, 'Joined $title');
+                    showToast(context, '${l.t('joined_class')} $title');
                     Navigator.pushNamed(context, '/class', arguments: id);
-                  } else { setS(() => busy = false); showToast(context, 'Класс не найден', error: true); }
+                  } else { setS(() => busy = false); showToast(context, l.t('not_found'), error: true); }
                 },
                 child: busy
                     ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Text('Войти в класс'))),
+                    : Text(l.t('join_enter_class')))),
             ]),
           ])),
         );
@@ -439,6 +441,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // ── Create class dialog ──────────────────────────────────────────────────────
   void _showCreateClass() {
     final provider = context.read<ClassesProvider>();
+    final l = context.read<L10n>();
     final nameC = TextEditingController(), descC = TextEditingController(),
           teacherC = TextEditingController(), groupC = TextEditingController(), periodC = TextEditingController();
     String? coverB64;
@@ -450,12 +453,12 @@ class _HomeScreenState extends State<HomeScreen> {
           constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.85),
           child: Column(children: [
             Padding(padding: const EdgeInsets.fromLTRB(24, 20, 16, 0), child: Row(children: [
-              const Text('Создать класс', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+              Text(l.t('create_class_title'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
               const Spacer(),
               IconButton(icon: const Icon(Icons.close, size: 22), onPressed: () => Navigator.pop(ctx)),
             ])),
             Expanded(child: SingleChildScrollView(padding: const EdgeInsets.fromLTRB(24, 16, 24, 0), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _fl3('ОБЛОЖКА КЛАССА'),
+              _fl3(l.t('class_cover')),
               GestureDetector(onTap: () async {
                 final img = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 800, imageQuality: 80);
                 if (img != null) { final bytes = await img.readAsBytes(); setS(() => coverB64 = 'data:image/jpeg;base64,${base64Encode(bytes)}'); }
@@ -463,17 +466,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: C.teal.withOpacity(0.3), width: 1.5), color: coverB64 != null ? null : adaptiveTealLt(context).withOpacity(0.3)),
                 child: coverB64 != null
                     ? ClipRRect(borderRadius: BorderRadius.circular(16), child: Image.memory(base64Decode(coverB64!.split(',').last), fit: BoxFit.cover, width: double.infinity))
-                    : Column(mainAxisAlignment: MainAxisAlignment.center, children: [Container(width: 50, height: 50, decoration: BoxDecoration(color: C.teal.withOpacity(0.15), borderRadius: BorderRadius.circular(14)), child: const Icon(Icons.image_outlined, size: 26, color: C.teal)), const SizedBox(height: 10), const Text('Нажмите для загрузки', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: C.teal)), const Text('JPG, PNG', style: TextStyle(fontSize: 12, color: C.text4))]))),
+                    : Column(mainAxisAlignment: MainAxisAlignment.center, children: [Container(width: 50, height: 50, decoration: BoxDecoration(color: C.teal.withOpacity(0.15), borderRadius: BorderRadius.circular(14)), child: const Icon(Icons.image_outlined, size: 26, color: C.teal)), const SizedBox(height: 10), Text(l.t('click_to_upload'), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: C.teal)), const Text('JPG, PNG', style: TextStyle(fontSize: 12, color: C.text4))]))),
               const SizedBox(height: 20),
-              _fl3('НАЗВАНИЕ КЛАССА *'), TextField(controller: nameC, decoration: const InputDecoration(hintText: 'Например: Математика 10А')),
-              const SizedBox(height: 16), _fl3('ОПИСАНИЕ'), TextField(controller: descC, decoration: const InputDecoration(hintText: 'Краткое описание курса'), maxLines: 3),
-              const SizedBox(height: 16), _fl3('ПЕРИОД'), TextField(controller: periodC, decoration: const InputDecoration(hintText: 'Например: 2024-2025')),
-              const SizedBox(height: 16), _fl3('УЧИТЕЛЬ / ПРЕПОДАВАТЕЛЬ'), TextField(controller: teacherC, decoration: const InputDecoration(hintText: 'Ваше имя')),
-              const SizedBox(height: 16), _fl3('ГРУППА'), TextField(controller: groupC, decoration: const InputDecoration(hintText: 'Например: ИСУ-21')),
+              _fl3(l.t('class_name_required')), TextField(controller: nameC, decoration: InputDecoration(hintText: l.t('class_name_hint'))),
+              const SizedBox(height: 16), _fl3(l.t('class_desc')), TextField(controller: descC, decoration: InputDecoration(hintText: l.t('class_desc_hint')), maxLines: 3),
+              const SizedBox(height: 16), _fl3(l.t('period_label')), TextField(controller: periodC, decoration: InputDecoration(hintText: l.t('period_hint'))),
+              const SizedBox(height: 16), _fl3(l.t('teacher_label')), TextField(controller: teacherC, decoration: InputDecoration(hintText: l.t('your_name_hint'))),
+              const SizedBox(height: 16), _fl3(l.t('group')), TextField(controller: groupC, decoration: InputDecoration(hintText: l.t('group_hint'))),
               const SizedBox(height: 24),
             ]))),
             Padding(padding: const EdgeInsets.fromLTRB(24, 8, 24, 20), child: Row(children: [
-              Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена'), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)))),
+              Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: Text(l.t('cancel')), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)))),
               const SizedBox(width: 12),
               Expanded(child: ElevatedButton(
                 style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
@@ -487,13 +490,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     }));
                     if (!mounted) return;
                     Navigator.pop(ctx);
-                    showToast(context, 'Class created');
+                    showToast(context, l.t('class_created'));
                   } catch (_) {
                     if (!mounted) return;
-                    showToast(context, 'Error', error: true);
+                    showToast(context, l.t('error'), error: true);
                   }
                 },
-                child: const Text('Создать'))),
+                child: Text(l.t('create')))),
             ])),
           ]),
         ),
@@ -575,42 +578,45 @@ class _EmptyState extends StatelessWidget {
   const _EmptyState({required this.isTeacher, required this.onCreate, required this.onJoin});
 
   @override
-  Widget build(BuildContext context) => Center(child: Padding(
-    padding: const EdgeInsets.all(32),
-    child: Column(mainAxisSize: MainAxisSize.min, children: [
-      Container(width: 88, height: 88,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(colors: [C.teal.withOpacity(0.18), C.teal.withOpacity(0.06)]),
-          shape: BoxShape.circle,
-        ),
-        child: const Icon(Icons.menu_book_rounded, color: C.teal, size: 40)),
-      const SizedBox(height: 22),
-      Text('Нет классов', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: adaptiveText1(context), letterSpacing: -0.4)),
-      const SizedBox(height: 8),
-      Text(isTeacher ? 'Создайте первый класс' : 'Введите код от преподавателя',
-        style: const TextStyle(fontSize: 14, color: C.text4), textAlign: TextAlign.center),
-      const SizedBox(height: 28),
-      if (isTeacher) ...[
-        SizedBox(width: double.infinity, child: ElevatedButton.icon(
-          onPressed: onCreate,
-          icon: const Icon(Icons.add_rounded, size: 18),
-          label: const Text('Создать класс'),
-          style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-        )),
-        const SizedBox(height: 10),
-        SizedBox(width: double.infinity, child: OutlinedButton.icon(
-          onPressed: onJoin,
-          icon: const Icon(Icons.vpn_key_rounded, size: 16),
-          label: const Text('Войти по коду'),
-          style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-        )),
-      ] else
-        SizedBox(width: double.infinity, child: ElevatedButton.icon(
-          onPressed: onJoin,
-          icon: const Icon(Icons.vpn_key_rounded, size: 18),
-          label: const Text('Войти по коду'),
-          style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-        )),
-    ]),
-  ));
+  Widget build(BuildContext context) {
+    final l = context.read<L10n>();
+    return Center(child: Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Container(width: 88, height: 88,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: [C.teal.withOpacity(0.18), C.teal.withOpacity(0.06)]),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.menu_book_rounded, color: C.teal, size: 40)),
+        const SizedBox(height: 22),
+        Text(l.t('no_classes'), style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: adaptiveText1(context), letterSpacing: -0.4)),
+        const SizedBox(height: 8),
+        Text(isTeacher ? l.t('create_first_class') : l.t('enter_teacher_code'),
+          style: const TextStyle(fontSize: 14, color: C.text4), textAlign: TextAlign.center),
+        const SizedBox(height: 28),
+        if (isTeacher) ...[
+          SizedBox(width: double.infinity, child: ElevatedButton.icon(
+            onPressed: onCreate,
+            icon: const Icon(Icons.add_rounded, size: 18),
+            label: Text(l.t('create_class')),
+            style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+          )),
+          const SizedBox(height: 10),
+          SizedBox(width: double.infinity, child: OutlinedButton.icon(
+            onPressed: onJoin,
+            icon: const Icon(Icons.vpn_key_rounded, size: 16),
+            label: Text(l.t('enter_code')),
+            style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+          )),
+        ] else
+          SizedBox(width: double.infinity, child: ElevatedButton.icon(
+            onPressed: onJoin,
+            icon: const Icon(Icons.vpn_key_rounded, size: 18),
+            label: Text(l.t('enter_code')),
+            style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+          )),
+      ]),
+    ));
+  }
 }

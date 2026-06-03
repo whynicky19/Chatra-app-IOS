@@ -113,22 +113,33 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     return Scaffold(
       body: NestedScrollView(
         headerSliverBuilder: (ctx, _) => [
-          SliverAppBar(expandedHeight: 220, pinned: true, stretch: true,
-            backgroundColor: isDark ? Color(0xFF0A1214) : Color(0xFF004D5A),
-            leading: IconButton(icon: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(10)), child: Icon(Icons.arrow_back, color: Colors.white, size: 20)), onPressed: () => Navigator.pop(context)),
+          SliverAppBar(
+            expandedHeight: 220, pinned: true, stretch: true,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            surfaceTintColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            leading: IconButton(
+              icon: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(10)), child: Icon(Icons.arrow_back, color: Colors.white, size: 20)),
+              onPressed: () => Navigator.pop(context),
+            ),
             actions: [
-              if (auth.isTeacher) IconButton(icon: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(10)), child: Icon(Icons.edit, color: Colors.white70, size: 18)), onPressed: () => _editClass()),
+              if (auth.isTeacher) IconButton(
+                icon: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(10)), child: Icon(Icons.edit, color: Colors.white70, size: 18)),
+                onPressed: () => _editClass(),
+              ),
             ],
             flexibleSpace: FlexibleSpaceBar(
               collapseMode: CollapseMode.pin,
               stretchModes: [StretchMode.zoomBackground],
               titlePadding: EdgeInsets.zero,
               background: Stack(fit: StackFit.expand, children: [
-                if (coverImg == null) Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF006475), C.teal], begin: Alignment.topLeft, end: Alignment.bottomRight))),
+                Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF006475), C.teal], begin: Alignment.topLeft, end: Alignment.bottomRight))),
                 if (coverImg != null && !coverImg.toString().startsWith('data:'))
-                  Image.network(coverImg, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF006475), C.teal])))),
+                  Image.network(coverImg, fit: BoxFit.cover, alignment: Alignment.topCenter,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink()),
                 if (coverImg != null && coverImg.toString().startsWith('data:'))
-                  Builder(builder: (_) { try { return Image.memory(base64Decode(coverImg.toString().split(',').last), fit: BoxFit.cover); } catch (_) { return Container(color: C.teal); } }),
+                  Builder(builder: (_) { try { return Image.memory(base64Decode(coverImg.toString().split(',').last), fit: BoxFit.cover, alignment: Alignment.topCenter); } catch (_) { return const SizedBox.shrink(); } }),
                 Container(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, stops: [0.0, 0.4, 1.0], colors: [Colors.black38, Colors.transparent, Colors.black54]))),
                 Positioned(bottom: 16, left: 16, right: 16, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(_title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white, shadows: [Shadow(color: Colors.black54, blurRadius: 6)]), maxLines: 2, overflow: TextOverflow.ellipsis),

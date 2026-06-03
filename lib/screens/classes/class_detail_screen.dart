@@ -956,13 +956,11 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     final auth = context.read<AuthProvider>();
     final isTeacherOrAdmin = auth.isTeacher;
     List<dynamic> criteria = []; try { criteria = jsonDecode(a['criteria'] ?? '[]'); } catch (_) {}
-    // Student file attachment state
     List<PlatformFile> pickedFiles = [];
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final deadline = a['deadline'];
     final isLate = deadline != null && DateTime.tryParse(deadline)?.isBefore(DateTime.now()) == true && sub == null;
-    // Status colors (re-derived for the sheet)
     final sheetStatusColor = sub?['status'] == 'graded' ? C.green
         : sub?['status'] == 'submitted' ? C.teal
         : isLate ? C.red : C.text4;
@@ -970,9 +968,24 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
         : sub?['status'] == 'submitted' ? 'Сдано'
         : isLate ? 'Просрочено' : 'Новое';
 
+    // Загружаем полные данные задания (file_urls могут отсутствовать в списке)
+    dynamic fullA = a;
+    bool loadingFull = false;
+    bool loadedFull = false;
+
     showModalBottomSheet(
       context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
-      builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => DraggableScrollableSheet(
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setS) {
+        // Загрузка полных данных один раз
+        if (!loadingFull && !loadedFull) {
+          loadingFull = true;
+          context.read<ApiService>().getAssignment((a['id'] as num).toInt()).then((full) {
+            setS(() { fullA = full; loadedFull = true; loadingFull = false; });
+          }).catchError((_) {
+            setS(() { loadedFull = true; loadingFull = false; });
+          });
+        }
+        return DraggableScrollableSheet(
         expand: false, initialChildSize: 0.88, maxChildSize: 0.97, minChildSize: 0.5,
         builder: (ctx, sc) => Container(
           decoration: BoxDecoration(
@@ -1065,17 +1078,17 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             ),
             // ── Scrollable content ──
             Expanded(child: ListView(controller: sc, padding: EdgeInsets.fromLTRB(20, 20, 20, 24), children: [
-        if (a['description'] != null && _cleanContent(a['description'].toString()).isNotEmpty) ...[
+        if (fullA['description'] != null && _cleanContent(fullA['description'].toString()).isNotEmpty) ...[
           Row(children: [Container(width: 3, height: 16, decoration: BoxDecoration(color: C.teal, borderRadius: BorderRadius.circular(2))), SizedBox(width: 8), Text('Описание', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: C.teal))]),
           SizedBox(height: 10),
           Container(padding: EdgeInsets.all(14), decoration: BoxDecoration(color: isDark ? C.darkSurface2 : C.bg, borderRadius: BorderRadius.circular(14), border: Border.all(color: C.teal.withOpacity(0.10))),
-            child: Text(_cleanContent(a['description'].toString()), style: TextStyle(fontSize: 14, height: 1.65))),
+            child: Text(_cleanContent(fullA['description'].toString()), style: TextStyle(fontSize: 14, height: 1.65))),
           SizedBox(height: 20),
         ],
         // Attached files: from file_urls field OR legacy regex in description
         ...() {
           List<String> fromField = [];
-          final raw = a['file_urls'];
+          final raw = fullA['file_urls'];
           if (raw is List) {
             fromField = raw.map((f) => _fixFileUrl(f.toString())).where((s) => s.isNotEmpty).toList();
           } else if (raw is String && raw.isNotEmpty) {
@@ -1091,7 +1104,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               if (raw.startsWith('http')) fromField = [_fixFileUrl(raw)];
             }
           }
-          final fromDesc = a['description'] != null ? _extractFilesFromText(a['description'].toString()) : <String>[];
+          final fromDesc = fullA['description'] != null ? _extractFilesFromText(fullA['description'].toString()) : <String>[];
           final allFiles = {...fromField, ...fromDesc}.toList();
           if (allFiles.isEmpty) return <Widget>[];
           final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -1433,7 +1446,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       ])),
           ]),
         ),
-      )),
+      );
+      }),
     );
   }
 

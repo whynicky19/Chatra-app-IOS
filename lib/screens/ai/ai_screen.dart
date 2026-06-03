@@ -38,10 +38,10 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
   }
 
   List<Map<String, dynamic>> _tips(L10n l) => [
-    {'icon': Icons.menu_book_rounded, 'text': l.t('tip_explain'), 'color': C.teal},
-    {'icon': Icons.lightbulb_outline_rounded, 'text': l.t('tip_concepts'), 'color': Color(0xFF6366F1)},
-    {'icon': Icons.assignment_outlined, 'text': l.t('tip_help'), 'color': Color(0xFFF59E0B)},
-    {'icon': Icons.warning_amber_rounded, 'text': l.t('tip_mistakes'), 'color': Color(0xFFEC4899)},
+    {'icon': Icons.menu_book_rounded,         'text': l.t('tip_explain')},
+    {'icon': Icons.lightbulb_outline_rounded, 'text': l.t('tip_concepts')},
+    {'icon': Icons.assignment_outlined,       'text': l.t('tip_help')},
+    {'icon': Icons.warning_amber_rounded,     'text': l.t('tip_mistakes')},
   ];
 
   void _send([String? override]) async {
@@ -209,11 +209,10 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
             child: Text(l.t('ask_ai'), style: TextStyle(fontSize: 13, color: C.teal, fontWeight: FontWeight.w600)),
           ),
           SizedBox(height: 28),
-          // Tip cards
+          // Tip cards — all teal
           ...tips.asMap().entries.map((entry) {
             final i = entry.key;
             final t = entry.value;
-            final color = t['color'] as Color;
             return TweenAnimationBuilder<double>(
               tween: Tween(begin: 0, end: 1),
               duration: Duration(milliseconds: 400 + i * 80),
@@ -227,18 +226,18 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
                   decoration: BoxDecoration(
                     color: isDark ? C.darkSurface : Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: color.withOpacity(0.15), width: 1.5),
-                    boxShadow: [BoxShadow(color: color.withOpacity(isDark ? 0.05 : 0.06), blurRadius: 12, offset: Offset(0, 3))],
+                    border: Border.all(color: C.teal.withOpacity(0.18), width: 1.5),
+                    boxShadow: [BoxShadow(color: C.teal.withOpacity(isDark ? 0.04 : 0.07), blurRadius: 12, offset: Offset(0, 3))],
                   ),
                   child: Row(children: [
                     Container(width: 38, height: 38,
-                      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(11)),
-                      child: Icon(t['icon'] as IconData, size: 18, color: color)),
+                      decoration: BoxDecoration(color: C.teal.withOpacity(0.10), borderRadius: BorderRadius.circular(11)),
+                      child: Icon(t['icon'] as IconData, size: 18, color: C.teal)),
                     SizedBox(width: 12),
                     Expanded(child: Text(t['text'] as String, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, height: 1.3))),
                     Container(width: 28, height: 28,
-                      decoration: BoxDecoration(color: color.withOpacity(0.08), borderRadius: BorderRadius.circular(8)),
-                      child: Icon(Icons.arrow_forward_rounded, size: 15, color: color)),
+                      decoration: BoxDecoration(color: C.teal.withOpacity(0.10), borderRadius: BorderRadius.circular(8)),
+                      child: Icon(Icons.arrow_forward_rounded, size: 15, color: C.teal)),
                   ]),
                 ),
               ),

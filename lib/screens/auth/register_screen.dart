@@ -37,9 +37,17 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
 
   @override void dispose() { _anim.dispose(); super.dispose(); }
 
+  // ФИО должно быть только кириллицей
+  bool get _nameIsCyrillic {
+    final n = _name.text.trim();
+    if (n.isEmpty) return true;
+    return RegExp(r'^[а-яА-ЯёЁ\s\-]+$').hasMatch(n);
+  }
+
   bool get _ok {
     final parts = _name.text.trim().split(' ').where((s) => s.isNotEmpty).toList();
     return parts.length >= 2 &&
+        _nameIsCyrillic &&
         RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(_email.text.trim()) &&
         _pw.text.length >= 6 &&
         _group.isNotEmpty;
@@ -135,12 +143,26 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                 TextField(
                   controller: _name,
                   decoration: InputDecoration(
-                    hintText: 'Иванов Иван',
+                    hintText: 'Иванов Иван Иванович',
                     prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
                       child: Icon(Icons.person_outline_rounded, size: 18, color: C.text4)),
                   ),
                   onChanged: (_) => setState(() {}),
                 ),
+                // Предупреждение если ФИО не на кириллице
+                if (_name.text.isNotEmpty && !_nameIsCyrillic)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 7),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(color: C.redLt, borderRadius: BorderRadius.circular(10)),
+                      child: const Row(children: [
+                        Icon(Icons.error_outline_rounded, size: 14, color: C.red),
+                        SizedBox(width: 7),
+                        Expanded(child: Text('ФИО должно быть на русском языке', style: TextStyle(fontSize: 12, color: C.red, fontWeight: FontWeight.w500))),
+                      ]),
+                    ),
+                  ),
                 const SizedBox(height: 14),
 
                 // Email

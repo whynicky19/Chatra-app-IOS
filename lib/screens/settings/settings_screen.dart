@@ -65,10 +65,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Text(auth.fullName.isNotEmpty ? auth.fullName : auth.email, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
               const SizedBox(height: 2),
               Text(_roleLabel(auth.role, l), style: const TextStyle(fontSize: 13, color: C.teal, fontWeight: FontWeight.w600)),
+              // Предупреждение если ФИО не на кириллице
+              if (auth.fullName.isNotEmpty && !_isCyrillicName(auth.fullName)) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFFBEB),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFFBBF24).withOpacity(0.5)),
+                  ),
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Icon(Icons.warning_amber_rounded, size: 16, color: Color(0xFFD97706)),
+                    const SizedBox(width: 8),
+                    const Expanded(child: Text(
+                      'Ваше ФИО указано не на русском языке. Пожалуйста, обновите его ниже.',
+                      style: TextStyle(fontSize: 12, color: Color(0xFF92400E), fontWeight: FontWeight.w500, height: 1.4),
+                    )),
+                  ]),
+                ),
+              ],
               const SizedBox(height: 18),
               _label(l.t('full_name')),
-              TextField(controller: _nameCtrl, decoration: const InputDecoration(
+              TextField(controller: _nameCtrl, onChanged: (_) => setState(() {}), decoration: const InputDecoration(
                 prefixIcon: Padding(padding: EdgeInsets.only(left: 4), child: Icon(Icons.person_outline, size: 18, color: C.text4)))),
+              // Ошибка валидации ФИО
+              if (_nameCtrl.text.isNotEmpty && !_isCyrillicName(_nameCtrl.text))
+                Padding(
+                  padding: const EdgeInsets.only(top: 7),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(color: C.redLt, borderRadius: BorderRadius.circular(10)),
+                    child: const Row(children: [
+                      Icon(Icons.error_outline_rounded, size: 14, color: C.red),
+                      SizedBox(width: 7),
+                      Expanded(child: Text('ФИО должно быть на русском языке', style: TextStyle(fontSize: 12, color: C.red, fontWeight: FontWeight.w500))),
+                    ]),
+                  ),
+                ),
               const SizedBox(height: 14),
               _label(l.t('email')),
               TextField(enabled: false, decoration: InputDecoration(
@@ -179,6 +213,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ])),
     );
+  }
+
+  bool _isCyrillicName(String name) {
+    if (name.trim().isEmpty) return true;
+    return RegExp(r'^[а-яА-ЯёЁ\s\-]+$').hasMatch(name.trim());
   }
 
   Widget _label(String s) => Padding(padding: const EdgeInsets.only(bottom: 7),

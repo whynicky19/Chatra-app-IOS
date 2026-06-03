@@ -85,7 +85,15 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(children: [
         _buildHeader(isDark, surface, l),
-        Expanded(child: _msgs.isEmpty ? _emptyState(isDark, l) : _messageList(isDark)),
+        Expanded(child: Container(
+          decoration: BoxDecoration(
+            gradient: isDark ? null : LinearGradient(
+              colors: [Color(0xFFEEF8FA), Color(0xFFF4F7F9)],
+              begin: Alignment.topCenter, end: Alignment.bottomCenter,
+            ),
+          ),
+          child: _msgs.isEmpty ? _emptyState(isDark, l) : _messageList(isDark),
+        )),
         _buildInput(surface, l),
       ]),
     );
@@ -267,10 +275,12 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
   }
 
   Widget _userMessage(String text, bool isLast) {
+    final now = DateTime.now();
+    final timeStr = '${now.hour.toString().padLeft(2,'0')}:${now.minute.toString().padLeft(2,'0')}';
     return Padding(
       padding: EdgeInsets.only(bottom: 16, left: 48),
-      child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-        Flexible(child: Container(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+        Container(
           padding: EdgeInsets.symmetric(horizontal: 18, vertical: 13),
           decoration: BoxDecoration(
             gradient: LinearGradient(colors: [C.teal, C.tealDk], begin: Alignment.topLeft, end: Alignment.bottomRight),
@@ -281,7 +291,13 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
             boxShadow: [BoxShadow(color: C.teal.withOpacity(0.28), blurRadius: 16, offset: Offset(0, 5))],
           ),
           child: Text(text, style: TextStyle(fontSize: 15, color: Colors.white, height: 1.5)),
-        )),
+        ),
+        SizedBox(height: 4),
+        Row(mainAxisSize: MainAxisSize.min, children: [
+          Text(timeStr, style: TextStyle(fontSize: 10, color: C.text4)),
+          SizedBox(width: 4),
+          Icon(Icons.done_all_rounded, size: 13, color: C.teal),
+        ]),
       ]),
     );
   }

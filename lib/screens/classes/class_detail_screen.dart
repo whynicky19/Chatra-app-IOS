@@ -160,7 +160,10 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
         ],
         body: Column(children: [
           Container(
-            color: surfaceColor,
+            decoration: BoxDecoration(
+              color: surfaceColor,
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.18 : 0.05), blurRadius: 8, offset: Offset(0, 2))],
+            ),
             child: Column(children: [
               TabBar(
                 controller: _tabCtrl,
@@ -169,8 +172,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 indicatorColor: C.teal,
                 indicatorWeight: 2.5,
                 indicatorSize: TabBarIndicatorSize.label,
-                labelPadding: EdgeInsets.symmetric(horizontal: 10),
-                labelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                labelPadding: EdgeInsets.symmetric(horizontal: 12),
+                labelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.2),
                 unselectedLabelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                 tabs: [
                   Tab(text: '${l.t('lectures')} (${_lectures.length})'),
@@ -182,25 +185,43 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               if (auth.isTeacher) AnimatedBuilder(animation: _tabCtrl, builder: (ctx, _) {
                 if (_tabCtrl.index == 3) return SizedBox.shrink();
                 return Padding(
-                padding: EdgeInsets.fromLTRB(12, 8, 12, 10),
-                child: Row(children: [
-                  Expanded(child: GestureDetector(onTap: () => _createAssignment(),
-                    child: Container(padding: EdgeInsets.symmetric(vertical: 10),
-                      decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: C.teal.withOpacity(0.3))),
-                      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        Icon(Icons.assignment_add, size: 16, color: C.teal), SizedBox(width: 6),
-                        Text(l.t('assignment'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: C.teal))])))),
-                  SizedBox(width: 10),
-                  Expanded(child: GestureDetector(onTap: () => _showAddMenu(),
-                    child: Container(padding: EdgeInsets.symmetric(vertical: 10),
-                      decoration: BoxDecoration(gradient: LinearGradient(colors: [C.teal, C.tealDk]), borderRadius: BorderRadius.circular(12),
-                        boxShadow: [BoxShadow(color: C.teal.withOpacity(0.3), blurRadius: 8, offset: Offset(0, 3))]),
-                      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        Icon(Icons.add, size: 16, color: Colors.white), SizedBox(width: 6),
-                        Text(l.t('add'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white))])))),
-                ]),
-              );
+                  padding: EdgeInsets.fromLTRB(12, 8, 12, 10),
+                  child: Row(children: [
+                    Expanded(child: GestureDetector(
+                      onTap: () => _createAssignment(),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(vertical: 11),
+                        decoration: BoxDecoration(
+                          color: adaptiveSurface2(context),
+                          borderRadius: BorderRadius.circular(13),
+                          border: Border.all(color: C.teal.withOpacity(0.28)),
+                        ),
+                        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                          Icon(Icons.assignment_add, size: 15, color: C.teal),
+                          SizedBox(width: 6),
+                          Text(l.t('assignment'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: C.teal)),
+                        ]),
+                      ),
+                    )),
+                    SizedBox(width: 10),
+                    Expanded(child: GestureDetector(
+                      onTap: () => _showAddMenu(),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(vertical: 11),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(colors: [C.teal, C.tealDk]),
+                          borderRadius: BorderRadius.circular(13),
+                          boxShadow: tealGlow(opacity: 0.28),
+                        ),
+                        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                          Icon(Icons.add_rounded, size: 16, color: Colors.white),
+                          SizedBox(width: 6),
+                          Text(l.t('add'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
+                        ]),
+                      ),
+                    )),
+                  ]),
+                );
               }),
             ]),
           ),
@@ -222,73 +243,104 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     final surface = Theme.of(context).colorScheme.surface;
     final isTeacher = context.read<AuthProvider>().isTeacher;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isLecture = type == 'lecture';
+    final accentColor = isLecture ? C.teal : const Color(0xFF6366F1);
+
     if (posts.isEmpty) return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-      Container(width: 72, height: 72, decoration: BoxDecoration(color: C.teal.withOpacity(0.1), shape: BoxShape.circle),
-        child: Icon(type == 'lecture' ? Icons.menu_book_rounded : Icons.inventory_2_outlined, size: 32, color: C.teal)),
-      SizedBox(height: 16),
-      Text(type == 'lecture' ? l.t('no_lectures') : l.t('no_materials'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: C.text4)),
+      Container(width: 80, height: 80,
+        decoration: BoxDecoration(gradient: RadialGradient(colors: [accentColor.withOpacity(0.18), accentColor.withOpacity(0.04)]), shape: BoxShape.circle),
+        child: Icon(isLecture ? Icons.menu_book_rounded : Icons.inventory_2_outlined, size: 36, color: accentColor)),
+      SizedBox(height: 18),
+      Text(isLecture ? l.t('no_lectures') : l.t('no_materials'),
+        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: adaptiveText1(context))),
+      SizedBox(height: 6),
+      Text(isTeacher ? 'Добавьте первый материал' : 'Здесь появятся материалы курса',
+        style: TextStyle(fontSize: 13, color: C.text4)),
     ]));
-    return ListView.builder(padding: EdgeInsets.fromLTRB(12, 12, 12, 90), itemCount: posts.length, itemBuilder: (ctx, i) {
-      final p = posts[i]; final files = _extractFiles(p);
+
+    return ListView.builder(padding: EdgeInsets.fromLTRB(14, 14, 14, 90), itemCount: posts.length, itemBuilder: (ctx, i) {
+      final p = posts[i];
+      final files = _extractFiles(p);
       final body = _preview(p);
       final num = posts.length - i;
+
       return TweenAnimationBuilder<double>(
         tween: Tween(begin: 0.0, end: 1.0),
-        duration: Duration(milliseconds: 250 + i * 50),
+        duration: Duration(milliseconds: 260 + i * 55),
         curve: Curves.easeOutCubic,
-        builder: (_, t, child) => Transform.translate(offset: Offset(0, 16 * (1 - t)), child: Opacity(opacity: t, child: child)),
+        builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 18 * (1 - t)), child: child)),
         child: GestureDetector(
-          onTap: () => _showPost(p, type),
+          onTap: () => _showPost(p, type, num),
           child: Container(
             margin: EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: surface,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.15 : 0.05), blurRadius: 12, offset: Offset(0, 3))],
-            ),
+            decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(20), boxShadow: cardShadow(isDark)),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Padding(padding: EdgeInsets.all(16), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Container(width: 52, height: 52,
-                  decoration: BoxDecoration(gradient: LinearGradient(colors: [C.teal.withOpacity(0.15), C.teal.withOpacity(0.05)]), borderRadius: BorderRadius.circular(16)),
-                  child: Stack(alignment: Alignment.center, children: [
-                    Icon(Icons.menu_book_rounded, color: C.teal, size: 22),
-                    Positioned(bottom: 4, right: 4, child: Container(width: 18, height: 18,
-                      decoration: BoxDecoration(color: C.teal, shape: BoxShape.circle),
-                      child: Center(child: Text('$num', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900))))),
+              Padding(padding: EdgeInsets.fromLTRB(16, 16, 14, 14), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                // Icon with number
+                Container(width: 54, height: 54,
+                  decoration: BoxDecoration(
+                    color: accentColor.withOpacity(0.10),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: accentColor.withOpacity(0.18)),
+                  ),
+                  child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Icon(isLecture ? Icons.menu_book_rounded : Icons.inventory_2_outlined, color: accentColor, size: 20),
+                    SizedBox(height: 2),
+                    Text('$num', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: accentColor, height: 1)),
                   ])),
                 SizedBox(width: 14),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('${type == 'lecture' ? 'Лекция' : 'Материал'} $num',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.teal, letterSpacing: 0.5)),
-                  SizedBox(height: 3),
-                  Text(_clean(p['title'] ?? ''), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, height: 1.2), maxLines: 2, overflow: TextOverflow.ellipsis),
-                  if (body.isNotEmpty) Padding(padding: EdgeInsets.only(top: 4),
-                    child: Text(body, style: TextStyle(fontSize: 13, color: C.text4, height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis)),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(color: accentColor.withOpacity(0.08), borderRadius: BorderRadius.circular(6)),
+                    child: Text('${isLecture ? 'ЛЕКЦИЯ' : 'МАТЕРИАЛ'} $num',
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: accentColor, letterSpacing: 0.6)),
+                  ),
+                  SizedBox(height: 6),
+                  Text(_clean(p['title'] ?? ''),
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, height: 1.25, color: adaptiveText1(context)),
+                    maxLines: 2, overflow: TextOverflow.ellipsis),
+                  if (body.isNotEmpty) Padding(padding: EdgeInsets.only(top: 5),
+                    child: Text(body, style: TextStyle(fontSize: 13, color: C.text4, height: 1.45), maxLines: 2, overflow: TextOverflow.ellipsis)),
                 ])),
-                if (isTeacher) Column(children: [
+                if (isTeacher) Column(mainAxisSize: MainAxisSize.min, children: [
                   _iconBtn(Icons.edit_outlined, () => _editPost(p)),
                   SizedBox(height: 4),
                   _iconBtn(Icons.delete_outline, () async { try { await context.read<ApiService>().deletePost(p['id']); _load(); } catch (_) {} }),
                 ]),
               ])),
+              // Footer
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(color: adaptiveSurface2(context).withOpacity(0.5), borderRadius: BorderRadius.vertical(bottom: Radius.circular(20))),
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                decoration: BoxDecoration(
+                  color: adaptiveSurface2(context).withOpacity(0.55),
+                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+                ),
                 child: Row(children: [
-                  Icon(Icons.calendar_today_outlined, size: 12, color: C.text4), SizedBox(width: 4),
+                  Icon(Icons.access_time_rounded, size: 12, color: C.text4),
+                  SizedBox(width: 4),
                   Text(_fmtDate(p['created_at'] ?? ''), style: TextStyle(fontSize: 12, color: C.text4)),
                   if (files.isNotEmpty) ...[
-                    SizedBox(width: 10),
-                    Container(padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(color: C.teal.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.attach_file, size: 11, color: C.teal), SizedBox(width: 3),
-                        Text('${files.length} файл', style: TextStyle(fontSize: 11, color: C.teal, fontWeight: FontWeight.w600))])),
+                    SizedBox(width: 8),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(color: accentColor.withOpacity(0.10), borderRadius: BorderRadius.circular(6)),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(Icons.attach_file_rounded, size: 10, color: accentColor),
+                        SizedBox(width: 3),
+                        Text('${files.length}', style: TextStyle(fontSize: 11, color: accentColor, fontWeight: FontWeight.w700)),
+                      ])),
                   ],
                   Spacer(),
-                  Row(children: [
-                    Text(l.t('open'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: C.teal)),
-                    SizedBox(width: 4), Icon(Icons.arrow_forward_ios, size: 12, color: C.teal),
-                  ]),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(color: accentColor.withOpacity(0.10), borderRadius: BorderRadius.circular(8)),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Text(l.t('open'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: accentColor)),
+                      SizedBox(width: 3),
+                      Icon(Icons.arrow_forward_rounded, size: 12, color: accentColor),
+                    ]),
+                  ),
                 ]),
               ),
             ]),
@@ -512,11 +564,15 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           child: Row(children: [Icon(Icons.sort_rounded, size: 14, color: C.text4), SizedBox(width: 4), Text(l.t('sort_deadline'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: C.text4))])),
       ]),
       SizedBox(height: 12),
-      if (_assignments.isEmpty) Container(padding: EdgeInsets.symmetric(vertical: 48), child: Center(child: Column(children: [
-        Container(width: 64, height: 64, decoration: BoxDecoration(color: C.teal.withOpacity(0.1), shape: BoxShape.circle),
-          child: Icon(Icons.assignment_outlined, size: 30, color: C.teal)),
-        SizedBox(height: 12),
-        Text(l.t('no_assignments'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: C.text4)),
+      if (_assignments.isEmpty) Container(padding: EdgeInsets.symmetric(vertical: 52), child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Container(width: 80, height: 80,
+          decoration: BoxDecoration(gradient: RadialGradient(colors: [C.teal.withOpacity(0.16), C.teal.withOpacity(0.04)]), shape: BoxShape.circle),
+          child: Icon(Icons.assignment_outlined, size: 36, color: C.teal)),
+        SizedBox(height: 18),
+        Text(l.t('no_assignments'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: adaptiveText1(context))),
+        SizedBox(height: 6),
+        Text(auth.isTeacher ? 'Создайте первое задание' : 'Заданий пока нет',
+          style: TextStyle(fontSize: 13, color: C.text4)),
       ]))),
       // Assignment cards
       ..._assignments.asMap().entries.map((entry) {
@@ -547,7 +603,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               decoration: BoxDecoration(
                 color: surface,
                 borderRadius: BorderRadius.circular(18),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.15 : 0.04), blurRadius: 10, offset: Offset(0, 2))],
+                boxShadow: cardShadow(isDark),
               ),
               child: Column(children: [
                 Padding(padding: EdgeInsets.all(16), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -584,13 +640,27 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   ])),
                 ])),
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  decoration: BoxDecoration(color: adaptiveSurface2(context).withOpacity(0.4), borderRadius: BorderRadius.vertical(bottom: Radius.circular(18))),
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                  decoration: BoxDecoration(
+                    color: adaptiveSurface2(context).withOpacity(0.45),
+                    borderRadius: BorderRadius.vertical(bottom: Radius.circular(18)),
+                  ),
                   child: Row(children: [
-                    Icon(Icons.touch_app_outlined, size: 13, color: C.text4), SizedBox(width: 4),
-                    Text(l.t('tap_details'), style: TextStyle(fontSize: 12, color: C.text4)),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(color: statusColor.withOpacity(0.10), borderRadius: BorderRadius.circular(8)),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(statusIcon, size: 12, color: statusColor),
+                        SizedBox(width: 4),
+                        Text(statusText, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: statusColor)),
+                      ]),
+                    ),
                     Spacer(),
-                    Icon(Icons.arrow_forward_ios, size: 12, color: C.teal),
+                    Row(children: [
+                      Text('Открыть', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: C.teal)),
+                      SizedBox(width: 3),
+                      Icon(Icons.arrow_forward_rounded, size: 13, color: C.teal),
+                    ]),
                   ]),
                 ),
               ]),
@@ -660,40 +730,224 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   );
 
   // ── Show post detail ──
-  void _showPost(dynamic p, String type) {
-    String content = ''; try { final b = jsonDecode(p['body']); content = b['content'] ?? b['description'] ?? ''; } catch (_) { content = p['body'] ?? ''; }
-    final files = _extractFiles(p);
+  void _showPost(dynamic p, String type, int num) {
+    String content = '';
+    try { final b = jsonDecode(p['body']); content = b['content'] ?? b['description'] ?? ''; }
+    catch (_) { content = p['body'] ?? ''; }
+    final files    = _extractFiles(p);
     final cleanText = _cleanContent(content);
-    showModalBottomSheet(context: context, isScrollControlled: true, shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => DraggableScrollableSheet(expand: false, initialChildSize: 0.7, maxChildSize: 0.95, builder: (ctx, sc) => ListView(controller: sc, padding: EdgeInsets.all(20), children: [
-        Center(child: Container(width: 40, height: 4, margin: EdgeInsets.only(bottom: 16), decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2)))),
-        Text(_clean(p['title'] ?? ''), style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
-        SizedBox(height: 6), Text(_fmtDate(p['created_at'] ?? ''), style: TextStyle(fontSize: 12, color: C.text4)),
-        if (cleanText.isNotEmpty) ...[SizedBox(height: 16), Text(cleanText, style: TextStyle(fontSize: 14, height: 1.7))],
-        if (files.isNotEmpty) ...[SizedBox(height: 16), Text('Прикреплённые файлы', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: C.text3)), SizedBox(height: 8),
-          ...files.map((f) {
-            final name = Uri.parse(f).pathSegments.last;
-            final ext = name.split('.').last.toLowerCase();
-            final icon = ext == 'pdf' ? Icons.picture_as_pdf : ext == 'pptx' || ext == 'ppt' ? Icons.slideshow : ext == 'doc' || ext == 'docx' ? Icons.description : ext == 'xlsx' || ext == 'xls' ? Icons.table_chart : Icons.insert_drive_file;
-            return GestureDetector(
-              onTap: () async {
-                final uri = Uri.parse(f);
-                try { await launchUrl(uri, mode: LaunchMode.inAppBrowserView); } catch (_) {}
-              },
-              child: Container(margin: EdgeInsets.only(bottom: 8), padding: EdgeInsets.all(14), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12), border: Border.all(color: adaptiveBorder(context))),
-                child: Row(children: [
-                  Container(width: 40, height: 40, decoration: BoxDecoration(color: adaptiveTealLt(context), borderRadius: BorderRadius.circular(10)),
-                    child: Icon(icon, size: 20, color: C.teal)),
-                  SizedBox(width: 12),
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(name, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis),
-                    Text(ext.toUpperCase(), style: TextStyle(fontSize: 11, color: C.text4)),
-                  ])),
-                  Icon(Icons.open_in_new_rounded, size: 16, color: C.teal),
-                ])));
-          }),
-        ],
-      ])));
+    final isLecture = type == 'lecture';
+    final accent    = isLecture ? C.teal : const Color(0xFF6366F1);
+    final isDark    = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.75,
+        maxChildSize: 0.96,
+        minChildSize: 0.4,
+        builder: (ctx, sc) => Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(children: [
+            // ── Colored header strip ──────────────────────
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: isLecture
+                      ? [const Color(0xFF006475), C.teal]
+                      : [const Color(0xFF3730A3), const Color(0xFF6366F1)],
+                  begin: Alignment.topLeft, end: Alignment.bottomRight,
+                ),
+              ),
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                // Handle + close row
+                Row(children: [
+                  Expanded(child: Center(child: Container(
+                    width: 36, height: 4,
+                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.35), borderRadius: BorderRadius.circular(2)),
+                  ))),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(ctx),
+                    child: Container(
+                      width: 30, height: 30,
+                      decoration: BoxDecoration(color: Colors.black.withOpacity(0.18), shape: BoxShape.circle),
+                      child: const Icon(Icons.close_rounded, color: Colors.white, size: 16),
+                    ),
+                  ),
+                ]),
+                const SizedBox(height: 14),
+                // Type badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.22), borderRadius: BorderRadius.circular(8)),
+                  child: Text(
+                    '${isLecture ? 'ЛЕКЦИЯ' : 'МАТЕРИАЛ'} $num',
+                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 1.0),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // Title
+                Text(
+                  _clean(p['title'] ?? ''),
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white, height: 1.25, letterSpacing: -0.3),
+                  maxLines: 3, overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 12),
+                // Meta row
+                Row(children: [
+                  Icon(Icons.calendar_today_outlined, size: 12, color: Colors.white60),
+                  const SizedBox(width: 5),
+                  Text(_fmtDate(p['created_at'] ?? ''), style: const TextStyle(fontSize: 12, color: Colors.white60, fontWeight: FontWeight.w500)),
+                  if (files.isNotEmpty) ...[
+                    const SizedBox(width: 12),
+                    Container(width: 4, height: 4, decoration: BoxDecoration(color: Colors.white30, shape: BoxShape.circle)),
+                    const SizedBox(width: 12),
+                    Icon(Icons.attach_file_rounded, size: 12, color: Colors.white60),
+                    const SizedBox(width: 4),
+                    Text('${files.length} ${files.length == 1 ? 'файл' : 'файла'}', style: const TextStyle(fontSize: 12, color: Colors.white60, fontWeight: FontWeight.w500)),
+                  ],
+                ]),
+              ]),
+            ),
+
+            // ── Scrollable content ────────────────────────
+            Expanded(child: ListView(
+              controller: sc,
+              padding: const EdgeInsets.fromLTRB(20, 22, 20, 32),
+              children: [
+                // Content text
+                if (cleanText.isNotEmpty) ...[
+                  Row(children: [
+                    Container(width: 3, height: 18, decoration: BoxDecoration(color: accent, borderRadius: BorderRadius.circular(2))),
+                    const SizedBox(width: 10),
+                    Text('Содержание', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: accent, letterSpacing: 0.3)),
+                  ]),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isDark ? C.darkSurface2 : C.bg,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: accent.withOpacity(0.1)),
+                    ),
+                    child: Text(cleanText, style: const TextStyle(fontSize: 15, height: 1.75, letterSpacing: 0.1)),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
+                // Files
+                if (files.isNotEmpty) ...[
+                  Row(children: [
+                    Container(width: 3, height: 18, decoration: BoxDecoration(color: accent, borderRadius: BorderRadius.circular(2))),
+                    const SizedBox(width: 10),
+                    Text('Прикреплённые файлы', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: accent, letterSpacing: 0.3)),
+                  ]),
+                  const SizedBox(height: 12),
+                  ...files.asMap().entries.map((entry) {
+                    final i = entry.key; final f = entry.value;
+                    final name = Uri.parse(f).pathSegments.last;
+                    final ext  = name.split('.').last.toLowerCase();
+
+                    // File type config
+                    final fileConfig = _fileTypeConfig(ext);
+                    final fileIcon  = fileConfig['icon'] as IconData;
+                    final fileColor = fileConfig['color'] as Color;
+                    final fileBg    = fileConfig['bg'] as Color;
+
+                    return TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0.0, end: 1.0),
+                      duration: Duration(milliseconds: 250 + i * 60),
+                      curve: Curves.easeOutCubic,
+                      builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 8*(1-t)), child: child)),
+                      child: GestureDetector(
+                        onTap: () async {
+                          try { await launchUrl(Uri.parse(f), mode: LaunchMode.inAppBrowserView); } catch (_) {}
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: isDark ? C.darkSurface2 : Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: fileColor.withOpacity(0.18)),
+                            boxShadow: [BoxShadow(color: fileColor.withOpacity(isDark ? 0.04 : 0.07), blurRadius: 10, offset: const Offset(0, 3))],
+                          ),
+                          child: Row(children: [
+                            // File type badge
+                            Container(
+                              width: 46, height: 46,
+                              decoration: BoxDecoration(color: fileBg, borderRadius: BorderRadius.circular(12)),
+                              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                                Icon(fileIcon, size: 20, color: fileColor),
+                                const SizedBox(height: 1),
+                                Text(ext.toUpperCase(), style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: fileColor, letterSpacing: 0.5)),
+                              ]),
+                            ),
+                            const SizedBox(width: 13),
+                            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              Text(name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, height: 1.2), overflow: TextOverflow.ellipsis, maxLines: 1),
+                              const SizedBox(height: 3),
+                              Text('Нажмите для открытия', style: TextStyle(fontSize: 11, color: C.text4)),
+                            ])),
+                            Container(
+                              width: 34, height: 34,
+                              decoration: BoxDecoration(color: fileColor.withOpacity(0.10), borderRadius: BorderRadius.circular(10)),
+                              child: Icon(Icons.open_in_new_rounded, size: 16, color: fileColor),
+                            ),
+                          ]),
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+
+                // Empty — no content and no files
+                if (cleanText.isEmpty && files.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40),
+                    child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      Container(width: 64, height: 64,
+                        decoration: BoxDecoration(color: accent.withOpacity(0.08), shape: BoxShape.circle),
+                        child: Icon(isLecture ? Icons.menu_book_rounded : Icons.inventory_2_outlined, size: 30, color: accent)),
+                      const SizedBox(height: 14),
+                      const Text('Содержимое ещё не добавлено', style: TextStyle(fontSize: 14, color: C.text4, fontWeight: FontWeight.w500)),
+                    ])),
+                  ),
+              ],
+            )),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Map<String, dynamic> _fileTypeConfig(String ext) {
+    switch (ext) {
+      case 'pdf':
+        return {'icon': Icons.picture_as_pdf_rounded, 'color': const Color(0xFFE53E3E), 'bg': const Color(0xFFFFF5F5)};
+      case 'pptx': case 'ppt':
+        return {'icon': Icons.slideshow_rounded,       'color': const Color(0xFFDD6B20), 'bg': const Color(0xFFFFFAF0)};
+      case 'doc': case 'docx':
+        return {'icon': Icons.description_rounded,    'color': const Color(0xFF2B6CB0), 'bg': const Color(0xFFEBF8FF)};
+      case 'xlsx': case 'xls':
+        return {'icon': Icons.table_chart_rounded,    'color': const Color(0xFF276749), 'bg': const Color(0xFFF0FFF4)};
+      case 'txt': case 'md':
+        return {'icon': Icons.text_snippet_rounded,   'color': const Color(0xFF553C9A), 'bg': const Color(0xFFFAF5FF)};
+      case 'jpg': case 'jpeg': case 'png': case 'gif': case 'webp':
+        return {'icon': Icons.image_rounded,          'color': const Color(0xFF0C4A6E), 'bg': const Color(0xFFE0F2FE)};
+      case 'mp4': case 'mov': case 'avi':
+        return {'icon': Icons.play_circle_rounded,    'color': const Color(0xFF6B21A8), 'bg': const Color(0xFFF5F3FF)};
+      default:
+        return {'icon': Icons.insert_drive_file_rounded, 'color': C.text4,             'bg': C.surface2};
+    }
   }
 
   // ── Show assignment detail ──
@@ -730,23 +984,51 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           final fromDesc = a['description'] != null ? _extractFilesFromText(a['description'].toString()) : <String>[];
           final allFiles = {...fromField, ...fromDesc}.toList();
           if (allFiles.isEmpty) return <Widget>[];
+          final isDark = Theme.of(context).brightness == Brightness.dark;
           return [
             SizedBox(height: 16),
-            Text('Прикреплённые файлы', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: C.text3)),
-            SizedBox(height: 8),
-            ...allFiles.map((f) {
+            Row(children: [
+              Container(width: 3, height: 16, decoration: BoxDecoration(color: Color(0xFFF59E0B), borderRadius: BorderRadius.circular(2))),
+              SizedBox(width: 8),
+              Text('Прикреплённые файлы', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFFF59E0B), letterSpacing: 0.3)),
+            ]),
+            SizedBox(height: 10),
+            ...allFiles.asMap().entries.map((entry) {
+              final i = entry.key; final f = entry.value;
               final name = Uri.parse(f).pathSegments.last;
               final ext = name.split('.').last.toLowerCase();
-              final icon = ext == 'pdf' ? Icons.picture_as_pdf : ext == 'pptx' || ext == 'ppt' ? Icons.slideshow : ext == 'doc' || ext == 'docx' ? Icons.description : Icons.insert_drive_file;
+              final fc = _fileTypeConfig(ext);
+              final fileIcon = fc['icon'] as IconData;
+              final fileColor = fc['color'] as Color;
+              final fileBg = fc['bg'] as Color;
               return GestureDetector(
-                onTap: () async { final uri = Uri.parse(f); try { await launchUrl(uri, mode: LaunchMode.inAppBrowserView); } catch (_) {} },
-                child: Container(margin: EdgeInsets.only(bottom: 8), padding: EdgeInsets.all(12), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12), border: Border.all(color: adaptiveBorder(context))),
+                onTap: () async { try { await launchUrl(Uri.parse(f), mode: LaunchMode.inAppBrowserView); } catch (_) {} },
+                child: Container(
+                  margin: EdgeInsets.only(bottom: 8),
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark ? C.darkSurface2 : Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: fileColor.withOpacity(0.2)),
+                    boxShadow: [BoxShadow(color: fileColor.withOpacity(0.06), blurRadius: 8, offset: Offset(0, 2))],
+                  ),
                   child: Row(children: [
-                    Container(width: 36, height: 36, decoration: BoxDecoration(color: adaptiveTealLt(context), borderRadius: BorderRadius.circular(10)), child: Icon(icon, size: 18, color: C.teal)),
-                    SizedBox(width: 10),
-                    Expanded(child: Text(name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis)),
-                    Icon(Icons.open_in_new_rounded, size: 14, color: C.teal),
-                  ])));
+                    Container(width: 42, height: 42, decoration: BoxDecoration(color: fileBg, borderRadius: BorderRadius.circular(11)),
+                      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                        Icon(fileIcon, size: 18, color: fileColor),
+                        SizedBox(height: 1),
+                        Text(ext.toUpperCase(), style: TextStyle(fontSize: 7, fontWeight: FontWeight.w900, color: fileColor)),
+                      ])),
+                    SizedBox(width: 11),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700), overflow: TextOverflow.ellipsis),
+                      Text('Нажмите для открытия', style: TextStyle(fontSize: 11, color: C.text4)),
+                    ])),
+                    Container(width: 32, height: 32, decoration: BoxDecoration(color: fileColor.withOpacity(0.1), borderRadius: BorderRadius.circular(9)),
+                      child: Icon(Icons.open_in_new_rounded, size: 15, color: fileColor)),
+                  ]),
+                ),
+              );
             }),
           ];
         }(),
@@ -995,8 +1277,48 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             child: busy ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : Text('Отправить'),
           )),
         ],
-        // Teacher: view submissions
-        if (isTeacherOrAdmin) ...[SizedBox(height: 16), SizedBox(width: double.infinity, height: 48, child: ElevatedButton.icon(icon: Icon(Icons.list_alt, size: 18), label: Text('Просмотр работ'), onPressed: () => _viewSubs(a['id'])))],
+        // Teacher: edit / delete / view submissions
+        if (isTeacherOrAdmin) ...[
+          SizedBox(height: 20),
+          Divider(height: 1, color: adaptiveBorder(context)),
+          SizedBox(height: 16),
+          Row(children: [
+            Expanded(child: OutlinedButton.icon(
+              icon: Icon(Icons.edit_outlined, size: 16),
+              label: Text('Редактировать'),
+              onPressed: () { Navigator.pop(ctx); _editAssignment(a); },
+              style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 12)),
+            )),
+            SizedBox(width: 10),
+            OutlinedButton(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                final ok = await showDialog<bool>(context: context, builder: (d) => AlertDialog(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  title: Text('Удалить задание?', style: TextStyle(fontWeight: FontWeight.w800)),
+                  content: Text('Это действие нельзя отменить', style: TextStyle(color: C.text4)),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(d, false), child: Text('Отмена')),
+                    ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: C.red), onPressed: () => Navigator.pop(d, true), child: Text('Удалить')),
+                  ],
+                ));
+                if (ok == true) {
+                  try { await context.read<ApiService>().deleteAssignment(a['id']); _loadAssignments(); showToast(context, 'Задание удалено'); }
+                  catch (_) { showToast(context, 'Ошибка', error: true); }
+                }
+              },
+              style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12), side: BorderSide(color: C.red.withOpacity(0.5))),
+              child: Icon(Icons.delete_outline_rounded, size: 18, color: C.red),
+            ),
+          ]),
+          SizedBox(height: 10),
+          SizedBox(width: double.infinity, height: 48, child: ElevatedButton.icon(
+            icon: Icon(Icons.list_alt, size: 18),
+            label: Text('Просмотр работ'),
+            onPressed: () => _viewSubs(a['id']),
+            style: ElevatedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 12)),
+          )),
+        ],
         SizedBox(height: 24),
       ]))));
   }
@@ -1582,7 +1904,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   @override void dispose() { _tabCtrl.dispose(); super.dispose(); }
 }
 
-// ── AI Chat widget ──
+// ── AI Chat widget (inside class) ──────────────────────────
 class _AiChat extends StatefulWidget {
   final int classId;
   final String className;
@@ -1591,23 +1913,48 @@ class _AiChat extends StatefulWidget {
   const _AiChat({required this.classId, required this.className, this.lectureContext = '', this.lectureImageUrls = const []});
   @override State<_AiChat> createState() => _AiChatState();
 }
-class _AiChatState extends State<_AiChat> {
-  final _ctrl = TextEditingController(), _scroll = ScrollController();
+
+class _AiChatState extends State<_AiChat> with TickerProviderStateMixin {
+  final _ctrl   = TextEditingController();
+  final _scroll = ScrollController();
   final List<Map<String, String>> _msgs = [];
   bool _loading = false;
+  late final AnimationController _pulseCtrl;
+  late final AnimationController _fadeCtrl;
 
-  final _tips = ['Объясни материал', 'Ключевые понятия', 'Помощь с заданием', 'Частые ошибки'];
+  static const _tips = [
+    {'icon': Icons.menu_book_rounded,        'text': 'Объясни материал',   'color': C.teal},
+    {'icon': Icons.lightbulb_outline_rounded,'text': 'Ключевые понятия',   'color': Color(0xFF6366F1)},
+    {'icon': Icons.assignment_outlined,      'text': 'Помощь с заданием',  'color': Color(0xFFF59E0B)},
+    {'icon': Icons.warning_amber_rounded,    'text': 'Частые ошибки',      'color': Color(0xFFEC4899)},
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat(reverse: true);
+    _fadeCtrl  = AnimationController(vsync: this, duration: const Duration(milliseconds: 600))..forward();
+  }
+
+  @override
+  void dispose() { _pulseCtrl.dispose(); _fadeCtrl.dispose(); _ctrl.dispose(); _scroll.dispose(); super.dispose(); }
+
+  void _scrollDown() {
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (_scroll.hasClients) _scroll.animateTo(_scroll.position.maxScrollExtent, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+    });
+  }
 
   void _send([String? override]) async {
-    final text = override ?? _ctrl.text.trim(); if (text.isEmpty || _loading) return;
-    setState(() { _msgs.add({'role': 'user', 'text': text}); _loading = true; }); _ctrl.clear();
-    Future.delayed(Duration(milliseconds: 100), () { if (_scroll.hasClients) _scroll.animateTo(_scroll.position.maxScrollExtent, duration: Duration(milliseconds: 200), curve: Curves.easeOut); });
+    final text = override ?? _ctrl.text.trim();
+    if (text.isEmpty || _loading) return;
+    setState(() { _msgs.add({'role': 'user', 'text': text}); _loading = true; });
+    _ctrl.clear();
+    _scrollDown();
     try {
       final api = context.read<ApiService>();
       final lectureBlock = widget.lectureContext.isNotEmpty
-          ? '\n\nМАТЕРИАЛЫ КУРСА (используй эти знания при ответах):\n${widget.lectureContext}'
-          : '';
-      // Vision block for image files attached to lectures (gpt-4o-mini supports vision)
+          ? '\n\nМАТЕРИАЛЫ КУРСА (используй эти знания при ответах):\n${widget.lectureContext}' : '';
       final imgs = widget.lectureImageUrls;
       final List<Map<String, dynamic>> visionPre = imgs.isNotEmpty ? [
         {'role': 'user', 'content': [
@@ -1623,80 +1970,252 @@ class _AiChatState extends State<_AiChat> {
       ];
       final data = await api.aiChat(apiMsgs, classId: widget.classId);
       setState(() => _msgs.add({'role': 'assistant', 'text': data['content'] ?? 'Нет ответа'}));
-    } catch (_) { setState(() => _msgs.add({'role': 'assistant', 'text': 'Ошибка соединения'})); }
-    if (mounted) setState(() => _loading = false);
+    } catch (_) {
+      setState(() => _msgs.add({'role': 'assistant', 'text': 'Ошибка соединения'}));
+    }
+    if (mounted) { setState(() => _loading = false); _scrollDown(); }
   }
 
-  @override Widget build(BuildContext context) {
+  @override
+  Widget build(BuildContext context) {
     final surface = Theme.of(context).colorScheme.surface;
+    final isDark  = Theme.of(context).brightness == Brightness.dark;
+    final hasText = _ctrl.text.trim().isNotEmpty;
+
     return Column(children: [
-      Expanded(child: _msgs.isEmpty
-        ? Center(child: SingleChildScrollView(padding: EdgeInsets.all(20), child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Container(width: 70, height: 70, decoration: BoxDecoration(color: C.teal.withOpacity(0.1), shape: BoxShape.circle),
-              child: Icon(Icons.bolt, color: C.teal, size: 34)),
-            SizedBox(height: 16),
-            Text('Готов помочь!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
-            SizedBox(height: 6),
-            Text('Спрашивайте по материалам курса', style: TextStyle(fontSize: 13, color: C.teal)),
-            SizedBox(height: 20),
-            Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 8, children: _tips.map((t) => GestureDetector(
-              onTap: () => _send(t),
-              child: Container(padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: adaptiveBorder(context))),
-                child: Text(t, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500))))).toList()),
-          ])))
-        : ListView.builder(controller: _scroll, padding: EdgeInsets.fromLTRB(14, 12, 14, 8), itemCount: _msgs.length + (_loading ? 1 : 0), itemBuilder: (ctx, i) {
-            if (i == _msgs.length) return Padding(padding: EdgeInsets.only(bottom: 8), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Container(width: 28, height: 28, decoration: BoxDecoration(color: C.teal.withOpacity(0.12), borderRadius: BorderRadius.circular(8)), child: Icon(Icons.auto_awesome, size: 14, color: C.teal)),
-              SizedBox(width: 10),
-              Container(padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(14)),
-                child: SizedBox(width: 40, height: 16, child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: C.teal)))),
-            ]));
-            final m = _msgs[i]; final isU = m['role'] == 'user';
-            if (isU) return Padding(padding: EdgeInsets.only(bottom: 14), child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-              Flexible(child: Container(padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(gradient: LinearGradient(colors: [C.teal, C.tealDk]), borderRadius: BorderRadius.only(topLeft: Radius.circular(18), topRight: Radius.circular(18), bottomLeft: Radius.circular(18), bottomRight: Radius.circular(4)),
-                  boxShadow: [BoxShadow(color: C.teal.withOpacity(0.2), blurRadius: 10, offset: Offset(0, 3))]),
-                child: Text(m['text'] ?? '', style: TextStyle(fontSize: 14, color: Colors.white, height: 1.5))))]));
-            return Padding(padding: EdgeInsets.only(bottom: 14), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Container(width: 28, height: 28, margin: EdgeInsets.only(top: 2), decoration: BoxDecoration(color: C.teal.withOpacity(0.12), borderRadius: BorderRadius.circular(8)), child: Icon(Icons.auto_awesome, size: 14, color: C.teal)),
-              SizedBox(width: 10),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('AI', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.teal)),
-                SizedBox(height: 3),
-                SelectableText(m['text'] ?? '', style: TextStyle(fontSize: 14, height: 1.6)),
-              ])),
-            ]));
-          })),
-      // Input
+      // Messages / empty state
+      Expanded(child: _msgs.isEmpty ? _emptyState(isDark) : _messageList(isDark, surface)),
+
+      // Input bar
       Container(
-        padding: EdgeInsets.fromLTRB(12, 8, 12, MediaQuery.of(context).padding.bottom + 8),
-        decoration: BoxDecoration(color: surface, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: Offset(0, -2))]),
-        child: Row(children: [
-          Expanded(child: Container(decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(22)),
+        padding: EdgeInsets.fromLTRB(12, 9, 12, MediaQuery.of(context).padding.bottom + 9),
+        decoration: BoxDecoration(
+          color: surface,
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.18 : 0.05), blurRadius: 12, offset: Offset(0, -2))],
+        ),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Expanded(child: Container(
+            decoration: BoxDecoration(
+              color: adaptiveSurface2(context),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: hasText ? C.teal.withOpacity(0.28) : Colors.transparent, width: 1.5),
+            ),
             child: TextField(
               controller: _ctrl,
-              decoration: InputDecoration(hintText: 'Спросите...', border: InputBorder.none, enabledBorder: InputBorder.none, focusedBorder: InputBorder.none, filled: false, contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10)),
+              decoration: InputDecoration(
+                hintText: 'Спросите об этом курсе...',
+                hintStyle: TextStyle(fontSize: 14, color: C.text4),
+                border: InputBorder.none, enabledBorder: InputBorder.none, focusedBorder: InputBorder.none,
+                filled: false, contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+              ),
               onSubmitted: (_) => _send(),
-              maxLines: 4,
-              minLines: 1,
-              onChanged: (_) {
-                if (_scroll.hasClients) {
-                  final pos = _scroll.position;
-                  if (pos.pixels >= pos.maxScrollExtent - 120) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (_scroll.hasClients) _scroll.jumpTo(_scroll.position.maxScrollExtent);
-                    });
-                  }
-                }
-              },
-            ))),
+              maxLines: 4, minLines: 1,
+              onChanged: (_) => setState(() {}),
+            ),
+          )),
           SizedBox(width: 8),
-          GestureDetector(onTap: _send, child: Container(width: 44, height: 44,
-            decoration: BoxDecoration(gradient: LinearGradient(colors: [C.teal, C.tealDk]), borderRadius: BorderRadius.circular(14),
-              boxShadow: [BoxShadow(color: C.teal.withOpacity(0.3), blurRadius: 8, offset: Offset(0, 3))]),
-            child: Icon(Icons.send_rounded, color: Colors.white, size: 20))),
-        ])),
+          AnimatedContainer(
+            duration: Duration(milliseconds: 200),
+            curve: Curves.easeOutBack,
+            width: 44, height: 44,
+            decoration: BoxDecoration(
+              gradient: hasText && !_loading ? LinearGradient(colors: [C.teal, C.tealDk], begin: Alignment.topLeft, end: Alignment.bottomRight) : null,
+              color: hasText || _loading ? null : adaptiveSurface2(context),
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: hasText && !_loading ? tealGlow(opacity: 0.36) : null,
+            ),
+            child: GestureDetector(
+              onTap: _send,
+              child: _loading
+                  ? Center(child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: C.teal)))
+                  : Icon(Icons.arrow_upward_rounded, color: hasText ? Colors.white : C.text4, size: 20),
+            ),
+          ),
+        ]),
+      ),
     ]);
   }
+
+  Widget _emptyState(bool isDark) {
+    final shortName = widget.className.length > 22 ? '${widget.className.substring(0, 22)}…' : widget.className;
+    return FadeTransition(
+      opacity: _fadeCtrl,
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(20, 28, 20, 16),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          // Logo with pulse
+          AnimatedBuilder(animation: _pulseCtrl, builder: (_, __) {
+            final v = _pulseCtrl.value;
+            return Stack(alignment: Alignment.center, children: [
+              Container(width: 100, height: 100, decoration: BoxDecoration(shape: BoxShape.circle, color: C.teal.withOpacity(0.04 + v * 0.04))),
+              Container(width: 76, height: 76, decoration: BoxDecoration(shape: BoxShape.circle, color: C.teal.withOpacity(0.07 + v * 0.04),
+                boxShadow: [BoxShadow(color: C.teal.withOpacity(0.1 + v * 0.06), blurRadius: 20)])),
+              Container(width: 56, height: 56,
+                decoration: BoxDecoration(shape: BoxShape.circle, color: isDark ? C.darkSurface : Colors.white,
+                  boxShadow: [BoxShadow(color: C.teal.withOpacity(0.16), blurRadius: 14, offset: Offset(0, 4))]),
+                padding: EdgeInsets.all(12),
+                child: Image.asset('assets/logo-icon.png', fit: BoxFit.contain)),
+            ]);
+          }),
+          SizedBox(height: 18),
+          Text('Чат по курсу', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: -0.4, color: adaptiveText1(context))),
+          SizedBox(height: 4),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            decoration: BoxDecoration(color: C.teal.withOpacity(0.10), borderRadius: BorderRadius.circular(16)),
+            child: Text(shortName, style: TextStyle(fontSize: 12, color: C.teal, fontWeight: FontWeight.w700)),
+          ),
+          SizedBox(height: 22),
+          ..._tips.asMap().entries.map((e) {
+            final i = e.key; final t = e.value;
+            final color = t['color'] as Color;
+            return TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: Duration(milliseconds: 350 + i * 70),
+              curve: Curves.easeOutCubic,
+              builder: (_, v, child) => Opacity(opacity: v, child: Transform.translate(offset: Offset(0, 10 * (1-v)), child: child)),
+              child: GestureDetector(
+                onTap: () => _send(t['text'] as String),
+                child: Container(
+                  margin: EdgeInsets.only(bottom: 9),
+                  padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isDark ? C.darkSurface : Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: color.withOpacity(0.18)),
+                    boxShadow: [BoxShadow(color: color.withOpacity(0.06), blurRadius: 10, offset: Offset(0, 3))],
+                  ),
+                  child: Row(children: [
+                    Container(width: 36, height: 36, decoration: BoxDecoration(color: color.withOpacity(0.10), borderRadius: BorderRadius.circular(10)),
+                      child: Icon(t['icon'] as IconData, size: 17, color: color)),
+                    SizedBox(width: 12),
+                    Expanded(child: Text(t['text'] as String, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, height: 1.2))),
+                    Icon(Icons.arrow_forward_rounded, size: 14, color: color),
+                  ]),
+                ),
+              ),
+            );
+          }),
+        ]),
+      ),
+    );
+  }
+
+  Widget _messageList(bool isDark, Color surface) {
+    return ListView.builder(
+      controller: _scroll,
+      padding: EdgeInsets.fromLTRB(14, 16, 14, 10),
+      itemCount: _msgs.length + (_loading ? 1 : 0),
+      itemBuilder: (ctx, i) {
+        if (i == _msgs.length) return _typingIndicator(isDark, surface);
+        final m   = _msgs[i];
+        final isU = m['role'] == 'user';
+        return TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.0, end: 1.0),
+          duration: Duration(milliseconds: 260),
+          curve: Curves.easeOutCubic,
+          builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(
+            offset: Offset(isU ? 12*(1-t) : -12*(1-t), 4*(1-t)), child: child)),
+          child: isU ? _userBubble(m['text'] ?? '') : _aiBubble(m['text'] ?? '', isDark, surface),
+        );
+      },
+    );
+  }
+
+  Widget _userBubble(String text) => Padding(
+    padding: EdgeInsets.only(bottom: 14, left: 40),
+    child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+      Flexible(child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 15, vertical: 11),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: [C.teal, C.tealDk], begin: Alignment.topLeft, end: Alignment.bottomRight),
+          borderRadius: BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20), bottomLeft: Radius.circular(20), bottomRight: Radius.circular(5)),
+          boxShadow: tealGlow(opacity: 0.22),
+        ),
+        child: Text(text, style: TextStyle(fontSize: 14, color: Colors.white, height: 1.5)),
+      )),
+    ]),
+  );
+
+  Widget _aiBubble(String text, bool isDark, Color surface) => Padding(
+    padding: EdgeInsets.only(bottom: 16, right: 28),
+    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Container(
+        width: 30, height: 30,
+        margin: EdgeInsets.only(top: 2, right: 9),
+        decoration: BoxDecoration(
+          color: isDark ? C.darkSurface : Colors.white,
+          borderRadius: BorderRadius.circular(9),
+          border: Border.all(color: C.teal.withOpacity(0.22), width: 1.5),
+          boxShadow: [BoxShadow(color: C.teal.withOpacity(0.08), blurRadius: 8)],
+        ),
+        padding: EdgeInsets.all(5),
+        child: Image.asset('assets/logo-icon.png', fit: BoxFit.contain),
+      ),
+      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(padding: EdgeInsets.only(left: 2, bottom: 4),
+          child: Text('Chatra AI', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.teal, letterSpacing: 0.2))),
+        Container(
+          padding: EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: isDark ? C.darkSurface : Colors.white,
+            borderRadius: BorderRadius.only(topLeft: Radius.circular(5), topRight: Radius.circular(18), bottomLeft: Radius.circular(18), bottomRight: Radius.circular(18)),
+            border: Border.all(color: C.teal.withOpacity(isDark ? 0.12 : 0.08)),
+            boxShadow: softShadow(isDark),
+          ),
+          child: SelectableText(text, style: TextStyle(fontSize: 14, height: 1.65)),
+        ),
+      ])),
+    ]),
+  );
+
+  Widget _typingIndicator(bool isDark, Color surface) => Padding(
+    padding: EdgeInsets.only(bottom: 14, right: 28),
+    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Container(
+        width: 30, height: 30,
+        margin: EdgeInsets.only(top: 2, right: 9),
+        decoration: BoxDecoration(
+          color: isDark ? C.darkSurface : Colors.white,
+          borderRadius: BorderRadius.circular(9),
+          border: Border.all(color: C.teal.withOpacity(0.22), width: 1.5),
+        ),
+        padding: EdgeInsets.all(5),
+        child: Image.asset('assets/logo-icon.png', fit: BoxFit.contain),
+      ),
+      Container(
+        padding: EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        decoration: BoxDecoration(
+          color: isDark ? C.darkSurface : Colors.white,
+          borderRadius: BorderRadius.only(topLeft: Radius.circular(5), topRight: Radius.circular(18), bottomLeft: Radius.circular(18), bottomRight: Radius.circular(18)),
+          border: Border.all(color: C.teal.withOpacity(isDark ? 0.12 : 0.08)),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: List.generate(3, (i) => _ClassAiDot(delay: i * 180))),
+      ),
+    ]),
+  );
+}
+
+class _ClassAiDot extends StatefulWidget {
+  final int delay;
+  const _ClassAiDot({required this.delay});
+  @override State<_ClassAiDot> createState() => _ClassAiDotState();
+}
+class _ClassAiDotState extends State<_ClassAiDot> with SingleTickerProviderStateMixin {
+  late AnimationController _c;
+  late Animation<double> _a;
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(vsync: this, duration: Duration(milliseconds: 500));
+    Future.delayed(Duration(milliseconds: widget.delay), () { if (mounted) _c.repeat(reverse: true); });
+    _a = CurvedAnimation(parent: _c, curve: Curves.easeInOut);
+  }
+  @override void dispose() { _c.dispose(); super.dispose(); }
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(animation: _a, builder: (_, __) => Container(
+    width: 7, height: 7, margin: EdgeInsets.symmetric(horizontal: 3),
+    decoration: BoxDecoration(color: C.teal.withOpacity(0.3 + _a.value * 0.7), shape: BoxShape.circle),
+    transform: Matrix4.translationValues(0, -4 * _a.value, 0),
+  ));
 }

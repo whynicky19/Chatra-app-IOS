@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -208,7 +209,10 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
             ),
             child: Text(l.t('ask_ai'), style: TextStyle(fontSize: 13, color: C.teal, fontWeight: FontWeight.w600)),
           ),
-          SizedBox(height: 28),
+          SizedBox(height: 24),
+          // Neural-network illustration
+          const _NeuralNetIllustration(),
+          SizedBox(height: 20),
           // Tip cards — all teal
           ...tips.asMap().entries.map((entry) {
             final i = entry.key;
@@ -439,6 +443,138 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
     );
   }
 }
+
+// ── Neural-network illustration ───────────────────────────────────────────────
+
+class _NeuralNetIllustration extends StatefulWidget {
+  const _NeuralNetIllustration();
+  @override
+  State<_NeuralNetIllustration> createState() => _NeuralNetIllustrationState();
+}
+
+class _NeuralNetIllustrationState extends State<_NeuralNetIllustration>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, __) => CustomPaint(
+        painter: _NeuralNetPainter(_ctrl.value, isDark),
+        size: const Size(280, 130),
+      ),
+    );
+  }
+}
+
+// Draws an animated 4-layer neural network with pulsing nodes and flowing
+// signal dots travelling along each connection.
+class _NeuralNetPainter extends CustomPainter {
+  final double t;  // 0–1 animation progress
+  final bool isDark;
+
+  // Each inner list: [x_fraction, y_fraction, y_fraction, ...]
+  static const _layerDefs = [
+    [0.10, 0.22, 0.50, 0.78],
+    [0.37, 0.12, 0.37, 0.63, 0.88],
+    [0.63, 0.22, 0.50, 0.78],
+    [0.90, 0.37, 0.63],
+  ];
+
+  const _NeuralNetPainter(this.t, this.isDark);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Build node positions from fractional definitions.
+    final nodes = <Offset>[];
+    final layers = <List<int>>[];
+
+    for (final def in _layerDefs) {
+      final x = def[0] * size.width;
+      final layer = <int>[];
+      for (int i = 1; i < def.length; i++) {
+        layer.add(nodes.length);
+        nodes.add(Offset(x, def[i] * size.height));
+      }
+      layers.add(layer);
+    }
+
+    // Build full connection list (every node in layer N → every node in N+1).
+    final conns = <(int, int)>[];
+    for (int l = 0; l < layers.length - 1; l++) {
+      for (final a in layers[l]) {
+        for (final b in layers[l + 1]) {
+          conns.add((a, b));
+        }
+      }
+    }
+    final nConns = conns.length;
+
+    // ── Draw connections (lines) ──────────────────────────────────────────────
+    final linePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.9
+      ..color = C.teal.withOpacity(0.16);
+
+    for (int i = 0; i < nConns; i++) {
+      final p1 = nodes[conns[i].$1];
+      final p2 = nodes[conns[i].$2];
+      canvas.drawLine(p1, p2, linePaint);
+
+      // Flowing signal dot: evenly phased across connections.
+      final phase = i / nConns;
+      final flowT = (t + phase) % 1.0;
+      final dot = Offset(
+        p1.dx + (p2.dx - p1.dx) * flowT,
+        p1.dy + (p2.dy - p1.dy) * flowT,
+      );
+      canvas.drawCircle(
+        dot, 2.8,
+        Paint()..color = C.teal.withOpacity(0.70),
+      );
+    }
+
+    // ── Draw nodes (circles) ──────────────────────────────────────────────────
+    for (int i = 0; i < nodes.length; i++) {
+      final pos = nodes[i];
+      final phase = i / nodes.length;
+      // Each node pulses at its own phase; gives a "firing" wave effect.
+      final pulse = (sin((t * 2 * pi * 1.4) + phase * 2 * pi) + 1) / 2;
+
+      // Outer halo
+      canvas.drawCircle(pos, 13,
+          Paint()..color = C.teal.withOpacity(0.05 + 0.08 * pulse));
+      // Mid ring
+      canvas.drawCircle(pos, 8.5,
+          Paint()..color = C.teal.withOpacity(0.18 + 0.22 * pulse));
+      // Core
+      canvas.drawCircle(pos, 5.5,
+          Paint()..color = C.teal.withOpacity(0.60 + 0.40 * pulse));
+      // White centre dot (gives a 3-D bead look)
+      canvas.drawCircle(pos, 2.2,
+          Paint()..color = Colors.white.withOpacity(0.90));
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _NeuralNetPainter old) => old.t != t;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _Dot extends StatefulWidget {
   final int delay;

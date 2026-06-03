@@ -8,6 +8,7 @@ import '../../providers/l10n_provider.dart';
 import '../../providers/classes_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/class_utils.dart';
+import '../../widgets/skeleton.dart';
 import '../../widgets/toast.dart';
 import '../notifications/notifications_screen.dart';
 
@@ -126,7 +127,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
           // ── Class cards ──────────────────────────────────────
           if (provider.loading)
-            const SliverFillRemaining(child: Center(child: CircularProgressIndicator(color: C.teal, strokeWidth: 2.5)))
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 90),
+              sliver: SliverList(delegate: SliverChildBuilderDelegate(
+                (_, i) => TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  duration: Duration(milliseconds: 250 + i * 80),
+                  curve: Curves.easeOut,
+                  builder: (_, t, child) => Opacity(opacity: t, child: child),
+                  child: const SkeletonClassCard(),
+                ),
+                childCount: 3,
+              )),
+            )
           else if (provider.classes.isEmpty)
             SliverFillRemaining(child: _EmptyState(isTeacher: auth.isTeacher, onCreate: _showCreateClass, onJoin: _showJoinDialog))
           else
@@ -144,9 +157,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 return TweenAnimationBuilder<double>(
                   key: ValueKey(id),
                   tween: Tween(begin: 0.0, end: 1.0),
-                  duration: Duration(milliseconds: 380 + i * 55),
+                  duration: Duration(milliseconds: 420 + i * 70),
                   curve: Curves.easeOutCubic,
-                  builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 18 * (1 - t)), child: child)),
+                  builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 24 * (1 - t)), child: child)),
                   child: GestureDetector(
                     onTap: () => Navigator.pushNamed(context, '/class', arguments: id),
                     child: Container(

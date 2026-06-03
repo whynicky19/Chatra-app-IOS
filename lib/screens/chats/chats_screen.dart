@@ -9,6 +9,7 @@ import '../../providers/l10n_provider.dart';
 import '../../providers/chats_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/skeleton.dart';
 import '../../widgets/toast.dart';
 
 class ChatsScreen extends StatefulWidget {
@@ -160,7 +161,17 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
         const SizedBox(height: 8),
         // Chat list
         Expanded(child: provider.loading
-          ? const Center(child: CircularProgressIndicator(color: C.teal, strokeWidth: 2.5))
+          ? ListView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 90),
+              itemCount: 6,
+              itemBuilder: (_, i) => TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: 1.0),
+                duration: Duration(milliseconds: 200 + i * 60),
+                curve: Curves.easeOut,
+                builder: (_, t, child) => Opacity(opacity: t, child: child),
+                child: const SkeletonChatRow(),
+              ),
+            )
           : provider.chats.isEmpty
             ? _emptyState()
             : ListView.builder(
@@ -178,9 +189,9 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
                   return TweenAnimationBuilder<double>(
                     key: ValueKey(id),
                     tween: Tween(begin: 0.0, end: 1.0),
-                    duration: Duration(milliseconds: 300 + i * 60),
+                    duration: Duration(milliseconds: 320 + i * 65),
                     curve: Curves.easeOutCubic,
-                    builder: (_, t, child) => Transform.translate(offset: Offset(0, 20 * (1 - t)), child: Opacity(opacity: t, child: child)),
+                    builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 22 * (1 - t)), child: child)),
                     child: GestureDetector(
                       onTap: () {
                         HapticFeedback.selectionClick();

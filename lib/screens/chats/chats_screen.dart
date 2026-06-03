@@ -84,15 +84,42 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
   }
 
   Future<void> _pollMessages() async {
-    if (_activeChatId == null) return;
     try {
-      final msgs = await context.read<ApiService>().getMessages(_activeChatId!);
-      if (mounted) setState(() {
-        _messages[_activeChatId!] = msgs;
-        if (msgs.isNotEmpty) _lastSeenMsgId[_activeChatId!] = msgs.last['id'] as int;
-      });
-      _saveSeenMsgIds();
+      final api = context.read<ApiService>();
+      if (_activeChatId != null) {
+        final msgs = await api.getMessages(_activeChatId!);
+        if (mounted) setState(() {
+          _messages[_activeChatId!] = msgs;
+          if (msgs.isNotEmpty) _lastSeenMsgId[_activeChatId!] = msgs.last['id'] as int;
+        });
+        _saveSeenMsgIds();
+      } else {
+        for (final c in _chats) {
+          final id = c['id'] as int;
+          try {
+            final msgs = await api.getMessages(id);
+            if (mounted) setState(() => _messages[id] = msgs);
+          } catch (_) {}
+        }
+      }
     } catch (_) {}
+  }
+
+  List<dynamic> get _sortedChats {
+    final sorted = List<dynamic>.from(_chats);
+    sorted.sort((a, b) {
+      final aMsgs = _messages[a['id'] as int] ?? [];
+      final bMsgs = _messages[b['id'] as int] ?? [];
+      if (aMsgs.isEmpty && bMsgs.isEmpty) return 0;
+      if (aMsgs.isEmpty) return 1;
+      if (bMsgs.isEmpty) return -1;
+      try {
+        final aTime = DateTime.parse(aMsgs.last['created_at']);
+        final bTime = DateTime.parse(bMsgs.last['created_at']);
+        return bTime.compareTo(aTime);
+      } catch (_) { return 0; }
+    });
+    return sorted;
   }
 
   String _chatTitle(dynamic chat) {
@@ -212,9 +239,9 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
             ? _emptyState()
             : ListView.builder(
                 padding: EdgeInsets.fromLTRB(16, 8, 16, 90),
-                itemCount: _chats.length,
+                itemCount: _sortedChats.length,
                 itemBuilder: (ctx, i) {
-                  final c = _chats[i]; final id = c['id'] as int;
+                  final c = _sortedChats[i]; final id = c['id'] as int;
                   final color = _avatarColors[id % _avatarColors.length];
                   final title = _chatTitle(c);
                   final unread = _hasUnread(id);

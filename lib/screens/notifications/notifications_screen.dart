@@ -184,53 +184,61 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
         // Content
         Expanded(child: _loading
-          ? Center(child: CircularProgressIndicator(color: C.teal))
+          ? const Center(child: CircularProgressIndicator(color: C.teal, strokeWidth: 2.5))
           : _notifs.isEmpty
             ? _emptyState()
             : RefreshIndicator(
                 color: C.teal,
                 onRefresh: _load,
                 child: ListView.builder(
-                  padding: EdgeInsets.fromLTRB(16, 4, 16, 32),
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
                   itemCount: _notifs.length,
                   itemBuilder: (ctx, i) {
                     final n = _notifs[i];
                     final cfg = _config(n.type);
                     final canNavigate = n.classId != null;
-                    return GestureDetector(
-                      onTap: canNavigate ? () {
-                        Navigator.push(context, MaterialPageRoute(
-                          builder: (_) => ClassDetailScreen(
-                            classId: n.classId!,
-                            initialTab: 2, // Assignments tab
+                    return TweenAnimationBuilder<double>(
+                      key: ValueKey(i),
+                      tween: Tween(begin: 0.0, end: 1.0),
+                      duration: Duration(milliseconds: 320 + i * 45),
+                      curve: Curves.easeOutCubic,
+                      builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 14 * (1 - t)), child: child)),
+                      child: GestureDetector(
+                        onTap: canNavigate ? () => Navigator.push(context, MaterialPageRoute(
+                          builder: (_) => ClassDetailScreen(classId: n.classId!, initialTab: 2))) : null,
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          decoration: BoxDecoration(
+                            color: n.isRead ? surface : cfg['bg'] as Color,
+                            borderRadius: BorderRadius.circular(18),
+                            border: n.isRead ? null : Border.all(color: (cfg['color'] as Color).withOpacity(0.22)),
+                            boxShadow: cardShadow(isDark),
                           ),
-                        ));
-                      } : null,
-                      child: Container(
-                        margin: EdgeInsets.only(bottom: 10),
-                        decoration: BoxDecoration(
-                          color: n.isRead ? surface : cfg['bg'] as Color,
-                          borderRadius: BorderRadius.circular(16),
-                          border: n.isRead ? null : Border.all(color: (cfg['color'] as Color).withOpacity(0.25)),
-                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.12 : 0.04), blurRadius: 8, offset: Offset(0, 2))],
-                        ),
-                        child: Padding(padding: EdgeInsets.all(14), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Container(width: 42, height: 42,
-                            decoration: BoxDecoration(color: (cfg['color'] as Color).withOpacity(n.isRead ? 0.08 : 0.15), borderRadius: BorderRadius.circular(12)),
-                            child: Icon(cfg['icon'] as IconData, size: 20, color: cfg['color'] as Color)),
-                          SizedBox(width: 12),
-                          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Row(children: [
-                              Expanded(child: Text(n.title, style: TextStyle(fontSize: 14, fontWeight: n.isRead ? FontWeight.w600 : FontWeight.w800, color: adaptiveText1(context)))),
-                              if (!n.isRead) Container(width: 8, height: 8, decoration: BoxDecoration(color: cfg['color'] as Color, shape: BoxShape.circle)),
-                              if (canNavigate) Padding(padding: EdgeInsets.only(left: 6), child: Icon(Icons.arrow_forward_ios, size: 12, color: C.text4)),
-                            ]),
-                            SizedBox(height: 3),
-                            Text(n.body, style: TextStyle(fontSize: 13, color: C.text4, height: 1.4)),
-                            SizedBox(height: 6),
-                            Text(_timeAgo(n.date, l), style: TextStyle(fontSize: 11, color: C.text4.withOpacity(0.7), fontWeight: FontWeight.w500)),
+                          child: Padding(padding: const EdgeInsets.all(14), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Container(width: 44, height: 44,
+                              decoration: BoxDecoration(
+                                color: (cfg['color'] as Color).withOpacity(n.isRead ? 0.08 : 0.14),
+                                borderRadius: BorderRadius.circular(13),
+                              ),
+                              child: Icon(cfg['icon'] as IconData, size: 20, color: cfg['color'] as Color)),
+                            const SizedBox(width: 12),
+                            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              Row(children: [
+                                Expanded(child: Text(n.title, style: TextStyle(
+                                  fontSize: 14, fontWeight: n.isRead ? FontWeight.w600 : FontWeight.w800,
+                                  color: adaptiveText1(context)))),
+                                if (!n.isRead) Container(width: 8, height: 8, decoration: BoxDecoration(color: cfg['color'] as Color, shape: BoxShape.circle)),
+                                if (canNavigate) Padding(padding: const EdgeInsets.only(left: 6),
+                                  child: Icon(Icons.arrow_forward_ios_rounded, size: 11, color: C.text4)),
+                              ]),
+                              const SizedBox(height: 4),
+                              Text(n.body, style: const TextStyle(fontSize: 13, color: C.text4, height: 1.4)),
+                              const SizedBox(height: 6),
+                              Text(_timeAgo(n.date, l), style: TextStyle(
+                                fontSize: 11, color: C.text4.withOpacity(0.7), fontWeight: FontWeight.w600)),
+                            ])),
                           ])),
-                        ])),
+                        ),
                       ),
                     );
                   },

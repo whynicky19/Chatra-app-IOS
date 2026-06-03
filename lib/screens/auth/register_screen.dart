@@ -12,15 +12,30 @@ class RegisterScreen extends StatefulWidget {
   @override State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
-  final _name = TextEditingController();
-  final _email = TextEditingController();
-  final _pw = TextEditingController();
+class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProviderStateMixin {
+  final _name   = TextEditingController();
+  final _email  = TextEditingController();
+  final _pw     = TextEditingController();
   final _groupQ = TextEditingController();
   String _group = '';
   List<String> _suggestions = [];
   bool _showSugg = false;
   bool _submitted = false;
+  late final AnimationController _anim;
+  late final Animation<double> _fade;
+  late final Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+    _anim  = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
+    _fade  = CurvedAnimation(parent: _anim, curve: Curves.easeOut);
+    _slide = Tween(begin: const Offset(0, 0.06), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _anim, curve: Curves.easeOutCubic));
+    _anim.forward();
+  }
+
+  @override void dispose() { _anim.dispose(); super.dispose(); }
 
   bool get _ok {
     final parts = _name.text.trim().split(' ').where((s) => s.isNotEmpty).toList();
@@ -32,7 +47,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   int get _pwScore {
     final p = _pw.text; if (p.isEmpty) return 0; int s = 0;
-    if (p.length >= 6) s += 20; if (p.length >= 10) s += 20;
+    if (p.length >= 6)  s += 20;
+    if (p.length >= 10) s += 20;
     if (RegExp(r'[A-Z]').hasMatch(p)) s += 20;
     if (RegExp(r'[0-9]').hasMatch(p)) s += 20;
     if (RegExp(r'[^A-Za-z0-9]').hasMatch(p)) s += 20;
@@ -56,7 +72,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!mounted) return;
     if (ok) {
       showToast(context, context.read<L10n>().t('account_created'));
-      await Future.delayed(Duration(milliseconds: 1200));
+      await Future.delayed(const Duration(milliseconds: 1200));
       if (!mounted) return;
       widget.onGoLogin?.call();
     } else {
@@ -68,73 +84,186 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final l = context.watch<L10n>();
-    final auth = context.watch<AuthProvider>();
-    final sc = _pwScore;
+    final l      = context.watch<L10n>();
+    final auth   = context.watch<AuthProvider>();
+    final sc     = _pwScore;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = Theme.of(context).colorScheme.surface;
-    return Scaffold(body: SafeArea(child: Center(child: SingleChildScrollView(
-      padding: EdgeInsets.all(24),
-      child: Container(
-        constraints: BoxConstraints(maxWidth: 420), padding: EdgeInsets.all(28),
-        decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(24)),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Container(width: 60, height: 60,
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), gradient: LinearGradient(colors: [C.teal, C.tealDk])),
-            child: Icon(Icons.person_add_rounded, color: Colors.white, size: 30)),
-          SizedBox(height: 16),
-          Text(l.t('register'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-          SizedBox(height: 4),
-          Text(l.t('register_sub'), style: TextStyle(fontSize: 14, color: C.text4)),
-          SizedBox(height: 24),
-          _label(l.t('full_name_label')),
-          TextField(controller: _name, decoration: InputDecoration(hintText: 'Иванов Иван'), onChanged: (_) => setState(() {})),
-          SizedBox(height: 14),
-          _label('Email'),
-          TextField(controller: _email, keyboardType: TextInputType.emailAddress,
-            decoration: InputDecoration(hintText: 'you@example.com'), onChanged: (_) => setState(() {})),
-          SizedBox(height: 14),
-          _label(l.t('group_label')),
-          TextField(controller: _groupQ,
-            decoration: InputDecoration(
-              suffixIcon: _group.isNotEmpty ? Icon(Icons.check_circle, color: C.green, size: 20) : null),
-            onChanged: (v) { _group = ''; _searchGroups(v); setState(() {}); }),
-          if (_showSugg) Container(
-            margin: EdgeInsets.only(top: 4), constraints: BoxConstraints(maxHeight: 150),
-            decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(12)),
-            child: ListView(shrinkWrap: true, children: _suggestions.map((g) => ListTile(
-              dense: true, title: Text(g),
-              onTap: () => setState(() { _group = g; _groupQ.text = g; _showSugg = false; }))).toList())),
-          SizedBox(height: 14),
-          _label(l.t('password_label')),
-          TextField(controller: _pw, obscureText: true,
-            onChanged: (_) => setState(() {})),
-          if (_pw.text.isNotEmpty) Padding(padding: EdgeInsets.only(top: 6), child: Row(children: [
-            Expanded(flex: 2, child: ClipRRect(borderRadius: BorderRadius.circular(3),
-              child: LinearProgressIndicator(value: sc / 100, backgroundColor: C.surface2,
-                color: sc <= 40 ? C.red : sc <= 60 ? C.yellow : C.green, minHeight: 3))),
-            SizedBox(width: 8),
-            Text(sc <= 40 ? l.t('password_weak') : sc <= 60 ? l.t('password_medium') : l.t('password_strong'),
-              style: TextStyle(fontSize: 11, color: C.text4)),
-          ])),
-          SizedBox(height: 24),
-          SizedBox(width: double.infinity, height: 50, child: ElevatedButton(
-            onPressed: auth.isLoading || !_ok || _submitted ? null : _submit,
-            child: auth.isLoading
-              ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : Text(l.t('register_btn')))),
-          SizedBox(height: 20),
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Text('${l.t('has_account')} ', style: TextStyle(fontSize: 13, color: C.text4)),
-            GestureDetector(
-              onTap: widget.onGoLogin,
-              child: Text(l.t('login_link'), style: TextStyle(fontSize: 13, color: C.teal, fontWeight: FontWeight.w600))),
-          ]),
-        ]),
-      ),
-    ))));
+
+    return Scaffold(
+      body: Stack(children: [
+        Container(decoration: BoxDecoration(gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF051215), const Color(0xFF082028)]
+              : [const Color(0xFF006475), const Color(0xFF009AAF)],
+          begin: Alignment.topRight, end: Alignment.bottomLeft,
+        ))),
+        Positioned(top: -60, left: -50, child: _Blob(size: 240, opacity: 0.07)),
+        Positioned(bottom: -80, right: -60, child: _Blob(size: 300, opacity: 0.06)),
+
+        SafeArea(child: Center(child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          child: FadeTransition(opacity: _fade, child: SlideTransition(position: _slide,
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 420),
+              padding: const EdgeInsets.all(28),
+              decoration: BoxDecoration(
+                color: surface,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.22), blurRadius: 48, offset: const Offset(0, 20)),
+                  BoxShadow(color: C.teal.withOpacity(0.12), blurRadius: 24, offset: const Offset(0, 8)),
+                ],
+              ),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                // Icon
+                Container(width: 64, height: 64,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(colors: [C.teal, C.tealDk]),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: tealGlow(opacity: 0.28),
+                  ),
+                  child: const Icon(Icons.person_add_rounded, color: Colors.white, size: 30)),
+                const SizedBox(height: 16),
+                Text(l.t('register'), style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: adaptiveText1(context), letterSpacing: -0.4)),
+                const SizedBox(height: 4),
+                Text(l.t('register_sub'), style: const TextStyle(fontSize: 14, color: C.text4)),
+                const SizedBox(height: 28),
+
+                // Full name
+                _fieldLabel(l.t('full_name_label')),
+                TextField(
+                  controller: _name,
+                  decoration: InputDecoration(
+                    hintText: 'Иванов Иван',
+                    prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
+                      child: Icon(Icons.person_outline_rounded, size: 18, color: C.text4)),
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: 14),
+
+                // Email
+                _fieldLabel('Email'),
+                TextField(
+                  controller: _email,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(
+                    hintText: 'you@example.com',
+                    prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
+                      child: Icon(Icons.mail_outline_rounded, size: 18, color: C.text4)),
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: 14),
+
+                // Group
+                _fieldLabel(l.t('group_label')),
+                TextField(
+                  controller: _groupQ,
+                  decoration: InputDecoration(
+                    prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
+                      child: Icon(Icons.group_outlined, size: 18, color: C.text4)),
+                    suffixIcon: _group.isNotEmpty
+                        ? const Icon(Icons.check_circle_rounded, color: C.green, size: 20)
+                        : null,
+                  ),
+                  onChanged: (v) { _group = ''; _searchGroups(v); setState(() {}); },
+                ),
+                if (_showSugg) Container(
+                  margin: const EdgeInsets.only(top: 4),
+                  constraints: const BoxConstraints(maxHeight: 150),
+                  decoration: BoxDecoration(
+                    color: surface,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: softShadow(isDark),
+                  ),
+                  child: ListView(shrinkWrap: true, children: _suggestions.map((g) => ListTile(
+                    dense: true,
+                    title: Text(g, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    onTap: () => setState(() { _group = g; _groupQ.text = g; _showSugg = false; }),
+                  )).toList())),
+
+                const SizedBox(height: 14),
+
+                // Password
+                _fieldLabel(l.t('password_label')),
+                TextField(
+                  controller: _pw,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    prefixIcon: Padding(padding: EdgeInsets.only(left: 4),
+                      child: Icon(Icons.lock_outline_rounded, size: 18, color: C.text4)),
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+                if (_pw.text.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Row(children: [
+                      Expanded(child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: sc / 100,
+                          backgroundColor: adaptiveSurface2(context),
+                          color: sc <= 40 ? C.red : sc <= 60 ? C.yellow : C.green,
+                          minHeight: 4,
+                        ),
+                      )),
+                      const SizedBox(width: 10),
+                      Text(
+                        sc <= 40 ? l.t('password_weak') : sc <= 60 ? l.t('password_medium') : l.t('password_strong'),
+                        style: TextStyle(
+                          fontSize: 11, fontWeight: FontWeight.w600,
+                          color: sc <= 40 ? C.red : sc <= 60 ? C.yellow : C.green,
+                        ),
+                      ),
+                    ]),
+                  ])),
+
+                const SizedBox(height: 26),
+
+                SizedBox(width: double.infinity, height: 52,
+                  child: ElevatedButton(
+                    onPressed: auth.isLoading || !_ok || _submitted ? null : _submit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: C.teal,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      elevation: 0,
+                    ),
+                    child: auth.isLoading
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : Text(l.t('register_btn'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                  )),
+
+                const SizedBox(height: 20),
+                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Text('${l.t('has_account')} ', style: const TextStyle(fontSize: 13, color: C.text4)),
+                  GestureDetector(
+                    onTap: widget.onGoLogin,
+                    child: Text(l.t('login_link'), style: const TextStyle(
+                        fontSize: 13, color: C.teal, fontWeight: FontWeight.w700))),
+                ]),
+              ]),
+            ),
+          )),
+        ))),
+      ]),
+    );
   }
 
-  Widget _label(String s) => Padding(padding: EdgeInsets.only(bottom: 6),
+  Widget _fieldLabel(String s) => Padding(
+    padding: const EdgeInsets.only(bottom: 7),
     child: Align(alignment: Alignment.centerLeft,
-      child: Text(s, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: C.text3))));
+      child: Text(s, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 0.3))));
+}
+
+class _Blob extends StatelessWidget {
+  final double size;
+  final double opacity;
+  const _Blob({required this.size, required this.opacity});
+  @override
+  Widget build(BuildContext context) => Container(
+    width: size, height: size,
+    decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(opacity)),
+  );
 }

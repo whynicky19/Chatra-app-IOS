@@ -443,13 +443,19 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     return matches.map((m) => _fixFileUrl(m.group(0)!)).toList();
   }
 
-  /// Fix localhost/127.0.0.1 URLs to use the actual API base URL
+  /// Fix localhost/127.0.0.1 URLs and relative paths to use the actual API base URL
   String _fixFileUrl(String url) {
+    if (url.isEmpty) return url;
     final api = context.read<ApiService>();
     final base = api.baseUrl; // e.g. http://10.0.2.2:8000
-    return url
+    var fixed = url
         .replaceAll(RegExp(r'https?://localhost:\d+'), base)
         .replaceAll(RegExp(r'https?://127\.0\.0\.1:\d+'), base);
+    // Handle relative paths like /uploads/file.pdf
+    if (!fixed.startsWith('http') && !fixed.startsWith('ws')) {
+      fixed = '$base${fixed.startsWith('/') ? '' : '/'}$fixed';
+    }
+    return fixed;
   }
 
   /// Remove raw file URLs from content for cleaner display
@@ -929,6 +935,48 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     );
   }
 
+  // Парсит URL файлов из одного поля (любого формата)
+  List<String> _parseFileUrls(dynamic raw) {
+    if (raw == null) return [];
+    if (raw is List) {
+      return raw.map((f) => _fixFileUrl(f.toString())).where((s) => s.isNotEmpty).toList();
+    }
+    if (raw is String && raw.isNotEmpty) {
+      // JSON-строка вида '["url1","url2"]'
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) {
+          return decoded.map((f) => _fixFileUrl(f.toString())).where((s) => s.isNotEmpty).toList();
+        }
+        if (decoded is String && decoded.isNotEmpty) return [_fixFileUrl(decoded)];
+      } catch (_) {}
+      // Одиночный URL
+      if (raw.startsWith('http') || raw.startsWith('/')) return [_fixFileUrl(raw)];
+    }
+    return [];
+  }
+
+  // Извлекает все файлы задания — объединяет данные из ДВУХ объектов
+  // (список /assignments/ и детали /assignments/{id} могут отличаться)
+  List<String> _extractAssignmentFiles(dynamic listA, [dynamic detailA]) {
+    final result = <String>{};
+    // Берём из всех возможных полей обоих источников
+    for (final src in [listA, if (detailA != null) detailA]) {
+      if (src == null) continue;
+      result.addAll(_parseFileUrls(src['file_urls']));
+      result.addAll(_parseFileUrls(src['files']));
+      result.addAll(_parseFileUrls(src['attachments']));
+      if (src['file_url'] != null) result.add(_fixFileUrl(src['file_url'].toString()));
+      // URL из описания (legacy)
+      if (src['description'] != null) {
+        result.addAll(_extractFilesFromText(src['description'].toString()));
+      }
+    }
+    // debug: выводим что нашли
+    debugPrint('[Files] listA file_urls=${listA?['file_urls']} detailA file_urls=${detailA?['file_urls']} result=$result');
+    return result.where((s) => s.isNotEmpty).toList();
+  }
+
   Map<String, dynamic> _fileTypeConfig(String ext) {
     switch (ext) {
       case 'pdf':
@@ -968,23 +1016,13 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
         : sub?['status'] == 'submitted' ? 'Сдано'
         : isLate ? 'Просрочено' : 'Новое';
 
-    // Загружаем полные данные задания (file_urls могут отсутствовать в списке)
-    dynamic fullA = a;
-    bool loadingFull = false;
-    bool loadedFull = false;
+    // Future для полных данных задания — создаём один раз вне builder
+    final assignmentFuture = context.read<ApiService>()
+        .getAssignment((a['id'] as num).toInt());
 
     showModalBottomSheet(
       context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(builder: (ctx, setS) {
-        // Загрузка полных данных один раз
-        if (!loadingFull && !loadedFull) {
-          loadingFull = true;
-          context.read<ApiService>().getAssignment((a['id'] as num).toInt()).then((full) {
-            setS(() { fullA = full; loadedFull = true; loadingFull = false; });
-          }).catchError((_) {
-            setS(() { loadedFull = true; loadingFull = false; });
-          });
-        }
         return DraggableScrollableSheet(
         expand: false, initialChildSize: 0.88, maxChildSize: 0.97, minChildSize: 0.5,
         builder: (ctx, sc) => Container(
@@ -1078,45 +1116,53 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             ),
             // ── Scrollable content ──
             Expanded(child: ListView(controller: sc, padding: EdgeInsets.fromLTRB(20, 20, 20, 24), children: [
-        if (fullA['description'] != null && _cleanContent(fullA['description'].toString()).isNotEmpty) ...[
-          Row(children: [Container(width: 3, height: 16, decoration: BoxDecoration(color: C.teal, borderRadius: BorderRadius.circular(2))), SizedBox(width: 8), Text('Описание', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: C.teal))]),
-          SizedBox(height: 10),
-          Container(padding: EdgeInsets.all(14), decoration: BoxDecoration(color: isDark ? C.darkSurface2 : C.bg, borderRadius: BorderRadius.circular(14), border: Border.all(color: C.teal.withOpacity(0.10))),
-            child: Text(_cleanContent(fullA['description'].toString()), style: TextStyle(fontSize: 14, height: 1.65))),
-          SizedBox(height: 20),
-        ],
-        // Attached files: from file_urls field OR legacy regex in description
-        ...() {
-          List<String> fromField = [];
-          final raw = fullA['file_urls'];
-          if (raw is List) {
-            fromField = raw.map((f) => _fixFileUrl(f.toString())).where((s) => s.isNotEmpty).toList();
-          } else if (raw is String && raw.isNotEmpty) {
-            try {
-              final decoded = jsonDecode(raw);
-              if (decoded is List) {
-                fromField = decoded.map((f) => _fixFileUrl(f.toString())).where((s) => s.isNotEmpty).toList();
-              } else if (decoded is String && decoded.isNotEmpty) {
-                fromField = [_fixFileUrl(decoded)];
-              }
-            } catch (_) {
-              // Might be a raw URL string
-              if (raw.startsWith('http')) fromField = [_fixFileUrl(raw)];
-            }
-          }
-          final fromDesc = fullA['description'] != null ? _extractFilesFromText(fullA['description'].toString()) : <String>[];
-          final allFiles = {...fromField, ...fromDesc}.toList();
-          if (allFiles.isEmpty) return <Widget>[];
-          final isDark = Theme.of(context).brightness == Brightness.dark;
-          return [
-            SizedBox(height: 16),
-            Row(children: [
-              Container(width: 3, height: 16, decoration: BoxDecoration(color: C.teal, borderRadius: BorderRadius.circular(2))),
-              SizedBox(width: 8),
-              Text('Прикреплённые файлы', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: C.teal, letterSpacing: 0.3)),
-            ]),
-            SizedBox(height: 10),
-            ...allFiles.asMap().entries.map((entry) {
+        // Описание + файлы загружаем через FutureBuilder
+        FutureBuilder<Map<String, dynamic>>(
+          future: assignmentFuture,
+          builder: (ctx, snap) {
+            final detailA   = snap.data;
+            final isLoading = snap.connectionState == ConnectionState.waiting;
+            final hasError  = snap.hasError;
+
+            // Описание из детального ответа, fallback на список
+            final descText = _cleanContent(
+              ((detailA?['description'] ?? a['description'])?.toString()) ?? '');
+
+            // Файлы: объединяем из ОБОИХ источников
+            final allFiles = _extractAssignmentFiles(a, detailA);
+
+            // Видимый debug-блок (временно, пока разбираемся с API)
+            final rawFromList   = a['file_urls'];
+            final rawFromDetail = detailA?['file_urls'];
+            final showDebug = !isLoading && allFiles.isEmpty &&
+                (rawFromList != null || rawFromDetail != null || hasError);
+
+            return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              // Описание
+              if (descText.isNotEmpty) ...[
+                Row(children: [Container(width: 3, height: 16, decoration: BoxDecoration(color: C.teal, borderRadius: BorderRadius.circular(2))), SizedBox(width: 8), Text('Описание', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: C.teal))]),
+                SizedBox(height: 10),
+                Container(padding: EdgeInsets.all(14), decoration: BoxDecoration(color: isDark ? C.darkSurface2 : C.bg, borderRadius: BorderRadius.circular(14), border: Border.all(color: C.teal.withOpacity(0.10))),
+                  child: Text(descText, style: TextStyle(fontSize: 14, height: 1.65))),
+                SizedBox(height: 20),
+              ],
+              // Файлы
+              if (isLoading) Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Row(children: [
+                  SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: C.teal)),
+                  SizedBox(width: 10),
+                  Text('Загрузка файлов...', style: TextStyle(fontSize: 13, color: C.text4)),
+                ]),
+              )
+              else if (allFiles.isNotEmpty) ...[
+                Row(children: [
+                  Container(width: 3, height: 16, decoration: BoxDecoration(color: C.teal, borderRadius: BorderRadius.circular(2))),
+                  SizedBox(width: 8),
+                  Text('Прикреплённые файлы', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: C.teal, letterSpacing: 0.3)),
+                ]),
+                SizedBox(height: 10),
+                ...allFiles.asMap().entries.map((entry) {
               final i = entry.key; final f = entry.value;
               final name = Uri.parse(f).pathSegments.last;
               final ext = name.split('.').last.toLowerCase();
@@ -1153,8 +1199,24 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 ),
               );
             }),
-          ];
-        }(),
+                SizedBox(height: 8),
+              ],
+              // Debug: показывает raw данные от API если файлы не нашлись
+              if (showDebug) Container(
+                margin: EdgeInsets.only(top: 8, bottom: 8),
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(color: Colors.orange.withOpacity(0.08), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.orange.withOpacity(0.3))),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('DEBUG: file_urls', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.orange)),
+                  SizedBox(height: 4),
+                  Text('list: $rawFromList', style: TextStyle(fontSize: 10, color: C.text4)),
+                  Text('detail: $rawFromDetail', style: TextStyle(fontSize: 10, color: C.text4)),
+                  if (hasError) Text('error: ${snap.error}', style: TextStyle(fontSize: 10, color: C.red)),
+                ]),
+              ),
+            ]);
+          },
+        ),
         // Criteria: collapsible for teachers/admins
         if (isTeacherOrAdmin && criteria.isNotEmpty) ...[
           SizedBox(height: 16),
@@ -1907,31 +1969,64 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 if (tc.text.trim().isEmpty) return;
                 try {
                   final api = context.read<ApiService>();
-                  // Upload attached files
+
+                  // Upload attached files с явной обработкой ошибок
                   final fileUrls = <String>[];
-                  for (final pf in attachedFiles) {
+                  for (final pf in [...attachedFiles, ...referenceFiles]) {
                     if (pf.path != null) {
                       try {
                         final res = await api.uploadFile(pf.path!, pf.name);
                         final url = res['url'] ?? res['file_url'] ?? res['path'];
-                        if (url != null) fileUrls.add(url.toString());
-                      } catch (_) {}
+                        if (url != null && url.toString().isNotEmpty) {
+                          fileUrls.add(url.toString());
+                          debugPrint('[Upload] OK: $url');
+                        } else {
+                          debugPrint('[Upload] No URL in response: $res');
+                        }
+                      } catch (e) {
+                        debugPrint('[Upload] Error for ${pf.name}: $e');
+                        if (mounted) showToast(context, 'Ошибка загрузки ${pf.name}', error: true);
+                      }
                     }
                   }
+
+                  // Нормализуем URL: localhost → реальный сервер
+                  final fixedUrls = fileUrls.map(_fixFileUrl).toList();
+
+                  // Встраиваем URL файлов в description (бэкенд не сохраняет file_urls)
+                  final baseDesc = dc.text.trim();
+                  final descWithFiles = fixedUrls.isEmpty
+                      ? baseDesc
+                      : baseDesc.isEmpty
+                          ? fixedUrls.join('\n')
+                          : '$baseDesc\n${fixedUrls.join('\n')}';
+
+                  debugPrint('[CreateAssignment] fixedUrls=$fixedUrls descWithFiles=$descWithFiles');
+
                   final maxScore = int.tryParse(sc.text) ?? 100;
                   final filteredCriteria = criteria.where((c) => c['name'].toString().isNotEmpty).toList();
                   final finalCriteria = filteredCriteria.isEmpty
                       ? [{'name': 'Качество выполнения', 'weight': maxScore, 'description': ''}]
                       : filteredCriteria.map((c) => {'name': c['name'], 'weight': c['weight'], 'description': c['desc']}).toList();
+
                   await api.createAssignment({
-                    'class_id': widget.classId, 'title': tc.text.trim(), 'description': dc.text.trim(),
+                    'class_id': widget.classId,
+                    'title': tc.text.trim(),
+                    'description': descWithFiles,
                     'max_score': maxScore,
                     'criteria': finalCriteria,
                     if (deadline != null) 'deadline': deadline!.toIso8601String(),
-                    if (fileUrls.isNotEmpty) 'file_urls': fileUrls,
                   });
-                  Navigator.pop(ctx); _loadAssignments(); showToast(context, 'Задание создано');
-                } catch (_) { showToast(context, 'Ошибка', error: true); }
+
+                  Navigator.pop(ctx);
+                  _loadAssignments();
+                  showToast(context, fileUrls.isNotEmpty
+                      ? 'Задание создано (${fileUrls.length} файл)'
+                      : 'Задание создано');
+                } catch (e) {
+                  debugPrint('[CreateAssignment] Error: $e');
+                  showToast(context, 'Ошибка: $e', error: true);
+                }
               })),
           ]),
           SizedBox(height: 24),
@@ -1942,18 +2037,16 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
 
   // ── Edit assignment ──
   void _editAssignment(dynamic a) {
+    final rawDesc = a['description']?.toString() ?? '';
+    // Показываем description БЕЗ встроенных URL (они хранятся там технически)
     final tc = TextEditingController(text: a['title'] ?? '');
-    final dc = TextEditingController(text: a['description'] ?? '');
+    final dc = TextEditingController(text: _cleanContent(rawDesc));
     final sc = TextEditingController(text: '${a['max_score'] ?? 100}');
     DateTime? deadline;
     try { if (a['deadline'] != null) deadline = DateTime.parse(a['deadline']); } catch (_) {}
 
-    // Parse existing file URLs
-    List<String> existingUrls = [];
-    final rawU = a['file_urls'];
-    if (rawU is List) { existingUrls = rawU.map((f) => f.toString()).toList(); }
-    else if (rawU is String && rawU.isNotEmpty) { try { existingUrls = (jsonDecode(rawU) as List).map((f) => f.toString()).toList(); } catch (_) {} }
-
+    // Извлекаем существующие URL из description (бэкенд хранит там)
+    final existingUrls = _extractFilesFromText(rawDesc);
     List<String> keepUrls = List<String>.from(existingUrls);
     List<PlatformFile> newFiles = [];
 
@@ -2097,20 +2190,32 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                       } catch (_) {}
                     }
                   }
-                  final allUrls = [...keepUrls, ...uploadedUrls];
+                  // Фиксируем URL (localhost → реальный сервер) и объединяем
+                  final fixedNewUrls = uploadedUrls.map(_fixFileUrl).toList();
+                  final fixedKeepUrls = keepUrls.map(_fixFileUrl).toList();
+                  final allUrls = [...fixedKeepUrls, ...fixedNewUrls];
+
+                  // Встраиваем URL файлов в description (бэкенд не сохраняет file_urls)
+                  // Сначала очищаем description от старых встроенных URL, потом добавляем новые
+                  final cleanDesc = _cleanContent(dc.text.trim());
+                  final descWithFiles = allUrls.isEmpty
+                      ? cleanDesc
+                      : cleanDesc.isEmpty
+                          ? allUrls.join('\n')
+                          : '$cleanDesc\n${allUrls.join('\n')}';
+
                   final maxScore = int.tryParse(sc.text) ?? 100;
                   final finalCriteria = criteria.where((c) => c['name'].toString().isNotEmpty)
                       .map((c) => {'name': c['name'], 'weight': c['weight'], 'description': c['desc']}).toList();
                   await api.updateAssignment(a['id'], {
                     'title': tc.text.trim(),
-                    'description': dc.text.trim(),
+                    'description': descWithFiles,
                     'max_score': maxScore,
                     'criteria': finalCriteria,
                     if (deadline != null) 'deadline': deadline!.toIso8601String(),
-                    if (allUrls.isNotEmpty) 'file_urls': allUrls,
                   });
                   Navigator.pop(ctx); _loadAssignments(); showToast(context, 'Задание обновлено');
-                } catch (_) { showToast(context, 'Ошибка', error: true); }
+                } catch (e) { showToast(context, 'Ошибка: $e', error: true); }
               },
             )),
           ]),

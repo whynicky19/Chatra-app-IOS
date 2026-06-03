@@ -114,7 +114,7 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
             color: C.teal.withOpacity(0.08),
             borderRadius: BorderRadius.circular(14),
           ),
-          padding: EdgeInsets.all(6),
+          padding: EdgeInsets.all(2),
           child: Image.asset('assets/logo.png', fit: BoxFit.contain),
         ),
         SizedBox(width: 12),
@@ -186,13 +186,13 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
                   color: C.teal.withOpacity(0.07 + v * 0.05),
                   boxShadow: [BoxShadow(color: C.teal.withOpacity(0.12 + v * 0.08), blurRadius: 28, spreadRadius: 2)],
                 )),
-              Container(width: 72, height: 72,
+              Container(width: 88, height: 88,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isDark ? C.darkSurface : Colors.white,
                   boxShadow: [BoxShadow(color: C.teal.withOpacity(0.18), blurRadius: 20, offset: Offset(0, 4))],
                 ),
-                padding: EdgeInsets.all(14),
+                padding: EdgeInsets.all(6),
                 child: Image.asset('assets/logo.png', fit: BoxFit.contain),
               ),
             ]);
@@ -307,15 +307,15 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         // App logo as AI avatar
         Container(
-          width: 36, height: 36,
+          width: 44, height: 44,
           margin: EdgeInsets.only(top: 2, right: 10),
           decoration: BoxDecoration(
             color: isDark ? C.darkSurface : Colors.white,
-            borderRadius: BorderRadius.circular(11),
+            borderRadius: BorderRadius.circular(13),
             border: Border.all(color: C.teal.withOpacity(0.2), width: 1.5),
             boxShadow: [BoxShadow(color: C.teal.withOpacity(0.1), blurRadius: 10, offset: Offset(0, 2))],
           ),
-          padding: EdgeInsets.all(6),
+          padding: EdgeInsets.all(2),
           child: Image.asset('assets/logo.png', fit: BoxFit.contain),
         ),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -345,15 +345,15 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
       padding: EdgeInsets.only(bottom: 16, right: 24),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Container(
-          width: 36, height: 36,
+          width: 44, height: 44,
           margin: EdgeInsets.only(top: 2, right: 10),
           decoration: BoxDecoration(
             color: isDark ? C.darkSurface : Colors.white,
-            borderRadius: BorderRadius.circular(11),
+            borderRadius: BorderRadius.circular(13),
             border: Border.all(color: C.teal.withOpacity(0.2), width: 1.5),
             boxShadow: [BoxShadow(color: C.teal.withOpacity(0.1), blurRadius: 10)],
           ),
-          padding: EdgeInsets.all(6),
+          padding: EdgeInsets.all(2),
           child: Image.asset('assets/logo.png', fit: BoxFit.contain),
         ),
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

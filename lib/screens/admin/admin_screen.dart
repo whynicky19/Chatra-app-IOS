@@ -128,6 +128,21 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     return students.where((u) => (u['group'] ?? '').toString() == group).toList();
   }
 
+  // Returns students (by group) + the teacher who created the class
+  List<dynamic> _membersForClass(String group, int creatorId) {
+    final result = <dynamic>[];
+    for (final u in _users) {
+      final role = (u['role'] ?? '').toString();
+      final uId  = (u['id'] as num?)?.toInt();
+      if ((role == 'teacher' || role == 'admin') && uId == creatorId) {
+        result.insert(0, u); // teacher first
+      } else if (role == 'student' && group.isNotEmpty && (u['group'] ?? '').toString() == group) {
+        result.add(u);
+      }
+    }
+    return result;
+  }
+
   // ─────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
@@ -543,7 +558,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
 
     return RefreshIndicator(
       color: C.teal,
-      onRefresh: _loadClasses,
+      onRefresh: () async { await _load(); await _loadClasses(); },
       child: ListView.builder(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
         itemCount: classes.length,
@@ -566,7 +581,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             curve: Curves.easeOutCubic,
             builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 16*(1-t)), child: child)),
             child: GestureDetector(
-              onTap: () => _showStudentsSheet(title, group, students, coverImg, i),
+              onTap: () => _showStudentsSheet(title, group, (cls['user_id'] as num?)?.toInt() ?? 0, coverImg, i),
               child: Container(
                 margin: const EdgeInsets.only(bottom: 14),
                 decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(20), boxShadow: cardShadow(isDark)),
@@ -671,87 +686,152 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
   }
 
   // ── Students bottom sheet ─────────────────────────────────
-  void _showStudentsSheet(String className, String group, List<dynamic> students, dynamic coverImg, int colorIdx) {
+  void _showStudentsSheet(String className, String group, int creatorId, dynamic coverImg, int colorIdx) {
     final l      = context.read<L10n>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-      builder: (ctx) => DraggableScrollableSheet(
-        expand: false, initialChildSize: 0.65, maxChildSize: 0.92,
-        builder: (ctx, sc) => Column(children: [
-          Container(width: 36, height: 4, margin: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2))),
-          Padding(padding: const EdgeInsets.fromLTRB(20, 0, 20, 16), child: Row(children: [
-            ClipRRect(borderRadius: BorderRadius.circular(12),
-              child: SizedBox(width: 52, height: 52, child: _classCover(coverImg, colorIdx))),
-            const SizedBox(width: 12),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(className, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800), maxLines: 2, overflow: TextOverflow.ellipsis),
-              const SizedBox(height: 3),
-              Row(children: [
-                const Icon(Icons.people_rounded, size: 13, color: C.teal),
-                const SizedBox(width: 4),
-                Text('${students.length} ${l.t('students_count')}', style: const TextStyle(fontSize: 12, color: C.teal, fontWeight: FontWeight.w600)),
-                if (group.isNotEmpty) ...[
-                  const SizedBox(width: 8),
-                  Container(padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                    decoration: BoxDecoration(color: C.teal.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-                    child: Text(group, style: const TextStyle(fontSize: 11, color: C.teal, fontWeight: FontWeight.w700))),
-                ],
-              ]),
-            ])),
-          ])),
-          Divider(height: 1, color: C.border.withOpacity(0.5)),
-          Expanded(child: students.isEmpty
-            ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                const Icon(Icons.people_outline_rounded, size: 52, color: C.text4),
-                const SizedBox(height: 14),
-                Text(l.t('no_students_class'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: C.text4)),
-                if (group.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6),
-                  child: Text('Никто из группы "$group" не зарегистрирован',
-                    style: const TextStyle(fontSize: 13, color: C.text4), textAlign: TextAlign.center)),
-              ]))
-            : ListView.separated(
-                controller: sc,
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-                itemCount: students.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (_, j) {
-                  final s       = students[j];
-                  final name    = (s['full_name'] ?? '').toString().trim();
-                  final email   = (s['email'] ?? '').toString();
-                  final sGroup  = (s['group'] ?? '').toString();
-                  final display = name.isNotEmpty ? name : email.split('@').first;
-                  final initials = display.trim().isEmpty ? '?' : display.trim().split(RegExp(r'\s+')).take(2).map((w) => w.isEmpty ? '' : w[0].toUpperCase()).join();
-                  return Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: softShadow(isDark),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) {
+          // Computed from already-loaded _users — teacher (creator) first, then students by group
+          final members = _membersForClass(group, creatorId);
+
+          Future<void> doRefresh() async {
+            setS(() {}); // triggers rebuild after _load updates _users
+            await _load();
+            if (mounted) setS(() {});
+          }
+
+          return DraggableScrollableSheet(
+            expand: false, initialChildSize: 0.65, maxChildSize: 0.92,
+            builder: (ctx, sc) => Column(children: [
+              // Handle
+              Container(width: 36, height: 4, margin: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2))),
+
+              // Header
+              Padding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 14), child: Row(children: [
+                ClipRRect(borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(width: 52, height: 52, child: _classCover(coverImg, colorIdx))),
+                const SizedBox(width: 12),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(className, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800), maxLines: 2, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 3),
+                  Row(children: [
+                    const Icon(Icons.people_rounded, size: 13, color: C.teal),
+                    const SizedBox(width: 4),
+                    Text('${members.length} ${l.t('students_count')}',
+                      style: const TextStyle(fontSize: 12, color: C.teal, fontWeight: FontWeight.w600)),
+                    if (group.isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(color: C.teal.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+                        child: Text(group, style: const TextStyle(fontSize: 11, color: C.teal, fontWeight: FontWeight.w700))),
+                    ],
+                  ]),
+                ])),
+                GestureDetector(
+                  onTap: doRefresh,
+                  child: Container(
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(10)),
+                    child: const Icon(Icons.refresh_rounded, size: 18, color: C.teal),
+                  ),
+                ),
+              ])),
+
+              Divider(height: 1, color: C.border.withOpacity(0.5)),
+
+              // List
+              Expanded(child: members.isEmpty
+                ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(Icons.people_outline_rounded, size: 52, color: C.text4),
+                    const SizedBox(height: 14),
+                    Text(l.t('no_students_class'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: C.text4)),
+                    if (group.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6),
+                      child: Text('Группа: "$group"', style: const TextStyle(fontSize: 13, color: C.text4))),
+                    const SizedBox(height: 16),
+                    GestureDetector(
+                      onTap: doRefresh,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                        decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
+                        child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(Icons.refresh_rounded, size: 15, color: C.teal),
+                          SizedBox(width: 6),
+                          Text('Обновить список', style: TextStyle(fontSize: 13, color: C.teal, fontWeight: FontWeight.w600)),
+                        ]),
+                      ),
                     ),
-                    child: Row(children: [
-                      Container(width: 44, height: 44,
-                        decoration: BoxDecoration(gradient: RadialGradient(colors: [C.teal.withOpacity(0.24), C.teal.withOpacity(0.07)]), shape: BoxShape.circle),
-                        child: Center(child: Text(initials, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: C.teal)))),
-                      const SizedBox(width: 12),
-                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(display, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-                        const SizedBox(height: 2),
-                        Text(email, style: const TextStyle(fontSize: 12, color: C.text4)),
-                      ])),
-                      if (sGroup.isNotEmpty) Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(8)),
-                        child: Text(sGroup, style: const TextStyle(fontSize: 11, color: C.text4, fontWeight: FontWeight.w700))),
-                    ]),
-                  );
-                },
-              )),
-        ]),
+                  ]))
+                : RefreshIndicator(
+                    color: C.teal,
+                    onRefresh: doRefresh,
+                    child: ListView.separated(
+                      controller: sc,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+                      itemCount: members.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (_, j) {
+                        final s        = members[j];
+                        final name     = (s['full_name'] ?? '').toString().trim();
+                        final email    = (s['email'] ?? '').toString();
+                        final role     = (s['role'] ?? '').toString();
+                        final sGroup   = (s['group'] ?? '').toString();
+                        final display  = name.isNotEmpty ? name : email.split('@').first;
+                        final initials = display.trim().isEmpty ? '?' : display.trim()
+                            .split(RegExp(r'\s+')).take(2)
+                            .map((w) => w.isEmpty ? '' : w[0].toUpperCase()).join();
+                        final isTeacher  = role == 'teacher' || role == 'admin';
+                        final roleColor  = isTeacher ? const Color(0xFF6366F1) : C.teal;
+                        final roleLabel  = isTeacher ? 'Учитель' : 'Ученик';
+                        return Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface,
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: softShadow(isDark),
+                          ),
+                          child: Row(children: [
+                            Container(width: 44, height: 44,
+                              decoration: BoxDecoration(
+                                gradient: RadialGradient(colors: [roleColor.withOpacity(0.24), roleColor.withOpacity(0.07)]),
+                                shape: BoxShape.circle),
+                              child: Center(child: Text(initials,
+                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: roleColor)))),
+                            const SizedBox(width: 12),
+                            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              Text(display, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                              const SizedBox(height: 2),
+                              Text(email, style: const TextStyle(fontSize: 12, color: C.text4)),
+                            ])),
+                            Column(crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(color: roleColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                                child: Text(roleLabel, style: TextStyle(fontSize: 11, color: roleColor, fontWeight: FontWeight.w700))),
+                              if (sGroup.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(8)),
+                                  child: Text(sGroup, style: const TextStyle(fontSize: 11, color: C.text4, fontWeight: FontWeight.w700))),
+                              ],
+                            ]),
+                          ]),
+                        );
+                      },
+                    ),
+                  )),
+            ]),
+          );
+        },
       ),
     );
   }

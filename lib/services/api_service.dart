@@ -133,6 +133,23 @@ class ApiService {
     return response.data;
   }
 
+  Future<List<dynamic>> getClassMembers(int classId) async {
+    try {
+      final response = await _dio.get('/classes/$classId/members');
+      return response.data is List ? response.data : [];
+    } catch (_) {
+      // Fallback: try /classes/{id} which might include members field
+      try {
+        final r = await _dio.get('/classes/$classId');
+        final data = r.data;
+        if (data is Map) {
+          return data['members'] ?? data['students'] ?? data['users'] ?? [];
+        }
+      } catch (_) {}
+      return [];
+    }
+  }
+
   Future<void> joinClass(int classId) async {
     await _dio.post('/classes/$classId/join', data: {});
   }

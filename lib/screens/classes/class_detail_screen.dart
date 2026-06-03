@@ -1066,9 +1066,9 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             // ── Scrollable content ──
             Expanded(child: ListView(controller: sc, padding: EdgeInsets.fromLTRB(20, 20, 20, 24), children: [
         if (a['description'] != null && _cleanContent(a['description'].toString()).isNotEmpty) ...[
-          Row(children: [Container(width: 3, height: 16, decoration: BoxDecoration(color: Color(0xFFF59E0B), borderRadius: BorderRadius.circular(2))), SizedBox(width: 8), Text('Описание', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFFF59E0B)))]),
+          Row(children: [Container(width: 3, height: 16, decoration: BoxDecoration(color: C.teal, borderRadius: BorderRadius.circular(2))), SizedBox(width: 8), Text('Описание', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: C.teal))]),
           SizedBox(height: 10),
-          Container(padding: EdgeInsets.all(14), decoration: BoxDecoration(color: isDark ? C.darkSurface2 : C.bg, borderRadius: BorderRadius.circular(14), border: Border.all(color: Color(0xFFF59E0B).withOpacity(0.12))),
+          Container(padding: EdgeInsets.all(14), decoration: BoxDecoration(color: isDark ? C.darkSurface2 : C.bg, borderRadius: BorderRadius.circular(14), border: Border.all(color: C.teal.withOpacity(0.10))),
             child: Text(_cleanContent(a['description'].toString()), style: TextStyle(fontSize: 14, height: 1.65))),
           SizedBox(height: 20),
         ],
@@ -1077,9 +1077,19 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           List<String> fromField = [];
           final raw = a['file_urls'];
           if (raw is List) {
-            fromField = raw.map((f) => _fixFileUrl(f.toString())).toList();
+            fromField = raw.map((f) => _fixFileUrl(f.toString())).where((s) => s.isNotEmpty).toList();
           } else if (raw is String && raw.isNotEmpty) {
-            try { fromField = (jsonDecode(raw) as List).map((f) => _fixFileUrl(f.toString())).toList(); } catch (_) {}
+            try {
+              final decoded = jsonDecode(raw);
+              if (decoded is List) {
+                fromField = decoded.map((f) => _fixFileUrl(f.toString())).where((s) => s.isNotEmpty).toList();
+              } else if (decoded is String && decoded.isNotEmpty) {
+                fromField = [_fixFileUrl(decoded)];
+              }
+            } catch (_) {
+              // Might be a raw URL string
+              if (raw.startsWith('http')) fromField = [_fixFileUrl(raw)];
+            }
           }
           final fromDesc = a['description'] != null ? _extractFilesFromText(a['description'].toString()) : <String>[];
           final allFiles = {...fromField, ...fromDesc}.toList();
@@ -1088,9 +1098,9 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           return [
             SizedBox(height: 16),
             Row(children: [
-              Container(width: 3, height: 16, decoration: BoxDecoration(color: Color(0xFFF59E0B), borderRadius: BorderRadius.circular(2))),
+              Container(width: 3, height: 16, decoration: BoxDecoration(color: C.teal, borderRadius: BorderRadius.circular(2))),
               SizedBox(width: 8),
-              Text('Прикреплённые файлы', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFFF59E0B), letterSpacing: 0.3)),
+              Text('Прикреплённые файлы', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: C.teal, letterSpacing: 0.3)),
             ]),
             SizedBox(height: 10),
             ...allFiles.asMap().entries.map((entry) {

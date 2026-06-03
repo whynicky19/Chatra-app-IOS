@@ -959,18 +959,118 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     // Student file attachment state
     List<PlatformFile> pickedFiles = [];
 
-    showModalBottomSheet(context: context, isScrollControlled: true, shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => DraggableScrollableSheet(expand: false, initialChildSize: 0.85, maxChildSize: 0.95, builder: (ctx, sc) => ListView(controller: sc, padding: EdgeInsets.all(20), children: [
-        Center(child: Container(width: 40, height: 4, margin: EdgeInsets.only(bottom: 16), decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2)))),
-        Text(a['title'] ?? '', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
-        SizedBox(height: 8),
-        Wrap(spacing: 8, children: [
-          _chip(Icons.star, '${a['max_score'] ?? 100} баллов', C.teal, adaptiveTealLt(context)),
-          if (a['deadline'] != null) _chip(Icons.calendar_today, _fmtDate(a['deadline']), C.text4, adaptiveSurface2(context)),
-        ]),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final deadline = a['deadline'];
+    final isLate = deadline != null && DateTime.tryParse(deadline)?.isBefore(DateTime.now()) == true && sub == null;
+    // Status colors (re-derived for the sheet)
+    final sheetStatusColor = sub?['status'] == 'graded' ? C.green
+        : sub?['status'] == 'submitted' ? C.teal
+        : isLate ? C.red : C.text4;
+    final sheetStatusText = sub?['status'] == 'graded' ? 'Проверено'
+        : sub?['status'] == 'submitted' ? 'Сдано'
+        : isLate ? 'Просрочено' : 'Новое';
+
+    showModalBottomSheet(
+      context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => DraggableScrollableSheet(
+        expand: false, initialChildSize: 0.88, maxChildSize: 0.97, minChildSize: 0.5,
+        builder: (ctx, sc) => Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(children: [
+            // ── Clean teal header ──
+            Container(
+              decoration: BoxDecoration(
+                color: isDark ? C.darkSurface : Colors.white,
+                border: Border(bottom: BorderSide(color: adaptiveBorder(context), width: 1)),
+              ),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                // Handle + close row
+                Padding(
+                  padding: EdgeInsets.fromLTRB(20, 12, 16, 0),
+                  child: Row(children: [
+                    Expanded(child: Center(child: Container(
+                      width: 36, height: 4,
+                      decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2)),
+                    ))),
+                    GestureDetector(
+                      onTap: () => Navigator.pop(ctx),
+                      child: Container(width: 32, height: 32,
+                        decoration: BoxDecoration(color: adaptiveSurface2(context), shape: BoxShape.circle),
+                        child: Icon(Icons.close_rounded, color: C.text4, size: 16)),
+                    ),
+                  ]),
+                ),
+                // Status + type badges
+                Padding(
+                  padding: EdgeInsets.fromLTRB(20, 14, 20, 0),
+                  child: Row(children: [
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                      decoration: BoxDecoration(color: C.teal.withOpacity(0.10), borderRadius: BorderRadius.circular(7)),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(Icons.assignment_outlined, size: 11, color: C.teal),
+                        SizedBox(width: 4),
+                        Text('ЗАДАНИЕ', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: C.teal, letterSpacing: 0.6)),
+                      ]),
+                    ),
+                    SizedBox(width: 8),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                      decoration: BoxDecoration(color: sheetStatusColor.withOpacity(0.10), borderRadius: BorderRadius.circular(7)),
+                      child: Text(sheetStatusText, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: sheetStatusColor)),
+                    ),
+                  ]),
+                ),
+                // Title
+                Padding(
+                  padding: EdgeInsets.fromLTRB(20, 10, 20, 0),
+                  child: Text(a['title'] ?? '',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, height: 1.2, letterSpacing: -0.3, color: adaptiveText1(context)),
+                    maxLines: 2, overflow: TextOverflow.ellipsis),
+                ),
+                // Meta row
+                Padding(
+                  padding: EdgeInsets.fromLTRB(20, 10, 20, 16),
+                  child: Row(children: [
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(color: C.teal.withOpacity(0.08), borderRadius: BorderRadius.circular(8)),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(Icons.star_rounded, size: 13, color: C.teal), SizedBox(width: 4),
+                        Text('${a['max_score'] ?? 100} баллов', style: TextStyle(fontSize: 12, color: C.teal, fontWeight: FontWeight.w700)),
+                      ]),
+                    ),
+                    if (deadline != null) ...[
+                      SizedBox(width: 8),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: isLate ? C.red.withOpacity(0.08) : adaptiveSurface2(context),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(Icons.calendar_today_outlined, size: 12, color: isLate ? C.red : C.text4),
+                          SizedBox(width: 4),
+                          Text(_fmtDate(deadline), style: TextStyle(fontSize: 12, color: isLate ? C.red : C.text4, fontWeight: FontWeight.w600)),
+                        ]),
+                      ),
+                    ],
+                  ]),
+                ),
+              ]),
+            ),
+            // ── Scrollable content ──
+            Expanded(child: ListView(controller: sc, padding: EdgeInsets.fromLTRB(20, 20, 20, 24), children: [
         if (a['description'] != null && _cleanContent(a['description'].toString()).isNotEmpty) ...[
-          SizedBox(height: 16),
-          Text(_cleanContent(a['description'].toString()), style: TextStyle(fontSize: 14, height: 1.6)),
+          Row(children: [Container(width: 3, height: 16, decoration: BoxDecoration(color: Color(0xFFF59E0B), borderRadius: BorderRadius.circular(2))), SizedBox(width: 8), Text('Описание', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFFF59E0B)))]),
+          SizedBox(height: 10),
+          Container(padding: EdgeInsets.all(14), decoration: BoxDecoration(color: isDark ? C.darkSurface2 : C.bg, borderRadius: BorderRadius.circular(14), border: Border.all(color: Color(0xFFF59E0B).withOpacity(0.12))),
+            child: Text(_cleanContent(a['description'].toString()), style: TextStyle(fontSize: 14, height: 1.65))),
+          SizedBox(height: 20),
         ],
         // Attached files: from file_urls field OR legacy regex in description
         ...() {
@@ -1320,7 +1420,11 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           )),
         ],
         SizedBox(height: 24),
-      ]))));
+      ])),
+          ]),
+        ),
+      )),
+    );
   }
 
   Widget _chip(IconData ic, String text, Color fg, Color bg) => Container(
@@ -1812,6 +1916,186 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
 
   Widget _fieldLabel2(String s) => Padding(padding: EdgeInsets.only(bottom: 8), child: Text(s, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.teal, letterSpacing: 1)));
 
+  // ── Edit assignment ──
+  void _editAssignment(dynamic a) {
+    final tc = TextEditingController(text: a['title'] ?? '');
+    final dc = TextEditingController(text: a['description'] ?? '');
+    final sc = TextEditingController(text: '${a['max_score'] ?? 100}');
+    DateTime? deadline;
+    try { if (a['deadline'] != null) deadline = DateTime.parse(a['deadline']); } catch (_) {}
+
+    // Parse existing file URLs
+    List<String> existingUrls = [];
+    final rawU = a['file_urls'];
+    if (rawU is List) { existingUrls = rawU.map((f) => f.toString()).toList(); }
+    else if (rawU is String && rawU.isNotEmpty) { try { existingUrls = (jsonDecode(rawU) as List).map((f) => f.toString()).toList(); } catch (_) {} }
+
+    List<String> keepUrls = List<String>.from(existingUrls);
+    List<PlatformFile> newFiles = [];
+
+    // Parse existing criteria
+    List<Map<String, dynamic>> criteria = [];
+    try {
+      final raw = jsonDecode(a['criteria'] ?? '[]');
+      criteria = (raw as List).map((c) => {'name': c['name'] ?? '', 'weight': c['weight'] ?? 0, 'desc': c['description'] ?? c['desc'] ?? ''}).toList();
+    } catch (_) {}
+    if (criteria.isEmpty) criteria = [{'name': '', 'weight': a['max_score'] ?? 100, 'desc': ''}];
+
+    showModalBottomSheet(
+      context: context, isScrollControlled: true, backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => DraggableScrollableSheet(
+        expand: false, initialChildSize: 0.9, maxChildSize: 0.95,
+        builder: (ctx, scroll) => ListView(controller: scroll, padding: EdgeInsets.all(24), children: [
+          Row(children: [
+            Container(width: 44, height: 44, decoration: BoxDecoration(color: Color(0xFFF59E0B).withOpacity(0.15), borderRadius: BorderRadius.circular(14)),
+              child: Icon(Icons.edit_note_rounded, color: Color(0xFFF59E0B), size: 22)),
+            SizedBox(width: 12),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Редактировать задание', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+              Text(a['title'] ?? '', style: TextStyle(fontSize: 12, color: C.text4), overflow: TextOverflow.ellipsis),
+            ])),
+            IconButton(icon: Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+          ]),
+          SizedBox(height: 24),
+          _fieldLabel2('НАЗВАНИЕ *'),
+          TextField(controller: tc, decoration: InputDecoration(hintText: 'Название задания')),
+          SizedBox(height: 16),
+          _fieldLabel2('ОПИСАНИЕ'),
+          TextField(controller: dc, decoration: InputDecoration(hintText: 'Описание и требования...'), maxLines: 4),
+          SizedBox(height: 16),
+          _fieldLabel2('МАКС. БАЛЛ'),
+          TextField(controller: sc, keyboardType: TextInputType.number, decoration: InputDecoration(hintText: '100')),
+          SizedBox(height: 16),
+          _fieldLabel2('ДЕДЛАЙН'),
+          GestureDetector(onTap: () async {
+            final d = await showDatePicker(context: ctx, initialDate: deadline ?? DateTime.now().add(Duration(days: 7)), firstDate: DateTime.now().subtract(Duration(days: 1)), lastDate: DateTime.now().add(Duration(days: 365)));
+            if (d != null) {
+              final t = await showTimePicker(context: ctx, initialTime: TimeOfDay(hour: deadline?.hour ?? 23, minute: deadline?.minute ?? 59));
+              setS(() => deadline = DateTime(d.year, d.month, d.day, t?.hour ?? 23, t?.minute ?? 59));
+            }
+          }, child: Container(padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(14)),
+            child: Row(children: [
+              Text(deadline != null ? '${deadline!.day.toString().padLeft(2,'0')}.${deadline!.month.toString().padLeft(2,'0')}.${deadline!.year} ${deadline!.hour.toString().padLeft(2,'0')}:${deadline!.minute.toString().padLeft(2,'0')}' : 'ДД.ММ.ГГГГ --:--', style: TextStyle(fontSize: 14, color: deadline != null ? null : C.text4)),
+              Spacer(), Icon(Icons.calendar_today, size: 18, color: C.text4),
+            ]))),
+          SizedBox(height: 20),
+          // Existing files
+          if (keepUrls.isNotEmpty) ...[
+            Row(children: [
+              Text('ТЕКУЩИЕ ФАЙЛЫ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.teal, letterSpacing: 1)),
+              Spacer(),
+              Text('нажмите × для удаления', style: TextStyle(fontSize: 11, color: C.text4)),
+            ]),
+            SizedBox(height: 8),
+            ...keepUrls.map((url) {
+              final name = Uri.parse(url).pathSegments.last;
+              return Container(margin: EdgeInsets.only(bottom: 6), padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(color: C.teal.withOpacity(0.06), borderRadius: BorderRadius.circular(12)),
+                child: Row(children: [
+                  Icon(Icons.insert_drive_file_outlined, size: 15, color: C.teal), SizedBox(width: 8),
+                  Expanded(child: Text(name, style: TextStyle(fontSize: 13, color: C.teal), overflow: TextOverflow.ellipsis)),
+                  GestureDetector(onTap: () => setS(() => keepUrls.remove(url)), child: Icon(Icons.close, size: 15, color: C.red)),
+                ]));
+            }),
+            SizedBox(height: 12),
+          ],
+          // Add new files
+          Row(children: [
+            Text('ДОБАВИТЬ ФАЙЛЫ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.teal, letterSpacing: 1)),
+            Spacer(),
+            GestureDetector(
+              onTap: () async {
+                final r = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
+                if (r != null) setS(() => newFiles.addAll(r.files));
+              },
+              child: Text('+ Добавить', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: C.teal)),
+            ),
+          ]),
+          SizedBox(height: 8),
+          if (newFiles.isNotEmpty) ...newFiles.map((f) => Container(margin: EdgeInsets.only(bottom: 6), padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(color: C.teal.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
+            child: Row(children: [
+              Icon(Icons.insert_drive_file_outlined, size: 15, color: C.teal), SizedBox(width: 8),
+              Expanded(child: Text(f.name, style: TextStyle(fontSize: 13, color: C.teal), overflow: TextOverflow.ellipsis)),
+              GestureDetector(onTap: () => setS(() => newFiles.remove(f)), child: Icon(Icons.close, size: 15, color: C.text4)),
+            ])))
+          else Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(12)),
+            child: Row(children: [Icon(Icons.attach_file, size: 15, color: C.text4), SizedBox(width: 8), Text('Нет новых файлов', style: TextStyle(fontSize: 13, color: C.text4))])),
+          SizedBox(height: 24),
+          // Criteria
+          Row(children: [
+            Text('КРИТЕРИИ ОЦЕНИВАНИЯ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.teal, letterSpacing: 1)),
+            Spacer(),
+            GestureDetector(onTap: () => setS(() => criteria.add({'name': '', 'weight': 0, 'desc': ''})),
+              child: Text('+ Добавить', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: C.teal))),
+          ]),
+          SizedBox(height: 12),
+          ...List.generate(criteria.length, (i) {
+            final nameC   = TextEditingController(text: criteria[i]['name']);
+            final weightC = TextEditingController(text: '${criteria[i]['weight']}');
+            final descC   = TextEditingController(text: criteria[i]['desc'] ?? '');
+            return Container(margin: EdgeInsets.only(bottom: 10), padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(14)),
+              child: Column(children: [
+                Row(children: [
+                  Text('${i+1}', style: TextStyle(fontSize: 12, color: C.text4)), SizedBox(width: 8),
+                  Expanded(child: TextField(controller: nameC, decoration: InputDecoration(hintText: 'Критерий', contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10)), onChanged: (v) => criteria[i]['name'] = v)),
+                  SizedBox(width: 8),
+                  SizedBox(width: 60, child: TextField(controller: weightC, keyboardType: TextInputType.number, textAlign: TextAlign.center, decoration: InputDecoration(contentPadding: EdgeInsets.symmetric(vertical: 10)), onChanged: (v) => criteria[i]['weight'] = int.tryParse(v) ?? 0)),
+                  SizedBox(width: 4),
+                  GestureDetector(onTap: () { if (criteria.length > 1) setS(() => criteria.removeAt(i)); }, child: Icon(Icons.close, size: 16, color: C.red)),
+                ]),
+                SizedBox(height: 6),
+                TextField(controller: descC, decoration: InputDecoration(hintText: 'Описание критерия', contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10)), onChanged: (v) => criteria[i]['desc'] = v),
+              ]));
+          }),
+          SizedBox(height: 24),
+          Row(children: [
+            Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: Text('Отмена'), style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)))),
+            SizedBox(width: 12),
+            Expanded(child: ElevatedButton.icon(
+              icon: Icon(Icons.check_rounded, size: 16, color: Colors.white),
+              label: Text('Сохранить'),
+              style: ElevatedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)),
+              onPressed: () async {
+                if (tc.text.trim().isEmpty) return;
+                try {
+                  final api = context.read<ApiService>();
+                  final uploadedUrls = <String>[];
+                  for (final pf in newFiles) {
+                    if (pf.path != null) {
+                      try {
+                        final res = await api.uploadFile(pf.path!, pf.name);
+                        final url = res['url'] ?? res['file_url'] ?? res['path'];
+                        if (url != null) uploadedUrls.add(url.toString());
+                      } catch (_) {}
+                    }
+                  }
+                  final allUrls = [...keepUrls, ...uploadedUrls];
+                  final maxScore = int.tryParse(sc.text) ?? 100;
+                  final finalCriteria = criteria.where((c) => c['name'].toString().isNotEmpty)
+                      .map((c) => {'name': c['name'], 'weight': c['weight'], 'description': c['desc']}).toList();
+                  await api.updateAssignment(a['id'], {
+                    'title': tc.text.trim(),
+                    'description': dc.text.trim(),
+                    'max_score': maxScore,
+                    'criteria': finalCriteria,
+                    if (deadline != null) 'deadline': deadline!.toIso8601String(),
+                    if (allUrls.isNotEmpty) 'file_urls': allUrls,
+                  });
+                  Navigator.pop(ctx); _loadAssignments(); showToast(context, 'Задание обновлено');
+                } catch (_) { showToast(context, 'Ошибка', error: true); }
+              },
+            )),
+          ]),
+          SizedBox(height: 24),
+        ]),
+      )),
+    );
+  }
+
   void _editClass() {
     final meta = _meta;
     final tc = TextEditingController(text: _title), dc = TextEditingController(text: meta['description'] ?? ''), tn = TextEditingController(text: meta['teacher_name'] ?? '');
@@ -2019,16 +2303,21 @@ class _AiChatState extends State<_AiChat> with TickerProviderStateMixin {
             curve: Curves.easeOutBack,
             width: 44, height: 44,
             decoration: BoxDecoration(
-              gradient: hasText && !_loading ? LinearGradient(colors: [C.teal, C.tealDk], begin: Alignment.topLeft, end: Alignment.bottomRight) : null,
-              color: hasText || _loading ? null : adaptiveSurface2(context),
+              gradient: !_loading ? LinearGradient(
+                colors: hasText
+                    ? [C.teal, C.tealDk]
+                    : [C.teal.withOpacity(0.55), C.tealDk.withOpacity(0.45)],
+                begin: Alignment.topLeft, end: Alignment.bottomRight,
+              ) : null,
+              color: _loading ? adaptiveSurface2(context) : null,
               borderRadius: BorderRadius.circular(14),
-              boxShadow: hasText && !_loading ? tealGlow(opacity: 0.36) : null,
+              boxShadow: hasText && !_loading ? tealGlow(opacity: 0.32) : null,
             ),
             child: GestureDetector(
               onTap: _send,
               child: _loading
                   ? Center(child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: C.teal)))
-                  : Icon(Icons.arrow_upward_rounded, color: hasText ? Colors.white : C.text4, size: 20),
+                  : Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 20),
             ),
           ),
         ]),

@@ -154,10 +154,10 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
           child: Container(
             width: 38, height: 38,
             decoration: BoxDecoration(
-              color: adaptiveSurface2(context),
+              color: C.teal.withOpacity(0.08),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(Icons.delete_outline_rounded, color: C.text4, size: 19),
+            child: Icon(Icons.delete_outline_rounded, color: C.teal, size: 19),
           ),
         ),
       ]),
@@ -415,20 +415,25 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
         )),
         SizedBox(width: 10),
         AnimatedContainer(
-          duration: Duration(milliseconds: 220),
+          duration: Duration(milliseconds: 200),
           curve: Curves.easeOutBack,
           width: 48, height: 48,
           decoration: BoxDecoration(
-            gradient: hasText && !_loading ? LinearGradient(colors: [C.teal, C.tealDk], begin: Alignment.topLeft, end: Alignment.bottomRight) : null,
-            color: hasText || _loading ? null : adaptiveSurface2(context),
+            gradient: !_loading ? LinearGradient(
+              colors: hasText
+                  ? [C.teal, C.tealDk]
+                  : [C.teal.withOpacity(0.55), C.tealDk.withOpacity(0.45)],
+              begin: Alignment.topLeft, end: Alignment.bottomRight,
+            ) : null,
+            color: _loading ? adaptiveSurface2(context) : null,
             borderRadius: BorderRadius.circular(16),
-            boxShadow: hasText && !_loading ? [BoxShadow(color: C.teal.withOpacity(0.42), blurRadius: 16, offset: Offset(0, 5))] : null,
+            boxShadow: hasText && !_loading ? [BoxShadow(color: C.teal.withOpacity(0.38), blurRadius: 14, offset: Offset(0, 4))] : null,
           ),
           child: GestureDetector(
             onTap: _send,
             child: _loading
               ? Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: C.teal)))
-              : Icon(Icons.arrow_upward_rounded, color: hasText ? Colors.white : C.text4, size: 22),
+              : Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 22),
           ),
         ),
       ]),

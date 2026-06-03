@@ -79,7 +79,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const Icon(Icons.warning_amber_rounded, size: 16, color: Color(0xFFD97706)),
                     const SizedBox(width: 8),
                     const Expanded(child: Text(
-                      'Ваше ФИО указано не на русском языке. Пожалуйста, обновите его ниже.',
+                      'Ваше ФИО указано не на кириллице. Пожалуйста, обновите его ниже.',
                       style: TextStyle(fontSize: 12, color: Color(0xFF92400E), fontWeight: FontWeight.w500, height: 1.4),
                     )),
                   ]),
@@ -99,7 +99,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: const Row(children: [
                       Icon(Icons.error_outline_rounded, size: 14, color: C.red),
                       SizedBox(width: 7),
-                      Expanded(child: Text('ФИО должно быть на русском языке', style: TextStyle(fontSize: 12, color: C.red, fontWeight: FontWeight.w500))),
+                      Expanded(child: Text('ФИО должно быть на кириллице (рус/каз)', style: TextStyle(fontSize: 12, color: C.red, fontWeight: FontWeight.w500))),
                     ]),
                   ),
                 ),
@@ -217,7 +217,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   bool _isCyrillicName(String name) {
     if (name.trim().isEmpty) return true;
-    return RegExp(r'^[а-яА-ЯёЁ\s\-]+$').hasMatch(name.trim());
+    return RegExp(r'^[а-яА-ЯёЁәӘғҒқҚңҢөӨұҰүҮһҺіІ\s\-]+$').hasMatch(name.trim());
   }
 
   Widget _label(String s) => Padding(padding: const EdgeInsets.only(bottom: 7),

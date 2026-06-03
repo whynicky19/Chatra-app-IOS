@@ -37,11 +37,10 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
 
   @override void dispose() { _anim.dispose(); super.dispose(); }
 
-  // ФИО должно быть только кириллицей
   bool get _nameIsCyrillic {
     final n = _name.text.trim();
     if (n.isEmpty) return true;
-    return RegExp(r'^[а-яА-ЯёЁ\s\-]+$').hasMatch(n);
+    return RegExp(r'^[а-яА-ЯёЁәӘғҒқҚңҢөӨұҰүҮһҺіІ\s\-]+$').hasMatch(n);
   }
 
   bool get _ok {
@@ -159,7 +158,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                       child: const Row(children: [
                         Icon(Icons.error_outline_rounded, size: 14, color: C.red),
                         SizedBox(width: 7),
-                        Expanded(child: Text('ФИО должно быть на русском языке', style: TextStyle(fontSize: 12, color: C.red, fontWeight: FontWeight.w500))),
+                        Expanded(child: Text('ФИО должно быть на кириллице (рус/каз)', style: TextStyle(fontSize: 12, color: C.red, fontWeight: FontWeight.w500))),
                       ]),
                     ),
                   ),

@@ -699,6 +699,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
         builder: (ctx, setS) {
           // Computed from already-loaded _users — teacher (creator) first, then students by group
           final members = _membersForClass(group, creatorId);
+          final studentCount = members.where((m) => (m['role'] ?? '') == 'student').length;
 
           Future<void> doRefresh() async {
             setS(() {}); // triggers rebuild after _load updates _users
@@ -724,7 +725,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                   Row(children: [
                     const Icon(Icons.people_rounded, size: 13, color: C.teal),
                     const SizedBox(width: 4),
-                    Text('${members.length} ${l.t('students_count')}',
+                    Text('$studentCount ${l.t('students_count')}',
                       style: const TextStyle(fontSize: 12, color: C.teal, fontWeight: FontWeight.w600)),
                     if (group.isNotEmpty) ...[
                       const SizedBox(width: 8),

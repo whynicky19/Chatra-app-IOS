@@ -183,6 +183,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                 TextField(
                   controller: _groupQ,
                   decoration: InputDecoration(
+                    hintText: 'ISU-25',
                     prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
                       child: Icon(Icons.group_outlined, size: 18, color: C.text4)),
                     suffixIcon: _group.isNotEmpty
@@ -213,6 +214,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                   controller: _pw,
                   obscureText: true,
                   decoration: const InputDecoration(
+                    hintText: '••••••••',
                     prefixIcon: Padding(padding: EdgeInsets.only(left: 4),
                       child: Icon(Icons.lock_outline_rounded, size: 18, color: C.text4)),
                   ),

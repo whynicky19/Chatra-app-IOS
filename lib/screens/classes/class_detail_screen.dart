@@ -742,7 +742,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     final files    = _extractFiles(p);
     final cleanText = _cleanContent(content);
     final isLecture = type == 'lecture';
-    final accent    = isLecture ? C.teal : const Color(0xFF6366F1);
+    final accent    = C.teal;
     final isDark    = Theme.of(context).brightness == Brightness.dark;
 
     showModalBottomSheet(
@@ -765,9 +765,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: isLecture
-                      ? [const Color(0xFF006475), C.teal]
-                      : [const Color(0xFF3730A3), const Color(0xFF6366F1)],
+                  colors: const [Color(0xFF006475), C.teal],
                   begin: Alignment.topLeft, end: Alignment.bottomRight,
                 ),
               ),

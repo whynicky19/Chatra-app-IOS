@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -18,11 +19,24 @@ class ChatsScreen extends StatefulWidget {
 class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStateMixin {
   final _searchCtrl = TextEditingController();
   final _msgCtrl = TextEditingController();
-  Timer? _poller;
+  // Background timer: refreshes unread badges for the chat list.
+  // Runs at 10 s; WS handles the open-chat stream in real time.
+  Timer? _bgPoller;
   late AnimationController _listAnim;
   final ScrollController _chatScrollCtrl = ScrollController();
+  // Throttle: send typing event at most once per 2 s.
+  DateTime? _lastTypingSent;
 
-  static const _avatarColors = [C.teal, Color(0xFF6366F1), Color(0xFFF59E0B), Color(0xFF0891B2), Color(0xFFEC4899), Color(0xFF059669), Color(0xFFD97706), Color(0xFF64748B)];
+  static const _avatarColors = [
+    C.teal,
+    Color(0xFF6366F1),
+    Color(0xFFF59E0B),
+    Color(0xFF0891B2),
+    Color(0xFFEC4899),
+    Color(0xFF059669),
+    Color(0xFFD97706),
+    Color(0xFF64748B),
+  ];
 
   @override
   void initState() {
@@ -31,12 +45,16 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
     final provider = context.read<ChatsProvider>();
     provider.addListener(_onProviderError);
     provider.loadSeenMsgIds().then((_) => provider.loadChats());
-    _poller = Timer.periodic(const Duration(seconds: 5), (_) => context.read<ChatsProvider>().pollMessages());
+    // Background poll for unread counts while browsing the chat list.
+    // Skips the WS-active chat automatically inside pollMessages().
+    _bgPoller = Timer.periodic(const Duration(seconds: 10), (_) {
+      context.read<ChatsProvider>().pollMessages();
+    });
   }
 
   @override
   void dispose() {
-    _poller?.cancel();
+    _bgPoller?.cancel();
     _listAnim.dispose();
     _chatScrollCtrl.dispose();
     _msgCtrl.dispose();
@@ -61,12 +79,24 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
     });
   }
 
+  // Throttled: sends a typing WS event at most once every 2 s.
+  void _onMsgChanged(String _) {
+    final now = DateTime.now();
+    if (_lastTypingSent == null ||
+        now.difference(_lastTypingSent!) > const Duration(seconds: 2)) {
+      _lastTypingSent = now;
+      context.read<ChatsProvider>().sendTyping();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<ChatsProvider>();
     if (provider.activeChatId != null) return _buildChatView(provider);
     return _buildChatList(provider);
   }
+
+  // ── Chat list ─────────────────────────────────────────────────────────────────
 
   Widget _buildChatList(ChatsProvider provider) {
     final l = context.watch<L10n>();
@@ -83,7 +113,6 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
             Text(l.t('your_conversations'), style: const TextStyle(fontSize: 13, color: C.text4)),
           ]),
           const Spacer(),
-          // New chat button
           GestureDetector(
             onTap: () { FocusScope.of(context).requestFocus(FocusNode()); showToast(context, l.t('find_user_hint')); },
             child: Container(width: 44, height: 44, decoration: BoxDecoration(color: C.teal, borderRadius: BorderRadius.circular(14)),
@@ -108,7 +137,8 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
           ))),
         // Search results
         if (provider.searchResults.isNotEmpty) Container(
-          constraints: const BoxConstraints(maxHeight: 220), margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          constraints: const BoxConstraints(maxHeight: 220),
+          margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
           decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(16),
             boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12)]),
           child: ClipRRect(borderRadius: BorderRadius.circular(16), child: ListView(shrinkWrap: true,
@@ -166,12 +196,13 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
                           boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.15 : 0.04), blurRadius: 10, offset: const Offset(0, 2))],
                         ),
                         child: Padding(padding: const EdgeInsets.all(14), child: Row(children: [
-                          // Avatar with online dot
                           Stack(children: [
-                            Container(width: 52, height: 52, decoration: BoxDecoration(gradient: RadialGradient(colors: [color.withOpacity(0.3), color.withOpacity(0.12)]), shape: BoxShape.circle),
+                            Container(width: 52, height: 52,
+                              decoration: BoxDecoration(gradient: RadialGradient(colors: [color.withOpacity(0.3), color.withOpacity(0.12)]), shape: BoxShape.circle),
                               child: Center(child: Text(initials, style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 20)))),
                             if (unread) Positioned(right: 0, bottom: 0,
-                              child: Container(width: 14, height: 14, decoration: BoxDecoration(color: C.teal, shape: BoxShape.circle, border: Border.all(color: surface, width: 2)))),
+                              child: Container(width: 14, height: 14,
+                                decoration: BoxDecoration(color: C.teal, shape: BoxShape.circle, border: Border.all(color: surface, width: 2)))),
                           ]),
                           const SizedBox(width: 14),
                           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -206,6 +237,8 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
     ]));
   }
 
+  // ── Chat view ─────────────────────────────────────────────────────────────────
+
   Widget _buildChatView(ChatsProvider provider) {
     final l = context.watch<L10n>();
     final msgs = provider.messages[provider.activeChatId] ?? [];
@@ -217,24 +250,45 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PreferredSize(preferredSize: const Size.fromHeight(64), child: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.05), blurRadius: 8)],
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(64),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.05), blurRadius: 8)],
+          ),
+          child: SafeArea(child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  final p = context.read<ChatsProvider>();
+                  if (p.activeChatId != null) p.markSeen(p.activeChatId!);
+                  p.setActiveChatId(null);
+                }),
+              Container(width: 38, height: 38,
+                decoration: BoxDecoration(gradient: RadialGradient(colors: [color.withOpacity(0.3), color.withOpacity(0.12)]), shape: BoxShape.circle),
+                child: Center(child: Text(title.isNotEmpty ? title[0].toUpperCase() : '?',
+                  style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 15)))),
+              const SizedBox(width: 10),
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800), overflow: TextOverflow.ellipsis),
+                  // Typing sub-label in the app bar
+                  if (provider.someoneIsTyping)
+                    const Text('печатает...', style: TextStyle(fontSize: 11, color: C.teal, fontWeight: FontWeight.w500)),
+                ],
+              )),
+            ]),
+          )),
         ),
-        child: SafeArea(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8), child: Row(children: [
-          IconButton(icon: const Icon(Icons.arrow_back_ios_new, size: 18), onPressed: () {
-            HapticFeedback.lightImpact();
-            final p = context.read<ChatsProvider>();
-            if (p.activeChatId != null) p.markSeen(p.activeChatId!);
-            p.setActiveChatId(null);
-          }),
-          Container(width: 38, height: 38, decoration: BoxDecoration(gradient: RadialGradient(colors: [color.withOpacity(0.3), color.withOpacity(0.12)]), shape: BoxShape.circle),
-            child: Center(child: Text(title.isNotEmpty ? title[0].toUpperCase() : '?', style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 15)))),
-          const SizedBox(width: 10),
-          Expanded(child: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800), overflow: TextOverflow.ellipsis)),
-        ]))))),
+      ),
       body: Column(children: [
+        // Message list
         Expanded(child: msgs.isEmpty
           ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
               Icon(Icons.waving_hand_outlined, size: 48, color: C.teal.withOpacity(0.4)),
@@ -251,7 +305,8 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
                 return TweenAnimationBuilder<double>(
                   tween: Tween(begin: 0.0, end: 1.0),
                   duration: const Duration(milliseconds: 200),
-                  builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(isMe ? 20 * (1 - t) : -20 * (1 - t), 0), child: child)),
+                  builder: (_, t, child) => Opacity(opacity: t,
+                    child: Transform.translate(offset: Offset(isMe ? 20 * (1 - t) : -20 * (1 - t), 0), child: child)),
                   child: Align(
                     alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
                     child: Container(
@@ -264,13 +319,19 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
                           topLeft: const Radius.circular(20), topRight: const Radius.circular(20),
                           bottomLeft: Radius.circular(isMe ? 20 : 6),
                           bottomRight: Radius.circular(isMe ? 6 : 20)),
-                        boxShadow: [BoxShadow(color: isMe ? C.teal.withOpacity(0.25) : Colors.black.withOpacity(isDark ? 0.2 : 0.08), blurRadius: 12, offset: const Offset(0, 3))],
+                        boxShadow: [BoxShadow(
+                          color: isMe ? C.teal.withOpacity(0.25) : Colors.black.withOpacity(isDark ? 0.2 : 0.08),
+                          blurRadius: 12, offset: const Offset(0, 3))],
                       ),
                       child: _buildMessageContent(m['content'] ?? '', isMe),
                     ),
                   ),
                 );
               })),
+
+        // Typing indicator bubble
+        if (provider.someoneIsTyping) const _TypingBubble(),
+
         // Input bar
         Container(
           padding: const EdgeInsets.fromLTRB(12, 10, 12, 90),
@@ -279,8 +340,8 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
             boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.06), blurRadius: 12, offset: const Offset(0, -2))],
           ),
           child: Row(children: [
-            // Photo attachment: gallery + camera
-            GestureDetector(onTap: () => _showPhotoMenu(context, provider.activeChatId!),
+            GestureDetector(
+              onTap: () => _showPhotoMenu(context, provider.activeChatId!),
               child: Container(width: 40, height: 40, margin: const EdgeInsets.only(right: 6),
                 decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
                 child: const Icon(Icons.add_rounded, size: 22, color: C.teal))),
@@ -288,7 +349,12 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
               decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(24)),
               child: TextField(
                 controller: _msgCtrl,
-                decoration: InputDecoration(hintText: l.t('message'), border: InputBorder.none, enabledBorder: InputBorder.none, focusedBorder: InputBorder.none, filled: false, contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12)),
+                decoration: InputDecoration(
+                  hintText: l.t('message'),
+                  border: InputBorder.none, enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none, filled: false,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12)),
+                onChanged: _onMsgChanged,
                 onSubmitted: (_) => _send(),
                 maxLines: 4, minLines: 1,
               ))),
@@ -300,7 +366,9 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
                 duration: const Duration(milliseconds: 150),
                 builder: (_, t, child) => Transform.scale(scale: t, child: child),
                 child: Container(width: 48, height: 48,
-                  decoration: BoxDecoration(gradient: const LinearGradient(colors: [C.teal, C.tealDk], begin: Alignment.topLeft, end: Alignment.bottomRight), borderRadius: BorderRadius.circular(16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(colors: [C.teal, C.tealDk], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                    borderRadius: BorderRadius.circular(16),
                     boxShadow: [BoxShadow(color: C.teal.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 4))]),
                   child: const Icon(Icons.send_rounded, color: Colors.white, size: 20)),
               )),
@@ -328,11 +396,16 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
     });
   }
 
+  // ── Photo menu ────────────────────────────────────────────────────────────────
+
   void _showPhotoMenu(BuildContext context, int chatId) {
-    showModalBottomSheet(context: context, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => SafeArea(child: Padding(padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Container(width: 36, height: 4, decoration: BoxDecoration(color: C.text4.withOpacity(0.3), borderRadius: BorderRadius.circular(2))),
+          Container(width: 36, height: 4,
+            decoration: BoxDecoration(color: C.text4.withOpacity(0.3), borderRadius: BorderRadius.circular(2))),
           const SizedBox(height: 20),
           _photoOption(ctx, Icons.photo_library_rounded, 'Галерея', () async {
             Navigator.pop(ctx);
@@ -374,6 +447,8 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
     if (err != null) showToast(context, err, error: true);
   }
 
+  // ── Message content renderer ──────────────────────────────────────────────────
+
   Widget _buildMessageContent(String content, bool isMe) {
     String fixedContent = content;
     try {
@@ -383,7 +458,6 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
           .replaceAll(RegExp(r'https?://127\.0\.0\.1:\d+'), api.baseUrl);
     } catch (_) {}
 
-    // Check for image URL in content
     final imgRegex = RegExp(r'https?://\S+\.(jpg|jpeg|png|gif|webp)', caseSensitive: false);
     final imgMatch = imgRegex.firstMatch(fixedContent);
     if (imgMatch != null) {
@@ -391,13 +465,17 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
       final textPart = fixedContent.replaceAll(RegExp(r'\[.*?\]\(.*?\)'), '').replaceAll(url, '').trim();
       return ClipRRect(borderRadius: BorderRadius.circular(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Image.network(url, fit: BoxFit.cover, width: double.infinity, height: 200,
-          loadingBuilder: (_, child, progress) => progress == null ? child : Container(height: 200, color: adaptiveSurface2(context), child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: C.teal))),
-          errorBuilder: (_, __, ___) => Container(height: 80, padding: const EdgeInsets.all(16), child: Row(children: [const Icon(Icons.broken_image, color: C.text4), const SizedBox(width: 8), Flexible(child: Text(url.split('/').last, style: TextStyle(color: isMe ? Colors.white70 : C.text4, fontSize: 12)))]))),
-        if (textPart.isNotEmpty) Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 10), child: Text(textPart, style: TextStyle(fontSize: 14, color: isMe ? Colors.white : null))),
+          loadingBuilder: (_, child, progress) => progress == null ? child
+              : Container(height: 200, color: adaptiveSurface2(context), child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: C.teal))),
+          errorBuilder: (_, __, ___) => Container(height: 80, padding: const EdgeInsets.all(16), child: Row(children: [
+            const Icon(Icons.broken_image, color: C.text4), const SizedBox(width: 8),
+            Flexible(child: Text(url.split('/').last, style: TextStyle(color: isMe ? Colors.white70 : C.text4, fontSize: 12))),
+          ]))),
+        if (textPart.isNotEmpty) Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+          child: Text(textPart, style: TextStyle(fontSize: 14, color: isMe ? Colors.white : null))),
       ]));
     }
 
-    // Check for any URL
     final urlRegex = RegExp(r'https?://\S+');
     final urlMatch = urlRegex.firstMatch(fixedContent);
     if (urlMatch != null) {
@@ -408,13 +486,83 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
         if (before.isNotEmpty) Text(before, style: TextStyle(fontSize: 15, color: isMe ? Colors.white : null)),
         Container(margin: const EdgeInsets.only(top: 6), padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(color: (isMe ? Colors.white : C.teal).withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
-          child: Row(children: [Icon(Icons.link, size: 16, color: isMe ? Colors.white70 : C.teal), const SizedBox(width: 8),
-            Flexible(child: Text(url.length > 40 ? '${url.substring(0, 40)}...' : url, style: TextStyle(fontSize: 12, color: isMe ? Colors.white70 : C.teal, decoration: TextDecoration.underline)))])),
-        if (after.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4), child: Text(after, style: TextStyle(fontSize: 14, color: isMe ? Colors.white70 : C.text4))),
+          child: Row(children: [
+            Icon(Icons.link, size: 16, color: isMe ? Colors.white70 : C.teal),
+            const SizedBox(width: 8),
+            Flexible(child: Text(url.length > 40 ? '${url.substring(0, 40)}...' : url,
+              style: TextStyle(fontSize: 12, color: isMe ? Colors.white70 : C.teal, decoration: TextDecoration.underline))),
+          ])),
+        if (after.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4),
+          child: Text(after, style: TextStyle(fontSize: 14, color: isMe ? Colors.white70 : C.text4))),
       ]));
     }
 
     return Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Text(fixedContent, style: TextStyle(fontSize: 15, color: isMe ? Colors.white : null, height: 1.4)));
+  }
+}
+
+// ── Typing indicator bubble ───────────────────────────────────────────────────
+
+class _TypingBubble extends StatefulWidget {
+  const _TypingBubble();
+  @override State<_TypingBubble> createState() => _TypingBubbleState();
+}
+
+class _TypingBubbleState extends State<_TypingBubble> with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20), topRight: Radius.circular(20),
+              bottomLeft: Radius.circular(6), bottomRight: Radius.circular(20)),
+            boxShadow: [BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.18 : 0.06),
+              blurRadius: 8, offset: const Offset(0, 2))],
+          ),
+          child: AnimatedBuilder(
+            animation: _ctrl,
+            builder: (_, __) => Row(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(3, (i) {
+                // Each dot peaks at a different phase (0, 0.33, 0.66 of the cycle).
+                final phase = (_ctrl.value - i / 3.0) % 1.0;
+                final brightness = (sin(phase * 2 * pi) + 1) / 2; // 0..1
+                return Container(
+                  width: 7, height: 7,
+                  margin: const EdgeInsets.symmetric(horizontal: 2.5),
+                  decoration: BoxDecoration(
+                    color: C.teal.withOpacity(0.3 + 0.7 * brightness),
+                    shape: BoxShape.circle,
+                  ),
+                );
+              }),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

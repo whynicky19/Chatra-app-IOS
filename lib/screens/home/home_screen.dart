@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/l10n_provider.dart';
-import '../../services/api_service.dart';
+import '../../providers/classes_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/class_utils.dart';
 import '../../widgets/toast.dart';
 import '../notifications/notifications_screen.dart';
 
@@ -18,84 +18,28 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List<dynamic> _posts = [];
-  bool _loading = true;
-  Set<int> _joinedClassIds = {};
-  int _unreadNotifCount = 0;
-
-  @override void initState() {
+  @override
+  void initState() {
     super.initState();
-    _loadJoined().then((_) => _load());
-    _loadNotifBadge();
+    final provider = context.read<ClassesProvider>();
+    provider.addListener(_onProviderError);
+    provider.loadJoined().then((_) => provider.load());
+    provider.loadNotifBadge();
   }
 
-  String _prefsKey() {
-    final uid = context.read<AuthProvider>().userId ?? 0;
-    return 'joined_classes_$uid';
+  @override
+  void dispose() {
+    context.read<ClassesProvider>().removeListener(_onProviderError);
+    super.dispose();
   }
 
-  Future<void> _loadJoined() async {
-    final uid = context.read<AuthProvider>().userId ?? 0;
-    final prefs = await SharedPreferences.getInstance();
-    final list = prefs.getStringList('joined_classes_$uid') ?? [];
-    if (mounted) setState(() => _joinedClassIds = list.map(int.parse).toSet());
-  }
-
-  Future<void> _saveJoined() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_prefsKey(), _joinedClassIds.map((e) => e.toString()).toList());
-  }
-
-  Future<void> _joinClass(int id, String title) async {
-    setState(() => _joinedClassIds.add(id));
-    await _saveJoined();
-    try { await context.read<ApiService>().enrollPostClass(id); } catch (_) {}
-    if (mounted) showToast(context, 'Joined $title');
-  }
-
-  Future<void> _loadNotifBadge() async {
-    final auth = context.read<AuthProvider>();
-    if (auth.isTeacher) return;
-    try {
-      final uid = auth.userId ?? 0;
-      final prefs = await SharedPreferences.getInstance();
-      final seenGrade = (prefs.getStringList('notif_seen_grade_$uid') ?? []).map(int.parse).toSet();
-      final subs = await context.read<ApiService>().getMySubmissions();
-      final count = subs.where((s) =>
-        s['status'] == 'graded' && s['grade'] != null &&
-        !seenGrade.contains((s['id'] as num?)?.toInt())).length;
-      if (mounted) setState(() => _unreadNotifCount = count);
-    } catch (_) {}
-  }
-
-  Future<void> _load() async {
-    if (!mounted) return; setState(() => _loading = true);
-    try { _posts = await context.read<ApiService>().getPosts(); } catch (_) {}
-    if (mounted) setState(() => _loading = false);
-  }
-
-  List<Map<String, dynamic>> get _allClasses {
-    return _posts.where((p) { try { return jsonDecode(p['body'])['type'] == 'class'; } catch (_) { return false; } })
-      .map((p) { try { final b = jsonDecode(p['body']); return {...p as Map<String, dynamic>, ...b as Map<String, dynamic>, 'title': p['title']}; } catch (_) { return p as Map<String, dynamic>; } }).toList();
-  }
-
-  List<Map<String, dynamic>> get _classes {
-    final auth = context.read<AuthProvider>();
-    if (auth.isAdmin) return _allClasses;
-    if (auth.isTeacher) {
-      final myId = auth.userId;
-      return _allClasses.where((c) {
-        final isOwn = (c['user_id'] as num?)?.toInt() == myId;
-        final isJoined = _joinedClassIds.contains(c['id'] as int);
-        return isOwn || isJoined;
-      }).toList();
+  void _onProviderError() {
+    final err = context.read<ClassesProvider>().errorMessage;
+    if (err != null && mounted) {
+      showToast(context, err, error: true);
+      context.read<ClassesProvider>().clearError();
     }
-    return _allClasses.where((c) => _joinedClassIds.contains(c['id'] as int)).toList();
   }
-
-  int _lectureCount(int id) => _posts.where((p) => (p['title'] ?? '').startsWith('[LECTURE][$id]')).length;
-
-  String _code(int id) { const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; var s = ''; var n = id * 1337 + 42; for (var i = 0; i < 6; i++) { s += c[n % c.length]; n = n ~/ c.length + id * 7; } return s.substring(0, 6); }
 
   static const _grads = [
     [Color(0xFF006475), Color(0xFF009AAF)],
@@ -109,13 +53,14 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final auth    = context.watch<AuthProvider>();
     final l       = context.watch<L10n>();
+    final provider = context.watch<ClassesProvider>();
     final isDark  = Theme.of(context).brightness == Brightness.dark;
     final surface = Theme.of(context).colorScheme.surface;
 
     return Scaffold(
       body: SafeArea(child: RefreshIndicator(
         color: C.teal,
-        onRefresh: _load,
+        onRefresh: () => context.read<ClassesProvider>().load(),
         child: CustomScrollView(slivers: [
 
           // ── Header ──────────────────────────────────────────
@@ -151,11 +96,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 GestureDetector(
                   onTap: () async {
                     await Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()));
-                    _loadNotifBadge();
+                    if (!mounted) return;
+                    context.read<ClassesProvider>().loadNotifBadge();
                   },
                   child: Stack(children: [
                     _HeaderBtn(icon: Icons.notifications_outlined, onTap: null, isDark: isDark),
-                    if (_unreadNotifCount > 0)
+                    if (provider.unreadNotifCount > 0)
                       Positioned(top: 7, right: 7, child: Container(
                         width: 9, height: 9,
                         decoration: BoxDecoration(
@@ -180,21 +126,21 @@ class _HomeScreenState extends State<HomeScreen> {
           )),
 
           // ── Class cards ──────────────────────────────────────
-          if (_loading)
+          if (provider.loading)
             const SliverFillRemaining(child: Center(child: CircularProgressIndicator(color: C.teal, strokeWidth: 2.5)))
-          else if (_classes.isEmpty)
+          else if (provider.classes.isEmpty)
             SliverFillRemaining(child: _EmptyState(isTeacher: auth.isTeacher, onCreate: _showCreateClass, onJoin: _showJoinDialog))
           else
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
               sliver: SliverList(delegate: SliverChildBuilderDelegate((ctx, i) {
-                final cls    = _classes[i];
+                final cls    = provider.classes[i];
                 final id     = cls['id'] as int;
                 final colors = _grads[id % _grads.length];
                 final coverImg = cls['cover_image'];
                 final teacherName = cls['teacher_name'] ?? '';
                 final group  = cls['group'] ?? '';
-                final count  = _lectureCount(id);
+                final count  = provider.lectureCount(id);
 
                 return TweenAnimationBuilder<double>(
                   key: ValueKey(id),
@@ -232,14 +178,14 @@ class _HomeScreenState extends State<HomeScreen> {
                               // Teacher code chip
                               if (auth.isTeacher)
                                 Positioned(top: 10, left: 10, child: GestureDetector(
-                                  onTap: () { Clipboard.setData(ClipboardData(text: _code(id))); showToast(context, 'Code copied: ${_code(id)}'); },
+                                  onTap: () { Clipboard.setData(ClipboardData(text: classCode(id))); showToast(context, 'Code copied: ${classCode(id)}'); },
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                     decoration: BoxDecoration(color: Colors.black.withOpacity(0.55), borderRadius: BorderRadius.circular(8)),
                                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                                       const Icon(Icons.copy, size: 11, color: Colors.white60),
                                       const SizedBox(width: 4),
-                                      Text(_code(id), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 2)),
+                                      Text(classCode(id), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 2)),
                                     ]),
                                   ))),
                               // Lesson count badge (bottom-left)
@@ -291,7 +237,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                       onPressed: () => Navigator.pop(ctx, true), child: const Text('Удалить')),
                                   ],
                                 ));
-                                if (ok == true) { try { await context.read<ApiService>().deletePost(id); _load(); showToast(context, 'Deleted'); } catch (_) {} }
+                                if (!mounted) return;
+                                if (ok == true) {
+                                  await context.read<ClassesProvider>().deleteClass(id);
+                                  if (!mounted) return;
+                                  showToast(context, 'Deleted');
+                                }
                               },
                             ),
                             if (!auth.isTeacher) _ActionBtn(
@@ -306,7 +257,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Покинуть')),
                                   ],
                                 ));
-                                if (ok == true) { setState(() => _joinedClassIds.remove(id)); await _saveJoined(); try { await context.read<ApiService>().leavePostClass(id); } catch (_) {} showToast(context, 'Left class'); }
+                                if (!mounted) return;
+                                if (ok == true) {
+                                  await context.read<ClassesProvider>().leaveClass(id);
+                                  if (!mounted) return;
+                                  showToast(context, 'Left class');
+                                }
                               },
                             ),
                           ]),
@@ -315,11 +271,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 );
-              }, childCount: _classes.length)),
+              }, childCount: provider.classes.length)),
             ),
 
           // "Add subject" card — students only
-          if (!auth.isTeacher && !_loading && _classes.isNotEmpty)
+          if (!auth.isTeacher && !provider.loading && provider.classes.isNotEmpty)
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 90),
               sliver: SliverToBoxAdapter(child: TweenAnimationBuilder<double>(
@@ -354,7 +310,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               )),
             )
-          else if (!_loading)
+          else if (!provider.loading)
             const SliverToBoxAdapter(child: SizedBox(height: 90)),
         ]),
       )),
@@ -363,6 +319,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ── Join dialog ──────────────────────────────────────────────────────────────
   void _showJoinDialog() {
+    final provider = context.read<ClassesProvider>();
     final controllers = List.generate(6, (_) => TextEditingController());
     final focusNodes  = List.generate(6, (_) => FocusNode());
     bool busy = false;
@@ -417,7 +374,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Builder(builder: (_) {
               final code = get6Code();
               if (code.length < 6) return const SizedBox.shrink();
-              final found = _allClasses.where((c) => _code(c['id']) == code).toList();
+              final found = provider.allClasses.where((c) => classCode(c['id']) == code).toList();
               if (found.isEmpty) return Padding(padding: const EdgeInsets.only(top: 16),
                 child: Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: C.redLt, borderRadius: BorderRadius.circular(12)),
                   child: const Row(children: [Icon(Icons.error_outline, size: 16, color: C.red), SizedBox(width: 8), Text('Класс не найден', style: TextStyle(fontSize: 13, color: C.red, fontWeight: FontWeight.w500))])));
@@ -457,12 +414,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   final code = get6Code();
                   if (code.length < 6) { showToast(context, 'Введите 6 символов', error: true); return; }
                   setS(() => busy = true);
-                  final found = _allClasses.where((c) => _code(c['id']) == code).toList();
+                  final found = provider.allClasses.where((c) => classCode(c['id']) == code).toList();
                   if (found.isNotEmpty) {
-                    final cls = found.first; final id = cls['id'] as int;
+                    final cls = found.first;
+                    final id = cls['id'] as int;
+                    final title = cls['title'] ?? '';
                     Navigator.pop(ctx);
-                    await _joinClass(id, cls['title'] ?? '');
-                    if (mounted) Navigator.pushNamed(context, '/class', arguments: id);
+                    await provider.joinClass(id);
+                    if (!mounted) return;
+                    showToast(context, 'Joined $title');
+                    Navigator.pushNamed(context, '/class', arguments: id);
                   } else { setS(() => busy = false); showToast(context, 'Класс не найден', error: true); }
                 },
                 child: busy
@@ -477,6 +438,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ── Create class dialog ──────────────────────────────────────────────────────
   void _showCreateClass() {
+    final provider = context.read<ClassesProvider>();
     final nameC = TextEditingController(), descC = TextEditingController(),
           teacherC = TextEditingController(), groupC = TextEditingController(), periodC = TextEditingController();
     String? coverB64;
@@ -518,13 +480,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 onPressed: () async {
                   if (nameC.text.trim().isEmpty) return;
                   try {
-                    await context.read<ApiService>().createPost(nameC.text.trim(), jsonEncode({
+                    await provider.createClass(nameC.text.trim(), jsonEncode({
                       'type': 'class', 'description': descC.text.trim(), 'teacher_name': teacherC.text.trim(),
                       'group': groupC.text.trim(), 'period': periodC.text.trim(),
                       if (coverB64 != null) 'cover_image': coverB64,
                     }));
-                    Navigator.pop(ctx); _load(); showToast(context, 'Class created');
-                  } catch (_) { showToast(context, 'Error', error: true); }
+                    if (!mounted) return;
+                    Navigator.pop(ctx);
+                    showToast(context, 'Class created');
+                  } catch (_) {
+                    if (!mounted) return;
+                    showToast(context, 'Error', error: true);
+                  }
                 },
                 child: const Text('Создать'))),
             ])),

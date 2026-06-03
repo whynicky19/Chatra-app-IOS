@@ -9,6 +9,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/class_utils.dart';
 import '../../widgets/toast.dart';
 
 class ClassDetailScreen extends StatefulWidget {
@@ -95,7 +96,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   String _clean(String t) => t.replaceFirst(RegExp(r'^\[(LECTURE|HW)\]\[\d+\]\s*'), '').trim();
   String _preview(dynamic p) { try { final b = jsonDecode(p['body']); return (b['content'] ?? b['description'] ?? '').replaceAll(RegExp(r'https?://\S+'), '').replaceAll(RegExp(r'\s+'), ' ').trim(); } catch (_) { return ''; } }
   String _fmtDate(String? d) { if (d == null) return ''; try { final dt = DateTime.parse(d); return '${dt.day}.${dt.month.toString().padLeft(2, '0')}.${dt.year}'; } catch (_) { return d; } }
-  String _code(int id) { const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; var s = ''; var n = id * 1337 + 42; for (var i = 0; i < 6; i++) { s += c[n % c.length]; n = n ~/ c.length + id * 7; } return s.substring(0, 6); }
   dynamic _subFor(int aId) => _mySubs.firstWhere((s) => s['assignment_id'] == aId, orElse: () => null);
 
   @override
@@ -148,9 +148,9 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   ],
                   if (auth.isTeacher) ...[
                     SizedBox(height: 8),
-                    GestureDetector(onTap: () { Clipboard.setData(ClipboardData(text: _code(widget.classId))); showToast(context, l.t('code_copied')); },
+                    GestureDetector(onTap: () { Clipboard.setData(ClipboardData(text: classCode(widget.classId))); showToast(context, l.t('code_copied')); },
                       child: Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: adaptiveTealLt(context).withOpacity(0.9), borderRadius: BorderRadius.circular(8)),
-                        child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.copy, size: 14, color: C.teal), SizedBox(width: 6), Text('${l.t('class_code')}: ', style: TextStyle(fontSize: 13, color: C.teal)), Text(_code(widget.classId), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: C.teal, letterSpacing: 2))]))),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.copy, size: 14, color: C.teal), SizedBox(width: 6), Text('${l.t('class_code')}: ', style: TextStyle(fontSize: 13, color: C.teal)), Text(classCode(widget.classId), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: C.teal, letterSpacing: 2))]))),
                   ],
                 ])),
               ]),

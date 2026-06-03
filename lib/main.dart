@@ -7,6 +7,8 @@ import 'services/api_service.dart';
 import 'providers/auth_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/l10n_provider.dart';
+import 'providers/classes_provider.dart';
+import 'providers/chats_provider.dart';
 import 'theme/app_theme.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
@@ -33,6 +35,8 @@ void main() {
   final auth = AuthProvider(api);
   final theme = ThemeProvider();
   final l10n = L10n();
+  final classes = ClassesProvider(api, auth);
+  final chats = ChatsProvider(api, auth);
 
   Future.wait([auth.init(), theme.init(), l10n.init()]).then((_) {
     api.onUnauthorized = () => auth.logout();
@@ -44,6 +48,8 @@ void main() {
       ChangeNotifierProvider<AuthProvider>.value(value: auth),
       ChangeNotifierProvider<ThemeProvider>.value(value: theme),
       ChangeNotifierProvider<L10n>.value(value: l10n),
+      ChangeNotifierProvider<ClassesProvider>.value(value: classes),
+      ChangeNotifierProvider<ChatsProvider>.value(value: chats),
     ],
     child: ChatraApp(),
   ));

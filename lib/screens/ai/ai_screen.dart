@@ -115,7 +115,7 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
             borderRadius: BorderRadius.circular(14),
           ),
           padding: EdgeInsets.all(6),
-          child: Image.asset('assets/logo-icon.png', fit: BoxFit.contain),
+          child: Image.asset('assets/logo.png', fit: BoxFit.contain),
         ),
         SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -193,7 +193,7 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
                   boxShadow: [BoxShadow(color: C.teal.withOpacity(0.18), blurRadius: 20, offset: Offset(0, 4))],
                 ),
                 padding: EdgeInsets.all(14),
-                child: Image.asset('assets/logo-icon.png', fit: BoxFit.contain),
+                child: Image.asset('assets/logo.png', fit: BoxFit.contain),
               ),
             ]);
           }),
@@ -316,7 +316,7 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
             boxShadow: [BoxShadow(color: C.teal.withOpacity(0.1), blurRadius: 10, offset: Offset(0, 2))],
           ),
           padding: EdgeInsets.all(6),
-          child: Image.asset('assets/logo-icon.png', fit: BoxFit.contain),
+          child: Image.asset('assets/logo.png', fit: BoxFit.contain),
         ),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Padding(padding: EdgeInsets.only(left: 2, bottom: 5),
@@ -354,7 +354,7 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
             boxShadow: [BoxShadow(color: C.teal.withOpacity(0.1), blurRadius: 10)],
           ),
           padding: EdgeInsets.all(6),
-          child: Image.asset('assets/logo-icon.png', fit: BoxFit.contain),
+          child: Image.asset('assets/logo.png', fit: BoxFit.contain),
         ),
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Padding(padding: EdgeInsets.only(left: 2, bottom: 5),

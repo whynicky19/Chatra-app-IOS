@@ -49,6 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _joinClass(int id, String title) async {
     setState(() => _joinedClassIds.add(id));
     await _saveJoined();
+    try { await context.read<ApiService>().enrollPostClass(id); } catch (_) {}
     if (mounted) showToast(context, 'Joined $title');
   }
 
@@ -278,7 +279,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const Spacer(),
                             if (auth.isTeacher) _ActionBtn(
-                              icon: Icons.delete_outline_rounded, color: C.red, isDark: isDark,
+                              icon: Icons.delete_outline_rounded, color: C.text4, isDark: isDark,
                               onTap: () async {
                                 final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -305,7 +306,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Покинуть')),
                                   ],
                                 ));
-                                if (ok == true) { setState(() => _joinedClassIds.remove(id)); await _saveJoined(); showToast(context, 'Left class'); }
+                                if (ok == true) { setState(() => _joinedClassIds.remove(id)); await _saveJoined(); try { await context.read<ApiService>().leavePostClass(id); } catch (_) {} showToast(context, 'Left class'); }
                               },
                             ),
                           ]),

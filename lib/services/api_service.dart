@@ -134,20 +134,16 @@ class ApiService {
   }
 
   Future<List<dynamic>> getClassMembers(int classId) async {
-    try {
-      final response = await _dio.get('/classes/$classId/members');
-      return response.data is List ? response.data : [];
-    } catch (_) {
-      // Fallback: try /classes/{id} which might include members field
-      try {
-        final r = await _dio.get('/classes/$classId');
-        final data = r.data;
-        if (data is Map) {
-          return data['members'] ?? data['students'] ?? data['users'] ?? [];
-        }
-      } catch (_) {}
-      return [];
-    }
+    final response = await _dio.get('/admin/classes/$classId/members');
+    return response.data is List ? response.data : [];
+  }
+
+  Future<void> enrollPostClass(int postId) async {
+    await _dio.post('/posts/$postId/join');
+  }
+
+  Future<void> leavePostClass(int postId) async {
+    await _dio.delete('/posts/$postId/leave');
   }
 
   Future<void> joinClass(int classId) async {

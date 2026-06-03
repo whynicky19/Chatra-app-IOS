@@ -18,6 +18,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
   List<dynamic> _posts   = [];
   List<dynamic> _aiLogs  = [];
   List<dynamic> _aiSummary = [];
+  Map<int, List<dynamic>> _classMembers = {};
   bool _loading       = true;
   bool _aiLoading     = true;
   bool _classesLoading = true;
@@ -44,7 +45,21 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
   Future<void> _loadClasses() async {
     if (!mounted) return;
     setState(() => _classesLoading = true);
-    try { _posts = await context.read<ApiService>().getPosts(); } catch (_) {}
+    final api = context.read<ApiService>();
+    try { _posts = await api.getPosts(); } catch (_) {}
+    // Fetch real members for each class in parallel
+    final classes = _allClassPosts;
+    final results = await Future.wait(classes.map((c) async {
+      final id = (c['id'] as num?)?.toInt();
+      if (id == null) return MapEntry(0, <dynamic>[]);
+      try {
+        final members = await api.getClassMembers(id);
+        return MapEntry(id, members);
+      } catch (_) {
+        return MapEntry(id, <dynamic>[]);
+      }
+    }));
+    _classMembers = Map.fromEntries(results.where((e) => e.key != 0));
     if (mounted) setState(() => _classesLoading = false);
   }
 
@@ -122,25 +137,8 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     return list;
   }
 
-  List<dynamic> _studentsForClass(String group) {
-    final students = _users.where((u) => u['role'] == 'student').toList();
-    if (group.isEmpty) return students;
-    return students.where((u) => (u['group'] ?? '').toString() == group).toList();
-  }
-
-  // Returns students (by group) + the teacher who created the class
-  List<dynamic> _membersForClass(String group, int creatorId) {
-    final result = <dynamic>[];
-    for (final u in _users) {
-      final role = (u['role'] ?? '').toString();
-      final uId  = (u['id'] as num?)?.toInt();
-      if ((role == 'teacher' || role == 'admin') && uId == creatorId) {
-        result.insert(0, u); // teacher first
-      } else if (role == 'student' && group.isNotEmpty && (u['group'] ?? '').toString() == group) {
-        result.add(u);
-      }
-    }
-    return result;
+  List<dynamic> _membersForClass(int classId) {
+    return _classMembers[classId] ?? [];
   }
 
   // ─────────────────────────────────────────────────────────
@@ -564,6 +562,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
         itemCount: classes.length,
         itemBuilder: (ctx, i) {
           final cls         = classes[i];
+          final classId     = (cls['id'] as num?)?.toInt() ?? 0;
           final title       = cls['title']?.toString() ?? '';
           final coverImg    = cls['cover_image'];
           final uid         = (cls['user_id'] as num?)?.toInt();
@@ -571,7 +570,8 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           final description = (cls['description'] ?? '').toString();
           final group       = (cls['group'] ?? '').toString();
           final teacherName = (cls['teacher_name'] ?? '').toString();
-          final students    = _studentsForClass(group);
+          final members     = _membersForClass(classId);
+          final students    = members.where((m) => (m['role'] ?? '') == 'student').toList();
           final surface     = Theme.of(context).colorScheme.surface;
 
           return TweenAnimationBuilder<double>(
@@ -581,7 +581,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             curve: Curves.easeOutCubic,
             builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 16*(1-t)), child: child)),
             child: GestureDetector(
-              onTap: () => _showStudentsSheet(title, group, (cls['user_id'] as num?)?.toInt() ?? 0, coverImg, i),
+              onTap: () => _showStudentsSheet(classId, title, coverImg, i),
               child: Container(
                 margin: const EdgeInsets.only(bottom: 14),
                 decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(20), boxShadow: cardShadow(isDark)),
@@ -602,7 +602,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                           child: Row(mainAxisSize: MainAxisSize.min, children: [
                             const Icon(Icons.people_rounded, size: 13, color: Colors.white),
                             const SizedBox(width: 4),
-                            Text('${students.length}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.white)),
+                            Text('${members.length}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.white)),
                           ]),
                         )),
                       ])),
@@ -686,7 +686,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
   }
 
   // ── Students bottom sheet ─────────────────────────────────
-  void _showStudentsSheet(String className, String group, int creatorId, dynamic coverImg, int colorIdx) {
+  void _showStudentsSheet(int classId, String className, dynamic coverImg, int colorIdx) {
     final l      = context.read<L10n>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -697,13 +697,15 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setS) {
-          // Computed from already-loaded _users — teacher (creator) first, then students by group
-          final members = _membersForClass(group, creatorId);
+          final members      = _membersForClass(classId);
           final studentCount = members.where((m) => (m['role'] ?? '') == 'student').length;
 
           Future<void> doRefresh() async {
-            setS(() {}); // triggers rebuild after _load updates _users
-            await _load();
+            final api = context.read<ApiService>();
+            try {
+              final fresh = await api.getClassMembers(classId);
+              if (mounted) setState(() => _classMembers[classId] = fresh);
+            } catch (_) {}
             if (mounted) setS(() {});
           }
 
@@ -727,13 +729,8 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                     const SizedBox(width: 4),
                     Text('$studentCount ${l.t('students_count')}',
                       style: const TextStyle(fontSize: 12, color: C.teal, fontWeight: FontWeight.w600)),
-                    if (group.isNotEmpty) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(color: C.teal.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-                        child: Text(group, style: const TextStyle(fontSize: 11, color: C.teal, fontWeight: FontWeight.w700))),
-                    ],
+                    const SizedBox(width: 8),
+                    Text('всего ${members.length}', style: const TextStyle(fontSize: 12, color: C.text4, fontWeight: FontWeight.w500)),
                   ]),
                 ])),
                 GestureDetector(
@@ -754,8 +751,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                     const Icon(Icons.people_outline_rounded, size: 52, color: C.text4),
                     const SizedBox(height: 14),
                     Text(l.t('no_students_class'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: C.text4)),
-                    if (group.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6),
-                      child: Text('Группа: "$group"', style: const TextStyle(fontSize: 13, color: C.text4))),
                     const SizedBox(height: 16),
                     GestureDetector(
                       onTap: doRefresh,

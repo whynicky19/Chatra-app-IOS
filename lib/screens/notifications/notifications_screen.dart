@@ -31,6 +31,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override void initState() { super.initState(); _load(); }
 
+  static const _readTtlDays = 2;
+
   Future<void> _load() async {
     if (!mounted) return;
     setState(() => _loading = true);
@@ -42,6 +44,26 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final joinedIds = (prefs.getStringList('joined_classes_$uid') ?? []).map(int.parse).toSet();
     final seenAsgn = (prefs.getStringList('notif_seen_asgn_$uid') ?? []).map(int.parse).toSet();
     final seenGrade = (prefs.getStringList('notif_seen_grade_$uid') ?? []).map(int.parse).toSet();
+
+    // read-at timestamps: id -> ISO string
+    Map<int, DateTime> readAtAsgn = {};
+    Map<int, DateTime> readAtGrade = {};
+    try {
+      final rawA = prefs.getString('notif_read_at_asgn_$uid');
+      if (rawA != null) {
+        (jsonDecode(rawA) as Map).forEach((k, v) {
+          final dt = DateTime.tryParse(v.toString());
+          if (dt != null) readAtAsgn[int.parse(k.toString())] = dt;
+        });
+      }
+      final rawG = prefs.getString('notif_read_at_grade_$uid');
+      if (rawG != null) {
+        (jsonDecode(rawG) as Map).forEach((k, v) {
+          final dt = DateTime.tryParse(v.toString());
+          if (dt != null) readAtGrade[int.parse(k.toString())] = dt;
+        });
+      }
+    } catch (_) {}
 
     final now = DateTime.now();
     final notifs = <_Notif>[];
@@ -73,6 +95,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     for (final sub in mySubs) {
       if (sub['status'] != 'graded' || sub['grade'] == null) continue;
       final subId = (sub['id'] as num?)?.toInt() ?? 0;
+      final isRead = seenGrade.contains(subId);
+      // Record read-at on first sight
+      if (isRead && !readAtGrade.containsKey(subId)) readAtGrade[subId] = now;
+      // Skip if read more than TTL days ago
+      if (isRead) {
+        final readAt = readAtGrade[subId];
+        if (readAt != null && now.difference(readAt).inDays >= _readTtlDays) { newSeenGrade.add(subId); continue; }
+      }
       final score = sub['grade']['score'];
       final aId = (sub['assignment_id'] as num?)?.toInt();
       final assignment = aId != null ? allAssignments.firstWhere((a) => a['id'] == aId, orElse: () => null) : null;
@@ -83,7 +113,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         title: l.t('notif_graded'),
         body: '"$aTitle" — $score ${l.t('pts')}',
         date: sub['submitted_at'] != null ? (DateTime.tryParse(sub['submitted_at']) ?? now) : now,
-        isRead: seenGrade.contains(subId),
+        isRead: isRead,
         classId: cid,
       ));
       newSeenGrade.add(subId);
@@ -105,14 +135,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
       // New assignment (last 7 days)
       if (createdAt != null && now.difference(createdAt).inDays <= 7) {
-        notifs.add(_Notif(
-          type: _NType.newAssignment,
-          title: l.t('new_assignment'),
-          body: '"$aTitle"${cName.isNotEmpty ? '  •  $cName' : ''}',
-          date: createdAt,
-          isRead: seenAsgn.contains(aId),
-          classId: cid,
-        ));
+        final isRead = seenAsgn.contains(aId);
+        if (isRead && !readAtAsgn.containsKey(aId)) readAtAsgn[aId] = now;
+        final skip = isRead && (readAtAsgn[aId] != null && now.difference(readAtAsgn[aId]!).inDays >= _readTtlDays);
+        if (!skip) {
+          notifs.add(_Notif(
+            type: _NType.newAssignment,
+            title: l.t('new_assignment'),
+            body: '"$aTitle"${cName.isNotEmpty ? '  •  $cName' : ''}',
+            date: createdAt,
+            isRead: isRead,
+            classId: cid,
+          ));
+        }
         newSeenAsgn.add(aId);
       }
 
@@ -131,10 +166,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       }
     }
 
-    // Persist seen state
+    // Persist seen state + read-at timestamps
     await Future.wait([
       prefs.setStringList('notif_seen_asgn_$uid', newSeenAsgn.map((id) => '$id').toList()),
       prefs.setStringList('notif_seen_grade_$uid', newSeenGrade.map((id) => '$id').toList()),
+      prefs.setString('notif_read_at_asgn_$uid', jsonEncode(readAtAsgn.map((k, v) => MapEntry('$k', v.toIso8601String())))),
+      prefs.setString('notif_read_at_grade_$uid', jsonEncode(readAtGrade.map((k, v) => MapEntry('$k', v.toIso8601String())))),
     ]);
 
     // Sort: unread first, then by date desc

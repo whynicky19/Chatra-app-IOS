@@ -172,17 +172,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(width: 8),
                 GestureDetector(onTap: _showCreateClass,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                    width: 42, height: 42,
                     decoration: BoxDecoration(
                       color: C.teal,
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(13),
                       boxShadow: tealGlow(opacity: 0.30),
                     ),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      const Icon(Icons.add_rounded, color: Colors.white, size: 18),
-                      const SizedBox(width: 6),
-                      Text(l.t('create_class'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
-                    ]),
+                    child: const Icon(Icons.add_rounded, color: Colors.white, size: 20),
                   )),
               ] else ...[
                 GestureDetector(
@@ -259,35 +255,28 @@ class _HomeScreenState extends State<HomeScreen> {
               )),
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-              sliver: SliverToBoxAdapter(
-                child: ReorderableListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  onReorder: _onReorder,
-                  proxyDecorator: (child, _, animation) => AnimatedBuilder(
-                    animation: animation,
-                    builder: (_, ch) => Transform.scale(
-                      scale: 1.03,
-                      child: Opacity(
-                        opacity: 0.95,
-                        child: Material(
-                          color: Colors.transparent,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              boxShadow: [BoxShadow(
-                                color: Colors.black.withOpacity(0.25),
-                                blurRadius: 40, offset: const Offset(0, 12),
-                              )],
-                            ),
-                            child: ch,
-                          ),
+              sliver: SliverReorderableList(
+                onReorder: _onReorder,
+                proxyDecorator: (child, _, animation) => Material(
+                  color: Colors.transparent,
+                  child: Transform.scale(
+                    scale: 1.03,
+                    child: Opacity(
+                      opacity: 0.95,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          boxShadow: [BoxShadow(
+                            color: Colors.black.withOpacity(0.25),
+                            blurRadius: 40, offset: const Offset(0, 12),
+                          )],
                         ),
+                        child: child,
                       ),
                     ),
-                    child: child,
                   ),
-                  itemCount: _sortedClasses.length,
-                  itemBuilder: (ctx, i) {
+                ),
+                itemCount: _sortedClasses.length,
+                itemBuilder: (ctx, i) {
                     final cls    = _sortedClasses[i];
                     final id     = cls['id'] as int;
                     final colors = _grads[id % _grads.length];
@@ -439,7 +428,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
               ),
-            ),
           ],
 
           // "Add subject" card — students only

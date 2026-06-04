@@ -1160,7 +1160,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 ]),
                 SizedBox(height: 10),
                 ...allFiles.asMap().entries.map((entry) {
-              final i = entry.key; final f = entry.value;
+              final f = entry.value;
               final name = Uri.parse(f).pathSegments.last;
               final ext = name.split('.').last.toLowerCase();
               final fc = _fileTypeConfig(ext);
@@ -1510,10 +1510,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     );
   }
 
-  Widget _chip(IconData ic, String text, Color fg, Color bg) => Container(
-    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
-    child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(ic, size: 14, color: fg), SizedBox(width: 4), Text(text, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: fg))]));
-
   void _viewSubs(int aId) async {
     try {
       final subs = await context.read<ApiService>().getSubmissions(aId);
@@ -1819,8 +1815,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           ]),
         ]))));
   }
-
-  void _createPost(String type) => _showAddMenu();
 
   void _createAssignment() {
     final tc = TextEditingController(), dc = TextEditingController(), sc = TextEditingController(text: '100');

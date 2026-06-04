@@ -313,6 +313,33 @@ class L10n extends ChangeNotifier {
       'class_created': 'Класс создан',
       'class_deleted': 'Удалено',
 
+      // ── Calendar ──
+      'deadlines': 'Дедлайны',
+      'no_deadlines': 'Дедлайнов нет',
+      'upcoming_7_days': 'Ближайшие 7 дней',
+
+      // ── Search ──
+      'search': 'Поиск',
+      'recent_searches': 'Недавние поиски',
+      'search_empty': 'Ничего не нашлось по',
+      'search_hint': 'Классы, задания, чаты...',
+      'section_classes': 'КЛАССЫ',
+      'section_assignments': 'ЗАДАНИЯ',
+      'section_chats': 'ЧАТЫ',
+      'show_more': 'Ещё',
+
+      // ── Context menu ──
+      'copy_code': 'Скопировать код',
+      'share_class': 'Поделиться',
+      'pin_class': 'Закрепить',
+      'unpin_class': 'Открепить',
+      'class_members': 'Участники',
+      'confirm_delete_hint': 'Введите название класса для подтверждения',
+      'drag_hint': 'Удерживай карточку чтобы изменить порядок',
+
+      // ── Reply ──
+      'reply_to': 'Ответить',
+
       // ── Misc ──
       'file': 'файл',
       'files': 'файлов',
@@ -665,6 +692,33 @@ class L10n extends ChangeNotifier {
       'class_created': 'Сынып жасалды',
       'class_deleted': 'Жойылды',
 
+      // ── Calendar ──
+      'deadlines': 'Дедлайндар',
+      'no_deadlines': 'Дедлайндар жоқ',
+      'upcoming_7_days': 'Келесі 7 күн',
+
+      // ── Search ──
+      'search': 'Іздеу',
+      'recent_searches': 'Соңғы іздеулер',
+      'search_empty': 'Ештеңе табылмады',
+      'search_hint': 'Сыныптар, тапсырмалар, чаттар...',
+      'section_classes': 'СЫНЫПТАР',
+      'section_assignments': 'ТАПСЫРМАЛАР',
+      'section_chats': 'ЧАТТАР',
+      'show_more': 'Тағы',
+
+      // ── Context menu ──
+      'copy_code': 'Кодты көшіру',
+      'share_class': 'Бөлісу',
+      'pin_class': 'Бекіту',
+      'unpin_class': 'Бекітуді алу',
+      'class_members': 'Мүшелер',
+      'confirm_delete_hint': 'Растау үшін сынып атауын енгізіңіз',
+      'drag_hint': 'Ретін өзгерту үшін картаны ұстаңыз',
+
+      // ── Reply ──
+      'reply_to': 'Жауап беру',
+
       // ── Misc ──
       'file': 'файл',
       'files': 'файл',
@@ -1016,6 +1070,33 @@ class L10n extends ChangeNotifier {
       'published_ok': 'Published',
       'class_created': 'Class created',
       'class_deleted': 'Deleted',
+
+      // ── Calendar ──
+      'deadlines': 'Deadlines',
+      'no_deadlines': 'No deadlines',
+      'upcoming_7_days': 'Next 7 days',
+
+      // ── Search ──
+      'search': 'Search',
+      'recent_searches': 'Recent searches',
+      'search_empty': 'Nothing found for',
+      'search_hint': 'Classes, assignments, chats...',
+      'section_classes': 'CLASSES',
+      'section_assignments': 'ASSIGNMENTS',
+      'section_chats': 'CHATS',
+      'show_more': 'More',
+
+      // ── Context menu ──
+      'copy_code': 'Copy code',
+      'share_class': 'Share',
+      'pin_class': 'Pin',
+      'unpin_class': 'Unpin',
+      'class_members': 'Members',
+      'confirm_delete_hint': 'Enter class name to confirm',
+      'drag_hint': 'Hold a card to reorder',
+
+      // ── Reply ──
+      'reply_to': 'Reply',
 
       // ── Misc ──
       'file': 'file',

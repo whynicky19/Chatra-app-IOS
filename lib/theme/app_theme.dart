@@ -22,6 +22,7 @@ class C {
   static const greenLight = greenLt;
   static const yellow  = Color(0xFFFBBF24);
   static const tealLight = tealLt;
+  static const yellowLt  = Color(0xFFFEF9C3);
 
   static const darkBg      = Color(0xFF080F11);
   static const darkSurface  = Color(0xFF0F1A1D);

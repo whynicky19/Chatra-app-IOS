@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../providers/classes_provider.dart';
@@ -11,6 +13,8 @@ import '../../utils/class_utils.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/toast.dart';
 import '../notifications/notifications_screen.dart';
+import '../calendar/calendar_screen.dart';
+import '../classes/class_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,6 +22,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  Set<int> _pinnedIds = {};
+  Map<int, int> _classOrder = {};
+  bool _showDragHint = false;
+
   @override
   void initState() {
     super.initState();
@@ -25,12 +33,97 @@ class _HomeScreenState extends State<HomeScreen> {
     provider.addListener(_onProviderError);
     provider.loadJoined().then((_) => provider.load());
     provider.loadNotifBadge();
+    _loadPersistedState();
   }
 
   @override
   void dispose() {
     context.read<ClassesProvider>().removeListener(_onProviderError);
     super.dispose();
+  }
+
+  Future<void> _loadPersistedState() async {
+    final uid = context.read<AuthProvider>().userId ?? 0;
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    final pinnedList = prefs.getStringList('pinned_classes_$uid') ?? [];
+    final orderJson = prefs.getString('class_order_$uid');
+    final shown = prefs.getBool('shown_drag_hint_$uid') ?? false;
+    Map<int, int> order = {};
+    if (orderJson != null) {
+      try {
+        final map = jsonDecode(orderJson) as Map<String, dynamic>;
+        order = map.map((k, v) => MapEntry(int.parse(k), v as int));
+      } catch (_) {}
+    }
+    setState(() {
+      _pinnedIds = pinnedList.map(int.parse).toSet();
+      _classOrder = order;
+      _showDragHint = _classOrder.isEmpty && !shown;
+    });
+  }
+
+  Future<void> _savePinned() async {
+    final uid = context.read<AuthProvider>().userId ?? 0;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('pinned_classes_$uid', _pinnedIds.map((e) => e.toString()).toList());
+  }
+
+  Future<void> _saveOrder() async {
+    final uid = context.read<AuthProvider>().userId ?? 0;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('class_order_$uid',
+      jsonEncode(_classOrder.map((k, v) => MapEntry(k.toString(), v))));
+  }
+
+  Future<void> _dismissDragHint() async {
+    final uid = context.read<AuthProvider>().userId ?? 0;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('shown_drag_hint_$uid', true);
+    if (!mounted) return;
+    setState(() => _showDragHint = false);
+  }
+
+  List<Map<String, dynamic>> get _sortedClasses {
+    final provider = context.read<ClassesProvider>();
+    final all = provider.classes;
+    final pinned = all.where((c) => _pinnedIds.contains(c['id'] as int)).toList();
+    final regular = all.where((c) => !_pinnedIds.contains(c['id'] as int)).toList();
+    pinned.sort((a, b) {
+      final oa = _classOrder[a['id'] as int] ?? 9999;
+      final ob = _classOrder[b['id'] as int] ?? 9999;
+      return oa.compareTo(ob);
+    });
+    regular.sort((a, b) {
+      final oa = _classOrder[a['id'] as int] ?? 9999;
+      final ob = _classOrder[b['id'] as int] ?? 9999;
+      return oa.compareTo(ob);
+    });
+    return [...pinned, ...regular];
+  }
+
+  void _onReorder(int oldIndex, int newIndex) {
+    final classes = _sortedClasses;
+    final pinnedCount = _pinnedIds.length;
+    // Prevent mixing pinned/regular zones
+    final isOldPinned = oldIndex < pinnedCount;
+    final adjustedNew = newIndex > oldIndex ? newIndex - 1 : newIndex;
+    final isNewPinned = adjustedNew < pinnedCount;
+    if (isOldPinned != isNewPinned) {
+      HapticFeedback.heavyImpact();
+      return;
+    }
+    HapticFeedback.lightImpact();
+    if (newIndex > oldIndex) newIndex -= 1;
+    final list = classes.toList();
+    final item = list.removeAt(oldIndex);
+    list.insert(newIndex, item);
+    setState(() {
+      for (int i = 0; i < list.length; i++) {
+        _classOrder[list[i]['id'] as int] = i;
+      }
+    });
+    _saveOrder();
   }
 
   void _onProviderError() {
@@ -67,14 +160,13 @@ class _HomeScreenState extends State<HomeScreen> {
           SliverToBoxAdapter(child: Padding(
             padding: const EdgeInsets.fromLTRB(22, 24, 22, 18),
             child: Row(children: [
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(l.t('classes'), style: TextStyle(
-                  fontSize: 30, fontWeight: FontWeight.w900,
-                  color: C.teal, letterSpacing: -0.8, height: 1.1,
-                )),
-                const SizedBox(height: 2),
-                Text(l.t('classes_sub'), style: const TextStyle(fontSize: 13, color: C.text4)),
-              ])),
+              Expanded(child: Text(l.t('classes'), style: const TextStyle(
+                fontSize: 30, fontWeight: FontWeight.w900,
+                color: C.teal, letterSpacing: -0.8, height: 1.1,
+              ))),
+              const SizedBox(width: 8),
+              _HeaderBtn(icon: Icons.calendar_month_rounded, onTap: _openCalendar, isDark: isDark),
+              const SizedBox(width: 8),
               if (auth.isTeacher) ...[
                 _HeaderBtn(icon: Icons.vpn_key_rounded, onTap: _showJoinDialog, isDark: isDark),
                 const SizedBox(width: 8),
@@ -142,151 +234,213 @@ class _HomeScreenState extends State<HomeScreen> {
             )
           else if (provider.classes.isEmpty)
             SliverFillRemaining(child: _EmptyState(isTeacher: auth.isTeacher, onCreate: _showCreateClass, onJoin: _showJoinDialog))
-          else
+          else ...[
+            // Drag hint banner
+            if (_showDragHint)
+              SliverToBoxAdapter(child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: adaptiveTealLt(context),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(children: [
+                    const Icon(Icons.drag_indicator_rounded, color: C.teal, size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(l.t('drag_hint'),
+                      style: const TextStyle(fontSize: 13, color: C.teal, fontWeight: FontWeight.w500))),
+                    GestureDetector(
+                      onTap: _dismissDragHint,
+                      child: const Icon(Icons.close, color: C.teal, size: 18),
+                    ),
+                  ]),
+                ),
+              )),
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-              sliver: SliverList(delegate: SliverChildBuilderDelegate((ctx, i) {
-                final cls    = provider.classes[i];
-                final id     = cls['id'] as int;
-                final colors = _grads[id % _grads.length];
-                final coverImg = cls['cover_image'];
-                final teacherName = cls['teacher_name'] ?? '';
-                final group  = cls['group'] ?? '';
-                final count  = provider.lectureCount(id);
-
-                return TweenAnimationBuilder<double>(
-                  key: ValueKey(id),
-                  tween: Tween(begin: 0.0, end: 1.0),
-                  duration: Duration(milliseconds: 420 + i * 70),
-                  curve: Curves.easeOutCubic,
-                  builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 24 * (1 - t)), child: child)),
-                  child: GestureDetector(
-                    onTap: () => Navigator.pushNamed(context, '/class', arguments: id),
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: surface,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: cardShadow(isDark),
-                      ),
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        // Cover
-                        ClipRRect(
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                          child: SizedBox(height: 168, width: double.infinity,
-                            child: Stack(fit: StackFit.expand, children: [
-                              if (coverImg != null && coverImg.toString().startsWith('data:'))
-                                Builder(builder: (_) { try { return Image.memory(base64Decode(coverImg.toString().split(',').last), fit: BoxFit.cover); } catch (_) { return Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))); } })
-                              else if (coverImg != null)
-                                Image.network(coverImg, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))))
-                              else
-                                Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight))),
-                              // Bottom gradient for readability
-                              Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
-                                begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                                stops: const [0.5, 1.0],
-                                colors: [Colors.transparent, Colors.black.withOpacity(0.45)],
-                              )))),
-                              // Teacher code chip
-                              if (auth.isTeacher)
-                                Positioned(top: 10, left: 10, child: GestureDetector(
-                                  onTap: () { Clipboard.setData(ClipboardData(text: classCode(id))); showToast(context, 'Code copied: ${classCode(id)}'); },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                    decoration: BoxDecoration(color: Colors.black.withOpacity(0.55), borderRadius: BorderRadius.circular(8)),
-                                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                                      const Icon(Icons.copy, size: 11, color: Colors.white60),
-                                      const SizedBox(width: 4),
-                                      Text(classCode(id), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 2)),
-                                    ]),
-                                  ))),
-                              // Lesson count badge (bottom-left)
-                              Positioned(bottom: 10, left: 12,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                                  decoration: BoxDecoration(color: Colors.black.withOpacity(0.48), borderRadius: BorderRadius.circular(8)),
-                                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                                    const Icon(Icons.play_circle_outline_rounded, size: 13, color: Colors.white70),
-                                    const SizedBox(width: 4),
-                                    Text('$count', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
-                                  ]),
-                                )),
-                            ]),
+              sliver: SliverToBoxAdapter(
+                child: ReorderableListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  onReorder: _onReorder,
+                  proxyDecorator: (child, _, animation) => AnimatedBuilder(
+                    animation: animation,
+                    builder: (_, ch) => Transform.scale(
+                      scale: 1.03,
+                      child: Opacity(
+                        opacity: 0.95,
+                        child: Material(
+                          color: Colors.transparent,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              boxShadow: [BoxShadow(
+                                color: Colors.black.withOpacity(0.25),
+                                blurRadius: 40, offset: const Offset(0, 12),
+                              )],
+                            ),
+                            child: ch,
                           ),
                         ),
-                        // Info section
-                        Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(cls['title'] ?? '', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: adaptiveText1(context), height: 1.2), maxLines: 2, overflow: TextOverflow.ellipsis),
-                          const SizedBox(height: 8),
-                          // Meta chips
-                          Wrap(spacing: 6, runSpacing: 6, children: [
-                            if (group.isNotEmpty) _MetaChip(label: group, icon: Icons.group_outlined, isDark: isDark),
-                            if (teacherName.isNotEmpty) _MetaChip(label: teacherName, icon: Icons.person_outline_rounded, isDark: isDark, color: C.teal),
-                          ]),
-                          const SizedBox(height: 12),
-                          // Footer row
-                          Row(children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                              decoration: BoxDecoration(color: adaptiveTealLt(context), borderRadius: BorderRadius.circular(10)),
-                              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                                Text(l.t('open'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: C.teal)),
-                                const SizedBox(width: 4),
-                                const Icon(Icons.arrow_forward_rounded, size: 14, color: C.teal),
-                              ]),
-                            ),
-                            const Spacer(),
-                            if (auth.isTeacher) _ActionBtn(
-                              icon: Icons.delete_outline_rounded, color: C.text4, isDark: isDark,
-                              onTap: () async {
-                                final l = context.read<L10n>();
-                                final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                  title: Text(l.t('delete_class'), style: const TextStyle(fontWeight: FontWeight.w800)),
-                                  actions: [
-                                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l.t('no'))),
-                                    ElevatedButton(
-                                      style: ElevatedButton.styleFrom(backgroundColor: C.red),
-                                      onPressed: () => Navigator.pop(ctx, true), child: Text(l.t('delete'))),
-                                  ],
-                                ));
-                                if (!mounted) return;
-                                if (ok == true) {
-                                  await context.read<ClassesProvider>().deleteClass(id);
-                                  if (!mounted) return;
-                                  showToast(context, context.read<L10n>().t('class_deleted'));
-                                }
-                              },
-                            ),
-                            if (!auth.isTeacher) _ActionBtn(
-                              icon: Icons.logout_rounded, color: C.text4, isDark: isDark,
-                              onTap: () async {
-                                final l = context.read<L10n>();
-                                final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                  title: Text(l.t('leave_class'), style: const TextStyle(fontWeight: FontWeight.w800)),
-                                  content: Text(l.t('leave_class_sub')),
-                                  actions: [
-                                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l.t('no'))),
-                                    ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l.t('leave_btn'))),
-                                  ],
-                                ));
-                                if (!mounted) return;
-                                if (ok == true) {
-                                  await context.read<ClassesProvider>().leaveClass(id);
-                                  if (!mounted) return;
-                                  showToast(context, context.read<L10n>().t('left_class'));
-                                }
-                              },
-                            ),
-                          ]),
-                        ])),
-                      ]),
+                      ),
                     ),
+                    child: child,
                   ),
-                );
-              }, childCount: provider.classes.length)),
+                  itemCount: _sortedClasses.length,
+                  itemBuilder: (ctx, i) {
+                    final cls    = _sortedClasses[i];
+                    final id     = cls['id'] as int;
+                    final colors = _grads[id % _grads.length];
+                    final coverImg = cls['cover_image'];
+                    final teacherName = cls['teacher_name'] ?? '';
+                    final group  = cls['group'] ?? '';
+                    final count  = provider.lectureCount(id);
+                    final isPinned = _pinnedIds.contains(id);
+
+                    return GestureDetector(
+                      key: Key(id.toString()),
+                      onTap: () => Navigator.pushNamed(context, '/class', arguments: id),
+                      onLongPress: () {
+                        HapticFeedback.heavyImpact();
+                        _showContextMenu(cls);
+                      },
+                      child: Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: surface,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: cardShadow(isDark),
+                          ),
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            // Cover
+                            ClipRRect(
+                              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                              child: SizedBox(height: 168, width: double.infinity,
+                                child: Stack(fit: StackFit.expand, children: [
+                                  if (coverImg != null && coverImg.toString().startsWith('data:'))
+                                    Builder(builder: (_) { try { return Image.memory(base64Decode(coverImg.toString().split(',').last), fit: BoxFit.cover); } catch (_) { return Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))); } })
+                                  else if (coverImg != null)
+                                    Image.network(coverImg, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))))
+                                  else
+                                    Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight))),
+                                  // Bottom gradient
+                                  Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
+                                    begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                                    stops: const [0.5, 1.0],
+                                    colors: [Colors.transparent, Colors.black.withOpacity(0.45)],
+                                  )))),
+                                  // Teacher code chip
+                                  if (auth.isTeacher)
+                                    Positioned(top: 10, left: 10, child: GestureDetector(
+                                      onTap: () { Clipboard.setData(ClipboardData(text: classCode(id))); showToast(context, '${l.t('code_copied')}: ${classCode(id)}'); },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                        decoration: BoxDecoration(color: Colors.black.withOpacity(0.55), borderRadius: BorderRadius.circular(8)),
+                                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                          const Icon(Icons.copy, size: 11, color: Colors.white60),
+                                          const SizedBox(width: 4),
+                                          Text(classCode(id), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 2)),
+                                        ]),
+                                      ))),
+                                  // Pin icon
+                                  if (isPinned)
+                                    const Positioned(top: 10, right: 10,
+                                      child: Icon(Icons.push_pin_rounded, color: Colors.white, size: 18)),
+                                  // Drag handle
+                                  Positioned(bottom: 8, right: 8,
+                                    child: ReorderableDragStartListener(
+                                      index: i,
+                                      child: SizedBox(width: 44, height: 44,
+                                        child: Center(child: Icon(Icons.drag_indicator_rounded,
+                                          size: 20, color: Colors.white.withOpacity(0.5)))),
+                                    )),
+                                  // Lesson count badge
+                                  Positioned(bottom: 10, left: 12,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                                      decoration: BoxDecoration(color: Colors.black.withOpacity(0.48), borderRadius: BorderRadius.circular(8)),
+                                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                        const Icon(Icons.play_circle_outline_rounded, size: 13, color: Colors.white70),
+                                        const SizedBox(width: 4),
+                                        Text('$count', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+                                      ]),
+                                    )),
+                                ]),
+                              ),
+                            ),
+                            // Info section
+                            Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              Text(cls['title'] ?? '', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: adaptiveText1(context), height: 1.2), maxLines: 2, overflow: TextOverflow.ellipsis),
+                              const SizedBox(height: 8),
+                              Wrap(spacing: 6, runSpacing: 6, children: [
+                                if (group.isNotEmpty) _MetaChip(label: group, icon: Icons.group_outlined, isDark: isDark),
+                                if (teacherName.isNotEmpty) _MetaChip(label: teacherName, icon: Icons.person_outline_rounded, isDark: isDark, color: C.teal),
+                              ]),
+                              const SizedBox(height: 12),
+                              Row(children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                                  decoration: BoxDecoration(color: adaptiveTealLt(context), borderRadius: BorderRadius.circular(10)),
+                                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                    Text(l.t('open'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: C.teal)),
+                                    const SizedBox(width: 4),
+                                    const Icon(Icons.arrow_forward_rounded, size: 14, color: C.teal),
+                                  ]),
+                                ),
+                                const Spacer(),
+                                if (auth.isTeacher) _ActionBtn(
+                                  icon: Icons.delete_outline_rounded, color: C.text4, isDark: isDark,
+                                  onTap: () async {
+                                    final l = context.read<L10n>();
+                                    final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                      title: Text(l.t('delete_class'), style: const TextStyle(fontWeight: FontWeight.w800)),
+                                      actions: [
+                                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l.t('no'))),
+                                        ElevatedButton(
+                                          style: ElevatedButton.styleFrom(backgroundColor: C.red),
+                                          onPressed: () => Navigator.pop(ctx, true), child: Text(l.t('delete'))),
+                                      ],
+                                    ));
+                                    if (!mounted) return;
+                                    if (ok == true) {
+                                      await context.read<ClassesProvider>().deleteClass(id);
+                                      if (!mounted) return;
+                                      showToast(context, context.read<L10n>().t('class_deleted'));
+                                    }
+                                  },
+                                ),
+                                if (!auth.isTeacher) _ActionBtn(
+                                  icon: Icons.logout_rounded, color: C.text4, isDark: isDark,
+                                  onTap: () async {
+                                    final l = context.read<L10n>();
+                                    final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                      title: Text(l.t('leave_class'), style: const TextStyle(fontWeight: FontWeight.w800)),
+                                      content: Text(l.t('leave_class_sub')),
+                                      actions: [
+                                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l.t('no'))),
+                                        ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l.t('leave_btn'))),
+                                      ],
+                                    ));
+                                    if (!mounted) return;
+                                    if (ok == true) {
+                                      await context.read<ClassesProvider>().leaveClass(id);
+                                      if (!mounted) return;
+                                      showToast(context, context.read<L10n>().t('left_class'));
+                                    }
+                                  },
+                                ),
+                              ]),
+                            ])),
+                          ]),
+                        ),
+                    );
+                  },
+                ),
+              ),
             ),
+          ],
 
           // "Add subject" card — students only
           if (!auth.isTeacher && !provider.loading && provider.classes.isNotEmpty)
@@ -329,6 +483,121 @@ class _HomeScreenState extends State<HomeScreen> {
         ]),
       )),
     );
+  }
+
+  void _showContextMenu(Map<String, dynamic> cls) {
+    final auth = context.read<AuthProvider>();
+    final l = context.read<L10n>();
+    final id = cls['id'] as int;
+    final title = cls['title'] ?? '';
+    final isPinned = _pinnedIds.contains(id);
+    final colors = _grads[id % _grads.length];
+    final coverImg = cls['cover_image'];
+
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: '',
+      barrierColor: Colors.black.withOpacity(0.5),
+      transitionDuration: const Duration(milliseconds: 250),
+      pageBuilder: (_, __, ___) => const SizedBox(),
+      transitionBuilder: (ctx, anim, __, ___) {
+        return Stack(children: [
+          // Backdrop dismiss
+          GestureDetector(onTap: () => Navigator.pop(ctx)),
+          // Menu
+          Center(child: ScaleTransition(
+            scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+              CurvedAnimation(parent: anim, curve: Curves.easeOutBack)),
+            child: FadeTransition(
+              opacity: anim,
+              child: _ClassContextMenu(
+                cls: cls,
+                isTeacher: auth.isTeacher,
+                isPinned: isPinned,
+                colors: colors,
+                coverImg: coverImg,
+                title: title,
+                onCopyCode: () {
+                  Navigator.pop(ctx);
+                  Clipboard.setData(ClipboardData(text: classCode(id)));
+                  showToast(context, '${l.t('code_copied')}: ${classCode(id)}');
+                },
+                onShare: () {
+                  Navigator.pop(ctx);
+                  launchUrl(Uri.parse('chatra://class/${classCode(id)}'));
+                },
+                onTogglePin: () {
+                  Navigator.pop(ctx);
+                  setState(() {
+                    if (isPinned) { _pinnedIds.remove(id); } else { _pinnedIds.add(id); }
+                  });
+                  _savePinned();
+                },
+                onLeave: () async {
+                  Navigator.pop(ctx);
+                  final ok = await showDialog<bool>(context: context, builder: (c) => AlertDialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    title: Text(l.t('leave_class'), style: const TextStyle(fontWeight: FontWeight.w800)),
+                    content: Text(l.t('leave_class_sub')),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(c, false), child: Text(l.t('no'))),
+                      ElevatedButton(onPressed: () => Navigator.pop(c, true), child: Text(l.t('leave_btn'))),
+                    ],
+                  ));
+                  if (!mounted) return;
+                  if (ok == true) {
+                    await context.read<ClassesProvider>().leaveClass(id);
+                    if (!mounted) return;
+                    showToast(context, l.t('left_class'));
+                  }
+                },
+                onMembers: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(context, MaterialPageRoute(
+                    builder: (_) => ClassDetailScreen(classId: id, initialTab: 3),
+                  ));
+                },
+                onDelete: () async {
+                  Navigator.pop(ctx);
+                  final nameCtrl = TextEditingController();
+                  final ok = await showDialog<bool>(context: context, builder: (c) => AlertDialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    title: Text(l.t('delete_class'), style: const TextStyle(fontWeight: FontWeight.w800)),
+                    content: Column(mainAxisSize: MainAxisSize.min, children: [
+                      Text(l.t('confirm_delete_hint'), style: const TextStyle(fontSize: 13, color: C.text4)),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: nameCtrl,
+                        decoration: InputDecoration(hintText: title),
+                      ),
+                    ]),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(c, false), child: Text(l.t('cancel'))),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: C.red),
+                        onPressed: () => Navigator.pop(c, nameCtrl.text.trim() == title),
+                        child: Text(l.t('delete')),
+                      ),
+                    ],
+                  ));
+                  if (!mounted) return;
+                  if (ok == true) {
+                    await context.read<ClassesProvider>().deleteClass(id);
+                    if (!mounted) return;
+                    showToast(context, l.t('class_deleted'));
+                  }
+                },
+              ),
+            ),
+          )),
+        ]);
+      },
+    );
+  }
+
+  void _openCalendar() {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const CalendarScreen()));
   }
 
   // ── Join dialog ──────────────────────────────────────────────────────────────
@@ -518,6 +787,126 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _fl3(String s) => Padding(padding: const EdgeInsets.only(bottom: 8),
     child: Text(s, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.teal, letterSpacing: 1)));
+}
+
+// ── Class Context Menu ────────────────────────────────────────────────────────
+
+class _ClassContextMenu extends StatelessWidget {
+  final Map<String, dynamic> cls;
+  final bool isTeacher;
+  final bool isPinned;
+  final List<Color> colors;
+  final dynamic coverImg;
+  final String title;
+  final VoidCallback onCopyCode;
+  final VoidCallback onShare;
+  final VoidCallback onTogglePin;
+  final VoidCallback onLeave;
+  final VoidCallback onMembers;
+  final VoidCallback onDelete;
+
+  const _ClassContextMenu({
+    required this.cls,
+    required this.isTeacher,
+    required this.isPinned,
+    required this.colors,
+    required this.coverImg,
+    required this.title,
+    required this.onCopyCode,
+    required this.onShare,
+    required this.onTogglePin,
+    required this.onLeave,
+    required this.onMembers,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.watch<L10n>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = Theme.of(context).colorScheme.surface;
+    final code = classCode(cls['id'] as int);
+
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        width: 260,
+        decoration: BoxDecoration(
+          color: surface,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: cardShadow(isDark),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            // Gradient preview header
+            SizedBox(height: 60, width: double.infinity,
+              child: Stack(fit: StackFit.expand, children: [
+                coverImg != null && coverImg.toString().startsWith('data:')
+                    ? Builder(builder: (_) { try { return Image.memory(base64Decode(coverImg.toString().split(',').last), fit: BoxFit.cover); } catch (_) { return Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))); } })
+                    : coverImg != null
+                        ? Image.network(coverImg, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))))
+                        : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight))),
+                Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
+                  begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Colors.black.withOpacity(0.55)],
+                )))),
+                Positioned(bottom: 10, left: 12,
+                  child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis)),
+              ]),
+            ),
+            // Menu items
+            _MenuItem(
+              icon: Icons.copy_all_rounded, label: l.t('copy_code'),
+              trailing: Text(code, style: const TextStyle(fontSize: 12, color: C.text4, fontWeight: FontWeight.w700)),
+              onTap: onCopyCode,
+            ),
+            _MenuItem(icon: Icons.share_rounded, label: l.t('share_class'), onTap: onShare),
+            _MenuItem(
+              icon: isPinned ? Icons.push_pin_outlined : Icons.push_pin_rounded,
+              label: isPinned ? l.t('unpin_class') : l.t('pin_class'),
+              onTap: onTogglePin,
+            ),
+            if (isTeacher) ...[
+              _MenuItem(icon: Icons.group_rounded, label: l.t('class_members'), onTap: onMembers),
+              const Divider(height: 1, indent: 16, endIndent: 16),
+              _MenuItem(icon: Icons.delete_outline_rounded, label: l.t('delete_class'), color: C.red, onTap: onDelete),
+            ] else ...[
+              const Divider(height: 1, indent: 16, endIndent: 16),
+              _MenuItem(icon: Icons.logout_rounded, label: l.t('leave_class'), color: C.red, onTap: onLeave),
+            ],
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+class _MenuItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color? color;
+  final Widget? trailing;
+  final VoidCallback onTap;
+
+  const _MenuItem({required this.icon, required this.label, required this.onTap, this.color, this.trailing});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = color ?? adaptiveText1(context);
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        child: Row(children: [
+          Icon(icon, size: 18, color: c),
+          const SizedBox(width: 12),
+          Expanded(child: Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: c))),
+          if (trailing != null) trailing!,
+        ]),
+      ),
+    );
+  }
 }
 
 // ── Reusable widgets ──────────────────────────────────────────────────────────

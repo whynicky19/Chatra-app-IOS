@@ -17,6 +17,6 @@ class ThemeProvider extends ChangeNotifier {
   void toggle() {
     _mode = isDark ? ThemeMode.light : ThemeMode.dark;
     notifyListeners();
-    SharedPreferences.getInstance().then((p) => p.setString('theme', isDark ? 'dark' : 'light')).catchError((_) {});
+    SharedPreferences.getInstance().then((p) => p.setString('theme', isDark ? 'dark' : 'light')).catchError((_) => false);
   }
 }

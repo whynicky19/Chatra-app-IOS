@@ -17,16 +17,19 @@ class ChatsScreen extends StatefulWidget {
   @override State<ChatsScreen> createState() => _ChatsScreenState();
 }
 
-class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStateMixin {
+class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin {
   final _searchCtrl = TextEditingController();
   final _msgCtrl = TextEditingController();
   // Background timer: refreshes unread badges for the chat list.
   // Runs at 10 s; WS handles the open-chat stream in real time.
   Timer? _bgPoller;
   late AnimationController _listAnim;
+  late AnimationController _replyAnim;
   final ScrollController _chatScrollCtrl = ScrollController();
   // Throttle: send typing event at most once per 2 s.
   DateTime? _lastTypingSent;
+  // Reply state
+  Map<String, dynamic>? _replyTo;
 
   static const _avatarColors = [
     C.teal,
@@ -43,6 +46,7 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
   void initState() {
     super.initState();
     _listAnim = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+    _replyAnim = AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
     final provider = context.read<ChatsProvider>();
     provider.addListener(_onProviderError);
     provider.loadSeenMsgIds().then((_) => provider.loadChats());
@@ -57,6 +61,7 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
   void dispose() {
     _bgPoller?.cancel();
     _listAnim.dispose();
+    _replyAnim.dispose();
     _chatScrollCtrl.dispose();
     _msgCtrl.dispose();
     _searchCtrl.dispose();
@@ -318,23 +323,31 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
                   duration: const Duration(milliseconds: 200),
                   builder: (_, t, child) => Opacity(opacity: t,
                     child: Transform.translate(offset: Offset(isMe ? 20 * (1 - t) : -20 * (1 - t), 0), child: child)),
-                  child: Align(
-                    alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                    child: Container(
-                      margin: EdgeInsets.only(bottom: showTime ? 12 : 3),
-                      constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.72),
-                      decoration: BoxDecoration(
-                        gradient: isMe ? const LinearGradient(colors: [C.teal, C.tealDk], begin: Alignment.topLeft, end: Alignment.bottomRight) : null,
-                        color: isMe ? null : Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.only(
-                          topLeft: const Radius.circular(20), topRight: const Radius.circular(20),
-                          bottomLeft: Radius.circular(isMe ? 20 : 6),
-                          bottomRight: Radius.circular(isMe ? 6 : 20)),
-                        boxShadow: [BoxShadow(
-                          color: isMe ? C.teal.withOpacity(0.25) : Colors.black.withOpacity(isDark ? 0.2 : 0.08),
-                          blurRadius: 12, offset: const Offset(0, 3))],
+                  child: _SwipeableMessage(
+                    key: ValueKey('msg_${m['id']}'),
+                    isMe: isMe,
+                    onReply: () => setState(() {
+                      _replyTo = m;
+                      _replyAnim.forward(from: 0);
+                    }),
+                    child: Align(
+                      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                      child: Container(
+                        margin: EdgeInsets.only(bottom: showTime ? 12 : 3),
+                        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.72),
+                        decoration: BoxDecoration(
+                          gradient: isMe ? const LinearGradient(colors: [C.teal, C.tealDk], begin: Alignment.topLeft, end: Alignment.bottomRight) : null,
+                          color: isMe ? null : Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.only(
+                            topLeft: const Radius.circular(20), topRight: const Radius.circular(20),
+                            bottomLeft: Radius.circular(isMe ? 20 : 6),
+                            bottomRight: Radius.circular(isMe ? 6 : 20)),
+                          boxShadow: [BoxShadow(
+                            color: isMe ? C.teal.withOpacity(0.25) : Colors.black.withOpacity(isDark ? 0.2 : 0.08),
+                            blurRadius: 12, offset: const Offset(0, 3))],
+                        ),
+                        child: _buildMessageContent(m['content'] ?? '', isMe),
                       ),
-                      child: _buildMessageContent(m['content'] ?? '', isMe),
                     ),
                   ),
                 );
@@ -342,6 +355,13 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
 
         // Typing indicator bubble
         if (provider.someoneIsTyping) const _TypingBubble(),
+
+        // Reply preview
+        if (_replyTo != null) _ReplyPreview(
+          message: _replyTo!,
+          animation: _replyAnim,
+          onCancel: () => setState(() { _replyTo = null; }),
+        ),
 
         // Input bar
         Container(
@@ -392,7 +412,13 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
   void _send() async {
     if (_msgCtrl.text.trim().isEmpty) return;
     HapticFeedback.lightImpact();
-    final content = _msgCtrl.text.trim();
+    String content = _msgCtrl.text.trim();
+    if (_replyTo != null) {
+      final senderName = _replyTo!['sender_name'] ?? _replyTo!['user_name'] ?? 'User';
+      final replyText = _replyTo!['content'] ?? '';
+      content = '> $senderName: $replyText\n\n$content';
+      setState(() => _replyTo = null);
+    }
     _msgCtrl.clear();
     await context.read<ChatsProvider>().sendMessage(content);
     if (!mounted) return;
@@ -461,6 +487,42 @@ class _ChatsScreenState extends State<ChatsScreen> with SingleTickerProviderStat
   // ── Message content renderer ──────────────────────────────────────────────────
 
   Widget _buildMessageContent(String content, bool isMe) {
+    // Parse quote prefix "> sender: text\n\nmain"
+    if (content.startsWith('> ')) {
+      final nlIdx = content.indexOf('\n\n');
+      if (nlIdx > 0) {
+        final quoteLine = content.substring(2, nlIdx); // "sender: text"
+        final mainText = content.substring(nlIdx + 2).trim();
+        final colonIdx = quoteLine.indexOf(': ');
+        final senderName = colonIdx > 0 ? quoteLine.substring(0, colonIdx) : '';
+        final quoteText = colonIdx > 0 ? quoteLine.substring(colonIdx + 2) : quoteLine;
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            // Quote block
+            Container(
+              padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
+              decoration: BoxDecoration(
+                color: isMe ? Colors.white.withOpacity(0.18) : C.tealLt.withOpacity(0.6),
+                borderRadius: BorderRadius.circular(8),
+                border: Border(left: BorderSide(color: C.teal, width: 3)),
+              ),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                if (senderName.isNotEmpty)
+                  Text(senderName, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.teal)),
+                Text(quoteText, style: const TextStyle(fontSize: 12, color: C.text3),
+                  maxLines: 2, overflow: TextOverflow.ellipsis),
+              ]),
+            ),
+            const SizedBox(height: 6),
+            // Main text
+            Text(mainText, style: TextStyle(fontSize: 15, color: isMe ? Colors.white : null, height: 1.4)),
+          ]),
+        );
+      }
+    }
+    // Fall through to original renderer
     String fixedContent = content;
     try {
       final api = context.read<ApiService>();
@@ -572,6 +634,183 @@ class _TypingBubbleState extends State<_TypingBubble> with SingleTickerProviderS
               }),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Swipeable message wrapper ─────────────────────────────────────────────────
+
+class _SwipeableMessage extends StatefulWidget {
+  final Widget child;
+  final bool isMe;
+  final VoidCallback onReply;
+
+  const _SwipeableMessage({
+    super.key,
+    required this.child,
+    required this.isMe,
+    required this.onReply,
+  });
+
+  @override
+  State<_SwipeableMessage> createState() => _SwipeableMessageState();
+}
+
+class _SwipeableMessageState extends State<_SwipeableMessage>
+    with SingleTickerProviderStateMixin {
+  double _dx = 0;
+  bool _hapticFired = false;
+  late AnimationController _springCtrl;
+  late Animation<double> _springAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _springCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _springAnim = Tween<double>(begin: 0, end: 0).animate(
+      CurvedAnimation(parent: _springCtrl, curve: Curves.elasticOut),
+    );
+    _springCtrl.addListener(() => setState(() => _dx = _springAnim.value));
+  }
+
+  @override
+  void dispose() {
+    _springCtrl.dispose();
+    super.dispose();
+  }
+
+  double _applyResistance(double raw) {
+    if (raw <= 40) return raw;
+    return 40 + (raw - 40) / 2.5;
+  }
+
+  void _onDragUpdate(DragUpdateDetails details) {
+    final delta = details.delta.dx;
+    final newRaw = (_dx + delta).clamp(0.0, 120.0);
+    setState(() => _dx = _applyResistance(newRaw));
+
+    if (_dx > 60 && !_hapticFired) {
+      _hapticFired = true;
+      HapticFeedback.mediumImpact();
+    }
+  }
+
+  void _onDragEnd(DragEndDetails _) {
+    if (_dx > 60) {
+      widget.onReply();
+    }
+    // Spring back
+    _springAnim = Tween<double>(begin: _dx, end: 0).animate(
+      CurvedAnimation(parent: _springCtrl, curve: Curves.elasticOut),
+    );
+    _springCtrl.forward(from: 0);
+    _hapticFired = false;
+    setState(() => _dx = 0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onHorizontalDragUpdate: _onDragUpdate,
+      onHorizontalDragEnd: _onDragEnd,
+      child: Stack(children: [
+        // Reply icon (left side)
+        if (_dx > 40)
+          Positioned(
+            left: 8,
+            top: 0, bottom: 0,
+            child: Align(
+              alignment: Alignment.center,
+              child: AnimatedScale(
+                scale: ((_dx - 40) / 20).clamp(0.0, 1.0),
+                duration: Duration.zero,
+                child: Container(
+                  width: 32, height: 32,
+                  decoration: BoxDecoration(
+                    color: C.teal.withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.reply_rounded, size: 18, color: C.teal),
+                ),
+              ),
+            ),
+          ),
+        // Message bubble
+        Transform.translate(
+          offset: Offset(_dx, 0),
+          child: widget.child,
+        ),
+      ]),
+    );
+  }
+}
+
+// ── Reply preview ─────────────────────────────────────────────────────────────
+
+class _ReplyPreview extends StatelessWidget {
+  final Map<String, dynamic> message;
+  final AnimationController animation;
+  final VoidCallback onCancel;
+
+  const _ReplyPreview({
+    required this.message,
+    required this.animation,
+    required this.onCancel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final senderName = message['sender_name'] ?? message['user_name'] ?? 'User';
+    final text = message['content'] ?? '';
+    final surface = Theme.of(context).colorScheme.surface;
+
+    return SlideTransition(
+      position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+          .animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)),
+      child: FadeTransition(
+        opacity: animation,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 8, 12, 8),
+          decoration: BoxDecoration(
+            color: surface,
+            border: Border(
+              top: BorderSide(color: C.teal.withOpacity(0.2), width: 1),
+            ),
+            boxShadow: [BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.12 : 0.04),
+              blurRadius: 6, offset: const Offset(0, -2),
+            )],
+          ),
+          child: Row(children: [
+            Container(width: 3, height: 40, decoration: BoxDecoration(
+              color: C.teal, borderRadius: BorderRadius.circular(2),
+            )),
+            const SizedBox(width: 10),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(senderName, style: const TextStyle(
+                fontSize: 12, fontWeight: FontWeight.w700, color: C.teal,
+              )),
+              Text(text, style: const TextStyle(fontSize: 13, color: C.text3),
+                maxLines: 1, overflow: TextOverflow.ellipsis),
+            ])),
+            GestureDetector(
+              onTap: onCancel,
+              child: Container(
+                width: 28, height: 28,
+                decoration: BoxDecoration(
+                  color: adaptiveSurface2(context),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close, size: 14, color: C.text4),
+              ),
+            ),
+          ]),
         ),
       ),
     );

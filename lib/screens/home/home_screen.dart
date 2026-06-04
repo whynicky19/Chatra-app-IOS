@@ -823,64 +823,34 @@ class _ClassContextMenu extends StatelessWidget {
         width: 288,
         decoration: BoxDecoration(
           color: surface,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(isDark ? 0.5 : 0.14), blurRadius: 40, offset: const Offset(0, 16)),
-            BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.05), blurRadius: 8, offset: const Offset(0, 2)),
-          ],
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: cardShadow(isDark),
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
 
-            // ── Cover header ──────────────────────────────────
-            SizedBox(height: 108, width: double.infinity,
+            // ── Cover header ──
+            SizedBox(height: 60, width: double.infinity,
               child: Stack(fit: StackFit.expand, children: [
-                // Background
                 coverImg != null && coverImg.toString().startsWith('data:')
-                    ? Builder(builder: (_) { try { return Image.memory(base64Decode(coverImg.toString().split(',').last), fit: BoxFit.cover); } catch (_) { return Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight))); } })
+                    ? Builder(builder: (_) { try { return Image.memory(base64Decode(coverImg.toString().split(',').last), fit: BoxFit.cover); } catch (_) { return Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))); } })
                     : coverImg != null
-                        ? Image.network(coverImg, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight))))
+                        ? Image.network(coverImg, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))))
                         : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight))),
-                // Gradient overlay
                 Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                   begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                  stops: const [0.0, 0.45, 1.0],
-                  colors: [Colors.black.withOpacity(0.08), Colors.transparent, Colors.black.withOpacity(0.72)],
+                  colors: [Colors.transparent, Colors.black.withOpacity(0.55)],
                 )))),
-                // Pin badge
-                if (isPinned)
-                  Positioned(top: 12, right: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.45),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(Icons.push_pin_rounded, color: Colors.white, size: 11),
-                        SizedBox(width: 4),
-                        Text('Закреплён', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700)),
-                      ]),
-                    )),
-                // Title + meta
-                Positioned(bottom: 0, left: 0, right: 0,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-                      Text(title,
-                        style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w900, height: 1.2),
-                        maxLines: 2, overflow: TextOverflow.ellipsis),
-                      if (teacherName.isNotEmpty) ...[
-                        const SizedBox(height: 3),
-                        Text(teacherName, style: TextStyle(color: Colors.white.withOpacity(0.75), fontSize: 11, fontWeight: FontWeight.w500)),
-                      ],
-                    ]),
-                  )),
+                Positioned(bottom: 10, left: 12,
+                  child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                if (teacherName.isNotEmpty)
+                  Positioned(bottom: 10, right: 12,
+                    child: Text(teacherName, style: TextStyle(color: Colors.white.withOpacity(0.75), fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis)),
               ]),
             ),
 
-            // ── Code chip row ─────────────────────────────────
+            // ── Code chip ──
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
               child: Row(children: [
@@ -898,30 +868,20 @@ class _ClassContextMenu extends StatelessWidget {
                   ]),
                 ),
                 const Spacer(),
-                _SmallAction(
-                  icon: Icons.copy_all_rounded,
-                  bg: C.teal.withOpacity(0.1),
-                  iconColor: C.teal,
-                  onTap: onCopyCode,
-                ),
+                _SmallAction(icon: Icons.copy_all_rounded, bg: C.teal.withOpacity(0.1), iconColor: C.teal, onTap: onCopyCode),
                 const SizedBox(width: 8),
-                _SmallAction(
-                  icon: Icons.share_rounded,
-                  bg: const Color(0xFF6366F1).withOpacity(0.1),
-                  iconColor: const Color(0xFF6366F1),
-                  onTap: onShare,
-                ),
+                _SmallAction(icon: Icons.share_rounded, bg: const Color(0xFF6366F1).withOpacity(0.1), iconColor: const Color(0xFF6366F1), onTap: onShare),
               ]),
             ),
 
-            // ── Main actions ──────────────────────────────────
+            // ── Actions ──
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
               child: Column(children: [
                 _ActionRow(
                   icon: isPinned ? Icons.push_pin_outlined : Icons.push_pin_rounded,
-                  iconBg: const Color(0xFFF59E0B).withOpacity(0.12),
-                  iconColor: const Color(0xFFF59E0B),
+                  iconBg: C.teal.withOpacity(0.12),
+                  iconColor: C.teal,
                   label: isPinned ? l.t('unpin_class') : l.t('pin_class'),
                   bg: bg2,
                   onTap: onTogglePin,
@@ -940,7 +900,7 @@ class _ClassContextMenu extends StatelessWidget {
               ]),
             ),
 
-            // ── Danger zone ───────────────────────────────────
+            // ── Danger zone ──
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
               child: _ActionRow(
@@ -961,7 +921,6 @@ class _ClassContextMenu extends StatelessWidget {
   }
 }
 
-// Маленькая иконка-кнопка (для copy/share в строке кода)
 class _SmallAction extends StatelessWidget {
   final IconData icon;
   final Color bg;
@@ -980,7 +939,6 @@ class _SmallAction extends StatelessWidget {
   );
 }
 
-// Строка действия с цветной иконкой в контейнере
 class _ActionRow extends StatelessWidget {
   final IconData icon;
   final Color iconBg;
@@ -1028,6 +986,7 @@ class _ActionRow extends StatelessWidget {
     );
   }
 }
+
 
 // ── Reusable widgets ──────────────────────────────────────────────────────────
 

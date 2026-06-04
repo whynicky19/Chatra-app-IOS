@@ -831,7 +831,7 @@ class _ClassContextMenu extends StatelessWidget {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
 
             // ── Cover header ──
-            SizedBox(height: 60, width: double.infinity,
+            SizedBox(height: 110, width: double.infinity,
               child: Stack(fit: StackFit.expand, children: [
                 coverImg != null && coverImg.toString().startsWith('data:')
                     ? Builder(builder: (_) { try { return Image.memory(base64Decode(coverImg.toString().split(',').last), fit: BoxFit.cover); } catch (_) { return Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))); } })
@@ -869,8 +869,6 @@ class _ClassContextMenu extends StatelessWidget {
                 ),
                 const Spacer(),
                 _SmallAction(icon: Icons.copy_all_rounded, bg: C.teal.withOpacity(0.1), iconColor: C.teal, onTap: onCopyCode),
-                const SizedBox(width: 8),
-                _SmallAction(icon: Icons.share_rounded, bg: const Color(0xFF6366F1).withOpacity(0.1), iconColor: const Color(0xFF6366F1), onTap: onShare),
               ]),
             ),
 

@@ -813,56 +813,147 @@ class _ClassContextMenu extends StatelessWidget {
     final l = context.watch<L10n>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = Theme.of(context).colorScheme.surface;
+    final bg2 = adaptiveSurface2(context);
     final code = classCode(cls['id'] as int);
+    final teacherName = cls['teacher_name'] as String? ?? '';
 
     return Material(
       color: Colors.transparent,
       child: Container(
-        width: 260,
+        width: 288,
         decoration: BoxDecoration(
           color: surface,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: cardShadow(isDark),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(isDark ? 0.5 : 0.14), blurRadius: 40, offset: const Offset(0, 16)),
+            BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.05), blurRadius: 8, offset: const Offset(0, 2)),
+          ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            // Gradient preview header
-            SizedBox(height: 60, width: double.infinity,
+
+            // ── Cover header ──────────────────────────────────
+            SizedBox(height: 108, width: double.infinity,
               child: Stack(fit: StackFit.expand, children: [
+                // Background
                 coverImg != null && coverImg.toString().startsWith('data:')
-                    ? Builder(builder: (_) { try { return Image.memory(base64Decode(coverImg.toString().split(',').last), fit: BoxFit.cover); } catch (_) { return Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))); } })
+                    ? Builder(builder: (_) { try { return Image.memory(base64Decode(coverImg.toString().split(',').last), fit: BoxFit.cover); } catch (_) { return Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight))); } })
                     : coverImg != null
-                        ? Image.network(coverImg, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))))
+                        ? Image.network(coverImg, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight))))
                         : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight))),
+                // Gradient overlay
                 Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                   begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.black.withOpacity(0.55)],
+                  stops: const [0.0, 0.45, 1.0],
+                  colors: [Colors.black.withOpacity(0.08), Colors.transparent, Colors.black.withOpacity(0.72)],
                 )))),
-                Positioned(bottom: 10, left: 12,
-                  child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                // Pin badge
+                if (isPinned)
+                  Positioned(top: 12, right: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.45),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(Icons.push_pin_rounded, color: Colors.white, size: 11),
+                        SizedBox(width: 4),
+                        Text('Закреплён', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700)),
+                      ]),
+                    )),
+                // Title + meta
+                Positioned(bottom: 0, left: 0, right: 0,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                      Text(title,
+                        style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w900, height: 1.2),
+                        maxLines: 2, overflow: TextOverflow.ellipsis),
+                      if (teacherName.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Text(teacherName, style: TextStyle(color: Colors.white.withOpacity(0.75), fontSize: 11, fontWeight: FontWeight.w500)),
+                      ],
+                    ]),
+                  )),
               ]),
             ),
-            // Menu items
-            _MenuItem(
-              icon: Icons.copy_all_rounded, label: l.t('copy_code'),
-              trailing: Text(code, style: const TextStyle(fontSize: 12, color: C.text4, fontWeight: FontWeight.w700)),
-              onTap: onCopyCode,
+
+            // ── Code chip row ─────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
+              child: Row(children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: C.teal.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: C.teal.withOpacity(0.2)),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(Icons.tag_rounded, size: 12, color: C.teal),
+                    const SizedBox(width: 4),
+                    Text(code, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: C.teal, letterSpacing: 2)),
+                  ]),
+                ),
+                const Spacer(),
+                _SmallAction(
+                  icon: Icons.copy_all_rounded,
+                  bg: C.teal.withOpacity(0.1),
+                  iconColor: C.teal,
+                  onTap: onCopyCode,
+                ),
+                const SizedBox(width: 8),
+                _SmallAction(
+                  icon: Icons.share_rounded,
+                  bg: const Color(0xFF6366F1).withOpacity(0.1),
+                  iconColor: const Color(0xFF6366F1),
+                  onTap: onShare,
+                ),
+              ]),
             ),
-            _MenuItem(icon: Icons.share_rounded, label: l.t('share_class'), onTap: onShare),
-            _MenuItem(
-              icon: isPinned ? Icons.push_pin_outlined : Icons.push_pin_rounded,
-              label: isPinned ? l.t('unpin_class') : l.t('pin_class'),
-              onTap: onTogglePin,
+
+            // ── Main actions ──────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
+              child: Column(children: [
+                _ActionRow(
+                  icon: isPinned ? Icons.push_pin_outlined : Icons.push_pin_rounded,
+                  iconBg: const Color(0xFFF59E0B).withOpacity(0.12),
+                  iconColor: const Color(0xFFF59E0B),
+                  label: isPinned ? l.t('unpin_class') : l.t('pin_class'),
+                  bg: bg2,
+                  onTap: onTogglePin,
+                ),
+                if (isTeacher) ...[
+                  const SizedBox(height: 6),
+                  _ActionRow(
+                    icon: Icons.group_rounded,
+                    iconBg: C.green.withOpacity(0.12),
+                    iconColor: C.green,
+                    label: l.t('class_members'),
+                    bg: bg2,
+                    onTap: onMembers,
+                  ),
+                ],
+              ]),
             ),
-            if (isTeacher) ...[
-              _MenuItem(icon: Icons.group_rounded, label: l.t('class_members'), onTap: onMembers),
-              const Divider(height: 1, indent: 16, endIndent: 16),
-              _MenuItem(icon: Icons.delete_outline_rounded, label: l.t('delete_class'), color: C.red, onTap: onDelete),
-            ] else ...[
-              const Divider(height: 1, indent: 16, endIndent: 16),
-              _MenuItem(icon: Icons.logout_rounded, label: l.t('leave_class'), color: C.red, onTap: onLeave),
-            ],
+
+            // ── Danger zone ───────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
+              child: _ActionRow(
+                icon: isTeacher ? Icons.delete_outline_rounded : Icons.logout_rounded,
+                iconBg: C.red.withOpacity(0.12),
+                iconColor: C.red,
+                label: isTeacher ? l.t('delete_class') : l.t('leave_class'),
+                bg: C.red.withOpacity(isDark ? 0.08 : 0.05),
+                textColor: C.red,
+                onTap: isTeacher ? onDelete : onLeave,
+              ),
+            ),
+
           ]),
         ),
       ),
@@ -870,28 +961,69 @@ class _ClassContextMenu extends StatelessWidget {
   }
 }
 
-class _MenuItem extends StatelessWidget {
+// Маленькая иконка-кнопка (для copy/share в строке кода)
+class _SmallAction extends StatelessWidget {
   final IconData icon;
+  final Color bg;
+  final Color iconColor;
+  final VoidCallback onTap;
+  const _SmallAction({required this.icon, required this.bg, required this.iconColor, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: Container(
+      width: 34, height: 34,
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
+      child: Icon(icon, size: 16, color: iconColor),
+    ),
+  );
+}
+
+// Строка действия с цветной иконкой в контейнере
+class _ActionRow extends StatelessWidget {
+  final IconData icon;
+  final Color iconBg;
+  final Color iconColor;
   final String label;
-  final Color? color;
-  final Widget? trailing;
+  final Color bg;
+  final Color? textColor;
   final VoidCallback onTap;
 
-  const _MenuItem({required this.icon, required this.label, required this.onTap, this.color, this.trailing});
+  const _ActionRow({
+    required this.icon,
+    required this.iconBg,
+    required this.iconColor,
+    required this.label,
+    required this.bg,
+    required this.onTap,
+    this.textColor,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final c = color ?? adaptiveText1(context);
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-        child: Row(children: [
-          Icon(icon, size: 18, color: c),
-          const SizedBox(width: 12),
-          Expanded(child: Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: c))),
-          if (trailing != null) trailing!,
-        ]),
+    final labelColor = textColor ?? adaptiveText1(context);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Ink(
+          decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(14)),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+            child: Row(children: [
+              Container(
+                width: 34, height: 34,
+                decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(10)),
+                child: Icon(icon, size: 17, color: iconColor),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: labelColor))),
+              Icon(Icons.chevron_right_rounded, size: 16, color: labelColor.withOpacity(0.35)),
+            ]),
+          ),
+        ),
       ),
     );
   }

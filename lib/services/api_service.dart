@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiService {
   late final Dio _dio;
+  Dio get dio => _dio;
   String? _token;
   VoidCallback? onUnauthorized;
 

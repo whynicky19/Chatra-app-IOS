@@ -1,10 +1,14 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:dio/dio.dart' show Options;
 import '../../providers/auth_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
@@ -98,6 +102,121 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   String _preview(dynamic p) { try { final b = jsonDecode(p['body']); return (b['content'] ?? b['description'] ?? '').replaceAll(RegExp(r'https?://\S+'), '').replaceAll(RegExp(r'\s+'), ' ').trim(); } catch (_) { return ''; } }
   String _fmtDate(String? d) { if (d == null) return ''; try { final dt = DateTime.parse(d); return '${dt.day}.${dt.month.toString().padLeft(2, '0')}.${dt.year}'; } catch (_) { return d; } }
   dynamic _subFor(int aId) => _mySubs.firstWhere((s) => s['assignment_id'] == aId, orElse: () => null);
+
+  // Downloads the file and opens it with the native viewer (PDF, Word, Excel, images, etc.)
+  Future<void> _openFileViewer(BuildContext ctx, String url, String name) async {
+    final cleanUrl = _cleanFileUrl(url);
+    final ext = name.split('.').last.toLowerCase();
+
+    // Images — show in-app full-screen gallery
+    final imageExts = {'jpg', 'jpeg', 'png', 'gif', 'webp'};
+    if (imageExts.contains(ext)) {
+      _showImageViewer(ctx, cleanUrl, name);
+      return;
+    }
+
+    // Show download progress dialog
+    var progress = 0.0;
+    var cancelled = false;
+    showDialog(
+      context: ctx,
+      barrierDismissible: false,
+      builder: (_) => StatefulBuilder(builder: (dCtx, setD) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+              width: 52, height: 52,
+              decoration: BoxDecoration(color: C.teal.withOpacity(0.10), shape: BoxShape.circle),
+              child: Icon(_fileTypeConfig(ext)['icon'] as IconData, color: C.teal, size: 26),
+            ),
+            const SizedBox(height: 14),
+            Text('Открытие файла', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 4),
+            Text(name, style: TextStyle(fontSize: 12, color: C.text4), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis),
+            const SizedBox(height: 16),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: StatefulBuilder(builder: (_, sp) => LinearProgressIndicator(value: progress > 0 ? progress : null, color: C.teal, backgroundColor: C.teal.withOpacity(0.12), minHeight: 5)),
+            ),
+            const SizedBox(height: 10),
+            Text(progress > 0 ? '${(progress * 100).toInt()}%' : 'Загрузка...', style: TextStyle(fontSize: 12, color: C.text4)),
+            const SizedBox(height: 4),
+            TextButton(
+              onPressed: () { cancelled = true; Navigator.pop(dCtx); },
+              child: Text('Отмена', style: TextStyle(color: C.text4)),
+            ),
+          ]),
+        );
+      }),
+    );
+
+    try {
+      final dir = await getTemporaryDirectory();
+      final safeFileName = name.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+      final filePath = '${dir.path}/$safeFileName';
+      final file = File(filePath);
+
+      // Use cached version if it exists
+      if (!await file.exists()) {
+        final api = context.read<ApiService>();
+        await api.dio.download(
+          cleanUrl,
+          filePath,
+          onReceiveProgress: (received, total) {
+            if (total > 0) progress = received / total;
+          },
+          options: Options(receiveTimeout: const Duration(minutes: 5)),
+        );
+      }
+
+      if (!mounted || cancelled) return;
+      Navigator.pop(context);
+
+      final result = await OpenFile.open(filePath);
+      if (result.type != ResultType.done && mounted) {
+        // Fallback to browser if native open fails
+        await launchUrl(Uri.parse(cleanUrl), mode: LaunchMode.externalApplication);
+      }
+    } catch (_) {
+      if (!mounted || cancelled) return;
+      Navigator.pop(context);
+      try { await launchUrl(Uri.parse(cleanUrl), mode: LaunchMode.externalApplication); } catch (_) {}
+    }
+  }
+
+  void _showImageViewer(BuildContext ctx, String url, String name) {
+    showDialog(
+      context: ctx,
+      barrierColor: Colors.black87,
+      builder: (_) => GestureDetector(
+        onTap: () => Navigator.pop(ctx),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Stack(children: [
+            Center(child: InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 5.0,
+              child: Image.network(url, fit: BoxFit.contain,
+                loadingBuilder: (_, child, progress) => progress == null ? child
+                    : Center(child: CircularProgressIndicator(color: C.teal, strokeWidth: 2)),
+                errorBuilder: (_, __, ___) => Icon(Icons.broken_image_rounded, color: Colors.white54, size: 64),
+              ),
+            )),
+            Positioned(top: MediaQuery.of(ctx).padding.top + 8, right: 16,
+              child: GestureDetector(
+                onTap: () => Navigator.pop(ctx),
+                child: Container(width: 36, height: 36,
+                  decoration: BoxDecoration(color: Colors.black45, shape: BoxShape.circle),
+                  child: const Icon(Icons.close_rounded, color: Colors.white, size: 18)),
+              )),
+            Positioned(bottom: MediaQuery.of(ctx).padding.bottom + 16, left: 0, right: 0,
+              child: Center(child: Text(name, style: const TextStyle(color: Colors.white70, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis))),
+          ]),
+        ),
+      ),
+    );
+  }
 
   // Returns the human-readable filename: uses the URL fragment (#OriginalName.pdf) if present,
   // otherwise falls back to the last path segment (which may be a UUID).
@@ -888,9 +1007,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                       curve: Curves.easeOutCubic,
                       builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 8*(1-t)), child: child)),
                       child: GestureDetector(
-                        onTap: () async {
-                          try { await launchUrl(Uri.parse(_cleanFileUrl(f)), mode: LaunchMode.inAppBrowserView); } catch (_) {}
-                        },
+                        onTap: () => _openFileViewer(context, f, name),
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 10),
                           padding: const EdgeInsets.all(14),
@@ -1185,7 +1302,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               final fileColor = fc['color'] as Color;
               final fileBg = fc['bg'] as Color;
               return GestureDetector(
-                onTap: () async { try { await launchUrl(Uri.parse(_cleanFileUrl(f)), mode: LaunchMode.inAppBrowserView); } catch (_) {} },
+                onTap: () => _openFileViewer(context, f, name),
                 child: Container(
                   margin: EdgeInsets.only(bottom: 8),
                   padding: EdgeInsets.all(12),
@@ -1365,7 +1482,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 final ext = name.split('.').last.toLowerCase();
                 final icon = ext == 'pdf' ? Icons.picture_as_pdf : ext == 'pptx' || ext == 'ppt' ? Icons.slideshow : ext == 'doc' || ext == 'docx' ? Icons.description : Icons.insert_drive_file;
                 return GestureDetector(
-                  onTap: () async { try { await launchUrl(Uri.parse(_cleanFileUrl(url)), mode: LaunchMode.inAppBrowserView); } catch (_) {} },
+                  onTap: () => _openFileViewer(context, url, name),
                   child: Container(margin: EdgeInsets.only(bottom: 6), padding: EdgeInsets.all(12),
                     decoration: BoxDecoration(color: C.teal.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
                     child: Row(children: [
@@ -1586,7 +1703,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     final ext = name.split('.').last.toLowerCase();
                     final icon = ext == 'pdf' ? Icons.picture_as_pdf : ext == 'pptx' || ext == 'ppt' ? Icons.slideshow : ext == 'doc' || ext == 'docx' ? Icons.description : Icons.insert_drive_file;
                     return GestureDetector(
-                      onTap: () async { try { await launchUrl(Uri.parse(_cleanFileUrl(url)), mode: LaunchMode.inAppBrowserView); } catch (_) {} },
+                      onTap: () => _openFileViewer(context, url, name),
                       child: Container(padding: EdgeInsets.all(12), margin: EdgeInsets.only(bottom: 6),
                         decoration: BoxDecoration(color: C.teal.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
                         child: Row(children: [

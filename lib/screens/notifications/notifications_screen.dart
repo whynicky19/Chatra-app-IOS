@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/auth_provider.dart';
@@ -11,13 +12,14 @@ import '../classes/class_detail_screen.dart';
 enum _NType { newAssignment, deadline, grade }
 
 class _Notif {
+  final String key; // unique key for dismissal tracking
   final _NType type;
   final String title;
   final String body;
   final DateTime date;
   final bool isRead;
   final int? classId;
-  const _Notif({required this.type, required this.title, required this.body, required this.date, this.isRead = false, this.classId});
+  const _Notif({required this.key, required this.type, required this.title, required this.body, required this.date, this.isRead = false, this.classId});
 }
 
 class NotificationsScreen extends StatefulWidget {
@@ -44,6 +46,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final joinedIds = (prefs.getStringList('joined_classes_$uid') ?? []).map(int.parse).toSet();
     final seenAsgn = (prefs.getStringList('notif_seen_asgn_$uid') ?? []).map(int.parse).toSet();
     final seenGrade = (prefs.getStringList('notif_seen_grade_$uid') ?? []).map(int.parse).toSet();
+    final dismissed = (prefs.getStringList('notif_dismissed_$uid') ?? []).toSet();
 
     // read-at timestamps: id -> ISO string
     Map<int, DateTime> readAtAsgn = {};
@@ -97,12 +100,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     // Remove deleted classes from joined set so we don't show stale notifications
     final activeJoinedIds = joinedIds.intersection(existingClassIds);
 
+    // Keep only assignments from existing classes (filters out orphaned assignments)
+    allAssignments = allAssignments.where(
+      (a) => existingClassIds.contains((a['class_id'] as num?)?.toInt()),
+    ).toList();
+
     final l = context.read<L10n>();
 
     // ── Grade notifications ──
     for (final sub in mySubs) {
       if (sub['status'] != 'graded' || sub['grade'] == null) continue;
       final subId = (sub['id'] as num?)?.toInt() ?? 0;
+      final aId = (sub['assignment_id'] as num?)?.toInt();
+      final assignment = aId != null ? allAssignments.firstWhere((a) => a['id'] == aId, orElse: () => null) : null;
+      final cid = (assignment?['class_id'] as num?)?.toInt();
+      // Skip if the class was deleted
+      if (cid != null && !existingClassIds.contains(cid)) { newSeenGrade.add(subId); continue; }
       final isRead = seenGrade.contains(subId);
       // Record read-at on first sight
       if (isRead && !readAtGrade.containsKey(subId)) readAtGrade[subId] = now;
@@ -111,12 +124,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         final readAt = readAtGrade[subId];
         if (readAt != null && now.difference(readAt).inDays >= _readTtlDays) { newSeenGrade.add(subId); continue; }
       }
+      final nKey = 'grade_$subId';
+      if (dismissed.contains(nKey)) continue;
       final score = sub['grade']['score'];
-      final aId = (sub['assignment_id'] as num?)?.toInt();
-      final assignment = aId != null ? allAssignments.firstWhere((a) => a['id'] == aId, orElse: () => null) : null;
       final aTitle = assignment?['title']?.toString() ?? l.t('assignment');
-      final cid = (assignment?['class_id'] as num?)?.toInt();
       notifs.add(_Notif(
+        key: nKey,
         type: _NType.grade,
         title: l.t('notif_graded'),
         body: '"$aTitle" — $score ${l.t('pts')}',
@@ -143,11 +156,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
       // New assignment (last 7 days)
       if (createdAt != null && now.difference(createdAt).inDays <= 7) {
+        final nKey = 'asgn_$aId';
         final isRead = seenAsgn.contains(aId);
         if (isRead && !readAtAsgn.containsKey(aId)) readAtAsgn[aId] = now;
-        final skip = isRead && (readAtAsgn[aId] != null && now.difference(readAtAsgn[aId]!).inDays >= _readTtlDays);
+        final skip = dismissed.contains(nKey) ||
+            (isRead && readAtAsgn[aId] != null && now.difference(readAtAsgn[aId]!).inDays >= _readTtlDays);
         if (!skip) {
           notifs.add(_Notif(
+            key: nKey,
             type: _NType.newAssignment,
             title: l.t('new_assignment'),
             body: '"$aTitle"${cName.isNotEmpty ? '  •  $cName' : ''}',
@@ -161,16 +177,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
       // Deadline reminder (within 48 h, not submitted)
       if (deadline != null && deadline.isAfter(now) && deadline.difference(now).inHours <= 48 && sub == null) {
-        final diff = deadline.difference(now);
-        final timeStr = diff.inHours >= 1 ? '${diff.inHours} ${l.t('hours_short')}' : '${diff.inMinutes} ${l.t('minutes_short')}';
-        notifs.add(_Notif(
-          type: _NType.deadline,
-          title: l.t('notif_deadline'),
-          body: '"$aTitle"  •  $timeStr',
-          date: deadline,
-          isRead: false,
-          classId: cid,
-        ));
+        final nKey = 'dl_$aId';
+        if (!dismissed.contains(nKey)) {
+          final diff = deadline.difference(now);
+          final timeStr = diff.inHours >= 1 ? '${diff.inHours} ${l.t('hours_short')}' : '${diff.inMinutes} ${l.t('minutes_short')}';
+          notifs.add(_Notif(
+            key: nKey,
+            type: _NType.deadline,
+            title: l.t('notif_deadline'),
+            body: '"$aTitle"  •  $timeStr',
+            date: deadline,
+            isRead: false,
+            classId: cid,
+          ));
+        }
       }
     }
 
@@ -194,6 +214,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     });
 
     if (mounted) setState(() { _notifs = notifs; _loading = false; });
+  }
+
+  Future<void> _dismiss(String nKey) async {
+    setState(() => _notifs.removeWhere((n) => n.key == nKey));
+    final uid = context.read<AuthProvider>().userId ?? 0;
+    final prefs = await SharedPreferences.getInstance();
+    final dismissed = (prefs.getStringList('notif_dismissed_$uid') ?? []).toSet();
+    dismissed.add(nKey);
+    await prefs.setStringList('notif_dismissed_$uid', dismissed.toList());
   }
 
   String _timeAgo(DateTime date, L10n l) {
@@ -248,12 +277,34 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     final cfg = _config(n.type);
                     final canNavigate = n.classId != null;
                     return TweenAnimationBuilder<double>(
-                      key: ValueKey(i),
+                      key: ValueKey(n.key),
                       tween: Tween(begin: 0.0, end: 1.0),
                       duration: Duration(milliseconds: 320 + i * 45),
                       curve: Curves.easeOutCubic,
                       builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 14 * (1 - t)), child: child)),
-                      child: GestureDetector(
+                      child: Dismissible(
+                        key: ValueKey('dismiss_${n.key}'),
+                        direction: DismissDirection.endToStart,
+                        dismissThresholds: const {DismissDirection.endToStart: 0.4},
+                        onDismissed: (_) {
+                          HapticFeedback.mediumImpact();
+                          _dismiss(n.key);
+                        },
+                        background: Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEF4444),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 24),
+                          child: const Column(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(Icons.delete_rounded, color: Colors.white, size: 24),
+                            SizedBox(height: 4),
+                            Text('Удалить', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+                          ]),
+                        ),
+                        child: GestureDetector(
                         onTap: canNavigate ? () => Navigator.push(context, MaterialPageRoute(
                           builder: (_) => ClassDetailScreen(classId: n.classId!, initialTab: 2))) : null,
                         child: Container(
@@ -288,6 +339,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                 fontSize: 11, color: C.text4.withOpacity(0.7), fontWeight: FontWeight.w600)),
                             ])),
                           ])),
+                        ),
                         ),
                       ),
                     );

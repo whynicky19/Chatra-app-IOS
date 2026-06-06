@@ -169,8 +169,10 @@ class _HomeScreenState extends State<HomeScreen> {
               _HeaderBtn(icon: Icons.calendar_month_rounded, onTap: _openCalendar, isDark: isDark),
               const SizedBox(width: 8),
               if (auth.isTeacher) ...[
-                _HeaderBtn(icon: Icons.vpn_key_rounded, onTap: _showJoinDialog, isDark: isDark),
-                const SizedBox(width: 8),
+                if (!auth.isAdmin) ...[
+                  _HeaderBtn(icon: Icons.vpn_key_rounded, onTap: _showJoinDialog, isDark: isDark),
+                  const SizedBox(width: 8),
+                ],
                 GestureDetector(onTap: _showCreateClass,
                   child: Container(
                     width: 42, height: 42,

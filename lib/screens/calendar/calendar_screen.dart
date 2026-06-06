@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/classes_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
@@ -41,6 +42,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
 
+      // Fetch active class IDs from the provider (already filtered for this user)
+      final activeClassIds = context.read<ClassesProvider>()
+          .classes
+          .map((c) => (c['id'] as num).toInt())
+          .toSet();
+
       final results = await Future.wait([
         api.getAssignments(),
         if (isStudent) api.getMySubmissions(),
@@ -48,8 +55,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
       if (!mounted) return;
 
-      final assignments = results[0];
+      final allAssignments = results[0] as List;
       final submissions = (isStudent && results.length > 1) ? results[1] : <dynamic>[];
+
+      // Keep only assignments that belong to currently active classes
+      final assignments = allAssignments.where((a) {
+        final classId = (a['class_id'] as num?)?.toInt();
+        return classId != null && activeClassIds.contains(classId);
+      }).toList();
 
       // Build submission map: assignment_id → submission
       final subMap = <int, dynamic>{};
@@ -66,7 +79,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
         final dt = DateTime.tryParse(dueStr);
         if (dt == null) continue;
         final dueDay = DateTime(dt.year, dt.month, dt.day);
-        // Remove past deadlines from the calendar
         if (dueDay.isBefore(today)) continue;
         map.putIfAbsent(dueDay, () => []).add(a);
       }

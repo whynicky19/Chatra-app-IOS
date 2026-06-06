@@ -284,7 +284,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   ],
                   if (auth.isTeacher) ...[
                     SizedBox(height: 8),
-                    GestureDetector(onTap: () { Clipboard.setData(ClipboardData(text: classCode(widget.classId))); showToast(context, l.t('code_copied')); },
+                    GestureDetector(onTap: () { Clipboard.setData(ClipboardData(text: classCode(widget.classId))); showToast(context, '${l.t('code_copied')}: ${classCode(widget.classId)}'); },
                       child: Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: adaptiveTealLt(context).withOpacity(0.9), borderRadius: BorderRadius.circular(8)),
                         child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.copy, size: 14, color: C.teal), SizedBox(width: 6), Text('${l.t('class_code')}: ', style: TextStyle(fontSize: 13, color: C.teal)), Text(classCode(widget.classId), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: C.teal, letterSpacing: 2))]))),
                   ],

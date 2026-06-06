@@ -61,10 +61,11 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       } catch (_) {}
       for (final f in files) {
         final url = _fixFileUrl(f.toString());
-        final ext = url.split('?').first.split('.').last.toLowerCase();
+        final cleanUrl = _cleanFileUrl(url);
+        final ext = cleanUrl.split('?').first.split('.').last.toLowerCase();
         if (['txt', 'md'].contains(ext)) {
           try {
-            final text = await api.fetchFileText(url);
+            final text = await api.fetchFileText(cleanUrl);
             if (text.isNotEmpty) result[url] = text;
           } catch (_) {}
         }
@@ -97,6 +98,22 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   String _preview(dynamic p) { try { final b = jsonDecode(p['body']); return (b['content'] ?? b['description'] ?? '').replaceAll(RegExp(r'https?://\S+'), '').replaceAll(RegExp(r'\s+'), ' ').trim(); } catch (_) { return ''; } }
   String _fmtDate(String? d) { if (d == null) return ''; try { final dt = DateTime.parse(d); return '${dt.day}.${dt.month.toString().padLeft(2, '0')}.${dt.year}'; } catch (_) { return d; } }
   dynamic _subFor(int aId) => _mySubs.firstWhere((s) => s['assignment_id'] == aId, orElse: () => null);
+
+  // Returns the human-readable filename: uses the URL fragment (#OriginalName.pdf) if present,
+  // otherwise falls back to the last path segment (which may be a UUID).
+  String _fileDisplayName(String url) {
+    try {
+      final uri = Uri.parse(url);
+      if (uri.fragment.isNotEmpty) return Uri.decodeComponent(uri.fragment);
+      return uri.pathSegments.lastWhere((s) => s.isNotEmpty, orElse: () => url);
+    } catch (_) { return url; }
+  }
+
+  // Strips the #fragment from a URL before passing it to launchUrl or fetching.
+  String _cleanFileUrl(String url) {
+    final idx = url.indexOf('#');
+    return idx >= 0 ? url.substring(0, idx) : url;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -377,7 +394,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               Align(alignment: Alignment.centerLeft, child: Text('Прикреплённые файлы', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: C.text3))),
               SizedBox(height: 8),
               ...editFiles.map((f) {
-                final name = Uri.parse(f.toString()).pathSegments.last;
+                final name = _fileDisplayName(f.toString());
                 return Container(
                   margin: EdgeInsets.only(bottom: 6),
                   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -402,7 +419,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                       try {
                         final res = await api.uploadFile(pf.path!, pf.name);
                         final url = res['url'] ?? res['file_url'] ?? res['path'];
-                        if (url != null) setS(() => editFiles.add(url.toString()));
+                        if (url != null) setS(() => editFiles.add('${url}#${Uri.encodeComponent(pf.name)}'));
                       } catch (_) {}
                     }
                   }
@@ -698,8 +715,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       if (files.isNotEmpty) {
         for (final f in files) {
           final url = _fixFileUrl(f.toString());
-          final name = (() { try { return Uri.parse(url).pathSegments.last; } catch (_) { return url; } })();
-          final ext = url.split('?').first.split('.').last.toLowerCase();
+          final name = _fileDisplayName(url);
+          final ext = _cleanFileUrl(url).split('?').first.split('.').last.toLowerCase();
           if (_fileTexts.containsKey(url)) {
             var text = _fileTexts[url]!;
             if (text.length > 2000) text = '${text.substring(0, 2000)}...';
@@ -721,7 +738,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     final urls = <String>[];
     for (final p in all) {
       for (final f in _extractFiles(p)) {
-        final ext = f.split('?').first.split('.').last.toLowerCase();
+        final ext = _cleanFileUrl(f).split('?').first.split('.').last.toLowerCase();
         if (['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(ext)) urls.add(f);
         if (urls.length >= 3) return urls;
       }
@@ -856,7 +873,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   const SizedBox(height: 12),
                   ...files.asMap().entries.map((entry) {
                     final i = entry.key; final f = entry.value;
-                    final name = Uri.parse(f).pathSegments.last;
+                    final name = _fileDisplayName(f);
                     final ext  = name.split('.').last.toLowerCase();
 
                     // File type config
@@ -872,7 +889,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                       builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 8*(1-t)), child: child)),
                       child: GestureDetector(
                         onTap: () async {
-                          try { await launchUrl(Uri.parse(f), mode: LaunchMode.inAppBrowserView); } catch (_) {}
+                          try { await launchUrl(Uri.parse(_cleanFileUrl(f)), mode: LaunchMode.inAppBrowserView); } catch (_) {}
                         },
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 10),
@@ -1161,14 +1178,14 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 SizedBox(height: 10),
                 ...allFiles.asMap().entries.map((entry) {
               final f = entry.value;
-              final name = Uri.parse(f).pathSegments.last;
+              final name = _fileDisplayName(f);
               final ext = name.split('.').last.toLowerCase();
               final fc = _fileTypeConfig(ext);
               final fileIcon = fc['icon'] as IconData;
               final fileColor = fc['color'] as Color;
               final fileBg = fc['bg'] as Color;
               return GestureDetector(
-                onTap: () async { try { await launchUrl(Uri.parse(f), mode: LaunchMode.inAppBrowserView); } catch (_) {} },
+                onTap: () async { try { await launchUrl(Uri.parse(_cleanFileUrl(f)), mode: LaunchMode.inAppBrowserView); } catch (_) {} },
                 child: Container(
                   margin: EdgeInsets.only(bottom: 8),
                   padding: EdgeInsets.all(12),
@@ -1344,11 +1361,11 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             return [
               SizedBox(height: 8),
               ...urls.map((url) {
-                final name = Uri.parse(url).pathSegments.last;
+                final name = _fileDisplayName(url);
                 final ext = name.split('.').last.toLowerCase();
                 final icon = ext == 'pdf' ? Icons.picture_as_pdf : ext == 'pptx' || ext == 'ppt' ? Icons.slideshow : ext == 'doc' || ext == 'docx' ? Icons.description : Icons.insert_drive_file;
                 return GestureDetector(
-                  onTap: () async { try { await launchUrl(Uri.parse(url), mode: LaunchMode.inAppBrowserView); } catch (_) {} },
+                  onTap: () async { try { await launchUrl(Uri.parse(_cleanFileUrl(url)), mode: LaunchMode.inAppBrowserView); } catch (_) {} },
                   child: Container(margin: EdgeInsets.only(bottom: 6), padding: EdgeInsets.all(12),
                     decoration: BoxDecoration(color: C.teal.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
                     child: Row(children: [
@@ -1440,7 +1457,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     try {
                       final res = await api.uploadFile(pf.path!, pf.name);
                       final url = res['url'] ?? res['file_url'] ?? res['path'];
-                      if (url != null) fileUrls.add(url.toString());
+                      if (url != null) fileUrls.add('${url}#${Uri.encodeComponent(pf.name)}');
                     } catch (_) {}
                   }
                 }
@@ -1565,11 +1582,11 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     decoration: BoxDecoration(color: C.teal.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
                     child: Text(selectedSub['text_content'], style: TextStyle(fontSize: 13))),
                   ...submittedFileUrls.map((url) {
-                    final name = Uri.parse(url).pathSegments.last;
+                    final name = _fileDisplayName(url);
                     final ext = name.split('.').last.toLowerCase();
                     final icon = ext == 'pdf' ? Icons.picture_as_pdf : ext == 'pptx' || ext == 'ppt' ? Icons.slideshow : ext == 'doc' || ext == 'docx' ? Icons.description : Icons.insert_drive_file;
                     return GestureDetector(
-                      onTap: () async { try { await launchUrl(Uri.parse(url), mode: LaunchMode.inAppBrowserView); } catch (_) {} },
+                      onTap: () async { try { await launchUrl(Uri.parse(_cleanFileUrl(url)), mode: LaunchMode.inAppBrowserView); } catch (_) {} },
                       child: Container(padding: EdgeInsets.all(12), margin: EdgeInsets.only(bottom: 6),
                         decoration: BoxDecoration(color: C.teal.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
                         child: Row(children: [
@@ -1801,7 +1818,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                       try {
                         final res = await api.uploadFile(pf.path!, pf.name);
                         final url = res['url'] ?? res['file_url'] ?? res['path'];
-                        if (url != null) fileUrls.add(url.toString());
+                        if (url != null) fileUrls.add('${url}#${Uri.encodeComponent(pf.name)}');
                       } catch (_) {}
                     }
                   }
@@ -1969,7 +1986,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                         final res = await api.uploadFile(pf.path!, pf.name);
                         final url = res['url'] ?? res['file_url'] ?? res['path'];
                         if (url != null && url.toString().isNotEmpty) {
-                          fileUrls.add(url.toString());
+                          fileUrls.add('${url}#${Uri.encodeComponent(pf.name)}');
                           debugPrint('[Upload] OK: $url');
                         } else {
                           debugPrint('[Upload] No URL in response: $res');
@@ -2098,7 +2115,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             ]),
             SizedBox(height: 8),
             ...keepUrls.map((url) {
-              final name = Uri.parse(url).pathSegments.last;
+              final name = _fileDisplayName(url);
               return Container(margin: EdgeInsets.only(bottom: 6), padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(color: C.teal.withOpacity(0.06), borderRadius: BorderRadius.circular(12)),
                 child: Row(children: [
@@ -2177,7 +2194,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                       try {
                         final res = await api.uploadFile(pf.path!, pf.name);
                         final url = res['url'] ?? res['file_url'] ?? res['path'];
-                        if (url != null) uploadedUrls.add(url.toString());
+                        if (url != null) uploadedUrls.add('${url}#${Uri.encodeComponent(pf.name)}');
                       } catch (_) {}
                     }
                   }

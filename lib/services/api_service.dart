@@ -282,6 +282,7 @@ class ApiService {
 
   Future<void> addChatUser(int chatId, int userId) async => _dio.post('/chats/$chatId/users/$userId');
   Future<void> removeChatUser(int chatId, int userId) async => _dio.delete('/chats/$chatId/users/$userId');
+  Future<void> deleteChat(int chatId) async => _dio.delete('/chats/$chatId');
 
   // ── Messages ──────────────────────────────────────────────────────────────────
   // [before]: message id cursor for older-message pagination (load before this id)

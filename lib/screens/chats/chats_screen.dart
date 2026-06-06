@@ -197,42 +197,84 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
                     duration: Duration(milliseconds: 320 + i * 65),
                     curve: Curves.easeOutCubic,
                     builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 22 * (1 - t)), child: child)),
-                    child: GestureDetector(
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        context.read<ChatsProvider>().markSeen(id);
-                        context.read<ChatsProvider>().setActiveChatId(id);
-                        _scrollToBottom();
-                      },
-                      child: Container(
+                    child: Dismissible(
+                      key: ValueKey('dismiss_$id'),
+                      direction: DismissDirection.endToStart,
+                      dismissThresholds: const {DismissDirection.endToStart: 0.4},
+                      background: Container(
                         margin: const EdgeInsets.only(bottom: 8),
                         decoration: BoxDecoration(
-                          color: surface,
+                          color: const Color(0xFFEF4444),
                           borderRadius: BorderRadius.circular(20),
-                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.15 : 0.04), blurRadius: 10, offset: const Offset(0, 2))],
                         ),
-                        child: Padding(padding: const EdgeInsets.all(14), child: Row(children: [
-                          Stack(children: [
-                            Container(width: 52, height: 52,
-                              decoration: BoxDecoration(gradient: RadialGradient(colors: [color.withOpacity(0.3), color.withOpacity(0.12)]), shape: BoxShape.circle),
-                              child: Center(child: Text(initials, style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 20)))),
-                            if (unread) Positioned(right: 0, bottom: 0,
-                              child: Container(width: 14, height: 14,
-                                decoration: BoxDecoration(color: C.teal, shape: BoxShape.circle, border: Border.all(color: surface, width: 2)))),
-                          ]),
-                          const SizedBox(width: 14),
-                          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Row(children: [
-                              Expanded(child: Text(title, style: TextStyle(fontSize: 16, fontWeight: unread ? FontWeight.w800 : FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                              if (time.isNotEmpty) Text(time, style: TextStyle(fontSize: 11, color: unread ? C.teal : C.text4, fontWeight: unread ? FontWeight.w700 : FontWeight.w400)),
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.only(right: 24),
+                        child: const Column(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(Icons.delete_rounded, color: Colors.white, size: 26),
+                          SizedBox(height: 4),
+                          Text('Удалить', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+                        ]),
+                      ),
+                      confirmDismiss: (_) async {
+                        HapticFeedback.mediumImpact();
+                        return await showDialog<bool>(
+                          context: context,
+                          builder: (d) => AlertDialog(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            title: const Text('Удалить чат?', style: TextStyle(fontWeight: FontWeight.w800)),
+                            content: Text('Чат с $title будет удалён навсегда.', style: const TextStyle(color: C.text4)),
+                            actions: [
+                              TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('Отмена')),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444), foregroundColor: Colors.white),
+                                onPressed: () => Navigator.pop(d, true),
+                                child: const Text('Удалить'),
+                              ),
+                            ],
+                          ),
+                        ) ?? false;
+                      },
+                      onDismissed: (_) async {
+                        final ok = await context.read<ChatsProvider>().deleteChat(id);
+                        if (!ok && mounted) showToast(context, 'Ошибка удаления', error: true);
+                      },
+                      child: GestureDetector(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          context.read<ChatsProvider>().markSeen(id);
+                          context.read<ChatsProvider>().setActiveChatId(id);
+                          _scrollToBottom();
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          decoration: BoxDecoration(
+                            color: surface,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.15 : 0.04), blurRadius: 10, offset: const Offset(0, 2))],
+                          ),
+                          child: Padding(padding: const EdgeInsets.all(14), child: Row(children: [
+                            Stack(children: [
+                              Container(width: 52, height: 52,
+                                decoration: BoxDecoration(gradient: RadialGradient(colors: [color.withOpacity(0.3), color.withOpacity(0.12)]), shape: BoxShape.circle),
+                                child: Center(child: Text(initials, style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 20)))),
+                              if (unread) Positioned(right: 0, bottom: 0,
+                                child: Container(width: 14, height: 14,
+                                  decoration: BoxDecoration(color: C.teal, shape: BoxShape.circle, border: Border.all(color: surface, width: 2)))),
                             ]),
-                            const SizedBox(height: 4),
-                            Row(children: [
-                              Expanded(child: Text(preview, style: TextStyle(fontSize: 13, color: unread ? adaptiveText1(context) : C.text4, fontWeight: unread ? FontWeight.w500 : FontWeight.w400), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                              if (unread) Container(width: 8, height: 8, margin: const EdgeInsets.only(left: 8), decoration: const BoxDecoration(color: C.teal, shape: BoxShape.circle)),
-                            ]),
+                            const SizedBox(width: 14),
+                            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              Row(children: [
+                                Expanded(child: Text(title, style: TextStyle(fontSize: 16, fontWeight: unread ? FontWeight.w800 : FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                                if (time.isNotEmpty) Text(time, style: TextStyle(fontSize: 11, color: unread ? C.teal : C.text4, fontWeight: unread ? FontWeight.w700 : FontWeight.w400)),
+                              ]),
+                              const SizedBox(height: 4),
+                              Row(children: [
+                                Expanded(child: Text(preview, style: TextStyle(fontSize: 13, color: unread ? adaptiveText1(context) : C.text4, fontWeight: unread ? FontWeight.w500 : FontWeight.w400), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                                if (unread) Container(width: 8, height: 8, margin: const EdgeInsets.only(left: 8), decoration: const BoxDecoration(color: C.teal, shape: BoxShape.circle)),
+                              ]),
+                            ])),
                           ])),
-                        ])),
+                        ),
                       ),
                     ),
                   );

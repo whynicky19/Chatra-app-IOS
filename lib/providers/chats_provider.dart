@@ -327,6 +327,22 @@ class ChatsProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> deleteChat(int chatId) async {
+    try {
+      await _api.deleteChat(chatId);
+      chats.removeWhere((c) => c['id'] == chatId);
+      messages.remove(chatId);
+      chatUsers.remove(chatId);
+      lastSeenMsgId.remove(chatId);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      errorMessage = 'Не удалось удалить чат: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
   // ── Active-chat management ────────────────────────────────────────────────────
 
   void setActiveChatId(int? id) {

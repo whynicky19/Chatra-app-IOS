@@ -428,11 +428,14 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
             width: 48, height: 48,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: !_loading ? LinearGradient(
-                colors: hasText ? [C.teal, C.tealDk] : [C.teal.withOpacity(0.55), C.tealDk.withOpacity(0.45)],
+              gradient: LinearGradient(
+                colors: _loading
+                    ? [surface, surface]
+                    : hasText
+                        ? [C.teal, C.tealDk]
+                        : [C.teal.withOpacity(0.55), C.tealDk.withOpacity(0.45)],
                 begin: Alignment.topLeft, end: Alignment.bottomRight,
-              ) : null,
-              color: _loading ? adaptiveSurface2(context) : null,
+              ),
               boxShadow: hasText && !_loading ? [BoxShadow(color: C.teal.withOpacity(0.38), blurRadius: 14, offset: const Offset(0, 4))] : null,
             ),
             child: _loading

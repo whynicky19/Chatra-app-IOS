@@ -2487,10 +2487,10 @@ class _AiChatState extends State<_AiChat> with TickerProviderStateMixin {
   late final AnimationController _fadeCtrl;
 
   static const _tips = [
-    {'icon': Icons.menu_book_rounded,        'text': 'Объясни материал',   'color': C.teal},
-    {'icon': Icons.lightbulb_outline_rounded,'text': 'Ключевые понятия',   'color': Color(0xFF6366F1)},
-    {'icon': Icons.assignment_outlined,      'text': 'Помощь с заданием',  'color': Color(0xFFF59E0B)},
-    {'icon': Icons.warning_amber_rounded,    'text': 'Частые ошибки',      'color': Color(0xFFEC4899)},
+    {'icon': Icons.menu_book_rounded,         'title': 'Объясни материал',  'desc': 'Разбери тему простыми словами'},
+    {'icon': Icons.lightbulb_outline_rounded, 'title': 'Ключевые понятия',  'desc': 'Назови главные идеи курса'},
+    {'icon': Icons.assignment_outlined,       'title': 'Помощь с заданием', 'desc': 'Подскажи, с чего начать'},
+    {'icon': Icons.warning_amber_rounded,     'title': 'Частые ошибки',     'desc': 'Что чаще всего понимают неверно'},
   ];
 
   @override
@@ -2503,18 +2503,11 @@ class _AiChatState extends State<_AiChat> with TickerProviderStateMixin {
   @override
   void dispose() { _pulseCtrl.dispose(); _fadeCtrl.dispose(); _ctrl.dispose(); _scroll.dispose(); super.dispose(); }
 
-  void _scrollDown() {
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (_scroll.hasClients) _scroll.animateTo(_scroll.position.maxScrollExtent, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
-    });
-  }
-
   void _send([String? override]) async {
     final text = override ?? _ctrl.text.trim();
     if (text.isEmpty || _loading) return;
     setState(() { _msgs.add({'role': 'user', 'text': text}); _loading = true; });
     _ctrl.clear();
-    _scrollDown();
     try {
       final api = context.read<ApiService>();
       final lectureBlock = widget.lectureContext.isNotEmpty
@@ -2533,11 +2526,11 @@ class _AiChatState extends State<_AiChat> with TickerProviderStateMixin {
         ..._msgs.map((m) => {'role': m['role']!, 'content': m['text']!}),
       ];
       final data = await api.aiChat(apiMsgs, classId: widget.classId);
-      setState(() => _msgs.add({'role': 'assistant', 'text': data['content'] ?? 'Нет ответа'}));
+      if (mounted) setState(() => _msgs.add({'role': 'assistant', 'text': data['content'] ?? 'Нет ответа'}));
     } catch (_) {
-      setState(() => _msgs.add({'role': 'assistant', 'text': 'Ошибка соединения'}));
+      if (mounted) setState(() => _msgs.add({'role': 'assistant', 'text': 'Ошибка соединения'}));
     }
-    if (mounted) { setState(() => _loading = false); _scrollDown(); }
+    if (mounted) setState(() => _loading = false);
   }
 
   @override
@@ -2546,221 +2539,257 @@ class _AiChatState extends State<_AiChat> with TickerProviderStateMixin {
     final isDark  = Theme.of(context).brightness == Brightness.dark;
     final hasText = _ctrl.text.trim().isNotEmpty;
 
-    return Column(children: [
-      // Messages / empty state
-      Expanded(child: _msgs.isEmpty ? _emptyState(isDark) : _messageList(isDark, surface)),
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      behavior: HitTestBehavior.translucent,
+      child: Column(children: [
+      Expanded(child: _msgs.isEmpty ? _emptyState(isDark) : _messageList(isDark)),
 
-      // Input bar
       Container(
         padding: EdgeInsets.fromLTRB(12, 9, 12, MediaQuery.of(context).padding.bottom + 9),
         decoration: BoxDecoration(
           color: surface,
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.18 : 0.05), blurRadius: 12, offset: Offset(0, -2))],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.18 : 0.05), blurRadius: 12, offset: const Offset(0, -2))],
         ),
         child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
           Expanded(child: Container(
             decoration: BoxDecoration(
               color: adaptiveSurface2(context),
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(24),
               border: Border.all(color: hasText ? C.teal.withOpacity(0.28) : Colors.transparent, width: 1.5),
             ),
             child: TextField(
               controller: _ctrl,
               decoration: InputDecoration(
                 hintText: 'Спросите об этом курсе...',
-                hintStyle: TextStyle(fontSize: 14, color: C.text4),
+                hintStyle: const TextStyle(fontSize: 15, color: C.text4),
                 border: InputBorder.none, enabledBorder: InputBorder.none, focusedBorder: InputBorder.none,
-                filled: false, contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                filled: false, contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
               ),
               onSubmitted: (_) => _send(),
               maxLines: 4, minLines: 1,
               onChanged: (_) => setState(() {}),
             ),
           )),
-          SizedBox(width: 8),
-          AnimatedContainer(
-            duration: Duration(milliseconds: 200),
-            curve: Curves.easeOutBack,
-            width: 44, height: 44,
-            decoration: BoxDecoration(
-              gradient: !_loading ? LinearGradient(
-                colors: hasText
-                    ? [C.teal, C.tealDk]
-                    : [C.teal.withOpacity(0.55), C.tealDk.withOpacity(0.45)],
-                begin: Alignment.topLeft, end: Alignment.bottomRight,
-              ) : null,
-              color: _loading ? adaptiveSurface2(context) : null,
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: hasText && !_loading ? tealGlow(opacity: 0.32) : null,
-            ),
-            child: GestureDetector(
-              onTap: _send,
+          const SizedBox(width: 10),
+          GestureDetector(
+            onTap: _send,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutBack,
+              width: 48, height: 48,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: !_loading ? LinearGradient(
+                  colors: hasText ? [C.teal, C.tealDk] : [C.teal.withOpacity(0.55), C.tealDk.withOpacity(0.45)],
+                  begin: Alignment.topLeft, end: Alignment.bottomRight,
+                ) : null,
+                color: _loading ? adaptiveSurface2(context) : null,
+                boxShadow: hasText && !_loading ? [BoxShadow(color: C.teal.withOpacity(0.38), blurRadius: 14, offset: const Offset(0, 4))] : null,
+              ),
               child: _loading
-                  ? Center(child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: C.teal)))
-                  : Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 20),
+                  ? const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: C.teal)))
+                  : const Icon(Icons.send_rounded, color: Colors.white, size: 20),
             ),
           ),
         ]),
       ),
-    ]);
+    ]));
   }
 
   Widget _emptyState(bool isDark) {
     final shortName = widget.className.length > 22 ? '${widget.className.substring(0, 22)}…' : widget.className;
     return FadeTransition(
       opacity: _fadeCtrl,
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(20, 28, 20, 16),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          // Logo with pulse
-          AnimatedBuilder(animation: _pulseCtrl, builder: (_, __) {
-            final v = _pulseCtrl.value;
-            return Stack(alignment: Alignment.center, children: [
-              Container(width: 100, height: 100, decoration: BoxDecoration(shape: BoxShape.circle, color: C.teal.withOpacity(0.04 + v * 0.04))),
-              Container(width: 76, height: 76, decoration: BoxDecoration(shape: BoxShape.circle, color: C.teal.withOpacity(0.07 + v * 0.04),
-                boxShadow: [BoxShadow(color: C.teal.withOpacity(0.1 + v * 0.06), blurRadius: 20)])),
-              Container(width: 56, height: 56,
-                decoration: BoxDecoration(shape: BoxShape.circle, color: isDark ? C.darkSurface : Colors.white,
-                  boxShadow: [BoxShadow(color: C.teal.withOpacity(0.16), blurRadius: 14, offset: Offset(0, 4))]),
-                padding: EdgeInsets.all(12),
-                child: Image.asset('assets/logo-icon.png', fit: BoxFit.contain)),
-            ]);
-          }),
-          SizedBox(height: 18),
-          Text('Чат по курсу', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: -0.4, color: adaptiveText1(context))),
-          SizedBox(height: 4),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-            decoration: BoxDecoration(color: C.teal.withOpacity(0.10), borderRadius: BorderRadius.circular(16)),
-            child: Text(shortName, style: TextStyle(fontSize: 12, color: C.teal, fontWeight: FontWeight.w700)),
-          ),
-          SizedBox(height: 22),
-          ..._tips.asMap().entries.map((e) {
-            final i = e.key; final t = e.value;
-            final color = t['color'] as Color;
-            return TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0.0, end: 1.0),
-              duration: Duration(milliseconds: 350 + i * 70),
-              curve: Curves.easeOutCubic,
-              builder: (_, v, child) => Opacity(opacity: v, child: Transform.translate(offset: Offset(0, 10 * (1-v)), child: child)),
-              child: GestureDetector(
-                onTap: () => _send(t['text'] as String),
-                child: Container(
-                  margin: EdgeInsets.only(bottom: 9),
-                  padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: isDark ? C.darkSurface : Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: color.withOpacity(0.18)),
-                    boxShadow: [BoxShadow(color: color.withOpacity(0.06), blurRadius: 10, offset: Offset(0, 3))],
-                  ),
-                  child: Row(children: [
-                    Container(width: 36, height: 36, decoration: BoxDecoration(color: color.withOpacity(0.10), borderRadius: BorderRadius.circular(10)),
-                      child: Icon(t['icon'] as IconData, size: 17, color: color)),
-                    SizedBox(width: 12),
-                    Expanded(child: Text(t['text'] as String, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, height: 1.2))),
-                    Icon(Icons.arrow_forward_rounded, size: 14, color: color),
-                  ]),
-                ),
+      child: LayoutBuilder(builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              AnimatedBuilder(animation: _pulseCtrl, builder: (_, __) {
+                final v = _pulseCtrl.value;
+                return Stack(alignment: Alignment.center, children: [
+                  Container(width: 106, height: 106, decoration: BoxDecoration(shape: BoxShape.circle, color: C.teal.withOpacity(0.04 + v * 0.04))),
+                  Container(width: 80, height: 80, decoration: BoxDecoration(shape: BoxShape.circle, color: C.teal.withOpacity(0.07 + v * 0.04),
+                    boxShadow: [BoxShadow(color: C.teal.withOpacity(0.10 + v * 0.06), blurRadius: 20)])),
+                  Container(width: 60, height: 60,
+                    decoration: BoxDecoration(color: isDark ? C.darkSurface : Colors.white, borderRadius: BorderRadius.circular(18),
+                      boxShadow: [BoxShadow(color: C.teal.withOpacity(0.18), blurRadius: 20, offset: const Offset(0, 5))]),
+                    padding: const EdgeInsets.all(12),
+                    child: Image.asset('assets/logo.png', fit: BoxFit.contain)),
+                ]);
+              }),
+              const SizedBox(height: 14),
+              Text('Чат по курсу', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.5, color: adaptiveText1(context))),
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                decoration: BoxDecoration(color: C.teal.withOpacity(0.10), borderRadius: BorderRadius.circular(16)),
+                child: Text(shortName, style: const TextStyle(fontSize: 12, color: C.teal, fontWeight: FontWeight.w700)),
               ),
-            );
-          }),
+              const SizedBox(height: 20),
+              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Expanded(child: Column(children: [
+                  _tipCard(_tips[0], isDark),
+                  const SizedBox(height: 12),
+                  _tipCard(_tips[2], isDark),
+                ])),
+                const SizedBox(width: 12),
+                Expanded(child: Column(children: [
+                  _tipCard(_tips[1], isDark),
+                  const SizedBox(height: 12),
+                  _tipCard(_tips[3], isDark),
+                ])),
+              ]),
+            ]),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _tipCard(Map<String, dynamic> tip, bool isDark) {
+    return GestureDetector(
+      onTap: () => _send(tip['title'] as String),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDark ? C.darkSurface : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: cardShadow(isDark),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+            width: 40, height: 40,
+            decoration: BoxDecoration(color: C.teal.withOpacity(0.10), borderRadius: BorderRadius.circular(12)),
+            child: Icon(tip['icon'] as IconData, size: 20, color: C.teal),
+          ),
+          const SizedBox(height: 14),
+          Text(tip['title'] as String, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: adaptiveText1(context), height: 1.2)),
+          const SizedBox(height: 6),
+          Text(tip['desc'] as String, style: const TextStyle(fontSize: 12, color: C.text4, height: 1.4)),
         ]),
       ),
     );
   }
 
-  Widget _messageList(bool isDark, Color surface) {
+  Widget _messageList(bool isDark) {
     return ListView.builder(
       controller: _scroll,
-      padding: EdgeInsets.fromLTRB(14, 16, 14, 10),
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
       itemCount: _msgs.length + (_loading ? 1 : 0),
       itemBuilder: (ctx, i) {
-        if (i == _msgs.length) return _typingIndicator(isDark, surface);
+        if (i == _msgs.length) return _typingIndicator(isDark);
         final m   = _msgs[i];
         final isU = m['role'] == 'user';
         return TweenAnimationBuilder<double>(
           tween: Tween(begin: 0.0, end: 1.0),
-          duration: Duration(milliseconds: 260),
+          duration: const Duration(milliseconds: 280),
           curve: Curves.easeOutCubic,
           builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(
-            offset: Offset(isU ? 12*(1-t) : -12*(1-t), 4*(1-t)), child: child)),
-          child: isU ? _userBubble(m['text'] ?? '') : _aiBubble(m['text'] ?? '', isDark, surface),
+            offset: Offset(isU ? 16*(1-t) : -16*(1-t), 6*(1-t)), child: child)),
+          child: isU ? _userBubble(m['text'] ?? '') : _aiBubble(m['text'] ?? '', isDark),
         );
       },
     );
   }
 
-  Widget _userBubble(String text) => Padding(
-    padding: EdgeInsets.only(bottom: 14, left: 40),
-    child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-      Flexible(child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 15, vertical: 11),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(colors: [C.teal, C.tealDk], begin: Alignment.topLeft, end: Alignment.bottomRight),
-          borderRadius: BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20), bottomLeft: Radius.circular(20), bottomRight: Radius.circular(5)),
-          boxShadow: tealGlow(opacity: 0.22),
+  Widget _userBubble(String text) {
+    final now = DateTime.now();
+    final timeStr = '${now.hour.toString().padLeft(2,'0')}:${now.minute.toString().padLeft(2,'0')}';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16, left: 48),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(colors: [C.teal, C.tealDk], begin: Alignment.topLeft, end: Alignment.bottomRight),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(22), topRight: Radius.circular(22),
+              bottomLeft: Radius.circular(22), bottomRight: Radius.circular(6),
+            ),
+            boxShadow: [BoxShadow(color: C.teal.withOpacity(0.28), blurRadius: 16, offset: const Offset(0, 5))],
+          ),
+          child: Text(text, style: const TextStyle(fontSize: 15, color: Colors.white, height: 1.5)),
         ),
-        child: Text(text, style: TextStyle(fontSize: 14, color: Colors.white, height: 1.5)),
-      )),
-    ]),
-  );
+        const SizedBox(height: 4),
+        Row(mainAxisSize: MainAxisSize.min, children: [
+          Text(timeStr, style: const TextStyle(fontSize: 10, color: C.text4)),
+          const SizedBox(width: 4),
+          const Icon(Icons.done_all_rounded, size: 13, color: C.teal),
+        ]),
+      ]),
+    );
+  }
 
-  Widget _aiBubble(String text, bool isDark, Color surface) => Padding(
-    padding: EdgeInsets.only(bottom: 16, right: 28),
+  Widget _aiBubble(String text, bool isDark) => Padding(
+    padding: const EdgeInsets.only(bottom: 20, right: 24),
     child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Container(
-        width: 30, height: 30,
-        margin: EdgeInsets.only(top: 2, right: 9),
+        width: 44, height: 44,
+        margin: const EdgeInsets.only(top: 2, right: 10),
         decoration: BoxDecoration(
           color: isDark ? C.darkSurface : Colors.white,
-          borderRadius: BorderRadius.circular(9),
-          border: Border.all(color: C.teal.withOpacity(0.22), width: 1.5),
-          boxShadow: [BoxShadow(color: C.teal.withOpacity(0.08), blurRadius: 8)],
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(color: C.teal.withOpacity(0.2), width: 1.5),
+          boxShadow: [BoxShadow(color: C.teal.withOpacity(0.10), blurRadius: 10, offset: const Offset(0, 2))],
         ),
-        padding: EdgeInsets.all(5),
-        child: Image.asset('assets/logo-icon.png', fit: BoxFit.contain),
+        padding: const EdgeInsets.all(8),
+        child: Image.asset('assets/logo.png', fit: BoxFit.contain),
       ),
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Padding(padding: EdgeInsets.only(left: 2, bottom: 4),
-          child: Text('Chatra AI', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.teal, letterSpacing: 0.2))),
+        const Padding(padding: EdgeInsets.only(left: 2, bottom: 5),
+          child: Text('Chatra AI', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: C.teal, letterSpacing: 0.2))),
         Container(
-          padding: EdgeInsets.all(14),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: isDark ? C.darkSurface : Colors.white,
-            borderRadius: BorderRadius.only(topLeft: Radius.circular(5), topRight: Radius.circular(18), bottomLeft: Radius.circular(18), bottomRight: Radius.circular(18)),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(6), topRight: Radius.circular(20),
+              bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20),
+            ),
             border: Border.all(color: C.teal.withOpacity(isDark ? 0.12 : 0.08)),
-            boxShadow: softShadow(isDark),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.15 : 0.05), blurRadius: 12, offset: const Offset(0, 3))],
           ),
-          child: SelectableText(text, style: TextStyle(fontSize: 14, height: 1.65)),
+          child: SelectableText(text, style: const TextStyle(fontSize: 15, height: 1.7, letterSpacing: 0.1)),
         ),
       ])),
     ]),
   );
 
-  Widget _typingIndicator(bool isDark, Color surface) => Padding(
-    padding: EdgeInsets.only(bottom: 14, right: 28),
+  Widget _typingIndicator(bool isDark) => Padding(
+    padding: const EdgeInsets.only(bottom: 16, right: 24),
     child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Container(
-        width: 30, height: 30,
-        margin: EdgeInsets.only(top: 2, right: 9),
+        width: 44, height: 44,
+        margin: const EdgeInsets.only(top: 2, right: 10),
         decoration: BoxDecoration(
           color: isDark ? C.darkSurface : Colors.white,
-          borderRadius: BorderRadius.circular(9),
-          border: Border.all(color: C.teal.withOpacity(0.22), width: 1.5),
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(color: C.teal.withOpacity(0.2), width: 1.5),
+          boxShadow: [BoxShadow(color: C.teal.withOpacity(0.10), blurRadius: 10)],
         ),
-        padding: EdgeInsets.all(5),
-        child: Image.asset('assets/logo-icon.png', fit: BoxFit.contain),
+        padding: const EdgeInsets.all(8),
+        child: Image.asset('assets/logo.png', fit: BoxFit.contain),
       ),
-      Container(
-        padding: EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-        decoration: BoxDecoration(
-          color: isDark ? C.darkSurface : Colors.white,
-          borderRadius: BorderRadius.only(topLeft: Radius.circular(5), topRight: Radius.circular(18), bottomLeft: Radius.circular(18), bottomRight: Radius.circular(18)),
-          border: Border.all(color: C.teal.withOpacity(isDark ? 0.12 : 0.08)),
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Padding(padding: EdgeInsets.only(left: 2, bottom: 5),
+          child: Text('Chatra AI', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: C.teal))),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          decoration: BoxDecoration(
+            color: isDark ? C.darkSurface : Colors.white,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(6), topRight: Radius.circular(20),
+              bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20),
+            ),
+            border: Border.all(color: C.teal.withOpacity(isDark ? 0.12 : 0.08)),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.15 : 0.04), blurRadius: 10)],
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: List.generate(3, (i) => _ClassAiDot(delay: i * 180))),
         ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: List.generate(3, (i) => _ClassAiDot(delay: i * 180))),
-      ),
+      ]),
     ]),
   );
 }

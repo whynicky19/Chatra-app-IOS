@@ -65,6 +65,11 @@ class ChatraApp extends StatelessWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: theme.mode,
+      builder: (context, child) => GestureDetector(
+        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+        behavior: HitTestBehavior.translucent,
+        child: child!,
+      ),
       home: const _AuthGate(),
       onGenerateRoute: (s) {
         switch (s.name) {

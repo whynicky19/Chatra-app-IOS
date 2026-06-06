@@ -14,6 +14,7 @@ import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/class_utils.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../widgets/toast.dart';
 
 class ClassDetailScreen extends StatefulWidget {
@@ -271,8 +272,13 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               background: Stack(fit: StackFit.expand, children: [
                 Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF006475), C.teal], begin: Alignment.topLeft, end: Alignment.bottomRight))),
                 if (coverImg != null && !coverImg.toString().startsWith('data:'))
-                  Image.network(coverImg, fit: BoxFit.cover, alignment: Alignment.topCenter,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+                  CachedNetworkImage(
+                    imageUrl: coverImg.toString(),
+                    fit: BoxFit.cover,
+                    alignment: Alignment.topCenter,
+                    placeholder: (_, __) => const SizedBox.shrink(),
+                    errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                  ),
                 if (coverImg != null && coverImg.toString().startsWith('data:'))
                   Builder(builder: (_) { try { return Image.memory(base64Decode(coverImg.toString().split(',').last), fit: BoxFit.cover, alignment: Alignment.topCenter); } catch (_) { return const SizedBox.shrink(); } }),
                 Container(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, stops: [0.0, 0.4, 1.0], colors: [Colors.black38, Colors.transparent, Colors.black54]))),
@@ -308,8 +314,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 indicatorWeight: 2.5,
                 indicatorSize: TabBarIndicatorSize.label,
                 labelPadding: EdgeInsets.symmetric(horizontal: 8),
-                labelStyle: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: 0.1),
-                unselectedLabelStyle: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w500),
+                labelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.1),
+                unselectedLabelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                 tabs: [
                   Tab(
                     icon: Icon(Icons.menu_book_rounded, size: 19),

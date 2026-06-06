@@ -24,7 +24,7 @@ String _resolveBaseUrl() {
   if (overrideUrl.isNotEmpty) return overrideUrl;
   if (kIsWeb) return 'http://127.0.0.1:8000';
   if (Platform.isAndroid) return 'http://10.0.2.2:8000';
-  return 'http://127.0.0.1:8000';
+  return 'http://192.168.10.6:8000';
 }
 
 void main() {
@@ -38,9 +38,8 @@ void main() {
   final classes = ClassesProvider(api, auth);
   final chats = ChatsProvider(api, auth);
 
-  Future.wait([auth.init(), theme.init(), l10n.init()]).then((_) {
-    api.onUnauthorized = () => auth.logout();
-  });
+  api.onUnauthorized = () => auth.logout();
+  Future.wait([auth.init(), theme.init(), l10n.init()]);
 
   runApp(MultiProvider(
     providers: [

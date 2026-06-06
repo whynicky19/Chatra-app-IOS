@@ -80,14 +80,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       () async { try { posts = await api.getPosts(); } catch (_) {} }(),
     ]);
 
-    // Build class name map from posts
+    // Build class name map from posts and collect existing class IDs
     final classNames = <int, String>{};
+    final existingClassIds = <int>{};
     for (final p in posts) {
       try {
         final b = jsonDecode(p['body']);
-        if (b['type'] == 'class') classNames[(p['id'] as num).toInt()] = p['title']?.toString() ?? 'Класс';
+        if (b['type'] == 'class') {
+          final cid = (p['id'] as num).toInt();
+          classNames[cid] = p['title']?.toString() ?? 'Класс';
+          existingClassIds.add(cid);
+        }
       } catch (_) {}
     }
+
+    // Remove deleted classes from joined set so we don't show stale notifications
+    final activeJoinedIds = joinedIds.intersection(existingClassIds);
 
     final l = context.read<L10n>();
 
@@ -119,10 +127,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       newSeenGrade.add(subId);
     }
 
-    // ── Assignment notifications (only for joined classes) ──
-    final filtered = joinedIds.isEmpty
+    // ── Assignment notifications (only for joined AND existing classes) ──
+    final filtered = activeJoinedIds.isEmpty
         ? <dynamic>[]
-        : allAssignments.where((a) => joinedIds.contains((a['class_id'] as num?)?.toInt())).toList();
+        : allAssignments.where((a) => activeJoinedIds.contains((a['class_id'] as num?)?.toInt())).toList();
 
     for (final a in filtered) {
       final aId = (a['id'] as num?)?.toInt() ?? 0;
@@ -164,6 +172,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           classId: cid,
         ));
       }
+    }
+
+    // Persist cleaned joined list (remove deleted classes)
+    if (activeJoinedIds.length < joinedIds.length) {
+      await prefs.setStringList('joined_classes_$uid', activeJoinedIds.map((id) => '$id').toList());
     }
 
     // Persist seen state + read-at timestamps

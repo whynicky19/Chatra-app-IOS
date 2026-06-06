@@ -8,7 +8,7 @@ class ApiService {
   String? _token;
   VoidCallback? onUnauthorized;
 
-  static const String defaultBaseUrl = 'http://127.0.0.1:8000';
+  static const String defaultBaseUrl = 'http://192.168.10.6:8000';
   static const _tokenKey = '_tk';
 
   // Secure storage — encrypted on both Android (EncryptedSharedPreferences)

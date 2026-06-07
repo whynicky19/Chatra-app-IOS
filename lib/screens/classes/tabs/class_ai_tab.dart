@@ -20,7 +20,6 @@ class ClassAiTab extends StatefulWidget {
 
 class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
   final _ctrl   = TextEditingController();
-  final _scroll = ScrollController();
   final List<Map<String, String>> _msgs = [];
   bool _loading = false;
   late final AnimationController _pulseCtrl;
@@ -41,13 +40,25 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
   }
 
   @override
-  void dispose() { _pulseCtrl.dispose(); _fadeCtrl.dispose(); _ctrl.dispose(); _scroll.dispose(); super.dispose(); }
+  void dispose() { _pulseCtrl.dispose(); _fadeCtrl.dispose(); _ctrl.dispose(); super.dispose(); }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final ctrl = PrimaryScrollController.of(context);
+      if (ctrl.hasClients) {
+        ctrl.animateTo(ctrl.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
+      }
+    });
+  }
 
   void _send([String? override]) async {
     final text = override ?? _ctrl.text.trim();
     if (text.isEmpty || _loading) return;
     setState(() { _msgs.add({'role': 'user', 'text': text}); _loading = true; });
     _ctrl.clear();
+    _scrollToBottom();
     try {
       final api = context.read<ApiService>();
       final lectureBlock = widget.lectureContext.isNotEmpty
@@ -70,9 +81,9 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
         classId: widget.classId,
         lectureContext: widget.lectureContext.isNotEmpty ? widget.lectureContext : null,
       );
-      if (mounted) setState(() => _msgs.add({'role': 'assistant', 'text': data['content'] ?? 'Нет ответа'}));
+      if (mounted) { setState(() => _msgs.add({'role': 'assistant', 'text': data['content'] ?? 'Нет ответа'})); _scrollToBottom(); }
     } catch (_) {
-      if (mounted) setState(() => _msgs.add({'role': 'assistant', 'text': 'Ошибка соединения'}));
+      if (mounted) { setState(() => _msgs.add({'role': 'assistant', 'text': 'Ошибка соединения'})); _scrollToBottom(); }
     }
     if (mounted) setState(() => _loading = false);
   }
@@ -120,7 +131,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
             onTap: _send,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOutBack,
+              curve: Curves.easeOutCubic,
               width: 48, height: 48,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
@@ -223,7 +234,6 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
 
   Widget _messageList(bool isDark) {
     return ListView.builder(
-      controller: _scroll,
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
       itemCount: _msgs.length + (_loading ? 1 : 0),
       itemBuilder: (ctx, i) {

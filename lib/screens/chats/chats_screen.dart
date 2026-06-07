@@ -307,6 +307,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
     final color = _avatarColors[(provider.activeChatId ?? 0) % _avatarColors.length];
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(64),
@@ -407,7 +408,10 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
 
         // Input bar
         Container(
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 90),
+          padding: EdgeInsets.fromLTRB(12, 10, 12,
+            MediaQuery.of(context).viewInsets.bottom > 0
+              ? MediaQuery.of(context).viewInsets.bottom + 8
+              : 90),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.06), blurRadius: 12, offset: const Offset(0, -2))],

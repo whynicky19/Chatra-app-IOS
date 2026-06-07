@@ -92,6 +92,7 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
     final l = context.watch<L10n>();
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(children: [
         _buildHeader(isDark, surface, l),
@@ -455,7 +456,10 @@ class _AiInputBarState extends State<_AiInputBar> {
     final hint = isKZ ? 'Chatra AI-дан сұраңыз...' : isEN ? 'Ask Chatra AI...' : 'Спросите Chatra AI...';
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 10, 14, 90),
+      padding: EdgeInsets.fromLTRB(14, 10, 14,
+        MediaQuery.of(context).viewInsets.bottom > 0
+          ? MediaQuery.of(context).viewInsets.bottom + 8
+          : 90),
       decoration: BoxDecoration(
         color: surface,
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.06), blurRadius: 14, offset: const Offset(0, -2))],

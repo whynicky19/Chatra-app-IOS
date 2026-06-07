@@ -36,6 +36,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   Map<String, dynamic> _rating = {};
   Map<String, String> _fileTexts = {};
   bool _loading = true, _loadingAsg = false;
+  bool _coverPrecached = false;
 
   @override
   void initState() {
@@ -46,8 +47,22 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     if (widget.initialTab == 2) _loadAssignments();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_coverPrecached) {
+      _coverPrecached = true;
+      final clsData = context.read<ClassesProvider>().allClasses
+          .firstWhere((c) => c['id'] == widget.classId, orElse: () => <String, dynamic>{});
+      final url = clsData['cover_image'];
+      if (url != null && url.toString().isNotEmpty && !url.toString().startsWith('data:')) {
+        precacheImage(CachedNetworkImageProvider(url.toString()), context);
+      }
+    }
+  }
+
   Future<void> _load() async {
-    if (!mounted) return; setState(() => _loading = true);
+    if (!mounted) return;
     final api = context.read<ApiService>();
     try { _posts = await api.getPosts(); } catch (_) {}
     if (!context.read<AuthProvider>().isTeacher) {
@@ -257,7 +272,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       body: NestedScrollView(
         headerSliverBuilder: (ctx, _) => [
           SliverAppBar(
-            expandedHeight: 220, pinned: true, stretch: true,
+            expandedHeight: 220, pinned: true,
             backgroundColor: Colors.transparent,
             elevation: 0,
             surfaceTintColor: Colors.transparent,
@@ -274,19 +289,16 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             ],
             flexibleSpace: FlexibleSpaceBar(
               collapseMode: CollapseMode.pin,
-              stretchModes: [StretchMode.zoomBackground],
               titlePadding: EdgeInsets.zero,
               background: Stack(fit: StackFit.expand, children: [
                 Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF006475), C.teal], begin: Alignment.topLeft, end: Alignment.bottomRight))),
                 if (coverImg != null && !coverImg.toString().startsWith('data:'))
-                  CachedNetworkImage(
-                    imageUrl: coverImg.toString(),
+                  Image(
+                    image: CachedNetworkImageProvider(coverImg.toString()),
                     fit: BoxFit.cover,
                     alignment: Alignment.topCenter,
-                    fadeInDuration: Duration.zero,
-                    fadeOutDuration: Duration.zero,
-                    placeholder: (_, __) => const SizedBox.shrink(),
-                    errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                    gaplessPlayback: true,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                   ),
                 if (coverImg != null && coverImg.toString().startsWith('data:'))
                   Builder(builder: (_) { try { return Image.memory(base64Decode(coverImg.toString().split(',').last), fit: BoxFit.cover, alignment: Alignment.topCenter); } catch (_) { return const SizedBox.shrink(); } }),
@@ -308,7 +320,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             ),
           ),
         ],
-        body: _loading ? const Center(child: CircularProgressIndicator(color: C.teal)) : Column(children: [
+        body: Column(children: [
           Container(
             decoration: BoxDecoration(
               color: surfaceColor,
@@ -395,7 +407,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               }),
             ]),
           ),
-          Expanded(child: TabBarView(controller: _tabCtrl, children: [
+          Expanded(child: _loading ? const Center(child: CircularProgressIndicator(color: C.teal)) : TabBarView(controller: _tabCtrl, children: [
             ClassPostsTab(
               posts: _lectures, type: 'lecture',
               isTeacher: auth.isTeacher,

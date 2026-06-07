@@ -80,6 +80,7 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
     if (_idx >= screens.length) _idx = 0;
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: Stack(children: [
         // All screens stay mounted (state preserved), fade in/out on switch
         Positioned.fill(

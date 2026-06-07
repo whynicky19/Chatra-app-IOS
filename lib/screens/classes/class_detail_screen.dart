@@ -277,6 +277,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     imageUrl: coverImg.toString(),
                     fit: BoxFit.cover,
                     alignment: Alignment.topCenter,
+                    fadeInDuration: Duration.zero,
+                    fadeOutDuration: Duration.zero,
                     placeholder: (_, __) => const SizedBox.shrink(),
                     errorWidget: (_, __, ___) => const SizedBox.shrink(),
                   ),

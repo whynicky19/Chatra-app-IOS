@@ -223,7 +223,7 @@ class _LiquidGlassNavBar extends StatelessWidget {
                       behavior: HitTestBehavior.opaque,
                       child: TweenAnimationBuilder<double>(
                         tween: Tween(begin: sel ? 0.0 : 1.0, end: sel ? 1.0 : 0.0),
-                        duration: const Duration(milliseconds: 400),
+                        duration: Duration(milliseconds: sel ? 380 : 120),
                         curve: Curves.easeOutBack,
                         builder: (_, t, __) {
                           final p = t.clamp(0.0, 1.0);
@@ -267,9 +267,7 @@ class _GlassTabPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final sel = progress > 0.5;
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 350),
-      curve: Curves.easeOutQuart,
+    return Container(
       padding: EdgeInsets.symmetric(
         horizontal: 8.0 + 12.0 * progress,
         vertical: 10,

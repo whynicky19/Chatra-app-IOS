@@ -15,17 +15,9 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
   final _scroll = ScrollController();
   final List<Map<String, String>> _msgs = [];
   bool _loading = false;
-  late AnimationController _pulseCtrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _pulseCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat(reverse: true);
-  }
 
   @override
   void dispose() {
-    _pulseCtrl.dispose();
     _ctrl.dispose();
     _scroll.dispose();
     super.dispose();
@@ -103,8 +95,25 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(children: [
         _buildHeader(isDark, surface, l),
-        Expanded(child: _msgs.isEmpty ? _emptyState(isDark, l) : _messageList(isDark)),
-        _buildInput(surface, l),
+        Expanded(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 280),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeIn,
+            transitionBuilder: (child, anim) => FadeTransition(
+              opacity: anim,
+              child: SlideTransition(
+                position: Tween<Offset>(begin: const Offset(0, 0.04), end: Offset.zero).animate(anim),
+                child: child,
+              ),
+            ),
+            child: _msgs.isEmpty
+                ? _emptyState(isDark, l)
+                : _messageList(isDark),
+          ),
+        ),
+        // Input bar is its own widget — rebuilds independently on keystrokes
+        _AiInputBar(ctrl: _ctrl, loading: _loading, onSend: _send),
       ]),
     );
   }
@@ -137,24 +146,33 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
           const SizedBox(height: 2),
           Text(subtitle, style: const TextStyle(fontSize: 13, color: C.text4, fontWeight: FontWeight.w500)),
         ])),
-        if (_msgs.isNotEmpty) GestureDetector(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            showDialog(context: context, builder: (ctx) => AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              title: const Text('Очистить чат?', style: TextStyle(fontWeight: FontWeight.w800)),
-              content: const Text('История переписки будет удалена', style: TextStyle(color: C.text4)),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена', style: TextStyle(color: C.text4))),
-                TextButton(onPressed: () { Navigator.pop(ctx); setState(() => _msgs.clear()); }, child: const Text('Удалить', style: TextStyle(color: C.red, fontWeight: FontWeight.w700))),
-              ],
-            ));
-          },
-          child: Container(
-            width: 38, height: 38,
-            decoration: BoxDecoration(color: C.teal.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
-            child: const Icon(Icons.delete_outline_rounded, color: C.teal, size: 19),
-          ),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 250),
+          switchInCurve: Curves.easeOutBack,
+          switchOutCurve: Curves.easeIn,
+          transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: FadeTransition(opacity: anim, child: child)),
+          child: _msgs.isNotEmpty
+              ? GestureDetector(
+                  key: const ValueKey('clear_btn'),
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    showDialog(context: context, builder: (ctx) => AlertDialog(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      title: const Text('Очистить чат?', style: TextStyle(fontWeight: FontWeight.w800)),
+                      content: const Text('История переписки будет удалена', style: TextStyle(color: C.text4)),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена', style: TextStyle(color: C.text4))),
+                        TextButton(onPressed: () { Navigator.pop(ctx); setState(() => _msgs.clear()); }, child: const Text('Удалить', style: TextStyle(color: C.red, fontWeight: FontWeight.w700))),
+                      ],
+                    ));
+                  },
+                  child: Container(
+                    width: 38, height: 38,
+                    decoration: BoxDecoration(color: C.teal.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
+                    child: const Icon(Icons.delete_outline_rounded, color: C.teal, size: 19),
+                  ),
+                )
+              : const SizedBox.shrink(key: ValueKey('empty')),
         ),
       ]),
     ));
@@ -172,17 +190,14 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
 
     return LayoutBuilder(builder: (context, constraints) {
       return SingleChildScrollView(
+        key: const ValueKey('empty_state'),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: constraints.maxHeight),
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            // Static logo — no animation
             Container(
               width: 106, height: 106,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: C.teal.withOpacity(0.08),
-              ),
+              decoration: BoxDecoration(shape: BoxShape.circle, color: C.teal.withOpacity(0.08)),
               child: Center(
                 child: Container(
                   width: 78, height: 78,
@@ -204,18 +219,17 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
             const SizedBox(height: 6),
             Text(subtitle, style: const TextStyle(fontSize: 13, color: C.text4, height: 1.4), textAlign: TextAlign.center),
             const SizedBox(height: 20),
-            // 2×2 grid — intrinsic height, no overflow
             Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Expanded(child: Column(children: [
-                _tipCard(tips[0], isDark),
+                _tipCard(tips[0], isDark, 0),
                 const SizedBox(height: 12),
-                _tipCard(tips[2], isDark),
+                _tipCard(tips[2], isDark, 2),
               ])),
               const SizedBox(width: 12),
               Expanded(child: Column(children: [
-                _tipCard(tips[1], isDark),
+                _tipCard(tips[1], isDark, 1),
                 const SizedBox(height: 12),
-                _tipCard(tips[3], isDark),
+                _tipCard(tips[3], isDark, 3),
               ])),
             ]),
           ]),
@@ -224,39 +238,46 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
     });
   }
 
-  Widget _tipCard(Map<String, dynamic> tip, bool isDark) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        _send(tip['prompt'] as String);
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark ? C.darkSurface : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: cardShadow(isDark),
-        ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Container(
-            width: 40, height: 40,
-            decoration: BoxDecoration(
-              color: C.teal.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(tip['icon'] as IconData, size: 20, color: C.teal),
+  Widget _tipCard(Map<String, dynamic> tip, bool isDark, int index) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: Duration(milliseconds: 280 + index * 60),
+      curve: Curves.easeOutCubic,
+      builder: (_, t, child) => Opacity(
+        opacity: t,
+        child: Transform.translate(offset: Offset(0, 14 * (1 - t)), child: child),
+      ),
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          _send(tip['prompt'] as String);
+        },
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark ? C.darkSurface : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: cardShadow(isDark),
           ),
-          const SizedBox(height: 14),
-          Text(tip['title'] as String, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: adaptiveText1(context), height: 1.2)),
-          const SizedBox(height: 6),
-          Text(tip['desc'] as String, style: const TextStyle(fontSize: 12, color: C.text4, height: 1.4)),
-        ]),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(
+              width: 40, height: 40,
+              decoration: BoxDecoration(color: C.teal.withOpacity(0.10), borderRadius: BorderRadius.circular(12)),
+              child: Icon(tip['icon'] as IconData, size: 20, color: C.teal),
+            ),
+            const SizedBox(height: 14),
+            Text(tip['title'] as String, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: adaptiveText1(context), height: 1.2)),
+            const SizedBox(height: 6),
+            Text(tip['desc'] as String, style: const TextStyle(fontSize: 12, color: C.text4, height: 1.4)),
+          ]),
+        ),
       ),
     );
   }
 
   Widget _messageList(bool isDark) {
     return ListView.builder(
+      key: const ValueKey('msg_list'),
       controller: _scroll,
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
       itemCount: _msgs.length + (_loading ? 1 : 0),
@@ -265,14 +286,17 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
         final m = _msgs[i];
         final isUser = m['role'] == 'user';
         return TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0, end: 1),
-          duration: const Duration(milliseconds: 280),
+          key: ValueKey('msg_$i'),
+          tween: Tween(begin: 0.0, end: 1.0),
+          duration: const Duration(milliseconds: 300),
           curve: Curves.easeOutCubic,
           builder: (_, t, child) => Opacity(
             opacity: t,
-            child: Transform.translate(offset: Offset(isUser ? 16 * (1 - t) : -16 * (1 - t), 6 * (1 - t)), child: child),
+            child: Transform.translate(offset: Offset(isUser ? 18 * (1 - t) : -18 * (1 - t), 8 * (1 - t)), child: child),
           ),
-          child: isUser ? _userMessage(m['text'] ?? '') : _aiMessage(m['text'] ?? '', isDark),
+          child: RepaintBoundary(
+            child: isUser ? _userMessage(m['text'] ?? '') : _aiMessage(m['text'] ?? '', isDark),
+          ),
         );
       },
     );
@@ -380,10 +404,52 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
       ]),
     );
   }
+}
 
-  Widget _buildInput(Color surface, L10n l) {
+// ─────────────────────────────────────────────────────────────────────────────
+// Input bar — isolated StatefulWidget so keystrokes don't rebuild the whole screen
+// ─────────────────────────────────────────────────────────────────────────────
+class _AiInputBar extends StatefulWidget {
+  final TextEditingController ctrl;
+  final bool loading;
+  final VoidCallback onSend;
+
+  const _AiInputBar({required this.ctrl, required this.loading, required this.onSend});
+
+  @override
+  State<_AiInputBar> createState() => _AiInputBarState();
+}
+
+class _AiInputBarState extends State<_AiInputBar> {
+  @override
+  void initState() {
+    super.initState();
+    widget.ctrl.addListener(_onCtrlChange);
+  }
+
+  @override
+  void didUpdateWidget(_AiInputBar old) {
+    super.didUpdateWidget(old);
+    if (old.ctrl != widget.ctrl) {
+      old.ctrl.removeListener(_onCtrlChange);
+      widget.ctrl.addListener(_onCtrlChange);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.ctrl.removeListener(_onCtrlChange);
+    super.dispose();
+  }
+
+  void _onCtrlChange() => setState(() {});
+
+  @override
+  Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final hasText = _ctrl.text.trim().isNotEmpty;
+    final surface = Theme.of(context).colorScheme.surface;
+    final l = context.read<L10n>();
+    final hasText = widget.ctrl.text.trim().isNotEmpty;
     final isKZ = l.lang == 'KZ';
     final isEN = l.lang == 'EN';
     final hint = isKZ ? 'Chatra AI-дан сұраңыз...' : isEN ? 'Ask Chatra AI...' : 'Спросите Chatra AI...';
@@ -395,33 +461,39 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.06), blurRadius: 14, offset: const Offset(0, -2))],
       ),
       child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-        Expanded(child: Container(
-          constraints: const BoxConstraints(minHeight: 46),
-          decoration: BoxDecoration(
-            color: adaptiveSurface2(context),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: hasText ? C.teal.withOpacity(0.3) : Colors.transparent, width: 1.5),
-          ),
-          child: TextField(
-            controller: _ctrl,
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: const TextStyle(color: C.text4, fontSize: 15),
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-              filled: false,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+        Expanded(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            constraints: const BoxConstraints(minHeight: 46),
+            decoration: BoxDecoration(
+              color: adaptiveSurface2(context),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: hasText ? C.teal.withOpacity(0.35) : Colors.transparent,
+                width: 1.5,
+              ),
             ),
-            onSubmitted: (_) => _send(),
-            maxLines: 4,
-            minLines: 1,
-            onChanged: (_) => setState(() {}),
+            child: TextField(
+              controller: widget.ctrl,
+              decoration: InputDecoration(
+                hintText: hint,
+                hintStyle: const TextStyle(color: C.text4, fontSize: 15),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                filled: false,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+              ),
+              onSubmitted: (_) => widget.onSend(),
+              maxLines: 4,
+              minLines: 1,
+            ),
           ),
-        )),
+        ),
         const SizedBox(width: 10),
         GestureDetector(
-          onTap: _send,
+          onTap: widget.onSend,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 220),
             curve: Curves.easeOutCubic,
@@ -429,18 +501,32 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
-                colors: _loading
+                colors: widget.loading
                     ? [surface, surface]
                     : hasText
                         ? [C.teal, C.tealDk]
                         : [C.teal.withOpacity(0.55), C.tealDk.withOpacity(0.45)],
-                begin: Alignment.topLeft, end: Alignment.bottomRight,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              boxShadow: hasText && !_loading ? [BoxShadow(color: C.teal.withOpacity(0.38), blurRadius: 14, offset: const Offset(0, 4))] : null,
+              boxShadow: hasText && !widget.loading
+                  ? [BoxShadow(color: C.teal.withOpacity(0.38), blurRadius: 14, offset: const Offset(0, 4))]
+                  : null,
             ),
-            child: _loading
-              ? const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: C.teal)))
-              : const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+            child: widget.loading
+                ? const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: C.teal)))
+                : AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    switchInCurve: Curves.easeOutBack,
+                    switchOutCurve: Curves.easeIn,
+                    transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+                    child: Icon(
+                      hasText ? Icons.send_rounded : Icons.send_rounded,
+                      key: ValueKey(hasText),
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
           ),
         ),
       ]),
@@ -448,6 +534,9 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Typing indicator dot
+// ─────────────────────────────────────────────────────────────────────────────
 class _Dot extends StatefulWidget {
   final int delay;
   const _Dot({required this.delay});

@@ -242,9 +242,15 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
         Text(widget.isTeacher ? 'Создайте первое задание' : 'Заданий пока нет',
           style: TextStyle(fontSize: 13, color: C.text4)),
       ]))),
-      ...widget.assignments.asMap().entries.map((entry) {
+      // Pre-compute lookup map once — avoids O(N×M) linear scans per card
+      ...() {
+        final subMap = <int, dynamic>{};
+        for (final s in widget.mySubs) {
+          subMap[(s['assignment_id'] as num).toInt()] = s;
+        }
+        return widget.assignments.asMap().entries.map((entry) {
         final i = entry.key; final a = entry.value;
-        final sub = _subFor(a['id']);
+        final sub = subMap[(a['id'] as num).toInt()];
         final status = sub?['status'];
         final grade = sub?['grade'];
         final isGraded = status == 'graded';
@@ -258,12 +264,12 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
         IconData statusIcon = isGraded ? Icons.check_circle_rounded : isSubmitted ? Icons.upload_file : isLate ? Icons.schedule_rounded : Icons.edit_note_rounded;
 
         return TweenAnimationBuilder<double>(
-          key: ValueKey(a['id']),
+          key: ValueKey('asgn_${a['id']}'),
           tween: Tween(begin: 0.0, end: 1.0),
-          duration: Duration(milliseconds: 250 + i * 60),
+          duration: Duration(milliseconds: 220 + i.clamp(0, 5) * 50),
           curve: Curves.easeOutCubic,
-          builder: (_, t, child) => Transform.translate(offset: Offset(0, 16 * (1 - t)), child: Opacity(opacity: t, child: child)),
-          child: GestureDetector(
+          builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 18 * (1 - t)), child: child)),
+          child: RepaintBoundary(child: GestureDetector(
             onTap: () => _showAssignment(a, sub),
             child: Container(
               margin: EdgeInsets.only(bottom: 12),
@@ -332,9 +338,10 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 ),
               ]),
             ),
-          ),
+          )),
         );
-      }),
+        }).toList();
+      }(),
     ]);
   }
 

@@ -81,7 +81,24 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
 
     return Scaffold(
       body: Stack(children: [
-        Positioned.fill(child: IndexedStack(index: _idx, children: screens)),
+        // All screens stay mounted (state preserved), fade in/out on switch
+        Positioned.fill(
+          child: Stack(
+            fit: StackFit.expand,
+            children: screens.asMap().entries.map((e) {
+              final selected = e.key == _idx;
+              return AnimatedOpacity(
+                opacity: selected ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOutCubic,
+                child: IgnorePointer(
+                  ignoring: !selected,
+                  child: RepaintBoundary(child: e.value),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
         if (!_isOnline) Positioned(
           top: 0, left: 0, right: 0,
           child: _OfflineBanner(message: l.t('no_connection')),

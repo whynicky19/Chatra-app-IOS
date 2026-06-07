@@ -256,7 +256,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   ]),
                 ),
               )),
-            SliverPadding(
+            Builder(builder: (context) {
+              // Cache once — getter runs filter+sort, don't call per itemBuilder
+              final sortedClasses = _sortedClasses;
+              return SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
               sliver: SliverReorderableList(
                 onReorder: _onReorder,
@@ -272,11 +275,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: child,
                   ),
                 ),
-                itemCount: _sortedClasses.length,
+                itemCount: sortedClasses.length,
                 itemBuilder: (ctx, i) {
-                  final cls = _sortedClasses[i];
+                  final cls = sortedClasses[i];
                   final id  = cls['id'] as int;
-                  return _ClassCard(
+                  final card = _ClassCard(
                     key: ValueKey(id),
                     cls: cls,
                     index: i,
@@ -307,9 +310,21 @@ class _HomeScreenState extends State<HomeScreen> {
                       showToast(context, '${l.t('code_copied')}: ${classCode(id)}');
                     },
                   );
+                  return TweenAnimationBuilder<double>(
+                    key: ValueKey('entrance_$id'),
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    duration: Duration(milliseconds: 260 + i.clamp(0, 5) * 55),
+                    curve: Curves.easeOutCubic,
+                    builder: (_, t, child) => Opacity(
+                      opacity: t,
+                      child: Transform.translate(offset: Offset(0, 22 * (1 - t)), child: child),
+                    ),
+                    child: card,
+                  );
                 },
                 ),
-              ),
+              );
+            }),
           ],
 
           // "Add subject" card — students only

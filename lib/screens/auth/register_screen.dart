@@ -49,6 +49,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
         _nameIsCyrillic &&
         RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(_email.text.trim()) &&
         _pw.text.length >= 6 &&
+        _pwScore > 40 &&
         _group.isNotEmpty;
   }
 
@@ -72,18 +73,20 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
 
   Future<void> _submit() async {
     if (!_ok || _submitted) return;
-    _submitted = true;
+    setState(() => _submitted = true);
     final auth = context.read<AuthProvider>();
+    final goLogin = widget.onGoLogin;
     final ok = await auth.register(_email.text.trim(), _pw.text, 'student',
         fullName: _name.text.trim(), group: _group);
-    if (!mounted) return;
+    if (!mounted) {
+      if (ok) goLogin?.call();
+      return;
+    }
     if (ok) {
       showToast(context, context.read<L10n>().t('account_created'));
-      await Future.delayed(const Duration(milliseconds: 1200));
-      if (!mounted) return;
-      widget.onGoLogin?.call();
+      goLogin?.call();
     } else {
-      _submitted = false;
+      setState(() => _submitted = false);
       final l = context.read<L10n>();
       showToast(context, auth.lastError ?? l.t('error_generic'), error: true);
     }
@@ -241,6 +244,26 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                         ),
                       ),
                     ]),
+                    if (sc <= 40 && _pw.text.length >= 6)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 7),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(color: C.redLt, borderRadius: BorderRadius.circular(10)),
+                          child: Row(children: [
+                            const Icon(Icons.error_outline_rounded, size: 14, color: C.red),
+                            const SizedBox(width: 7),
+                            Expanded(child: Text(
+                              l.lang == 'KZ'
+                                  ? 'Құпия сөз тым қарапайым. Бас әріп, сан немесе арнайы таңба қосыңыз'
+                                  : l.lang == 'EN'
+                                      ? 'Password is too weak. Add uppercase letters, numbers or symbols'
+                                      : 'Пароль слишком слабый. Добавьте заглавные буквы, цифры или символы',
+                              style: const TextStyle(fontSize: 12, color: C.red, fontWeight: FontWeight.w500),
+                            )),
+                          ]),
+                        ),
+                      ),
                   ])),
 
                 const SizedBox(height: 26),

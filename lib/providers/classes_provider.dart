@@ -112,12 +112,36 @@ class ClassesProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final seenGrade = (prefs.getStringList('notif_seen_grade_$uid') ?? []).map(int.parse).toSet();
-      final subs = await _api.getMySubmissions();
-      final count = subs.where((s) =>
+      final seenAsgn  = (prefs.getStringList('notif_seen_asgn_$uid')  ?? []).map(int.parse).toSet();
+      final dismissed = (prefs.getStringList('notif_dismissed_$uid')   ?? []).toSet();
+
+      List<dynamic> subs = [];
+      List<dynamic> assignments = [];
+      await Future.wait([
+        () async { try { subs = await _api.getMySubmissions(); } catch (_) {} }(),
+        () async { try { assignments = await _api.getAssignments(); } catch (_) {} }(),
+      ]);
+
+      // Unread grade notifications
+      int count = subs.where((s) =>
         s['status'] == 'graded' &&
         s['grade'] != null &&
-        !seenGrade.contains((s['id'] as num?)?.toInt()),
+        !seenGrade.contains((s['id'] as num?)?.toInt()) &&
+        !dismissed.contains('grade_${(s['id'] as num?)?.toInt()}'),
       ).length;
+
+      // Unread new-assignment notifications (from joined classes, last 7 days)
+      final now = DateTime.now();
+      for (final a in assignments) {
+        final aId  = (a['id'] as num?)?.toInt() ?? 0;
+        final cid  = (a['class_id'] as num?)?.toInt();
+        if (cid == null || !joinedClassIds.contains(cid)) continue;
+        if (seenAsgn.contains(aId)) continue;
+        if (dismissed.contains('asgn_$aId')) continue;
+        final createdAt = a['created_at'] != null ? DateTime.tryParse(a['created_at']) : null;
+        if (createdAt != null && now.difference(createdAt).inDays <= 7) count++;
+      }
+
       unreadNotifCount = count;
       notifyListeners();
     } catch (e) {

@@ -305,13 +305,14 @@ class ApiService {
   // ── AI ────────────────────────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> aiChat(List<Map<String, dynamic>> messages,
-      {int? classId, int maxTokens = 1500, double temperature = 0.7}) async {
+      {int? classId, int maxTokens = 1500, double temperature = 0.7, String? lectureContext}) async {
     final data = <String, dynamic>{
       'messages': messages,
       'max_tokens': maxTokens,
       'temperature': temperature,
     };
     if (classId != null) data['class_id'] = classId;
+    if (lectureContext != null) data['lecture_context'] = lectureContext;
     final response = await _dio.post('/ai/chat', data: data);
     return response.data;
   }

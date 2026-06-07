@@ -67,13 +67,14 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       for (final f in files) {
         final url = _fixFileUrl(f.toString());
         final cleanUrl = _cleanFileUrl(url);
-        final ext = cleanUrl.split('?').first.split('.').last.toLowerCase();
-        if (['txt', 'md'].contains(ext)) {
-          try {
-            final text = await api.fetchFileText(cleanUrl);
-            if (text.isNotEmpty) result[url] = text;
-          } catch (_) {}
-        }
+        try {
+          final resp = await api.dio.get<Map<String, dynamic>>(
+            '/upload/utils/file-text',
+            queryParameters: {'url': cleanUrl},
+          );
+          final text = (resp.data?['text'] as String?) ?? '';
+          if (text.isNotEmpty) result[url] = text;
+        } catch (_) {}
       }
     }
     if (mounted) setState(() => _fileTexts = result);
@@ -841,7 +842,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
 
   // ── AI Chat tab ──
   String get _lectureContextForAI {
-    final all = [..._lectures, ..._materials].take(8);
+    final all = [..._lectures, ..._materials].take(12);
     final parts = <String>[];
     for (final p in all) {
       final title = _clean(p['title'] ?? '');
@@ -853,7 +854,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
         if (b['files'] is List) files = b['files'] as List;
       } catch (_) { content = p['body'] ?? ''; }
       content = content.replaceAll(RegExp(r'\n{3,}'), '\n\n').trim();
-      if (content.length > 1500) content = content.substring(0, 1500);
+      if (content.length > 4000) content = content.substring(0, 4000);
       final sb = StringBuffer();
       if (title.isNotEmpty) sb.write('### $title\n');
       if (content.isNotEmpty) sb.write(content);
@@ -864,7 +865,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           final ext = _cleanFileUrl(url).split('?').first.split('.').last.toLowerCase();
           if (_fileTexts.containsKey(url)) {
             var text = _fileTexts[url]!;
-            if (text.length > 2000) text = '${text.substring(0, 2000)}...';
+            if (text.length > 5000) text = '${text.substring(0, 5000)}...';
             sb.write('\n[Файл "$name"]\n$text');
           } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(ext)) {
             sb.write('\n[Изображение: $name]');
@@ -2525,7 +2526,11 @@ class _AiChatState extends State<_AiChat> with TickerProviderStateMixin {
         ...visionPre,
         ..._msgs.map((m) => {'role': m['role']!, 'content': m['text']!}),
       ];
-      final data = await api.aiChat(apiMsgs, classId: widget.classId);
+      final data = await api.aiChat(
+        apiMsgs,
+        classId: widget.classId,
+        lectureContext: widget.lectureContext.isNotEmpty ? widget.lectureContext : null,
+      );
       if (mounted) setState(() => _msgs.add({'role': 'assistant', 'text': data['content'] ?? 'Нет ответа'}));
     } catch (_) {
       if (mounted) setState(() => _msgs.add({'role': 'assistant', 'text': 'Ошибка соединения'}));

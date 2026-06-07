@@ -10,6 +10,7 @@ import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:dio/dio.dart' show Options;
 import '../../providers/auth_provider.dart';
+import '../../providers/classes_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
@@ -241,11 +242,16 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     final l = context.watch<L10n>();
     final auth = context.watch<AuthProvider>();
     final meta = _meta;
-    final coverImg = meta['cover_image'];
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surfaceColor = Theme.of(context).colorScheme.surface;
 
-    if (_loading) return Scaffold(body: Center(child: CircularProgressIndicator(color: C.teal)));
+    // Use ClassesProvider data immediately (available before _load() completes)
+    // so CachedNetworkImage mounts during the page-push animation, not after.
+    final clsData = context.read<ClassesProvider>().allClasses
+        .firstWhere((c) => c['id'] == widget.classId, orElse: () => <String, dynamic>{});
+    final coverImg = meta['cover_image'] ?? clsData['cover_image'];
+    final displayTitle = _title.isNotEmpty ? _title : (clsData['title'] ?? '');
+    final displayDesc = (meta['description'] ?? clsData['description'] ?? '').toString();
 
     return Scaffold(
       body: NestedScrollView(
@@ -286,10 +292,10 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   Builder(builder: (_) { try { return Image.memory(base64Decode(coverImg.toString().split(',').last), fit: BoxFit.cover, alignment: Alignment.topCenter); } catch (_) { return const SizedBox.shrink(); } }),
                 Container(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, stops: [0.0, 0.4, 1.0], colors: [Colors.black38, Colors.transparent, Colors.black54]))),
                 Positioned(bottom: 16, left: 16, right: 16, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(_title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white, shadows: [Shadow(color: Colors.black54, blurRadius: 6)]), maxLines: 2, overflow: TextOverflow.ellipsis),
-                  if (meta['description'] != null && meta['description'].toString().isNotEmpty) ...[
+                  Text(displayTitle, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white, shadows: [Shadow(color: Colors.black54, blurRadius: 6)]), maxLines: 2, overflow: TextOverflow.ellipsis),
+                  if (displayDesc.isNotEmpty) ...[
                     SizedBox(height: 4),
-                    Text(meta['description'], style: TextStyle(color: Colors.white70, fontSize: 13)),
+                    Text(displayDesc, style: TextStyle(color: Colors.white70, fontSize: 13)),
                   ],
                   if (auth.isTeacher) ...[
                     SizedBox(height: 8),
@@ -302,7 +308,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             ),
           ),
         ],
-        body: Column(children: [
+        body: _loading ? const Center(child: CircularProgressIndicator(color: C.teal)) : Column(children: [
           Container(
             decoration: BoxDecoration(
               color: surfaceColor,

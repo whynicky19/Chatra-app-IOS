@@ -30,7 +30,6 @@ class ClassDetailScreen extends StatefulWidget {
 
 class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProviderStateMixin {
   late TabController _tabCtrl;
-  late List<ScrollController> _tabScrollCtrl;
   List<dynamic> _posts = [];
   List<dynamic> _assignments = [];
   List<dynamic> _mySubs = [];
@@ -43,7 +42,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   void initState() {
     super.initState();
     _tabCtrl = TabController(length: 4, vsync: this, initialIndex: widget.initialTab);
-    _tabScrollCtrl = List.generate(4, (_) => ScrollController());
     _tabCtrl.addListener(() { if (_tabCtrl.index == 2 && _assignments.isEmpty) _loadAssignments(); });
     _load();
     if (widget.initialTab == 2) _loadAssignments();
@@ -270,163 +268,167 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     final displayTitle = _title.isNotEmpty ? _title : (clsData['title'] ?? '');
     final displayDesc = (meta['description'] ?? clsData['description'] ?? '').toString();
 
-    // Status bar height — header must cover it
-    final topPad = MediaQuery.of(context).padding.top;
-
     return Scaffold(
-      body: Column(children: [
-        // ── Fixed cover header — completely outside the scroll hierarchy.
-        // Tab switching has zero effect on this widget.
-        RepaintBoundary(child: SizedBox(
-          height: 220 + topPad,
-          child: Stack(fit: StackFit.expand, children: [
-            Container(decoration: const BoxDecoration(gradient: LinearGradient(
-              colors: [Color(0xFF006475), C.teal],
-              begin: Alignment.topLeft, end: Alignment.bottomRight,
-            ))),
-            if (coverImg != null && !coverImg.toString().startsWith('data:'))
-              RepaintBoundary(child: Image(
-                image: CachedNetworkImageProvider(coverImg.toString()),
-                fit: BoxFit.cover,
-                alignment: Alignment.topCenter,
-                gaplessPlayback: true,
-                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-              )),
-            if (coverImg != null && coverImg.toString().startsWith('data:'))
-              Builder(builder: (_) {
-                try { return Image.memory(base64Decode(coverImg.toString().split(',').last), fit: BoxFit.cover, alignment: Alignment.topCenter); }
-                catch (_) { return const SizedBox.shrink(); }
-              }),
-            Container(decoration: const BoxDecoration(gradient: LinearGradient(
-              begin: Alignment.topCenter, end: Alignment.bottomCenter,
-              stops: [0.0, 0.4, 1.0],
-              colors: [Colors.black38, Colors.transparent, Colors.black54],
-            ))),
-            Positioned(bottom: 16, left: 16, right: 16, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(displayTitle, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white, shadows: [Shadow(color: Colors.black54, blurRadius: 6)]), maxLines: 2, overflow: TextOverflow.ellipsis),
-              if (displayDesc.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(displayDesc, style: const TextStyle(color: Colors.white70, fontSize: 13)),
-              ],
-              if (auth.isTeacher) ...[
-                const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: () { Clipboard.setData(ClipboardData(text: classCode(widget.classId))); showToast(context, '${l.t('code_copied')}: ${classCode(widget.classId)}'); },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(color: adaptiveTealLt(context).withOpacity(0.9), borderRadius: BorderRadius.circular(8)),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      const Icon(Icons.copy, size: 14, color: C.teal),
-                      const SizedBox(width: 6),
-                      Text('${l.t('class_code')}: ', style: const TextStyle(fontSize: 13, color: C.teal)),
-                      Text(classCode(widget.classId), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: C.teal, letterSpacing: 2)),
-                    ]),
-                  ),
-                ),
-              ],
-            ])),
-            // Back button
-            Positioned(
-              top: topPad + 8, left: 8,
-              child: IconButton(
-                padding: EdgeInsets.zero,
-                icon: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(10)), child: const Icon(Icons.arrow_back, color: Colors.white, size: 20)),
-                onPressed: () => Navigator.pop(context),
-              ),
+      body: NestedScrollView(
+        headerSliverBuilder: (ctx, _) => [
+          SliverAppBar(
+            expandedHeight: 220,
+            pinned: true,
+            automaticallyImplyLeading: false,
+            backgroundColor: const Color(0xFF006475),
+            surfaceTintColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            leading: IconButton(
+              padding: EdgeInsets.zero,
+              icon: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(10)), child: const Icon(Icons.arrow_back, color: Colors.white, size: 20)),
+              onPressed: () => Navigator.pop(context),
             ),
-            if (auth.isTeacher) Positioned(
-              top: topPad + 8, right: 8,
-              child: IconButton(
+            actions: [
+              if (auth.isTeacher) IconButton(
                 padding: EdgeInsets.zero,
                 icon: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(10)), child: const Icon(Icons.edit, color: Colors.white70, size: 18)),
                 onPressed: () => _editClass(),
               ),
+              const SizedBox(width: 8),
+            ],
+            flexibleSpace: FlexibleSpaceBar(
+              collapseMode: CollapseMode.pin,
+              titlePadding: EdgeInsets.zero,
+              background: Stack(fit: StackFit.expand, children: [
+                Container(decoration: const BoxDecoration(gradient: LinearGradient(
+                  colors: [Color(0xFF006475), C.teal],
+                  begin: Alignment.topLeft, end: Alignment.bottomRight,
+                ))),
+                if (coverImg != null && !coverImg.toString().startsWith('data:'))
+                  RepaintBoundary(child: Image(
+                    image: CachedNetworkImageProvider(coverImg.toString()),
+                    fit: BoxFit.cover,
+                    alignment: Alignment.topCenter,
+                    gaplessPlayback: true,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  )),
+                if (coverImg != null && coverImg.toString().startsWith('data:'))
+                  Builder(builder: (_) {
+                    try { return Image.memory(base64Decode(coverImg.toString().split(',').last), fit: BoxFit.cover, alignment: Alignment.topCenter); }
+                    catch (_) { return const SizedBox.shrink(); }
+                  }),
+                Container(decoration: const BoxDecoration(gradient: LinearGradient(
+                  begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                  stops: [0.0, 0.4, 1.0],
+                  colors: [Colors.black38, Colors.transparent, Colors.black54],
+                ))),
+                Positioned(bottom: 16, left: 16, right: 16, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(displayTitle, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white, shadows: [Shadow(color: Colors.black54, blurRadius: 6)]), maxLines: 2, overflow: TextOverflow.ellipsis),
+                  if (displayDesc.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(displayDesc, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                  ],
+                  if (auth.isTeacher) ...[
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: () { Clipboard.setData(ClipboardData(text: classCode(widget.classId))); showToast(context, '${l.t('code_copied')}: ${classCode(widget.classId)}'); },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(color: adaptiveTealLt(context).withOpacity(0.9), borderRadius: BorderRadius.circular(8)),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          const Icon(Icons.copy, size: 14, color: C.teal),
+                          const SizedBox(width: 6),
+                          Text('${l.t('class_code')}: ', style: const TextStyle(fontSize: 13, color: C.teal)),
+                          Text(classCode(widget.classId), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: C.teal, letterSpacing: 2)),
+                        ]),
+                      ),
+                    ),
+                  ],
+                ])),
+              ]),
             ),
-          ]),
-        )),
-        // ── TabBar + teacher action buttons ──────────────────────────────────
-        Container(
-          decoration: BoxDecoration(
-            color: surfaceColor,
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.18 : 0.05), blurRadius: 8, offset: const Offset(0, 2))],
           ),
-          child: Column(children: [
-            TabBar(
-              controller: _tabCtrl,
-              labelColor: C.teal,
-              unselectedLabelColor: C.text4,
-              indicatorColor: C.teal,
-              indicatorWeight: 2.5,
-              indicatorSize: TabBarIndicatorSize.label,
-              labelPadding: const EdgeInsets.symmetric(horizontal: 8),
-              labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.1),
-              unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-              tabs: [
-                Tab(icon: const Icon(Icons.menu_book_rounded, size: 19), iconMargin: const EdgeInsets.only(bottom: 3), text: '${l.t('lectures')} (${_lectures.length})', height: 58),
-                Tab(icon: const Icon(Icons.layers_rounded, size: 19), iconMargin: const EdgeInsets.only(bottom: 3), text: l.t('materials'), height: 58),
-                Tab(icon: const Icon(Icons.checklist_rounded, size: 19), iconMargin: const EdgeInsets.only(bottom: 3), text: l.t('assignments'), height: 58),
-                Tab(icon: const Icon(Icons.auto_awesome_rounded, size: 19), iconMargin: const EdgeInsets.only(bottom: 3), text: l.t('ai_chat'), height: 58),
-              ],
+        ],
+        body: Column(children: [
+          // ── TabBar + teacher action buttons ────────────────────────────────
+          Container(
+            decoration: BoxDecoration(
+              color: surfaceColor,
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.18 : 0.05), blurRadius: 8, offset: const Offset(0, 2))],
             ),
-            if (auth.isTeacher) AnimatedBuilder(animation: _tabCtrl, builder: (ctx, _) {
-              if (_tabCtrl.index == 3) return const SizedBox.shrink();
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
-                child: Row(children: [
-                  Expanded(child: GestureDetector(
-                    onTap: () => _createAssignment(),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 11),
-                      decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(13), border: Border.all(color: C.teal.withOpacity(0.28))),
-                      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        const Icon(Icons.assignment_add, size: 15, color: C.teal),
-                        const SizedBox(width: 6),
-                        Text(l.t('assignment'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: C.teal)),
-                      ]),
-                    ),
-                  )),
-                  const SizedBox(width: 10),
-                  Expanded(child: GestureDetector(
-                    onTap: () => _showAddMenu(),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 11),
-                      decoration: BoxDecoration(gradient: const LinearGradient(colors: [C.teal, C.tealDk]), borderRadius: BorderRadius.circular(13), boxShadow: tealGlow(opacity: 0.28)),
-                      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        const Icon(Icons.add_rounded, size: 16, color: Colors.white),
-                        const SizedBox(width: 6),
-                        Text(l.t('add'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
-                      ]),
-                    ),
-                  )),
-                ]),
-              );
-            }),
-          ]),
-        ),
-        // ── Tab content — each tab gets its own PrimaryScrollController ───────
-        Expanded(child: _loading
-          ? const Center(child: CircularProgressIndicator(color: C.teal))
-          : TabBarView(controller: _tabCtrl, children: [
-              PrimaryScrollController(controller: _tabScrollCtrl[0], child: ClassPostsTab(
-                posts: _lectures, type: 'lecture', isTeacher: auth.isTeacher, fileTexts: _fileTexts,
-                onShowPost: _showPost, onEditPost: _editPost,
-                onDeletePost: (id) async { try { await context.read<ApiService>().deletePost(id); _load(); } catch (_) {} },
-              )),
-              PrimaryScrollController(controller: _tabScrollCtrl[1], child: ClassPostsTab(
-                posts: _materials, type: 'material', isTeacher: auth.isTeacher, fileTexts: _fileTexts,
-                onShowPost: _showPost, onEditPost: _editPost,
-                onDeletePost: (id) async { try { await context.read<ApiService>().deletePost(id); _load(); } catch (_) {} },
-              )),
-              PrimaryScrollController(controller: _tabScrollCtrl[2], child: ClassAssignmentsTab(
-                assignments: _assignments, mySubs: _mySubs, rating: _rating,
-                isTeacher: auth.isTeacher, classId: widget.classId, isLoading: _loadingAsg,
-                onRefresh: _loadAssignments, onEditAssignment: _editAssignment,
-                onOpenFile: (url, name) => _openFileViewer(context, url, name),
-              )),
-              PrimaryScrollController(controller: _tabScrollCtrl[3], child: _aiTab()),
+            child: Column(children: [
+              TabBar(
+                controller: _tabCtrl,
+                labelColor: C.teal,
+                unselectedLabelColor: C.text4,
+                indicatorColor: C.teal,
+                indicatorWeight: 2.5,
+                indicatorSize: TabBarIndicatorSize.label,
+                labelPadding: const EdgeInsets.symmetric(horizontal: 8),
+                labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.1),
+                unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                tabs: [
+                  Tab(icon: const Icon(Icons.menu_book_rounded, size: 19), iconMargin: const EdgeInsets.only(bottom: 3), text: '${l.t('lectures')} (${_lectures.length})', height: 58),
+                  Tab(icon: const Icon(Icons.layers_rounded, size: 19), iconMargin: const EdgeInsets.only(bottom: 3), text: l.t('materials'), height: 58),
+                  Tab(icon: const Icon(Icons.checklist_rounded, size: 19), iconMargin: const EdgeInsets.only(bottom: 3), text: l.t('assignments'), height: 58),
+                  Tab(icon: const Icon(Icons.auto_awesome_rounded, size: 19), iconMargin: const EdgeInsets.only(bottom: 3), text: l.t('ai_chat'), height: 58),
+                ],
+              ),
+              if (auth.isTeacher) AnimatedBuilder(animation: _tabCtrl, builder: (ctx, _) {
+                if (_tabCtrl.index == 3) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+                  child: Row(children: [
+                    Expanded(child: GestureDetector(
+                      onTap: () => _createAssignment(),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 11),
+                        decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(13), border: Border.all(color: C.teal.withOpacity(0.28))),
+                        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                          const Icon(Icons.assignment_add, size: 15, color: C.teal),
+                          const SizedBox(width: 6),
+                          Text(l.t('assignment'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: C.teal)),
+                        ]),
+                      ),
+                    )),
+                    const SizedBox(width: 10),
+                    Expanded(child: GestureDetector(
+                      onTap: () => _showAddMenu(),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 11),
+                        decoration: BoxDecoration(gradient: const LinearGradient(colors: [C.teal, C.tealDk]), borderRadius: BorderRadius.circular(13), boxShadow: tealGlow(opacity: 0.28)),
+                        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                          const Icon(Icons.add_rounded, size: 16, color: Colors.white),
+                          const SizedBox(width: 6),
+                          Text(l.t('add'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
+                        ]),
+                      ),
+                    )),
+                  ]),
+                );
+              }),
             ]),
-        ),
-      ]),
+          ),
+          // ── Tab content ─────────────────────────────────────────────────────
+          Expanded(child: _loading
+            ? const Center(child: CircularProgressIndicator(color: C.teal))
+            : TabBarView(controller: _tabCtrl, children: [
+                ClassPostsTab(
+                  posts: _lectures, type: 'lecture', isTeacher: auth.isTeacher, fileTexts: _fileTexts,
+                  onShowPost: _showPost, onEditPost: _editPost,
+                  onDeletePost: (id) async { try { await context.read<ApiService>().deletePost(id); _load(); } catch (_) {} },
+                ),
+                ClassPostsTab(
+                  posts: _materials, type: 'material', isTeacher: auth.isTeacher, fileTexts: _fileTexts,
+                  onShowPost: _showPost, onEditPost: _editPost,
+                  onDeletePost: (id) async { try { await context.read<ApiService>().deletePost(id); _load(); } catch (_) {} },
+                ),
+                ClassAssignmentsTab(
+                  assignments: _assignments, mySubs: _mySubs, rating: _rating,
+                  isTeacher: auth.isTeacher, classId: widget.classId, isLoading: _loadingAsg,
+                  onRefresh: _loadAssignments, onEditAssignment: _editAssignment,
+                  onOpenFile: (url, name) => _openFileViewer(context, url, name),
+                ),
+                _aiTab(),
+              ]),
+          ),
+        ]),
+      ),
       floatingActionButton: null,
     );
   }
@@ -601,10 +603,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     return urls;
   }
 
-  Widget _aiTab() => NotificationListener<ScrollNotification>(
-    onNotification: (_) => true,
-    child: ClassAiTab(classId: widget.classId, className: _title, lectureContext: _lectureContextForAI, lectureImageUrls: _lectureImageUrls),
-  );
+  Widget _aiTab() => ClassAiTab(classId: widget.classId, className: _title, lectureContext: _lectureContextForAI, lectureImageUrls: _lectureImageUrls);
 
   // ── Show post detail ──
   void _showPost(dynamic p, String type, int num) {
@@ -1402,7 +1401,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
 
   @override void dispose() {
     _tabCtrl.dispose();
-    for (final c in _tabScrollCtrl) c.dispose();
     super.dispose();
   }
 }

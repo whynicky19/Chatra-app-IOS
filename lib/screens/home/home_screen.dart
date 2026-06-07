@@ -310,12 +310,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       showToast(context, '${l.t('code_copied')}: ${classCode(id)}');
                     },
                   );
-                  // StatefulWidget preserves animation state through reorder drags
-                  return _ClassCardWithEntrance(
-                    key: ValueKey('entrance_$id'),
-                    staggerMs: i.clamp(0, 5) * 55,
-                    child: card,
-                  );
+                  return card;
                 },
                 ),
               );
@@ -952,10 +947,12 @@ class _ClassCard extends StatelessWidget {
               borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
               child: SizedBox(height: 168, width: double.infinity,
                 child: Stack(fit: StackFit.expand, children: [
+                  // Always-visible gradient — prevents grey flash when image remounts
+                  Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight))),
                   if (coverImg != null && coverImg.toString().startsWith('data:'))
                     Builder(builder: (_) {
                       try { return Image.memory(base64Decode(coverImg.toString().split(',').last), fit: BoxFit.cover); }
-                      catch (_) { return Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))); }
+                      catch (_) { return const SizedBox.shrink(); }
                     })
                   else if (coverImg != null)
                     CachedNetworkImage(
@@ -963,11 +960,7 @@ class _ClassCard extends StatelessWidget {
                       fit: BoxFit.cover,
                       fadeInDuration: Duration.zero,
                       fadeOutDuration: Duration.zero,
-                      placeholder: (_, __) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))),
-                      errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))),
-                    )
-                  else
-                    Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight))),
+                    ),
                   // Bottom gradient
                   Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                     begin: Alignment.topCenter, end: Alignment.bottomCenter,
@@ -1185,45 +1178,3 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// Entrance animation that runs ONCE on mount and never restarts.
-// Unlike TweenAnimationBuilder, the AnimationController lives in initState
-// so it is never recreated during SliverReorderableList reorders.
-class _ClassCardWithEntrance extends StatefulWidget {
-  final Widget child;
-  final int staggerMs;
-  const _ClassCardWithEntrance({super.key, required this.child, required this.staggerMs});
-  @override State<_ClassCardWithEntrance> createState() => _ClassCardWithEntranceState();
-}
-
-class _ClassCardWithEntranceState extends State<_ClassCardWithEntrance>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-  late final Animation<double> _anim;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 320));
-    _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic);
-    if (widget.staggerMs > 0) {
-      Future.delayed(Duration(milliseconds: widget.staggerMs), () {
-        if (mounted) _ctrl.forward();
-      });
-    } else {
-      _ctrl.forward();
-    }
-  }
-
-  @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
-
-  @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-    animation: _anim,
-    builder: (_, child) => Opacity(
-      opacity: _anim.value,
-      child: Transform.translate(offset: Offset(0, 20 * (1 - _anim.value)), child: child),
-    ),
-    child: widget.child,
-  );
-}

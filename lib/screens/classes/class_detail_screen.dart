@@ -275,9 +275,12 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             expandedHeight: 220,
             pinned: true,
             automaticallyImplyLeading: false,
-            backgroundColor: const Color(0xFF006475),
+            backgroundColor: Colors.transparent,
             surfaceTintColor: Colors.transparent,
             shadowColor: Colors.transparent,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            forceMaterialTransparency: true,
             leading: IconButton(
               padding: EdgeInsets.zero,
               icon: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(10)), child: const Icon(Icons.arrow_back, color: Colors.white, size: 20)),

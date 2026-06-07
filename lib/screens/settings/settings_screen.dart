@@ -10,12 +10,31 @@ class SettingsScreen extends StatefulWidget {
   @override State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProviderStateMixin {
   final _nameCtrl = TextEditingController();
   bool _notif = true, _aiInsights = true;
+  late AnimationController _entry;
 
   @override
-  void initState() { super.initState(); _nameCtrl.text = context.read<AuthProvider>().fullName; }
+  void initState() {
+    super.initState();
+    _nameCtrl.text = context.read<AuthProvider>().fullName;
+    _entry = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))..forward();
+  }
+
+  @override
+  void dispose() { _entry.dispose(); _nameCtrl.dispose(); super.dispose(); }
+
+  Widget _animated(Widget child, double start, double end) {
+    final anim = CurvedAnimation(parent: _entry, curve: Interval(start, end, curve: Curves.easeOutCubic));
+    return FadeTransition(
+      opacity: anim,
+      child: SlideTransition(
+        position: Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero).animate(anim),
+        child: child,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,18 +48,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: SafeArea(child: ListView(padding: const EdgeInsets.fromLTRB(16, 20, 16, 90), children: [
 
         // ── Page title ────────────────────────────────────────
-        Padding(padding: const EdgeInsets.fromLTRB(4, 0, 4, 24), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _animated(Padding(padding: const EdgeInsets.fromLTRB(4, 0, 4, 24), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(l.t('settings'), style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: C.teal, letterSpacing: -0.8, height: 1.1)),
           const SizedBox(height: 2),
           Text(l.t('settings_sub'), style: const TextStyle(fontSize: 13, color: C.text4)),
-        ])),
+        ])), 0.0, 0.45),
 
         // ── Section: Profile ──────────────────────────────────
-        _SectionLabel('ПРОФИЛЬ'),
+        _animated(_SectionLabel('ПРОФИЛЬ'), 0.05, 0.5),
         const SizedBox(height: 10),
 
         // Profile card with gradient banner
-        Container(
+        _animated(Container(
           decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(22), boxShadow: cardShadow(isDark)),
           clipBehavior: Clip.antiAlias,
           child: Column(children: [
@@ -126,15 +145,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               )),
             ])),
           ]),
-        ),
+        ), 0.1, 0.65),
 
         const SizedBox(height: 24),
 
         // ── Section: Preferences ─────────────────────────────
-        _SectionLabel('НАСТРОЙКИ'),
+        _animated(_SectionLabel('НАСТРОЙКИ'), 0.3, 0.7),
         const SizedBox(height: 10),
 
-        Container(
+        _animated(Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(22), boxShadow: cardShadow(isDark)),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -144,12 +163,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _divider(),
             _prefRow(Icons.auto_awesome_outlined, l.t('ai_insights'), l.t('ai_sub'), _aiInsights, (v) => setState(() => _aiInsights = v)),
           ]),
-        ),
+        ), 0.35, 0.78),
 
         const SizedBox(height: 16),
 
         // Language
-        Container(
+        _animated(Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(22), boxShadow: cardShadow(isDark)),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -184,12 +203,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               }).toList()),
             ),
           ]),
-        ),
+        ), 0.45, 0.85),
 
         const SizedBox(height: 16),
 
         // ── Logout ────────────────────────────────────────────
-        GestureDetector(
+        _animated(GestureDetector(
           onTap: () => auth.logout(),
           child: Container(
             padding: const EdgeInsets.all(18),
@@ -210,7 +229,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const Icon(Icons.chevron_right_rounded, color: C.red, size: 22),
             ]),
           ),
-        ),
+        ), 0.55, 0.95),
       ])),
     );
   }

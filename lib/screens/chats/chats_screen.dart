@@ -77,10 +77,15 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
     }
   }
 
-  void _scrollToBottom() {
+  void _scrollToBottom({bool animated = false}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_chatScrollCtrl.hasClients) {
-        _chatScrollCtrl.jumpTo(_chatScrollCtrl.position.maxScrollExtent);
+      if (!mounted || !_chatScrollCtrl.hasClients) return;
+      final extent = _chatScrollCtrl.position.maxScrollExtent;
+      if (animated) {
+        _chatScrollCtrl.animateTo(extent,
+            duration: const Duration(milliseconds: 350), curve: Curves.easeOut);
+      } else {
+        _chatScrollCtrl.jumpTo(extent);
       }
     });
   }
@@ -362,10 +367,15 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
                 final m = msgs[i]; final isMe = m['user_id'] == auth.userId;
                 final showTime = i == msgs.length - 1 || (msgs[i + 1]['user_id'] != m['user_id']);
                 return TweenAnimationBuilder<double>(
+                  key: ValueKey('msg_${m['id'] ?? i}'),
                   tween: Tween(begin: 0.0, end: 1.0),
-                  duration: const Duration(milliseconds: 200),
-                  builder: (_, t, child) => Opacity(opacity: t,
-                    child: Transform.translate(offset: Offset(isMe ? 20 * (1 - t) : -20 * (1 - t), 0), child: child)),
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  builder: (_, t, child) => Opacity(
+                    opacity: t,
+                    child: Transform.translate(
+                        offset: Offset(isMe ? 18 * (1 - t) : -18 * (1 - t), 8 * (1 - t)),
+                        child: child)),
                   child: _SwipeableMessage(
                     key: ValueKey('msg_${m['id']}'),
                     isMe: isMe,
@@ -396,8 +406,19 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
                 );
               })),
 
-        // Typing indicator bubble
-        if (provider.someoneIsTyping) const _TypingBubble(),
+        // Typing indicator bubble — slides in/out smoothly
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 280),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeIn,
+          transitionBuilder: (child, anim) => SizeTransition(
+            sizeFactor: CurvedAnimation(parent: anim, curve: Curves.easeOutCubic),
+            child: FadeTransition(opacity: anim, child: child),
+          ),
+          child: provider.someoneIsTyping
+              ? const _TypingBubble(key: ValueKey('typing'))
+              : const SizedBox.shrink(key: ValueKey('no_typing')),
+        ),
 
         // Reply preview
         if (_replyTo != null) _ReplyPreview(
@@ -406,48 +427,12 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
           onCancel: () => setState(() { _replyTo = null; }),
         ),
 
-        // Input bar
-        Container(
-          padding: EdgeInsets.fromLTRB(12, 10, 12,
-            (MediaQuery.of(context).viewInsets.bottom + 8).clamp(90.0, double.infinity)),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.06), blurRadius: 12, offset: const Offset(0, -2))],
-          ),
-          child: Row(children: [
-            GestureDetector(
-              onTap: () => _showPhotoMenu(context, provider.activeChatId!),
-              child: Container(width: 40, height: 40, margin: const EdgeInsets.only(right: 6),
-                decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
-                child: const Icon(Icons.add_rounded, size: 22, color: C.teal))),
-            Expanded(child: Container(
-              decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(24)),
-              child: TextField(
-                controller: _msgCtrl,
-                decoration: InputDecoration(
-                  hintText: l.t('message'),
-                  border: InputBorder.none, enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none, filled: false,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12)),
-                onChanged: _onMsgChanged,
-                onSubmitted: (_) => _send(),
-                maxLines: 4, minLines: 1,
-              ))),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: _send,
-              child: TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0.9, end: 1.0),
-                duration: const Duration(milliseconds: 150),
-                builder: (_, t, child) => Transform.scale(scale: t, child: child),
-                child: Container(width: 48, height: 48,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [C.teal, C.tealDk], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [BoxShadow(color: C.teal.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 4))]),
-                  child: const Icon(Icons.send_rounded, color: Colors.white, size: 20)),
-              )),
-          ]),
+        // Input bar — reactive stateful widget (animated border + send button)
+        _ChatInputBar(
+          ctrl: _msgCtrl,
+          onSend: _send,
+          onAdd: () => _showPhotoMenu(context, provider.activeChatId!),
+          onChanged: _onMsgChanged,
         ),
       ]),
     );
@@ -466,15 +451,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
     _msgCtrl.clear();
     await context.read<ChatsProvider>().sendMessage(content);
     if (!mounted) return;
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (_chatScrollCtrl.hasClients) {
-        _chatScrollCtrl.animateTo(
-          _chatScrollCtrl.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
+    _scrollToBottom(animated: true);
   }
 
   // ── Photo menu ────────────────────────────────────────────────────────────────
@@ -619,10 +596,149 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
   }
 }
 
+// ── Chat input bar — isolated widget so keystrokes don't rebuild message list ──
+
+class _ChatInputBar extends StatefulWidget {
+  final TextEditingController ctrl;
+  final VoidCallback onSend;
+  final VoidCallback onAdd;
+  final ValueChanged<String> onChanged;
+
+  const _ChatInputBar({
+    required this.ctrl,
+    required this.onSend,
+    required this.onAdd,
+    required this.onChanged,
+  });
+
+  @override
+  State<_ChatInputBar> createState() => _ChatInputBarState();
+}
+
+class _ChatInputBarState extends State<_ChatInputBar> {
+  @override
+  void initState() {
+    super.initState();
+    widget.ctrl.addListener(_rebuild);
+  }
+
+  @override
+  void didUpdateWidget(_ChatInputBar old) {
+    super.didUpdateWidget(old);
+    if (old.ctrl != widget.ctrl) {
+      old.ctrl.removeListener(_rebuild);
+      widget.ctrl.addListener(_rebuild);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.ctrl.removeListener(_rebuild);
+    super.dispose();
+  }
+
+  void _rebuild() => setState(() {});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l = context.read<L10n>();
+    final hasText = widget.ctrl.text.trim().isNotEmpty;
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(12, 10, 12,
+          (MediaQuery.of(context).viewInsets.bottom + 8).clamp(90.0, double.infinity)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        boxShadow: [BoxShadow(
+          color: Colors.black.withOpacity(isDark ? 0.2 : 0.06),
+          blurRadius: 12, offset: const Offset(0, -2),
+        )],
+      ),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+        GestureDetector(
+          onTap: widget.onAdd,
+          child: Container(
+            width: 40, height: 40,
+            margin: const EdgeInsets.only(right: 6, bottom: 3),
+            decoration: BoxDecoration(
+              color: adaptiveSurface2(context),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.add_rounded, size: 22, color: C.teal),
+          ),
+        ),
+        Expanded(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            constraints: const BoxConstraints(minHeight: 46),
+            decoration: BoxDecoration(
+              color: adaptiveSurface2(context),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: hasText ? C.teal.withOpacity(0.35) : Colors.transparent,
+                width: 1.5,
+              ),
+            ),
+            child: TextField(
+              controller: widget.ctrl,
+              decoration: InputDecoration(
+                hintText: l.t('message'),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                filled: false,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+              ),
+              onChanged: widget.onChanged,
+              onSubmitted: (_) => widget.onSend(),
+              maxLines: 4, minLines: 1,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        GestureDetector(
+          onTap: widget.onSend,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            width: 48, height: 48,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: hasText
+                    ? [C.teal, C.tealDk]
+                    : [C.teal.withOpacity(0.55), C.tealDk.withOpacity(0.45)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: hasText
+                  ? [BoxShadow(color: C.teal.withOpacity(0.38), blurRadius: 14, offset: const Offset(0, 4))]
+                  : null,
+            ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 180),
+              switchInCurve: Curves.easeOutBack,
+              switchOutCurve: Curves.easeIn,
+              transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+              child: Icon(
+                hasText ? Icons.send_rounded : Icons.send_rounded,
+                key: ValueKey(hasText),
+                color: Colors.white, size: 20,
+              ),
+            ),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
 // ── Typing indicator bubble ───────────────────────────────────────────────────
 
 class _TypingBubble extends StatefulWidget {
-  const _TypingBubble();
+  const _TypingBubble({super.key});
   @override State<_TypingBubble> createState() => _TypingBubbleState();
 }
 

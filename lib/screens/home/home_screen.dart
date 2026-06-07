@@ -158,7 +158,15 @@ class _HomeScreenState extends State<HomeScreen> {
         child: CustomScrollView(slivers: [
 
           // ── Header ──────────────────────────────────────────
-          SliverToBoxAdapter(child: Padding(
+          SliverToBoxAdapter(child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeOutCubic,
+            builder: (_, t, child) => Opacity(
+              opacity: t,
+              child: Transform.translate(offset: Offset(0, -12 * (1 - t)), child: child),
+            ),
+            child: Padding(
             padding: const EdgeInsets.fromLTRB(22, 24, 22, 18),
             child: Row(children: [
               Expanded(child: Text(l.t('classes'), style: const TextStyle(
@@ -214,7 +222,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: const Icon(Icons.vpn_key_rounded, color: Colors.white, size: 18))),
               ],
             ]),
-          )),
+          ))),
 
           // ── Class cards ──────────────────────────────────────
           if (provider.loading)

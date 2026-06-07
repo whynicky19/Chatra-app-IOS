@@ -423,8 +423,8 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
         GestureDetector(
           onTap: _send,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOutBack,
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
             width: 48, height: 48,
             decoration: BoxDecoration(
               shape: BoxShape.circle,

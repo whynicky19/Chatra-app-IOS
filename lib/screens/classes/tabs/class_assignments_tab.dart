@@ -339,7 +339,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
   }
 
   void _showAssignment(dynamic a, dynamic sub) {
-    final tc = TextEditingController(); bool busy = false;
+    final tc = TextEditingController(); bool busy = false; bool descHidden = false;
     final isTeacherOrAdmin = widget.isTeacher;
     List<dynamic> criteria = []; try { criteria = jsonDecode(a['criteria'] ?? '[]'); } catch (_) {}
     List<PlatformFile> pickedFiles = [];
@@ -465,11 +465,42 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
 
             return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               if (descText.isNotEmpty) ...[
-                Row(children: [Container(width: 3, height: 16, decoration: BoxDecoration(color: C.teal, borderRadius: BorderRadius.circular(2))), SizedBox(width: 8), Text('Описание', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: C.teal))]),
-                SizedBox(height: 10),
-                Container(padding: EdgeInsets.all(14), decoration: BoxDecoration(color: isDark ? C.darkSurface2 : C.bg, borderRadius: BorderRadius.circular(14), border: Border.all(color: C.teal.withOpacity(0.10))),
-                  child: Text(descText, style: TextStyle(fontSize: 14, height: 1.65))),
-                SizedBox(height: 20),
+                Row(children: [
+                  Container(width: 3, height: 16, decoration: BoxDecoration(color: C.teal, borderRadius: BorderRadius.circular(2))),
+                  SizedBox(width: 8),
+                  Text('Описание', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: C.teal)),
+                  Spacer(),
+                  GestureDetector(
+                    onTap: () => setS(() => descHidden = !descHidden),
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(8)),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        AnimatedRotation(
+                          turns: descHidden ? 0.5 : 0.0,
+                          duration: Duration(milliseconds: 220),
+                          child: Icon(Icons.expand_less_rounded, size: 14, color: C.text4),
+                        ),
+                        SizedBox(width: 4),
+                        Text(descHidden ? 'Показать' : 'Скрыть', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: C.text4)),
+                      ]),
+                    ),
+                  ),
+                ]),
+                AnimatedSize(
+                  duration: Duration(milliseconds: 250),
+                  curve: Curves.easeInOut,
+                  child: descHidden
+                      ? SizedBox.shrink()
+                      : Padding(
+                          padding: EdgeInsets.only(top: 10, bottom: 20),
+                          child: Container(
+                            padding: EdgeInsets.all(14),
+                            decoration: BoxDecoration(color: isDark ? C.darkSurface2 : C.bg, borderRadius: BorderRadius.circular(14), border: Border.all(color: C.teal.withOpacity(0.10))),
+                            child: Text(descText, style: TextStyle(fontSize: 14, height: 1.65)),
+                          ),
+                        ),
+                ),
               ],
               if (isLoading) Padding(
                 padding: EdgeInsets.symmetric(vertical: 12),

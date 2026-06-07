@@ -28,7 +28,7 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _navAnim = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
+    _navAnim = AnimationController(vsync: this, duration: const Duration(milliseconds: 950));
     _navAnim.forward();
 
     Connectivity().checkConnectivity().then((results) {
@@ -88,14 +88,20 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
         ),
         Positioned(
           left: 16, right: 16, bottom: 16,
-          child: SlideTransition(
-            position: Tween<Offset>(begin: const Offset(0, 2), end: Offset.zero)
-                .animate(CurvedAnimation(parent: _navAnim, curve: Curves.elasticOut)),
-            child: _LiquidGlassNavBar(
-              items: items,
-              selectedIndex: _idx,
-              onTap: _onTap,
-              isDark: isDark,
+          child: FadeTransition(
+            opacity: CurvedAnimation(
+              parent: _navAnim,
+              curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
+            ),
+            child: SlideTransition(
+              position: Tween<Offset>(begin: const Offset(0, 1.8), end: Offset.zero)
+                  .animate(CurvedAnimation(parent: _navAnim, curve: Curves.elasticOut)),
+              child: _LiquidGlassNavBar(
+                items: items,
+                selectedIndex: _idx,
+                onTap: _onTap,
+                isDark: isDark,
+              ),
             ),
           ),
         ),
@@ -200,13 +206,19 @@ class _LiquidGlassNavBar extends StatelessWidget {
                       behavior: HitTestBehavior.opaque,
                       child: TweenAnimationBuilder<double>(
                         tween: Tween(begin: sel ? 0.0 : 1.0, end: sel ? 1.0 : 0.0),
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeOutCubic,
-                        builder: (_, t, __) => _GlassTabPill(
-                          item: items[i],
-                          progress: t,
-                          isDark: isDark,
-                        ),
+                        duration: const Duration(milliseconds: 400),
+                        curve: Curves.easeOutBack,
+                        builder: (_, t, __) {
+                          final p = t.clamp(0.0, 1.0);
+                          return Transform.scale(
+                            scale: 1.0 + 0.055 * p,
+                            child: _GlassTabPill(
+                              item: items[i],
+                              progress: p,
+                              isDark: isDark,
+                            ),
+                          );
+                        },
                       ),
                     );
                   }),
@@ -239,8 +251,8 @@ class _GlassTabPill extends StatelessWidget {
     final sel = progress > 0.5;
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOutCubic,
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeOutQuart,
       padding: EdgeInsets.symmetric(
         horizontal: 8.0 + 12.0 * progress,
         vertical: 10,

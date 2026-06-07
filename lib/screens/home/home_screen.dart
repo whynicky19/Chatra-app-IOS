@@ -310,15 +310,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       showToast(context, '${l.t('code_copied')}: ${classCode(id)}');
                     },
                   );
-                  return TweenAnimationBuilder<double>(
+                  // StatefulWidget preserves animation state through reorder drags
+                  return _ClassCardWithEntrance(
                     key: ValueKey('entrance_$id'),
-                    tween: Tween(begin: 0.0, end: 1.0),
-                    duration: Duration(milliseconds: 260 + i.clamp(0, 5) * 55),
-                    curve: Curves.easeOutCubic,
-                    builder: (_, t, child) => Opacity(
-                      opacity: t,
-                      child: Transform.translate(offset: Offset(0, 22 * (1 - t)), child: child),
-                    ),
+                    staggerMs: i.clamp(0, 5) * 55,
                     child: card,
                   );
                 },
@@ -1188,4 +1183,47 @@ class _EmptyState extends StatelessWidget {
       ]),
     ));
   }
+}
+
+// Entrance animation that runs ONCE on mount and never restarts.
+// Unlike TweenAnimationBuilder, the AnimationController lives in initState
+// so it is never recreated during SliverReorderableList reorders.
+class _ClassCardWithEntrance extends StatefulWidget {
+  final Widget child;
+  final int staggerMs;
+  const _ClassCardWithEntrance({super.key, required this.child, required this.staggerMs});
+  @override State<_ClassCardWithEntrance> createState() => _ClassCardWithEntranceState();
+}
+
+class _ClassCardWithEntranceState extends State<_ClassCardWithEntrance>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 320));
+    _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic);
+    if (widget.staggerMs > 0) {
+      Future.delayed(Duration(milliseconds: widget.staggerMs), () {
+        if (mounted) _ctrl.forward();
+      });
+    } else {
+      _ctrl.forward();
+    }
+  }
+
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: _anim,
+    builder: (_, child) => Opacity(
+      opacity: _anim.value,
+      child: Transform.translate(offset: Offset(0, 20 * (1 - _anim.value)), child: child),
+    ),
+    child: widget.child,
+  );
 }

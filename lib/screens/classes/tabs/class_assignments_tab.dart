@@ -865,8 +865,6 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
     try {
       final subs = await context.read<ApiService>().getSubmissions(aId);
       if (!mounted) return;
-      final graded = subs.where((s) => s['status'] == 'graded').length;
-      final pending = subs.length - graded;
       showModalBottomSheet(context: context, isScrollControlled: true,
         backgroundColor: Theme.of(context).colorScheme.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
@@ -874,7 +872,13 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
           String search = '';
           dynamic selectedSub;
           bool grading = false;
+          bool gradingAll = false;
+          int gradingDone = 0;
+          int gradingTotal = 0;
           return StatefulBuilder(builder: (ctx, setS) => DraggableScrollableSheet(expand: false, initialChildSize: 0.85, maxChildSize: 0.95, builder: (ctx, sc) {
+            // Recomputed on every rebuild so stats stay fresh after batch grading
+            final graded = subs.where((s) => s['status'] == 'graded').length;
+            final pending = subs.length - graded;
             if (selectedSub != null) {
               final name = selectedSub['student_name'] ?? '#${selectedSub['student_id']}';
               final initials = name.length >= 2 ? '${name[0]}${name.split(' ').length > 1 ? name.split(' ').last[0] : name[1]}'.toUpperCase() : name[0].toUpperCase();
@@ -1033,6 +1037,45 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 SizedBox(width: 8),
                 _statBox('$pending', 'Ожидают', C.red),
               ]),
+              // Batch AI grading button
+              if (pending > 0) ...[
+                SizedBox(height: 14),
+                SizedBox(width: double.infinity, height: 50,
+                  child: ElevatedButton(
+                    onPressed: gradingAll ? null : () async {
+                      final ungraded = subs.where((s) => s['status'] != 'graded').toList();
+                      setS(() { gradingAll = true; gradingDone = 0; gradingTotal = ungraded.length; });
+                      for (final s in ungraded) {
+                        try {
+                          await context.read<ApiService>().aiGrade(s['id']);
+                          setS(() => gradingDone++);
+                        } catch (_) {}
+                      }
+                      try {
+                        final updated = await context.read<ApiService>().getSubmissions(aId);
+                        subs.clear();
+                        subs.addAll(updated);
+                      } catch (_) {}
+                      setS(() { gradingAll = false; });
+                      if (mounted) showToast(context, 'Проверено $gradingDone из $gradingTotal');
+                    },
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: 14),
+                      backgroundColor: gradingAll ? adaptiveSurface2(context) : null,
+                    ),
+                    child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      if (gradingAll) ...[
+                        SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: C.teal)),
+                        SizedBox(width: 12),
+                        Text('Проверено $gradingDone / $gradingTotal...', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: C.teal)),
+                      ] else ...[
+                        Icon(Icons.bolt_rounded, size: 18, color: Colors.white),
+                        SizedBox(width: 8),
+                        Text('Проверить все ИИ ($pending)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                      ],
+                    ]),
+                  )),
+              ],
               SizedBox(height: 16),
               TextField(decoration: InputDecoration(hintText: 'Поиск по ФИО студента...', prefixIcon: Icon(Icons.search, size: 18, color: C.text4), contentPadding: EdgeInsets.symmetric(vertical: 10)),
                 onChanged: (v) => setS(() => search = v)),

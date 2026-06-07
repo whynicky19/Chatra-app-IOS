@@ -10,6 +10,7 @@ class ApiService {
 
   static const String defaultBaseUrl = 'http://192.168.10.6:8000';
   static const _tokenKey = '_tk';
+  static const _refreshKey = '_rtk';
 
   // Secure storage — encrypted on both Android (EncryptedSharedPreferences)
   // and iOS (Keychain). Falls back gracefully if unavailable.
@@ -29,7 +30,7 @@ class ApiService {
 
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) {
-        if (_token != null) {
+        if (_token != null && options.extra['_skipAuth'] != true) {
           options.headers['Authorization'] = 'Bearer $_token';
         }
         return handler.next(options);
@@ -37,8 +38,24 @@ class ApiService {
       onError: (error, handler) async {
         final status = error.response?.statusCode ?? 0;
 
-        // 401 → trigger logout immediately, no retry.
-        if (status == 401) {
+        if (status == 401 && error.requestOptions.path != '/auth/refresh') {
+          final rt = await loadRefreshToken();
+          if (rt != null) {
+            try {
+              final resp = await _dio.post('/auth/refresh',
+                  data: {'refresh_token': rt},
+                  options: Options(extra: {'_skipAuth': true}));
+              final newAccess = resp.data['access_token'] as String;
+              final newRefresh = resp.data['refresh_token'] as String?;
+              await saveToken(newAccess);
+              if (newRefresh != null) await saveRefreshToken(newRefresh);
+              final opts = error.requestOptions;
+              opts.headers['Authorization'] = 'Bearer $newAccess';
+              final response = await _dio.fetch(opts);
+              return handler.resolve(response);
+            } catch (_) {}
+          }
+          await clearToken();
           onUnauthorized?.call();
           return handler.next(error);
         }
@@ -87,6 +104,27 @@ class ApiService {
     _token = null;
     try {
       await _storage.delete(key: _tokenKey);
+    } catch (_) {}
+    await clearRefreshToken();
+  }
+
+  Future<void> saveRefreshToken(String token) async {
+    try {
+      await _storage.write(key: _refreshKey, value: token);
+    } catch (_) {}
+  }
+
+  Future<String?> loadRefreshToken() async {
+    try {
+      return await _storage.read(key: _refreshKey);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> clearRefreshToken() async {
+    try {
+      await _storage.delete(key: _refreshKey);
     } catch (_) {}
   }
 

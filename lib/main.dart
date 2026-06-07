@@ -93,8 +93,7 @@ class _AuthGateState extends State<_AuthGate> {
   @override
   void initState() {
     super.initState();
-    // Гарантируем минимум 2.5 секунды показа splash
-    Future.delayed(Duration(milliseconds: 2500), () {
+    Future.delayed(Duration(milliseconds: 800), () {
       if (mounted) setState(() => _splashDone = true);
     });
   }

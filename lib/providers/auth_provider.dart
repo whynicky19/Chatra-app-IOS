@@ -58,6 +58,8 @@ class AuthProvider extends ChangeNotifier {
       final data = await api.login(email, password);
       final token = data['access_token'] as String;
       await api.saveToken(token);
+      final refreshToken = data['refresh_token'] as String?;
+      if (refreshToken != null) await api.saveRefreshToken(refreshToken);
       _user = await api.me();
       _isLoading = false;
       notifyListeners();

@@ -457,9 +457,7 @@ class _AiInputBarState extends State<_AiInputBar> {
 
     return Container(
       padding: EdgeInsets.fromLTRB(14, 10, 14,
-        MediaQuery.of(context).viewInsets.bottom > 0
-          ? MediaQuery.of(context).viewInsets.bottom + 8
-          : 90),
+        (MediaQuery.of(context).viewInsets.bottom + 8).clamp(90.0, double.infinity)),
       decoration: BoxDecoration(
         color: surface,
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.06), blurRadius: 14, offset: const Offset(0, -2))],

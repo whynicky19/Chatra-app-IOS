@@ -409,9 +409,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
         // Input bar
         Container(
           padding: EdgeInsets.fromLTRB(12, 10, 12,
-            MediaQuery.of(context).viewInsets.bottom > 0
-              ? MediaQuery.of(context).viewInsets.bottom + 8
-              : 90),
+            (MediaQuery.of(context).viewInsets.bottom + 8).clamp(90.0, double.infinity)),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.06), blurRadius: 12, offset: const Offset(0, -2))],

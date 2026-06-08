@@ -22,14 +22,19 @@ class HomeScreen extends StatefulWidget {
   @override State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   Set<int> _pinnedIds = {};
   Map<int, int> _classOrder = {};
   bool _showDragHint = false;
+  late AnimationController _headerCtrl;
+  late Animation<double> _headerAnim;
 
   @override
   void initState() {
     super.initState();
+    _headerCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
+    _headerAnim = CurvedAnimation(parent: _headerCtrl, curve: Curves.easeOutCubic);
+    _headerCtrl.forward();
     final provider = context.read<ClassesProvider>();
     provider.addListener(_onProviderError);
     provider.loadJoined().then((_) => provider.load());
@@ -39,6 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _headerCtrl.dispose();
     context.read<ClassesProvider>().removeListener(_onProviderError);
     super.dispose();
   }
@@ -159,13 +165,11 @@ class _HomeScreenState extends State<HomeScreen> {
         child: CustomScrollView(slivers: [
 
           // ── Header ──────────────────────────────────────────
-          SliverToBoxAdapter(child: TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.0, end: 1.0),
-            duration: const Duration(milliseconds: 500),
-            curve: Curves.easeOutCubic,
-            builder: (_, t, child) => Opacity(
-              opacity: t,
-              child: Transform.translate(offset: Offset(0, -12 * (1 - t)), child: child),
+          SliverToBoxAdapter(child: AnimatedBuilder(
+            animation: _headerAnim,
+            builder: (_, child) => Opacity(
+              opacity: _headerAnim.value,
+              child: Transform.translate(offset: Offset(0, -12 * (1 - _headerAnim.value)), child: child),
             ),
             child: Padding(
             padding: const EdgeInsets.fromLTRB(22, 24, 22, 18),

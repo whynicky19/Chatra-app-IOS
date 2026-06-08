@@ -63,14 +63,13 @@ class ChatraApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = context.watch<ThemeProvider>();
-    final org   = context.watch<OrgProvider>();
-    final isSchool = org.isSchool;
+    final themeMode = context.select<ThemeProvider, ThemeMode>((t) => t.mode);
+    final isSchool  = context.select<OrgProvider, bool>((o) => o.isSchool);
     return MaterialApp(
       title: 'Chatra', debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightFor(isSchool),
-      darkTheme: AppTheme.darkFor(isSchool),
-      themeMode: theme.mode,
+      theme:     isSchool ? AppTheme.lightSchool : AppTheme.light,
+      darkTheme: isSchool ? AppTheme.darkSchool  : AppTheme.dark,
+      themeMode: themeMode,
       builder: (context, child) => GestureDetector(
         onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
         behavior: HitTestBehavior.translucent,

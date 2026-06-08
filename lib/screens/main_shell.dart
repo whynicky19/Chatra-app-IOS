@@ -82,22 +82,12 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: Stack(children: [
-        // All screens stay mounted (state preserved), fade in/out on switch
+        // IndexedStack keeps all screens mounted (state preserved) but only
+        // paints the active one — hidden screens are offstage (no GPU cost).
         Positioned.fill(
-          child: Stack(
-            fit: StackFit.expand,
-            children: screens.asMap().entries.map((e) {
-              final selected = e.key == _idx;
-              return AnimatedOpacity(
-                opacity: selected ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOutCubic,
-                child: IgnorePointer(
-                  ignoring: !selected,
-                  child: RepaintBoundary(child: e.value),
-                ),
-              );
-            }).toList(),
+          child: IndexedStack(
+            index: _idx,
+            children: screens,
           ),
         ),
         if (!_isOnline) Positioned(
@@ -106,19 +96,21 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
         ),
         Positioned(
           left: 16, right: 16, bottom: 16,
-          child: FadeTransition(
-            opacity: CurvedAnimation(
-              parent: _navAnim,
-              curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
-            ),
-            child: SlideTransition(
-              position: Tween<Offset>(begin: const Offset(0, 1.8), end: Offset.zero)
-                  .animate(CurvedAnimation(parent: _navAnim, curve: Curves.elasticOut)),
-              child: _LiquidGlassNavBar(
-                items: items,
-                selectedIndex: _idx,
-                onTap: _onTap,
-                isDark: isDark,
+          child: RepaintBoundary(
+            child: FadeTransition(
+              opacity: CurvedAnimation(
+                parent: _navAnim,
+                curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
+              ),
+              child: SlideTransition(
+                position: Tween<Offset>(begin: const Offset(0, 1.8), end: Offset.zero)
+                    .animate(CurvedAnimation(parent: _navAnim, curve: Curves.elasticOut)),
+                child: _LiquidGlassNavBar(
+                  items: items,
+                  selectedIndex: _idx,
+                  onTap: _onTap,
+                  isDark: isDark,
+                ),
               ),
             ),
           ),
@@ -143,6 +135,8 @@ class _LiquidGlassNavBar extends StatelessWidget {
     required this.onTap,
     required this.isDark,
   });
+
+  static final _blur = ImageFilter.blur(sigmaX: 14, sigmaY: 14, tileMode: TileMode.mirror);
 
   @override
   Widget build(BuildContext context) {
@@ -170,7 +164,7 @@ class _LiquidGlassNavBar extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(32),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+          filter: _blur,
           child: Container(
             decoration: BoxDecoration(
               // Glass tint — lighter on light, darker on dark

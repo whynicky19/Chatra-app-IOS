@@ -193,6 +193,8 @@ class AppTheme {
     );
   }
 
-  static final light = lightFor(false);
-  static final dark  = darkFor(false);
+  static final light       = lightFor(false);
+  static final dark        = darkFor(false);
+  static final lightSchool = lightFor(true);
+  static final darkSchool  = darkFor(true);
 }

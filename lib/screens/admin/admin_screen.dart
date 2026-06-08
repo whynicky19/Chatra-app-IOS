@@ -147,6 +147,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     final l        = context.watch<L10n>();
     final isDark   = Theme.of(context).brightness == Brightness.dark;
     final surface  = Theme.of(context).colorScheme.surface;
+    final primary  = Theme.of(context).colorScheme.primary;
     final teachers = _users.where((u) => u['role'] == 'teacher').length;
     final students = _users.where((u) => u['role'] == 'student').length;
 
@@ -162,22 +163,22 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                 Container(
                   width: 46, height: 46,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [C.teal, C.tealDk]),
+                    gradient: LinearGradient(colors: [primary, Theme.of(context).colorScheme.secondary]),
                     borderRadius: BorderRadius.circular(14),
-                    boxShadow: tealGlow(opacity: 0.32),
+                    boxShadow: primaryGlow(primary, opacity: 0.32),
                   ),
                   child: const Icon(Icons.shield_rounded, color: Colors.white, size: 22),
                 ),
                 const SizedBox(width: 12),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(l.t('admin'), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: C.teal, letterSpacing: -0.5)),
+                  Text(l.t('admin'), style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: primary, letterSpacing: -0.5)),
                   Text(l.t('admin_sub'), style: const TextStyle(fontSize: 12, color: C.text4)),
                 ])),
                 GestureDetector(
                   onTap: _showCreateDialog,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(color: C.teal, borderRadius: BorderRadius.circular(12), boxShadow: tealGlow(opacity: 0.28)),
+                    decoration: BoxDecoration(color: primary, borderRadius: BorderRadius.circular(12), boxShadow: primaryGlow(primary, opacity: 0.28)),
                     child: const Row(mainAxisSize: MainAxisSize.min, children: [
                       Icon(Icons.person_add_rounded, color: Colors.white, size: 16),
                       SizedBox(width: 6),
@@ -191,7 +192,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: Row(children: [
-                _StatCard(icon: Icons.people_rounded,  value: '${_users.length}', label: l.t('total_label'),    color: C.teal,                     isDark: isDark),
+                _StatCard(icon: Icons.people_rounded,  value: '${_users.length}', label: l.t('total_label'),    color: primary,                    isDark: isDark),
                 const SizedBox(width: 8),
                 _StatCard(icon: Icons.school_rounded,   value: '$teachers',       label: l.t('teachers_label'), color: const Color(0xFF6366F1), isDark: isDark),
                 const SizedBox(width: 8),
@@ -211,9 +212,9 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             ),
             child: TabBar(
               controller: _tabCtrl,
-              labelColor: C.teal,
+              labelColor: primary,
               unselectedLabelColor: C.text4,
-              indicatorColor: C.teal,
+              indicatorColor: primary,
               indicatorSize: TabBarIndicatorSize.label,
               indicatorWeight: 2.5,
               labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
@@ -233,8 +234,9 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
 
   // ── Users tab ────────────────────────────────────────────
   Widget _usersTab() {
-    final l      = context.read<L10n>();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l       = context.read<L10n>();
+    final isDark  = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
     return Column(children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
@@ -249,9 +251,9 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
         ),
       ),
       Expanded(child: _loading
-        ? const Center(child: CircularProgressIndicator(color: C.teal, strokeWidth: 2.5))
+        ? Center(child: CircularProgressIndicator(color: primary, strokeWidth: 2.5))
         : RefreshIndicator(
-            color: C.teal,
+            color: primary,
             onRefresh: _load,
             child: ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 90),
@@ -281,12 +283,12 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                       Container(
                         width: 46, height: 46,
                         decoration: BoxDecoration(
-                          gradient: RadialGradient(colors: [C.teal.withOpacity(0.22), C.teal.withOpacity(0.07)]),
+                          gradient: RadialGradient(colors: [primary.withOpacity(0.22), primary.withOpacity(0.07)]),
                           shape: BoxShape.circle,
                         ),
                         child: Center(child: Text(
                           name.isNotEmpty ? name[0].toUpperCase() : '?',
-                          style: const TextStyle(color: C.teal, fontWeight: FontWeight.w900, fontSize: 18),
+                          style: TextStyle(color: primary, fontWeight: FontWeight.w900, fontSize: 18),
                         )),
                       ),
                       const SizedBox(width: 12),
@@ -334,8 +336,9 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     final l       = context.read<L10n>();
     final surface = Theme.of(context).colorScheme.surface;
     final isDark  = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
 
-    if (_aiLoading) return const Center(child: CircularProgressIndicator(color: C.teal, strokeWidth: 2.5));
+    if (_aiLoading) return Center(child: CircularProgressIndicator(color: primary, strokeWidth: 2.5));
 
     final classNames   = _classNameMap;
     final userNames    = _userNameMap;
@@ -343,7 +346,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     final maxTokens    = userSummary.isNotEmpty ? (userSummary.first['tokens'] as int) : 1;
 
     return RefreshIndicator(
-      color: C.teal,
+      color: primary,
       onRefresh: _loadAi,
       child: ListView(padding: const EdgeInsets.fromLTRB(16, 8, 16, 90), children: [
 
@@ -351,9 +354,9 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(colors: [Color(0xFF006475), C.teal], begin: Alignment.topLeft, end: Alignment.bottomRight),
+            gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, primary], begin: Alignment.topLeft, end: Alignment.bottomRight),
             borderRadius: BorderRadius.circular(20),
-            boxShadow: tealGlow(opacity: 0.32),
+            boxShadow: primaryGlow(primary, opacity: 0.32),
           ),
           child: Row(children: [
             Container(width: 48, height: 48,
@@ -403,8 +406,8 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                 decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(16), boxShadow: softShadow(isDark)),
                 child: Row(children: [
                   Container(width: 44, height: 44,
-                    decoration: BoxDecoration(color: C.teal.withOpacity(0.10), borderRadius: BorderRadius.circular(13)),
-                    child: const Icon(Icons.class_rounded, size: 20, color: C.teal)),
+                    decoration: BoxDecoration(color: primary.withOpacity(0.10), borderRadius: BorderRadius.circular(13)),
+                    child: Icon(Icons.class_rounded, size: 20, color: primary)),
                   const SizedBox(width: 12),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(className, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700), overflow: TextOverflow.ellipsis),
@@ -412,7 +415,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                     Text('$reqCount ${l.t('requests_count')}', style: const TextStyle(fontSize: 11, color: C.text4)),
                   ])),
                   Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                    Text(_fmtTokens(tokens), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: C.teal)),
+                    Text(_fmtTokens(tokens), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: primary)),
                     const Text('токенов', style: TextStyle(fontSize: 10, color: C.text4)),
                   ]),
                 ]),
@@ -445,20 +448,20 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                 decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(16), boxShadow: softShadow(isDark)),
                 child: Row(children: [
                   Container(width: 44, height: 44,
-                    decoration: BoxDecoration(gradient: RadialGradient(colors: [C.teal.withOpacity(0.22), C.teal.withOpacity(0.06)]), shape: BoxShape.circle),
-                    child: Center(child: Text(initials, style: const TextStyle(color: C.teal, fontWeight: FontWeight.w900, fontSize: 15)))),
+                    decoration: BoxDecoration(gradient: RadialGradient(colors: [primary.withOpacity(0.22), primary.withOpacity(0.06)]), shape: BoxShape.circle),
+                    child: Center(child: Text(initials, style: TextStyle(color: primary, fontWeight: FontWeight.w900, fontSize: 15)))),
                   const SizedBox(width: 12),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700), overflow: TextOverflow.ellipsis, maxLines: 1),
                     const SizedBox(height: 6),
                     ClipRRect(borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(value: pct, backgroundColor: C.teal.withOpacity(0.08), color: C.teal, minHeight: 5)),
+                      child: LinearProgressIndicator(value: pct, backgroundColor: primary.withOpacity(0.08), color: primary, minHeight: 5)),
                     const SizedBox(height: 3),
                     Text('$count запр.', style: const TextStyle(fontSize: 10, color: C.text4)),
                   ])),
                   const SizedBox(width: 12),
                   Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                    Text(_fmtTokens(tokens), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: C.teal)),
+                    Text(_fmtTokens(tokens), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: primary)),
                     const Text('токенов', style: TextStyle(fontSize: 10, color: C.text4)),
                   ]),
                 ]),
@@ -515,13 +518,13 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                         margin: const EdgeInsets.only(top: 2),
                         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                         decoration: BoxDecoration(
-                          color: isGrade ? C.teal.withOpacity(0.1) : C.green.withOpacity(0.1),
+                          color: isGrade ? primary.withOpacity(0.1) : C.green.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: Text(isGrade ? 'Проверка' : 'Чат', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: isGrade ? C.teal : C.green)),
+                        child: Text(isGrade ? 'Проверка' : 'Чат', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: isGrade ? primary : C.green)),
                       ),
                     ])),
-                    SizedBox(width: 60, child: Text('${entry['total_tokens'] ?? 0}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: C.teal), textAlign: TextAlign.right)),
+                    SizedBox(width: 60, child: Text('${entry['total_tokens'] ?? 0}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: primary), textAlign: TextAlign.right)),
                   ]),
                 );
               }),
@@ -541,9 +544,10 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
 
   // ── Classes tab ──────────────────────────────────────────
   Widget _classesTab() {
-    final l      = context.read<L10n>();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    if (_classesLoading) return const Center(child: CircularProgressIndicator(color: C.teal, strokeWidth: 2.5));
+    final l       = context.read<L10n>();
+    final isDark  = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    if (_classesLoading) return Center(child: CircularProgressIndicator(color: primary, strokeWidth: 2.5));
 
     final classes   = _allClassPosts;
     final userNames = _userNameMap;
@@ -555,7 +559,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     ]));
 
     return RefreshIndicator(
-      color: C.teal,
+      color: primary,
       onRefresh: () async { await _load(); await _loadClasses(); },
       child: ListView.builder(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
@@ -616,20 +620,20 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                     // Creator row
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-                      decoration: BoxDecoration(color: C.teal.withOpacity(0.06), borderRadius: BorderRadius.circular(12)),
+                      decoration: BoxDecoration(color: primary.withOpacity(0.06), borderRadius: BorderRadius.circular(12)),
                       child: Row(children: [
                         Container(width: 30, height: 30,
-                          decoration: BoxDecoration(color: C.teal.withOpacity(0.16), shape: BoxShape.circle),
+                          decoration: BoxDecoration(color: primary.withOpacity(0.16), shape: BoxShape.circle),
                           child: Center(child: Text(
                             creatorName.trim().split(RegExp(r'\s+')).take(2).map((w) => w.isEmpty ? '' : w[0].toUpperCase()).join().isNotEmpty
                                 ? creatorName.trim().split(RegExp(r'\s+')).take(2).map((w) => w.isEmpty ? '' : w[0].toUpperCase()).join()
                                 : '?',
-                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: C.teal),
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: primary),
                           ))),
                         const SizedBox(width: 8),
                         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           Text(l.t('created_by'), style: const TextStyle(fontSize: 10, color: C.text4, fontWeight: FontWeight.w500)),
-                          Text(creatorName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: C.teal), overflow: TextOverflow.ellipsis),
+                          Text(creatorName, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: primary), overflow: TextOverflow.ellipsis),
                         ])),
                         if (group.isNotEmpty) Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -650,7 +654,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                       decoration: BoxDecoration(
                         color: adaptiveSurface2(context),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: C.teal.withOpacity(0.18)),
+                        border: Border.all(color: primary.withOpacity(0.18)),
                       ),
                       child: Row(children: [
                         SizedBox(
@@ -661,7 +665,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                             final nm = (s['full_name'] ?? s['email'] ?? '').toString();
                             return Positioned(left: e.key * 18.0, child: Container(
                               width: 28, height: 28,
-                              decoration: BoxDecoration(color: C.teal, shape: BoxShape.circle,
+                              decoration: BoxDecoration(color: primary, shape: BoxShape.circle,
                                 border: Border.all(color: adaptiveSurface2(context), width: 2)),
                               child: Center(child: Text(nm.trim().isEmpty ? '?' : nm.trim()[0].toUpperCase(),
                                 style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white)))));
@@ -671,8 +675,8 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                         Expanded(child: students.isEmpty
                           ? Text(l.t('no_students_class'), style: const TextStyle(fontSize: 13, color: C.text4))
                           : Text('${students.length} ${l.t('students_count')}',
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: C.teal))),
-                        const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: C.teal),
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: primary))),
+                        Icon(Icons.arrow_forward_ios_rounded, size: 13, color: primary),
                       ]),
                     ),
                   ])),
@@ -687,8 +691,9 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
 
   // ── Students bottom sheet ─────────────────────────────────
   void _showStudentsSheet(int classId, String className, dynamic coverImg, int colorIdx) {
-    final l      = context.read<L10n>();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l       = context.read<L10n>();
+    final isDark  = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
 
     showModalBottomSheet(
       context: context,
@@ -725,10 +730,10 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                   Text(className, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800), maxLines: 2, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 3),
                   Row(children: [
-                    const Icon(Icons.people_rounded, size: 13, color: C.teal),
+                    Icon(Icons.people_rounded, size: 13, color: primary),
                     const SizedBox(width: 4),
                     Text('$studentCount ${l.t('students_count')}',
-                      style: const TextStyle(fontSize: 12, color: C.teal, fontWeight: FontWeight.w600)),
+                      style: TextStyle(fontSize: 12, color: primary, fontWeight: FontWeight.w600)),
                     const SizedBox(width: 8),
                     Text('всего ${members.length}', style: const TextStyle(fontSize: 12, color: C.text4, fontWeight: FontWeight.w500)),
                   ]),
@@ -738,7 +743,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                   child: Container(
                     width: 36, height: 36,
                     decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(10)),
-                    child: const Icon(Icons.refresh_rounded, size: 18, color: C.teal),
+                    child: Icon(Icons.refresh_rounded, size: 18, color: primary),
                   ),
                 ),
               ])),
@@ -757,16 +762,16 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
                         decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
-                        child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(Icons.refresh_rounded, size: 15, color: C.teal),
-                          SizedBox(width: 6),
-                          Text('Обновить список', style: TextStyle(fontSize: 13, color: C.teal, fontWeight: FontWeight.w600)),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(Icons.refresh_rounded, size: 15, color: primary),
+                          const SizedBox(width: 6),
+                          Text('Обновить список', style: TextStyle(fontSize: 13, color: primary, fontWeight: FontWeight.w600)),
                         ]),
                       ),
                     ),
                   ]))
                 : RefreshIndicator(
-                    color: C.teal,
+                    color: primary,
                     onRefresh: doRefresh,
                     child: ListView.separated(
                       controller: sc,
@@ -785,7 +790,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                             .split(RegExp(r'\s+')).take(2)
                             .map((w) => w.isEmpty ? '' : w[0].toUpperCase()).join();
                         final isTeacher  = role == 'teacher' || role == 'admin';
-                        final roleColor  = isTeacher ? const Color(0xFF6366F1) : C.teal;
+                        final roleColor  = isTeacher ? const Color(0xFF6366F1) : primary;
                         final roleLabel  = isTeacher ? 'Учитель' : 'Ученик';
                         return Container(
                           padding: const EdgeInsets.all(12),
@@ -931,7 +936,8 @@ class _RoleBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = role == 'admin' ? C.teal : role == 'teacher' ? const Color(0xFF6366F1) : C.text4;
+    final primary = Theme.of(context).colorScheme.primary;
+    final color = role == 'admin' ? primary : role == 'teacher' ? const Color(0xFF6366F1) : C.text4;
     return Container(
       margin: const EdgeInsets.only(right: 4),
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),

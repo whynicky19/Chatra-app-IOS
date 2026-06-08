@@ -31,6 +31,12 @@ class C {
   static const darkText1    = Color(0xFFE8F4F6);
   static const darkText2    = Color(0xFFB0CDD4);
   static const darkTealLt   = Color(0xFF0A2228);
+
+  // School / amber palette
+  static const amber      = Color(0xFFF59E0B);
+  static const amberDk    = Color(0xFFD97706);
+  static const amberLt    = Color(0xFFFEF3C7);
+  static const darkAmberLt = Color(0xFF2A1F00);
 }
 
 // ── Shadow helpers ─────────────────────────────────────────
@@ -41,6 +47,10 @@ List<BoxShadow> cardShadow(bool isDark) => [
 
 List<BoxShadow> tealGlow({double opacity = 0.38}) => [
   BoxShadow(color: C.teal.withOpacity(opacity), blurRadius: 22, offset: const Offset(0, 7), spreadRadius: -4),
+];
+
+List<BoxShadow> primaryGlow(Color color, {double opacity = 0.38}) => [
+  BoxShadow(color: color.withOpacity(opacity), blurRadius: 22, offset: const Offset(0, 7), spreadRadius: -4),
 ];
 
 List<BoxShadow> softShadow(bool isDark) => [
@@ -56,6 +66,10 @@ Color adaptiveSurface2(BuildContext context) {
 Color adaptiveTealLt(BuildContext context) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
   return isDark ? C.darkTealLt : C.tealLt;
+}
+
+Color adaptivePrimaryLt(BuildContext context) {
+  return Theme.of(context).colorScheme.primaryContainer;
 }
 
 Color adaptiveBorder(BuildContext context) {
@@ -81,8 +95,8 @@ InputDecorationTheme _input(Color fill, Color focus) => InputDecorationTheme(
   hintStyle: TextStyle(color: C.text4, fontSize: 14, fontWeight: FontWeight.w400),
 );
 
-ElevatedButtonThemeData _btn() => ElevatedButtonThemeData(style: ElevatedButton.styleFrom(
-  backgroundColor: C.teal,
+ElevatedButtonThemeData _btnFor(Color primary) => ElevatedButtonThemeData(style: ElevatedButton.styleFrom(
+  backgroundColor: primary,
   foregroundColor: Colors.white,
   elevation: 0,
   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -96,52 +110,89 @@ const _pageTransitions = PageTransitionsTheme(builders: {
 });
 
 class AppTheme {
-  static final light = ThemeData(
-    brightness: Brightness.light,
-    primaryColor: C.teal,
-    scaffoldBackgroundColor: C.bg,
-    colorScheme: ColorScheme.light(primary: C.teal, secondary: C.tealDk, surface: C.surface, error: C.red),
-    appBarTheme: const AppBarTheme(backgroundColor: C.surface, foregroundColor: C.text1, elevation: 0, surfaceTintColor: Colors.transparent),
-    cardTheme: CardThemeData(color: C.surface, elevation: 0, shape: RoundedRectangleBorder(borderRadius: _r16)),
-    inputDecorationTheme: _input(C.surface2, C.teal),
-    elevatedButtonTheme: _btn(),
-    outlinedButtonTheme: OutlinedButtonThemeData(style: OutlinedButton.styleFrom(
-      foregroundColor: C.teal,
-      side: const BorderSide(color: C.teal, width: 1.5),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-      shape: RoundedRectangleBorder(borderRadius: _r16),
-    )),
-    snackBarTheme: const SnackBarThemeData(
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
-    ),
-    pageTransitionsTheme: _pageTransitions,
-    dividerColor: C.border,
-  );
+  static ThemeData lightFor(bool isSchool) {
+    final primary   = isSchool ? C.amber   : C.teal;
+    final primaryDk = isSchool ? C.amberDk : C.tealDk;
+    final primaryLt = isSchool ? C.amberLt : C.tealLt;
+    return ThemeData(
+      brightness: Brightness.light,
+      primaryColor: primary,
+      scaffoldBackgroundColor: C.bg,
+      colorScheme: ColorScheme.light(
+        primary: primary, secondary: primaryDk,
+        surface: C.surface, error: C.red,
+        primaryContainer: primaryLt,
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: C.surface, foregroundColor: C.text1,
+        elevation: 0, surfaceTintColor: Colors.transparent,
+      ),
+      cardTheme: CardThemeData(
+        color: C.surface, elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: _r16),
+      ),
+      inputDecorationTheme: _input(C.surface2, primary),
+      elevatedButtonTheme: _btnFor(primary),
+      outlinedButtonTheme: OutlinedButtonThemeData(style: OutlinedButton.styleFrom(
+        foregroundColor: primary,
+        side: BorderSide(color: primary, width: 1.5),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        shape: RoundedRectangleBorder(borderRadius: _r16),
+      )),
+      snackBarTheme: const SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+        ),
+      ),
+      pageTransitionsTheme: _pageTransitions,
+      dividerColor: C.border,
+    );
+  }
 
-  static final dark = ThemeData(
-    brightness: Brightness.dark,
-    primaryColor: C.teal,
-    scaffoldBackgroundColor: C.darkBg,
-    colorScheme: ColorScheme.dark(primary: C.teal, secondary: C.tealDk, surface: C.darkSurface, error: C.red),
-    appBarTheme: const AppBarTheme(backgroundColor: C.darkSurface, foregroundColor: C.darkText1, elevation: 0, surfaceTintColor: Colors.transparent),
-    cardTheme: CardThemeData(color: C.darkSurface, elevation: 0, shape: RoundedRectangleBorder(borderRadius: _r16)),
-    inputDecorationTheme: _input(C.darkSurface2, C.teal),
-    elevatedButtonTheme: _btn(),
-    outlinedButtonTheme: OutlinedButtonThemeData(style: OutlinedButton.styleFrom(
-      foregroundColor: C.teal,
-      side: const BorderSide(color: C.teal, width: 1.5),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-      shape: RoundedRectangleBorder(borderRadius: _r16),
-    )),
-    snackBarTheme: SnackBarThemeData(
-      behavior: SnackBarBehavior.floating,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
-      backgroundColor: C.darkSurface2,
-    ),
-    pageTransitionsTheme: _pageTransitions,
-    dividerColor: C.darkBorder.withOpacity(0.5),
-  );
+  static ThemeData darkFor(bool isSchool) {
+    final primary   = isSchool ? C.amber   : C.teal;
+    final primaryDk = isSchool ? C.amberDk : C.tealDk;
+    final primaryLt = isSchool ? C.darkAmberLt : C.darkTealLt;
+    return ThemeData(
+      brightness: Brightness.dark,
+      primaryColor: primary,
+      scaffoldBackgroundColor: C.darkBg,
+      colorScheme: ColorScheme.dark(
+        primary: primary, secondary: primaryDk,
+        surface: C.darkSurface, error: C.red,
+        primaryContainer: primaryLt,
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: C.darkSurface, foregroundColor: C.darkText1,
+        elevation: 0, surfaceTintColor: Colors.transparent,
+      ),
+      cardTheme: CardThemeData(
+        color: C.darkSurface, elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: _r16),
+      ),
+      inputDecorationTheme: _input(C.darkSurface2, primary),
+      elevatedButtonTheme: _btnFor(primary),
+      outlinedButtonTheme: OutlinedButtonThemeData(style: OutlinedButton.styleFrom(
+        foregroundColor: primary,
+        side: BorderSide(color: primary, width: 1.5),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        shape: RoundedRectangleBorder(borderRadius: _r16),
+      )),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+        ),
+        backgroundColor: C.darkSurface2,
+      ),
+      pageTransitionsTheme: _pageTransitions,
+      dividerColor: C.darkBorder.withOpacity(0.5),
+    );
+  }
+
+  static final light = lightFor(false);
+  static final dark  = darkFor(false);
 }

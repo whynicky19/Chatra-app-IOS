@@ -145,8 +145,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           content: Column(mainAxisSize: MainAxisSize.min, children: [
             Container(
               width: 52, height: 52,
-              decoration: BoxDecoration(color: C.teal.withOpacity(0.10), shape: BoxShape.circle),
-              child: Icon(_fileTypeConfig(ext)['icon'] as IconData, color: C.teal, size: 26),
+              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.10), shape: BoxShape.circle),
+              child: Icon(_fileTypeConfig(ext)['icon'] as IconData, color: Theme.of(context).colorScheme.primary, size: 26),
             ),
             const SizedBox(height: 14),
             Text('Открытие файла', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
@@ -155,7 +155,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             const SizedBox(height: 16),
             ClipRRect(
               borderRadius: BorderRadius.circular(4),
-              child: StatefulBuilder(builder: (_, sp) => LinearProgressIndicator(value: progress > 0 ? progress : null, color: C.teal, backgroundColor: C.teal.withOpacity(0.12), minHeight: 5)),
+              child: StatefulBuilder(builder: (_, sp) => LinearProgressIndicator(value: progress > 0 ? progress : null, color: Theme.of(context).colorScheme.primary, backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.12), minHeight: 5)),
             ),
             const SizedBox(height: 10),
             Text(progress > 0 ? '${(progress * 100).toInt()}%' : 'Загрузка...', style: TextStyle(fontSize: 12, color: C.text4)),
@@ -217,7 +217,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               maxScale: 5.0,
               child: Image.network(url, fit: BoxFit.contain,
                 loadingBuilder: (_, child, progress) => progress == null ? child
-                    : Center(child: CircularProgressIndicator(color: C.teal, strokeWidth: 2)),
+                    : Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary, strokeWidth: 2)),
                 errorBuilder: (_, __, ___) => Icon(Icons.broken_image_rounded, color: Colors.white54, size: 64),
               ),
             )),
@@ -298,8 +298,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               collapseMode: CollapseMode.pin,
               titlePadding: EdgeInsets.zero,
               background: Stack(fit: StackFit.expand, children: [
-                Container(decoration: const BoxDecoration(gradient: LinearGradient(
-                  colors: [Color(0xFF006475), C.teal],
+                Container(decoration: BoxDecoration(gradient: LinearGradient(
+                  colors: [Color(0xFF006475), Theme.of(context).colorScheme.primary],
                   begin: Alignment.topLeft, end: Alignment.bottomRight,
                 ))),
                 if (coverImg != null && !coverImg.toString().startsWith('data:'))
@@ -332,12 +332,12 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                       onTap: () { Clipboard.setData(ClipboardData(text: classCode(widget.classId))); showToast(context, '${l.t('code_copied')}: ${classCode(widget.classId)}'); },
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(color: adaptiveTealLt(context).withOpacity(0.9), borderRadius: BorderRadius.circular(8)),
+                        decoration: BoxDecoration(color: adaptivePrimaryLt(context).withOpacity(0.9), borderRadius: BorderRadius.circular(8)),
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          const Icon(Icons.copy, size: 14, color: C.teal),
+                          Icon(Icons.copy, size: 14, color: Theme.of(context).colorScheme.primary),
                           const SizedBox(width: 6),
-                          Text('${l.t('class_code')}: ', style: const TextStyle(fontSize: 13, color: C.teal)),
-                          Text(classCode(widget.classId), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: C.teal, letterSpacing: 2)),
+                          Text('${l.t('class_code')}: ', style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary)),
+                          Text(classCode(widget.classId), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary, letterSpacing: 2)),
                         ]),
                       ),
                     ),
@@ -357,9 +357,9 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             child: Column(children: [
               TabBar(
                 controller: _tabCtrl,
-                labelColor: C.teal,
+                labelColor: Theme.of(context).colorScheme.primary,
                 unselectedLabelColor: C.text4,
-                indicatorColor: C.teal,
+                indicatorColor: Theme.of(context).colorScheme.primary,
                 indicatorWeight: 2.5,
                 indicatorSize: TabBarIndicatorSize.label,
                 labelPadding: const EdgeInsets.symmetric(horizontal: 8),
@@ -381,11 +381,11 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                       onTap: () => _createAssignment(),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 11),
-                        decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(13), border: Border.all(color: C.teal.withOpacity(0.28))),
+                        decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(13), border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.28))),
                         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                          const Icon(Icons.assignment_add, size: 15, color: C.teal),
+                          Icon(Icons.assignment_add, size: 15, color: Theme.of(context).colorScheme.primary),
                           const SizedBox(width: 6),
-                          Text(l.t('assignment'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: C.teal)),
+                          Text(l.t('assignment'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
                         ]),
                       ),
                     )),
@@ -394,7 +394,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                       onTap: () => _showAddMenu(),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 11),
-                        decoration: BoxDecoration(gradient: const LinearGradient(colors: [C.teal, C.tealDk]), borderRadius: BorderRadius.circular(13), boxShadow: tealGlow(opacity: 0.28)),
+                        decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary]), borderRadius: BorderRadius.circular(13), boxShadow: primaryGlow(Theme.of(context).colorScheme.primary, opacity: 0.28)),
                         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                           const Icon(Icons.add_rounded, size: 16, color: Colors.white),
                           const SizedBox(width: 6),
@@ -409,7 +409,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           ),
           // ── Tab content ─────────────────────────────────────────────────────
           Expanded(child: _loading
-            ? const Center(child: CircularProgressIndicator(color: C.teal))
+            ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))
             : TabBarView(controller: _tabCtrl, children: [
                 ClassPostsTab(
                   posts: _lectures, type: 'lecture', isTeacher: auth.isTeacher, fileTexts: _fileTexts,
@@ -463,11 +463,11 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 return Container(
                   margin: EdgeInsets.only(bottom: 6),
                   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(color: C.teal.withOpacity(0.06), borderRadius: BorderRadius.circular(10)),
+                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.06), borderRadius: BorderRadius.circular(10)),
                   child: Row(children: [
-                    Icon(Icons.insert_drive_file_outlined, size: 14, color: C.teal),
+                    Icon(Icons.insert_drive_file_outlined, size: 14, color: Theme.of(context).colorScheme.primary),
                     SizedBox(width: 6),
-                    Expanded(child: Text(name, style: TextStyle(fontSize: 12, color: C.teal), overflow: TextOverflow.ellipsis)),
+                    Expanded(child: Text(name, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary), overflow: TextOverflow.ellipsis)),
                     GestureDetector(onTap: () => setS(() => editFiles.remove(f)), child: Icon(Icons.close, size: 14, color: C.text4)),
                   ]),
                 );
@@ -490,8 +490,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   }
                 }
               },
-              child: Container(padding: EdgeInsets.symmetric(vertical: 10), decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: C.teal.withOpacity(0.3))),
-                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.attach_file, size: 16, color: C.teal), SizedBox(width: 6), Text('Прикрепить файлы', style: TextStyle(fontSize: 13, color: C.teal, fontWeight: FontWeight.w600))])),
+              child: Container(padding: EdgeInsets.symmetric(vertical: 10), decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3))),
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.attach_file, size: 16, color: Theme.of(context).colorScheme.primary), SizedBox(width: 6), Text('Прикрепить файлы', style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600))])),
             ),
             SizedBox(height: 20),
             Row(children: [
@@ -616,7 +616,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     final files    = _extractFiles(p);
     final cleanText = _cleanContent(content);
     final isLecture = type == 'lecture';
-    final accent    = C.teal;
+    final accent    = Theme.of(context).colorScheme.primary;
     final isDark    = Theme.of(context).brightness == Brightness.dark;
 
     showModalBottomSheet(
@@ -639,7 +639,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: const [Color(0xFF006475), C.teal],
+                  colors: [Color(0xFF006475), Theme.of(context).colorScheme.primary],
                   begin: Alignment.topLeft, end: Alignment.bottomRight,
                 ),
               ),
@@ -839,8 +839,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           SizedBox(height: 16),
           // Header
           Row(children: [
-            Container(width: 44, height: 44, decoration: BoxDecoration(color: C.teal.withOpacity(0.12), borderRadius: BorderRadius.circular(14)),
-              child: Icon(Icons.menu_book_rounded, color: C.teal, size: 22)),
+            Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.12), borderRadius: BorderRadius.circular(14)),
+              child: Icon(Icons.menu_book_rounded, color: Theme.of(context).colorScheme.primary, size: 22)),
             SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('Добавить лекцию', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
@@ -854,10 +854,10 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             child: Row(children: [
               Expanded(child: GestureDetector(onTap: () => setS(() => type = 'lecture'),
                 child: Container(padding: EdgeInsets.symmetric(vertical: 12), decoration: BoxDecoration(color: type == 'lecture' ? Theme.of(ctx).colorScheme.surface : Colors.transparent, borderRadius: BorderRadius.circular(12)),
-                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.menu_book, size: 16, color: type == 'lecture' ? C.teal : C.text4), SizedBox(width: 6), Text('Лекция', style: TextStyle(fontWeight: FontWeight.w600, color: type == 'lecture' ? C.teal : C.text4))])))),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.menu_book, size: 16, color: type == 'lecture' ? Theme.of(context).colorScheme.primary : C.text4), SizedBox(width: 6), Text('Лекция', style: TextStyle(fontWeight: FontWeight.w600, color: type == 'lecture' ? Theme.of(context).colorScheme.primary : C.text4))])))),
               Expanded(child: GestureDetector(onTap: () => setS(() => type = 'material'),
                 child: Container(padding: EdgeInsets.symmetric(vertical: 12), decoration: BoxDecoration(color: type == 'material' ? Theme.of(ctx).colorScheme.surface : Colors.transparent, borderRadius: BorderRadius.circular(12)),
-                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.description_outlined, size: 16, color: type == 'material' ? C.teal : C.text4), SizedBox(width: 6), Text('Материал', style: TextStyle(fontWeight: FontWeight.w600, color: type == 'material' ? C.teal : C.text4))])))),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.description_outlined, size: 16, color: type == 'material' ? Theme.of(context).colorScheme.primary : C.text4), SizedBox(width: 6), Text('Материал', style: TextStyle(fontWeight: FontWeight.w600, color: type == 'material' ? Theme.of(context).colorScheme.primary : C.text4))])))),
             ])),
           SizedBox(height: 20),
           _fieldLabel2('ТЕМА ${type == 'lecture' ? 'ЛЕКЦИИ' : 'МАТЕРИАЛА'} *'),
@@ -871,16 +871,16 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           GestureDetector(onTap: () async {
             final result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
             if (result != null) setS(() => lectureFiles.addAll(result.files));
-          }, child: Container(padding: EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: C.teal.withOpacity(0.3))),
+          }, child: Container(padding: EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3))),
             child: Column(children: [
-              Icon(Icons.upload_outlined, size: 24, color: C.teal), SizedBox(height: 6),
-              RichText(text: TextSpan(style: TextStyle(fontSize: 13, color: C.text4), children: [TextSpan(text: 'Нажмите или '), TextSpan(text: 'выберите файлы', style: TextStyle(fontWeight: FontWeight.w700, color: C.teal))])),
+              Icon(Icons.upload_outlined, size: 24, color: Theme.of(context).colorScheme.primary), SizedBox(height: 6),
+              RichText(text: TextSpan(style: TextStyle(fontSize: 13, color: C.text4), children: [TextSpan(text: 'Нажмите или '), TextSpan(text: 'выберите файлы', style: TextStyle(fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary))])),
               Text('PDF, DOCX, PPT, изображения', style: TextStyle(fontSize: 10, color: C.text4)),
             ]))),
           if (lectureFiles.isNotEmpty) ...[SizedBox(height: 8),
             ...lectureFiles.map((f) => Container(margin: EdgeInsets.only(bottom: 4), padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(color: C.teal.withOpacity(0.06), borderRadius: BorderRadius.circular(10)),
-              child: Row(children: [Icon(Icons.description, size: 14, color: C.teal), SizedBox(width: 6), Expanded(child: Text(f.name, style: TextStyle(fontSize: 12, color: C.teal), overflow: TextOverflow.ellipsis)), GestureDetector(onTap: () => setS(() => lectureFiles.remove(f)), child: Icon(Icons.close, size: 14, color: C.text4))])))],
+              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.06), borderRadius: BorderRadius.circular(10)),
+              child: Row(children: [Icon(Icons.description, size: 14, color: Theme.of(context).colorScheme.primary), SizedBox(width: 6), Expanded(child: Text(f.name, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary), overflow: TextOverflow.ellipsis)), GestureDetector(onTap: () => setS(() => lectureFiles.remove(f)), child: Icon(Icons.close, size: 14, color: C.text4))])))],
           SizedBox(height: 20),
           Row(children: [
             Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: Text('Отмена'), style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)))),
@@ -925,8 +925,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => DraggableScrollableSheet(expand: false, initialChildSize: 0.9, maxChildSize: 0.95,
         builder: (ctx, scroll) => ListView(controller: scroll, padding: EdgeInsets.all(24), children: [
           Row(children: [
-            Container(width: 44, height: 44, decoration: BoxDecoration(color: C.teal.withOpacity(0.15), borderRadius: BorderRadius.circular(14)),
-              child: Icon(Icons.edit_note, color: C.teal, size: 22)),
+            Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.15), borderRadius: BorderRadius.circular(14)),
+              child: Icon(Icons.edit_note, color: Theme.of(context).colorScheme.primary, size: 22)),
             SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('Новое задание', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
@@ -960,14 +960,14 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           SizedBox(height: 20),
           // File attachments
           Row(children: [
-            Text('ПРИКРЕПЛЁННЫЕ ФАЙЛЫ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.teal, letterSpacing: 1)),
+            Text('ПРИКРЕПЛЁННЫЕ ФАЙЛЫ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
             Spacer(),
             GestureDetector(
               onTap: () async {
                 final result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
                 if (result != null) setS(() => attachedFiles.addAll(result.files));
               },
-              child: Text('+ Добавить', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: C.teal)),
+              child: Text('+ Добавить', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
             ),
           ]),
           SizedBox(height: 8),
@@ -976,24 +976,24 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               child: Row(children: [Icon(Icons.attach_file, size: 16, color: C.text4), SizedBox(width: 8), Text('Нет прикреплённых файлов', style: TextStyle(fontSize: 13, color: C.text4))]))
           else
             ...attachedFiles.map((f) => Container(margin: EdgeInsets.only(bottom: 6), padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(color: C.teal.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
               child: Row(children: [
-                Icon(Icons.insert_drive_file_outlined, size: 16, color: C.teal),
+                Icon(Icons.insert_drive_file_outlined, size: 16, color: Theme.of(context).colorScheme.primary),
                 SizedBox(width: 8),
-                Expanded(child: Text(f.name, style: TextStyle(fontSize: 13, color: C.teal, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis)),
+                Expanded(child: Text(f.name, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis)),
                 GestureDetector(onTap: () => setS(() => attachedFiles.removeWhere((x) => x.name == f.name)),
                   child: Icon(Icons.close, size: 14, color: C.text4)),
               ]))),
           SizedBox(height: 20),
           // Reference solution
-          Container(padding: EdgeInsets.all(16), decoration: BoxDecoration(color: C.teal.withOpacity(0.04), borderRadius: BorderRadius.circular(16), border: Border.all(color: C.teal.withOpacity(0.15))),
+          Container(padding: EdgeInsets.all(16), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.04), borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.15))),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                Container(width: 36, height: 36, decoration: BoxDecoration(color: C.teal.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
-                  child: Icon(Icons.check_circle_outline, size: 18, color: C.teal)),
+                Container(width: 36, height: 36, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
+                  child: Icon(Icons.check_circle_outline, size: 18, color: Theme.of(context).colorScheme.primary)),
                 SizedBox(width: 10),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [Text('Эталонные решения', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)), Spacer(), Container(padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: C.teal.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: Text('ИИ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.teal)))]),
+                  Row(children: [Text('Эталонные решения', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)), Spacer(), Container(padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: Text('ИИ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)))]),
                   Text('ИИ сравнит работы учеников с эталоном', style: TextStyle(fontSize: 11, color: C.text4)),
                 ])),
               ]),
@@ -1002,27 +1002,27 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 final result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
                 if (result != null) setS(() => referenceFiles.addAll(result.files));
               },
-              child: Container(padding: EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: C.teal.withOpacity(0.3))),
+              child: Container(padding: EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3))),
                 child: Column(children: [
-                  Icon(Icons.upload_outlined, size: 28, color: C.teal),
+                  Icon(Icons.upload_outlined, size: 28, color: Theme.of(context).colorScheme.primary),
                   SizedBox(height: 6),
-                  RichText(text: TextSpan(style: TextStyle(fontSize: 13, color: C.text4), children: [TextSpan(text: 'Нажмите или '), TextSpan(text: 'выберите файлы', style: TextStyle(fontWeight: FontWeight.w700, color: C.teal))])),
+                  RichText(text: TextSpan(style: TextStyle(fontSize: 13, color: C.text4), children: [TextSpan(text: 'Нажмите или '), TextSpan(text: 'выберите файлы', style: TextStyle(fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary))])),
                   Text('PDF, DOCX, DOC, PPTX, XLSX, TXT, MD', style: TextStyle(fontSize: 10, color: C.text4)),
                 ]))),
               if (referenceFiles.isNotEmpty) ...[
                 SizedBox(height: 8),
                 ...referenceFiles.map((f) => Container(margin: EdgeInsets.only(bottom: 4), padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  decoration: BoxDecoration(color: C.teal.withOpacity(0.06), borderRadius: BorderRadius.circular(10)),
-                  child: Row(children: [Icon(Icons.description, size: 14, color: C.teal), SizedBox(width: 6), Expanded(child: Text(f.name, style: TextStyle(fontSize: 12, color: C.teal), overflow: TextOverflow.ellipsis)), GestureDetector(onTap: () => setS(() => referenceFiles.remove(f)), child: Icon(Icons.close, size: 14, color: C.text4))]))),
+                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.06), borderRadius: BorderRadius.circular(10)),
+                  child: Row(children: [Icon(Icons.description, size: 14, color: Theme.of(context).colorScheme.primary), SizedBox(width: 6), Expanded(child: Text(f.name, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary), overflow: TextOverflow.ellipsis)), GestureDetector(onTap: () => setS(() => referenceFiles.remove(f)), child: Icon(Icons.close, size: 14, color: C.text4))]))),
               ],
             ])),
           SizedBox(height: 20),
           // Criteria
           Row(children: [
-            Text('КРИТЕРИИ ОЦЕНИВАНИЯ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.teal, letterSpacing: 1)),
+            Text('КРИТЕРИИ ОЦЕНИВАНИЯ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
             Spacer(),
             GestureDetector(onTap: () => setS(() => criteria.add({'name': '', 'weight': 0, 'desc': ''})),
-              child: Text('+ Добавить', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: C.teal))),
+              child: Text('+ Добавить', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary))),
           ]),
           SizedBox(height: 4),
           Text('Сумма весов должна быть равна макс. баллу (${sc.text}/${sc.text})', style: TextStyle(fontSize: 11, color: C.text4)),
@@ -1121,7 +1121,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
         ]))));
   }
 
-  Widget _fieldLabel2(String s) => Padding(padding: EdgeInsets.only(bottom: 8), child: Text(s, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.teal, letterSpacing: 1)));
+  Widget _fieldLabel2(String s) => Padding(padding: EdgeInsets.only(bottom: 8), child: Text(s, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)));
 
   // ── Edit assignment ──
   void _editAssignment(dynamic a) {
@@ -1189,7 +1189,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           // Existing files
           if (keepUrls.isNotEmpty) ...[
             Row(children: [
-              Text('ТЕКУЩИЕ ФАЙЛЫ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.teal, letterSpacing: 1)),
+              Text('ТЕКУЩИЕ ФАЙЛЫ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
               Spacer(),
               Text('нажмите × для удаления', style: TextStyle(fontSize: 11, color: C.text4)),
             ]),
@@ -1197,10 +1197,10 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             ...keepUrls.map((url) {
               final name = _fileDisplayName(url);
               return Container(margin: EdgeInsets.only(bottom: 6), padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(color: C.teal.withOpacity(0.06), borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.06), borderRadius: BorderRadius.circular(12)),
                 child: Row(children: [
-                  Icon(Icons.insert_drive_file_outlined, size: 15, color: C.teal), SizedBox(width: 8),
-                  Expanded(child: Text(name, style: TextStyle(fontSize: 13, color: C.teal), overflow: TextOverflow.ellipsis)),
+                  Icon(Icons.insert_drive_file_outlined, size: 15, color: Theme.of(context).colorScheme.primary), SizedBox(width: 8),
+                  Expanded(child: Text(name, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary), overflow: TextOverflow.ellipsis)),
                   GestureDetector(onTap: () => setS(() => keepUrls.remove(url)), child: Icon(Icons.close, size: 15, color: C.red)),
                 ]));
             }),
@@ -1208,22 +1208,22 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           ],
           // Add new files
           Row(children: [
-            Text('ДОБАВИТЬ ФАЙЛЫ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.teal, letterSpacing: 1)),
+            Text('ДОБАВИТЬ ФАЙЛЫ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
             Spacer(),
             GestureDetector(
               onTap: () async {
                 final r = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
                 if (r != null) setS(() => newFiles.addAll(r.files));
               },
-              child: Text('+ Добавить', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: C.teal)),
+              child: Text('+ Добавить', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
             ),
           ]),
           SizedBox(height: 8),
           if (newFiles.isNotEmpty) ...newFiles.map((f) => Container(margin: EdgeInsets.only(bottom: 6), padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(color: C.teal.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
             child: Row(children: [
-              Icon(Icons.insert_drive_file_outlined, size: 15, color: C.teal), SizedBox(width: 8),
-              Expanded(child: Text(f.name, style: TextStyle(fontSize: 13, color: C.teal), overflow: TextOverflow.ellipsis)),
+              Icon(Icons.insert_drive_file_outlined, size: 15, color: Theme.of(context).colorScheme.primary), SizedBox(width: 8),
+              Expanded(child: Text(f.name, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary), overflow: TextOverflow.ellipsis)),
               GestureDetector(onTap: () => setS(() => newFiles.remove(f)), child: Icon(Icons.close, size: 15, color: C.text4)),
             ])))
           else Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(12)),
@@ -1231,10 +1231,10 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           SizedBox(height: 24),
           // Criteria
           Row(children: [
-            Text('КРИТЕРИИ ОЦЕНИВАНИЯ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.teal, letterSpacing: 1)),
+            Text('КРИТЕРИИ ОЦЕНИВАНИЯ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
             Spacer(),
             GestureDetector(onTap: () => setS(() => criteria.add({'name': '', 'weight': 0, 'desc': ''})),
-              child: Text('+ Добавить', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: C.teal))),
+              child: Text('+ Добавить', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary))),
           ]),
           SizedBox(height: 12),
           ...List.generate(criteria.length, (i) {
@@ -1325,8 +1325,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
         builder: (ctx, scroll) => ListView(controller: scroll, padding: EdgeInsets.all(24), children: [
           // Header
           Row(children: [
-            Container(width: 44, height: 44, decoration: BoxDecoration(color: C.teal.withOpacity(0.12), borderRadius: BorderRadius.circular(14)),
-              child: Icon(Icons.edit_outlined, color: C.teal, size: 22)),
+            Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.12), borderRadius: BorderRadius.circular(14)),
+              child: Icon(Icons.edit_outlined, color: Theme.of(context).colorScheme.primary, size: 22)),
             SizedBox(width: 12),
             Expanded(child: Text('Редактировать класс', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800))),
             IconButton(icon: Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
@@ -1343,15 +1343,15 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               final b64 = 'data:image/jpeg;base64,${base64Encode(bytes)}';
               setS(() { newCoverBase64 = b64; });
             },
-            child: Container(height: 150, decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: C.teal.withOpacity(0.3), width: 1.5)),
+            child: Container(height: 150, decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3), width: 1.5)),
               clipBehavior: Clip.antiAlias,
               child: Stack(fit: StackFit.expand, children: [
                 if (newCoverBase64 != null && newCoverBase64!.startsWith('data:'))
-                  Builder(builder: (_) { try { return Image.memory(base64Decode(newCoverBase64!.split(',').last), fit: BoxFit.cover); } catch (_) { return Container(color: C.teal.withOpacity(0.1)); } })
+                  Builder(builder: (_) { try { return Image.memory(base64Decode(newCoverBase64!.split(',').last), fit: BoxFit.cover); } catch (_) { return Container(color: Theme.of(context).colorScheme.primary.withOpacity(0.1)); } })
                 else if (newCoverBase64 != null)
-                  Image.network(newCoverBase64!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF006475), C.teal]))))
+                  Image.network(newCoverBase64!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF006475), Theme.of(context).colorScheme.primary]))))
                 else
-                  Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF006475), C.teal], begin: Alignment.topLeft, end: Alignment.bottomRight))),
+                  Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF006475), Theme.of(context).colorScheme.primary], begin: Alignment.topLeft, end: Alignment.bottomRight))),
                 // Overlay
                 Container(color: Colors.black.withOpacity(0.3),
                   child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [

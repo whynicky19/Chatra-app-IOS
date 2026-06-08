@@ -171,8 +171,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   Text('${l.t('no_account')} ', style: const TextStyle(fontSize: 13, color: C.text4)),
                   GestureDetector(
                     onTap: widget.onGoRegister,
-                    child: Text(l.t('register_link'), style: const TextStyle(
-                        fontSize: 13, color: C.teal, fontWeight: FontWeight.w700))),
+                    child: Text(l.t('register_link'), style: TextStyle(
+                        fontSize: 13, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w700))),
                 ]),
               ]),
             ),

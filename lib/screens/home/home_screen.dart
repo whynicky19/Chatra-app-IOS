@@ -150,10 +150,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final provider = context.watch<ClassesProvider>();
     final isDark  = Theme.of(context).brightness == Brightness.dark;
     final surface = Theme.of(context).colorScheme.surface;
+    final primary = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       body: SafeArea(child: RefreshIndicator(
-        color: C.teal,
+        color: primary,
         onRefresh: () => context.read<ClassesProvider>().load(),
         child: CustomScrollView(slivers: [
 
@@ -169,9 +170,9 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Padding(
             padding: const EdgeInsets.fromLTRB(22, 24, 22, 18),
             child: Row(children: [
-              Expanded(child: Text(l.t('classes'), style: const TextStyle(
+              Expanded(child: Text(l.t('classes'), style: TextStyle(
                 fontSize: 30, fontWeight: FontWeight.w900,
-                color: C.teal, letterSpacing: -0.8, height: 1.1,
+                color: primary, letterSpacing: -0.8, height: 1.1,
               ))),
               const SizedBox(width: 8),
               _HeaderBtn(icon: Icons.calendar_month_rounded, onTap: _openCalendar, isDark: isDark),
@@ -185,9 +186,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Container(
                     width: 42, height: 42,
                     decoration: BoxDecoration(
-                      color: C.teal,
+                      color: primary,
                       borderRadius: BorderRadius.circular(13),
-                      boxShadow: tealGlow(opacity: 0.30),
+                      boxShadow: primaryGlow(primary, opacity: 0.30),
                     ),
                     child: const Icon(Icons.add_rounded, color: Colors.white, size: 20),
                   )),
@@ -215,9 +216,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Container(
                     width: 42, height: 42,
                     decoration: BoxDecoration(
-                      color: C.teal,
+                      color: primary,
                       borderRadius: BorderRadius.circular(13),
-                      boxShadow: tealGlow(opacity: 0.30),
+                      boxShadow: primaryGlow(primary, opacity: 0.30),
                     ),
                     child: const Icon(Icons.vpn_key_rounded, color: Colors.white, size: 18))),
               ],
@@ -249,17 +250,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: adaptiveTealLt(context),
+                    color: adaptivePrimaryLt(context),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(children: [
-                    const Icon(Icons.drag_indicator_rounded, color: C.teal, size: 20),
+                    Icon(Icons.drag_indicator_rounded, color: primary, size: 20),
                     const SizedBox(width: 10),
                     Expanded(child: Text(l.t('drag_hint'),
-                      style: const TextStyle(fontSize: 13, color: C.teal, fontWeight: FontWeight.w500))),
+                      style: TextStyle(fontSize: 13, color: primary, fontWeight: FontWeight.w500))),
                     GestureDetector(
                       onTap: _dismissDragHint,
-                      child: const Icon(Icons.close, color: C.teal, size: 18),
+                      child: Icon(Icons.close, color: primary, size: 18),
                     ),
                   ]),
                 ),
@@ -342,16 +343,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     decoration: BoxDecoration(
                       color: surface,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: C.teal.withOpacity(0.35), width: 1.5),
+                      border: Border.all(color: primary.withOpacity(0.35), width: 1.5),
                       boxShadow: softShadow(isDark),
                     ),
                     child: Column(mainAxisSize: MainAxisSize.min, children: [
                       Container(width: 52, height: 52,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: C.teal.withOpacity(0.5), width: 1.5),
+                          border: Border.all(color: primary.withOpacity(0.5), width: 1.5),
                         ),
-                        child: const Icon(Icons.add_rounded, color: C.teal, size: 26)),
+                        child: Icon(Icons.add_rounded, color: primary, size: 26)),
                       const SizedBox(height: 12),
                       Text(l.t('add_subject'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
                       const SizedBox(height: 3),
@@ -514,8 +515,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Container(width: 32, height: 32, decoration: BoxDecoration(color: adaptiveSurface2(context), shape: BoxShape.circle),
                   child: const Icon(Icons.close, size: 16, color: C.text4)))),
             const SizedBox(height: 4),
-            Container(width: 68, height: 68, decoration: BoxDecoration(color: adaptiveTealLt(context), borderRadius: BorderRadius.circular(20)),
-              child: const Icon(Icons.lock_outline_rounded, color: C.teal, size: 32)),
+            Container(width: 68, height: 68, decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(20)),
+              child: Icon(Icons.lock_outline_rounded, color: Theme.of(context).colorScheme.primary, size: 32)),
             const SizedBox(height: 16),
             Text(l.t('join_class_title'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),
@@ -527,12 +528,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 controller: controllers[i], focusNode: focusNodes[i],
                 textAlign: TextAlign.center, maxLength: i == 0 ? 6 : 1,
                 textCapitalization: TextCapitalization.characters,
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: C.teal),
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary),
                 decoration: InputDecoration(
                   counterText: '',
                   filled: true, fillColor: adaptiveSurface2(context),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: C.teal, width: 2)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2)),
                   contentPadding: EdgeInsets.zero,
                 ),
                 onChanged: (val) => onKey(i, val),
@@ -550,19 +551,19 @@ class _HomeScreenState extends State<HomeScreen> {
               final teacherName = cls['teacher_name'] ?? '';
               return Padding(padding: const EdgeInsets.only(top: 16),
                 child: Container(
-                  decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(16), border: Border.all(color: C.teal.withOpacity(0.2))),
+                  decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.2))),
                   clipBehavior: Clip.antiAlias,
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     SizedBox(height: 80, width: double.infinity,
                       child: coverImg != null && coverImg.toString().startsWith('data:')
-                          ? Builder(builder: (_) { try { return Image.memory(base64Decode(coverImg.toString().split(',').last), fit: BoxFit.cover, width: double.infinity); } catch (_) { return Container(decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF006475), C.teal]))); } })
+                          ? Builder(builder: (_) { try { return Image.memory(base64Decode(coverImg.toString().split(',').last), fit: BoxFit.cover, width: double.infinity); } catch (_) { return Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))); } })
                           : coverImg != null
-                              ? Image.network(coverImg, fit: BoxFit.cover, width: double.infinity, errorBuilder: (_, __, ___) => Container(decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF006475), C.teal]))))
-                              : Container(decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF006475), C.teal])))),
+                              ? Image.network(coverImg, fit: BoxFit.cover, width: double.infinity, errorBuilder: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))))
+                              : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary])))),
                     Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text(cls['title'] ?? '', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis),
                       if (teacherName.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 2),
-                        child: Text(teacherName, style: const TextStyle(fontSize: 13, color: C.teal))),
+                        child: Text(teacherName, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary))),
                     ])),
                   ])));
             }),
@@ -628,10 +629,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 final img = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 800, imageQuality: 80);
                 if (img != null) { final bytes = await img.readAsBytes(); setS(() => coverB64 = 'data:image/jpeg;base64,${base64Encode(bytes)}'); }
               }, child: Container(height: 160, width: double.infinity,
-                decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: C.teal.withOpacity(0.3), width: 1.5), color: coverB64 != null ? null : adaptiveTealLt(context).withOpacity(0.3)),
+                decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3), width: 1.5), color: coverB64 != null ? null : adaptivePrimaryLt(context).withOpacity(0.3)),
                 child: coverB64 != null
                     ? ClipRRect(borderRadius: BorderRadius.circular(16), child: Image.memory(base64Decode(coverB64!.split(',').last), fit: BoxFit.cover, width: double.infinity))
-                    : Column(mainAxisAlignment: MainAxisAlignment.center, children: [Container(width: 50, height: 50, decoration: BoxDecoration(color: C.teal.withOpacity(0.15), borderRadius: BorderRadius.circular(14)), child: const Icon(Icons.image_outlined, size: 26, color: C.teal)), const SizedBox(height: 10), Text(l.t('click_to_upload'), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: C.teal)), const Text('JPG, PNG', style: TextStyle(fontSize: 12, color: C.text4))]))),
+                    : Column(mainAxisAlignment: MainAxisAlignment.center, children: [Container(width: 50, height: 50, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.15), borderRadius: BorderRadius.circular(14)), child: Icon(Icons.image_outlined, size: 26, color: Theme.of(context).colorScheme.primary)), const SizedBox(height: 10), Text(l.t('click_to_upload'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)), const Text('JPG, PNG', style: TextStyle(fontSize: 12, color: C.text4))]))),
               const SizedBox(height: 20),
               _fl3(l.t('class_name_required')), TextField(controller: nameC, decoration: InputDecoration(hintText: l.t('class_name_hint'))),
               const SizedBox(height: 16), _fl3(l.t('class_desc')), TextField(controller: descC, decoration: InputDecoration(hintText: l.t('class_desc_hint')), maxLines: 3),
@@ -669,7 +670,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _fl3(String s) => Padding(padding: const EdgeInsets.only(bottom: 8),
-    child: Text(s, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.teal, letterSpacing: 1)));
+    child: Text(s, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)));
 }
 
 // ── Class Context Menu ────────────────────────────────────────────────────────
@@ -709,6 +710,7 @@ class _ClassContextMenu extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = Theme.of(context).colorScheme.surface;
     final bg2 = adaptiveSurface2(context);
+    final primary = Theme.of(context).colorScheme.primary;
     final code = classCode(cls['id'] as int);
     final teacherName = cls['teacher_name'] as String? ?? '';
 
@@ -752,18 +754,18 @@ class _ClassContextMenu extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: C.teal.withOpacity(0.1),
+                    color: primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: C.teal.withOpacity(0.2)),
+                    border: Border.all(color: primary.withOpacity(0.2)),
                   ),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(Icons.tag_rounded, size: 12, color: C.teal),
+                    Icon(Icons.tag_rounded, size: 12, color: primary),
                     const SizedBox(width: 4),
-                    Text(code, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: C.teal, letterSpacing: 2)),
+                    Text(code, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: primary, letterSpacing: 2)),
                   ]),
                 ),
                 const Spacer(),
-                _SmallAction(icon: Icons.copy_all_rounded, bg: C.teal.withOpacity(0.1), iconColor: C.teal, onTap: onCopyCode),
+                _SmallAction(icon: Icons.copy_all_rounded, bg: primary.withOpacity(0.1), iconColor: primary, onTap: onCopyCode),
               ]),
             ),
 
@@ -773,8 +775,8 @@ class _ClassContextMenu extends StatelessWidget {
               child: Column(children: [
                 _ActionRow(
                   icon: isPinned ? Icons.push_pin_outlined : Icons.push_pin_rounded,
-                  iconBg: C.teal.withOpacity(0.12),
-                  iconColor: C.teal,
+                  iconBg: primary.withOpacity(0.12),
+                  iconColor: primary,
                   label: isPinned ? l.t('unpin_class') : l.t('pin_class'),
                   bg: bg2,
                   onTap: onTogglePin,
@@ -1018,17 +1020,17 @@ class _ClassCard extends StatelessWidget {
               const SizedBox(height: 8),
               Wrap(spacing: 6, runSpacing: 6, children: [
                 if (group.isNotEmpty) _MetaChip(label: group, icon: Icons.group_outlined, isDark: isDark),
-                if (teacherName.isNotEmpty) _MetaChip(label: teacherName, icon: Icons.person_outline_rounded, isDark: isDark, color: C.teal),
+                if (teacherName.isNotEmpty) _MetaChip(label: teacherName, icon: Icons.person_outline_rounded, isDark: isDark, color: Theme.of(context).colorScheme.primary),
               ]),
               const SizedBox(height: 12),
               Row(children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                  decoration: BoxDecoration(color: adaptiveTealLt(context), borderRadius: BorderRadius.circular(10)),
+                  decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(10)),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Text(openLabel, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: C.teal)),
+                    Text(openLabel, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
                     const SizedBox(width: 4),
-                    const Icon(Icons.arrow_forward_rounded, size: 14, color: C.teal),
+                    Icon(Icons.arrow_forward_rounded, size: 14, color: Theme.of(context).colorScheme.primary),
                   ]),
                 ),
                 const Spacer(),
@@ -1087,9 +1089,9 @@ class _HeaderBtn extends StatelessWidget {
       decoration: BoxDecoration(
         color: adaptiveSurface2(context),
         borderRadius: BorderRadius.circular(13),
-        border: Border.all(color: C.teal.withOpacity(0.25)),
+        border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.25)),
       ),
-      child: Icon(icon, color: C.teal, size: 19)),
+      child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 19)),
   );
 }
 
@@ -1150,10 +1152,10 @@ class _EmptyState extends StatelessWidget {
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Container(width: 88, height: 88,
           decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [C.teal.withOpacity(0.18), C.teal.withOpacity(0.06)]),
+            gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primary.withOpacity(0.18), Theme.of(context).colorScheme.primary.withOpacity(0.06)]),
             shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.menu_book_rounded, color: C.teal, size: 40)),
+          child: Icon(Icons.menu_book_rounded, color: Theme.of(context).colorScheme.primary, size: 40)),
         const SizedBox(height: 22),
         Text(l.t('no_classes'), style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: adaptiveText1(context), letterSpacing: -0.4)),
         const SizedBox(height: 8),

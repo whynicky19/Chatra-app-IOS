@@ -115,9 +115,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return Scaffold(
       body: SafeArea(
         child: _loading
-            ? const Center(child: CircularProgressIndicator(color: C.teal, strokeWidth: 2))
+            ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary, strokeWidth: 2))
             : RefreshIndicator(
-                color: C.teal,
+                color: Theme.of(context).colorScheme.primary,
                 onRefresh: () async {
                   setState(() => _loading = true);
                   await _load();
@@ -135,13 +135,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             color: adaptiveSurface2(context),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(Icons.arrow_back_ios_new, size: 16, color: C.teal),
+                          child: Icon(Icons.arrow_back_ios_new, size: 16, color: Theme.of(context).colorScheme.primary),
                         ),
                       ),
                       const SizedBox(width: 14),
-                      Text(l.t('deadlines'), style: const TextStyle(
+                      Text(l.t('deadlines'), style: TextStyle(
                         fontSize: 28, fontWeight: FontWeight.w900,
-                        color: C.teal, letterSpacing: -0.8,
+                        color: Theme.of(context).colorScheme.primary, letterSpacing: -0.8,
                       )),
                     ]),
                   )),
@@ -180,7 +180,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           Expanded(child: Text(
             '${_monthNamesRU[_focusedMonth.month - 1]} ${_focusedMonth.year}',
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: C.teal),
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary),
           )),
           _navBtn(Icons.chevron_right, () => setState(() =>
             _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month + 1))),
@@ -215,7 +215,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 } else if (deadlines.length > 1) {
                   dotColor = C.red;
                 } else {
-                  dotColor = C.teal;
+                  dotColor = Theme.of(context).colorScheme.primary;
                 }
               }
 
@@ -225,16 +225,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   Container(
                     width: 34, height: 34,
                     decoration: BoxDecoration(
-                      color: isSelected ? C.teal : Colors.transparent,
+                      color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
                       borderRadius: BorderRadius.circular(10),
                       border: isToday && !isSelected
-                          ? Border.all(color: C.teal, width: 1.5)
+                          ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5)
                           : null,
                     ),
                     child: Center(child: Text('${i + 1}', style: TextStyle(
                       fontSize: 13, fontWeight: FontWeight.w600,
                       color: isSelected ? Colors.white
-                          : (isToday ? C.teal : adaptiveText1(context)),
+                          : (isToday ? Theme.of(context).colorScheme.primary : adaptiveText1(context)),
                     ))),
                   ),
                   if (dotColor != null)
@@ -262,7 +262,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         color: adaptiveSurface2(context),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Icon(icon, color: C.teal, size: 20),
+      child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
     ),
   );
 
@@ -297,9 +297,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
               margin: const EdgeInsets.only(right: 8),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
-                color: isSelected ? C.teal : Theme.of(context).colorScheme.surface,
+                color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: isSelected ? tealGlow(opacity: 0.2) : softShadow(isDark),
+                boxShadow: isSelected ? primaryGlow(Theme.of(context).colorScheme.primary, opacity: 0.2) : softShadow(isDark),
               ),
               child: Column(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
                 Text(dayName, style: TextStyle(
@@ -309,7 +309,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 const SizedBox(height: 2),
                 Text('${day.day}', style: TextStyle(
                   fontSize: 15, fontWeight: FontWeight.w800,
-                  color: isSelected ? Colors.white : C.teal,
+                  color: isSelected ? Colors.white : Theme.of(context).colorScheme.primary,
                 )),
                 if (count > 0) ...[
                   const SizedBox(height: 3),
@@ -318,12 +318,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     decoration: BoxDecoration(
                       color: isSelected
                           ? Colors.white.withOpacity(0.25)
-                          : (allDone ? C.green.withOpacity(0.15) : C.teal.withOpacity(0.12)),
+                          : (allDone ? C.green.withOpacity(0.15) : Theme.of(context).colorScheme.primary.withOpacity(0.12)),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text('$count', style: TextStyle(
                       fontSize: 10, fontWeight: FontWeight.w800,
-                      color: isSelected ? Colors.white : (allDone ? C.green : C.teal),
+                      color: isSelected ? Colors.white : (allDone ? C.green : Theme.of(context).colorScheme.primary),
                     )),
                   ),
                 ],
@@ -370,12 +370,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
           } else if (_selectedDay == today) {
             bg = isDark ? C.yellow.withOpacity(0.1) : C.yellowLt;
           } else if (_selectedDay == tomorrow) {
-            bg = adaptiveTealLt(context);
+            bg = adaptivePrimaryLt(context);
           } else {
             bg = Theme.of(context).colorScheme.surface;
           }
 
-          final accentColor = isSubmitted ? C.green : C.teal;
+          final accentColor = isSubmitted ? C.green : Theme.of(context).colorScheme.primary;
 
           return GestureDetector(
             onTap: classId != null ? () => Navigator.push(context, MaterialPageRoute(

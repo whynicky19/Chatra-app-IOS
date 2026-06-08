@@ -158,9 +158,9 @@ class _LiquidGlassNavBar extends StatelessWidget {
             spreadRadius: -6,
             offset: const Offset(0, 14),
           ),
-          // Teal ambient glow
+          // Primary ambient glow
           BoxShadow(
-            color: C.teal.withOpacity(isDark ? 0.14 : 0.10),
+            color: Theme.of(context).colorScheme.primary.withOpacity(isDark ? 0.14 : 0.10),
             blurRadius: 28,
             spreadRadius: -8,
             offset: const Offset(0, 6),
@@ -274,14 +274,14 @@ class _GlassTabPill extends StatelessWidget {
         vertical: 10,
       ),
       decoration: BoxDecoration(
-        // Active pill: teal glass gradient
+        // Active pill: primary glass gradient
         gradient: progress > 0.01
             ? LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  C.teal.withOpacity(0.82 * progress),
-                  C.tealDk.withOpacity(0.68 * progress),
+                  Theme.of(context).colorScheme.primary.withOpacity(0.82 * progress),
+                  Theme.of(context).colorScheme.secondary.withOpacity(0.68 * progress),
                 ],
               )
             : null,
@@ -296,13 +296,13 @@ class _GlassTabPill extends StatelessWidget {
         boxShadow: progress > 0.3
             ? [
                 BoxShadow(
-                  color: C.teal.withOpacity(0.42 * progress),
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.42 * progress),
                   blurRadius: 18,
                   spreadRadius: -3,
                   offset: const Offset(0, 4),
                 ),
                 BoxShadow(
-                  color: C.teal.withOpacity(0.20 * progress),
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.20 * progress),
                   blurRadius: 8,
                   spreadRadius: -1,
                   offset: const Offset(0, 1),

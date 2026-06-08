@@ -31,7 +31,7 @@ class ClassPostsTab extends StatelessWidget {
     final surface = Theme.of(context).colorScheme.surface;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isLecture = type == 'lecture';
-    final accentColor = isLecture ? C.teal : const Color(0xFF6366F1);
+    final accentColor = isLecture ? Theme.of(context).colorScheme.primary : const Color(0xFF6366F1);
     final baseUrl = context.read<ApiService>().baseUrl;
 
     String fixFileUrl(String url) {
@@ -75,7 +75,7 @@ class ClassPostsTab extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: 34, height: 34,
-        decoration: BoxDecoration(color: C.teal.withOpacity(0.08), borderRadius: BorderRadius.circular(10)),
+        decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.08), borderRadius: BorderRadius.circular(10)),
         child: Icon(ic, size: 17, color: C.text4),
       ),
     );

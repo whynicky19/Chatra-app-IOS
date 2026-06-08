@@ -18,7 +18,7 @@ void showToast(BuildContext context, String msg, {bool error = false}) {
         fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white, height: 1.3,
       ))),
     ]),
-    backgroundColor: error ? C.red : C.teal,
+    backgroundColor: error ? C.red : Theme.of(context).colorScheme.primary,
     duration: Duration(seconds: error ? 4 : 2),
     margin: const EdgeInsets.fromLTRB(20, 0, 20, 14),
     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),

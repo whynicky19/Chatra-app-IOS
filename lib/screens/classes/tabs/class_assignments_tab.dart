@@ -140,7 +140,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
   @override
   Widget build(BuildContext context) {
     final l = context.read<L10n>();
-    if (widget.isLoading) return Center(child: CircularProgressIndicator(color: C.teal, strokeWidth: 2.5));
+    if (widget.isLoading) return Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary, strokeWidth: 2.5));
     final surface = Theme.of(context).colorScheme.surface;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final avg = (widget.rating['avg_score'] ?? 0).round();
@@ -153,7 +153,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
           Expanded(child: Container(
             padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [Color(0xFF006475), C.teal], begin: Alignment.topLeft, end: Alignment.bottomRight),
+              gradient: LinearGradient(colors: [Color(0xFF006475), Theme.of(context).colorScheme.primary], begin: Alignment.topLeft, end: Alignment.bottomRight),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -207,17 +207,17 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 Row(children: [
                   Container(
                     width: 48, height: 56,
-                    decoration: BoxDecoration(color: adaptiveTealLt(context), borderRadius: BorderRadius.circular(10)),
+                    decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(10)),
                     child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Text(months[dl.month - 1], style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: C.teal, letterSpacing: 1)),
-                      Text('${dl.day}', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: C.teal, height: 1.1)),
+                      Text(months[dl.month - 1], style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
+                      Text('${dl.day}', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.primary, height: 1.1)),
                     ]),
                   ),
                   SizedBox(width: 10),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(next['title'] ?? '', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
                     SizedBox(height: 2),
-                    Text('Осталось: $remaining', style: TextStyle(fontSize: 11, color: days <= 1 ? C.red : C.teal, fontWeight: FontWeight.w500)),
+                    Text('Осталось: $remaining', style: TextStyle(fontSize: 11, color: days <= 1 ? C.red : Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w500)),
                   ])),
                 ]),
               ]),
@@ -234,8 +234,8 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
       SizedBox(height: 12),
       if (widget.assignments.isEmpty) Container(padding: EdgeInsets.symmetric(vertical: 52), child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
         Container(width: 80, height: 80,
-          decoration: BoxDecoration(gradient: RadialGradient(colors: [C.teal.withOpacity(0.16), C.teal.withOpacity(0.04)]), shape: BoxShape.circle),
-          child: Icon(Icons.assignment_outlined, size: 36, color: C.teal)),
+          decoration: BoxDecoration(gradient: RadialGradient(colors: [Theme.of(context).colorScheme.primary.withOpacity(0.16), Theme.of(context).colorScheme.primary.withOpacity(0.04)]), shape: BoxShape.circle),
+          child: Icon(Icons.assignment_outlined, size: 36, color: Theme.of(context).colorScheme.primary)),
         SizedBox(height: 18),
         Text(l.t('no_assignments'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: adaptiveText1(context))),
         SizedBox(height: 6),
@@ -258,8 +258,8 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
         final deadline = a['deadline'];
         final isLate = deadline != null && DateTime.tryParse(deadline)?.isBefore(DateTime.now()) == true && sub == null;
 
-        Color statusColor = isGraded ? C.green : isSubmitted ? C.teal : isLate ? C.red : C.text4;
-        Color statusBg = isGraded ? C.greenLt : isSubmitted ? adaptiveTealLt(context) : isLate ? C.redLt : adaptiveSurface2(context);
+        Color statusColor = isGraded ? C.green : isSubmitted ? Theme.of(context).colorScheme.primary : isLate ? C.red : C.text4;
+        Color statusBg = isGraded ? C.greenLt : isSubmitted ? adaptivePrimaryLt(context) : isLate ? C.redLt : adaptiveSurface2(context);
         String statusText = isGraded ? l.t('graded') : isSubmitted ? l.t('submitted') : isLate ? l.t('overdue') : l.t('new_status');
         IconData statusIcon = isGraded ? Icons.check_circle_rounded : isSubmitted ? Icons.upload_file : isLate ? Icons.schedule_rounded : Icons.edit_note_rounded;
 
@@ -302,8 +302,8 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                         Text(_fmtDate(deadline), style: TextStyle(fontSize: 12, color: isLate ? C.red : C.text4, fontWeight: FontWeight.w500)),
                       ]),
                       Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(Icons.star_rounded, size: 14, color: C.teal), SizedBox(width: 3),
-                        Text('${a['max_score'] ?? 100} ${l.t('pts')}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: C.teal)),
+                        Icon(Icons.star_rounded, size: 14, color: Theme.of(context).colorScheme.primary), SizedBox(width: 3),
+                        Text('${a['max_score'] ?? 100} ${l.t('pts')}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
                       ]),
                       if (grade != null) Row(mainAxisSize: MainAxisSize.min, children: [
                         Icon(Icons.check_circle_rounded, size: 12, color: C.green), SizedBox(width: 3),
@@ -330,9 +330,9 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     ),
                     Spacer(),
                     Row(children: [
-                      Text('Открыть', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: C.teal)),
+                      Text('Открыть', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
                       SizedBox(width: 3),
-                      Icon(Icons.arrow_forward_rounded, size: 13, color: C.teal),
+                      Icon(Icons.arrow_forward_rounded, size: 13, color: Theme.of(context).colorScheme.primary),
                     ]),
                   ]),
                 ),
@@ -355,7 +355,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
     final deadline = a['deadline'];
     final isLate = deadline != null && DateTime.tryParse(deadline)?.isBefore(DateTime.now()) == true && sub == null;
     final sheetStatusColor = sub?['status'] == 'graded' ? C.green
-        : sub?['status'] == 'submitted' ? C.teal
+        : sub?['status'] == 'submitted' ? Theme.of(context).colorScheme.primary
         : isLate ? C.red : C.text4;
     final sheetStatusText = sub?['status'] == 'graded' ? 'Проверено'
         : sub?['status'] == 'submitted' ? 'Сдано'
@@ -401,11 +401,11 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                   child: Row(children: [
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                      decoration: BoxDecoration(color: C.teal.withOpacity(0.10), borderRadius: BorderRadius.circular(7)),
+                      decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.10), borderRadius: BorderRadius.circular(7)),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(Icons.assignment_outlined, size: 11, color: C.teal),
+                        Icon(Icons.assignment_outlined, size: 11, color: Theme.of(context).colorScheme.primary),
                         SizedBox(width: 4),
-                        Text('ЗАДАНИЕ', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: C.teal, letterSpacing: 0.6)),
+                        Text('ЗАДАНИЕ', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary, letterSpacing: 0.6)),
                       ]),
                     ),
                     SizedBox(width: 8),
@@ -427,10 +427,10 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                   child: Row(children: [
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(color: C.teal.withOpacity(0.08), borderRadius: BorderRadius.circular(8)),
+                      decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.08), borderRadius: BorderRadius.circular(8)),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(Icons.star_rounded, size: 13, color: C.teal), SizedBox(width: 4),
-                        Text('${a['max_score'] ?? 100} баллов', style: TextStyle(fontSize: 12, color: C.teal, fontWeight: FontWeight.w700)),
+                        Icon(Icons.star_rounded, size: 13, color: Theme.of(context).colorScheme.primary), SizedBox(width: 4),
+                        Text('${a['max_score'] ?? 100} баллов', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w700)),
                       ]),
                     ),
                     if (deadline != null) ...[
@@ -473,9 +473,9 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               if (descText.isNotEmpty) ...[
                 Row(children: [
-                  Container(width: 3, height: 16, decoration: BoxDecoration(color: C.teal, borderRadius: BorderRadius.circular(2))),
+                  Container(width: 3, height: 16, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, borderRadius: BorderRadius.circular(2))),
                   SizedBox(width: 8),
-                  Text('Описание', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: C.teal)),
+                  Text('Описание', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary)),
                   Spacer(),
                   GestureDetector(
                     onTap: () => setS(() => descHidden = !descHidden),
@@ -503,7 +503,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                           padding: EdgeInsets.only(top: 10, bottom: 20),
                           child: Container(
                             padding: EdgeInsets.all(14),
-                            decoration: BoxDecoration(color: isDark ? C.darkSurface2 : C.bg, borderRadius: BorderRadius.circular(14), border: Border.all(color: C.teal.withOpacity(0.10))),
+                            decoration: BoxDecoration(color: isDark ? C.darkSurface2 : C.bg, borderRadius: BorderRadius.circular(14), border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.10))),
                             child: Text(descText, style: TextStyle(fontSize: 14, height: 1.65)),
                           ),
                         ),
@@ -512,16 +512,16 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               if (isLoading) Padding(
                 padding: EdgeInsets.symmetric(vertical: 12),
                 child: Row(children: [
-                  SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: C.teal)),
+                  SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.primary)),
                   SizedBox(width: 10),
                   Text('Загрузка файлов...', style: TextStyle(fontSize: 13, color: C.text4)),
                 ]),
               )
               else if (allFiles.isNotEmpty) ...[
                 Row(children: [
-                  Container(width: 3, height: 16, decoration: BoxDecoration(color: C.teal, borderRadius: BorderRadius.circular(2))),
+                  Container(width: 3, height: 16, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, borderRadius: BorderRadius.circular(2))),
                   SizedBox(width: 8),
-                  Text('Прикреплённые файлы', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: C.teal, letterSpacing: 0.3)),
+                  Text('Прикреплённые файлы', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary, letterSpacing: 0.3)),
                 ]),
                 SizedBox(height: 10),
                 ...allFiles.asMap().entries.map((entry) {
@@ -584,16 +584,16 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             onTap: () => setS(() { if (_expandedCriteria.contains(a['id'])) _expandedCriteria.remove(a['id']); else _expandedCriteria.add(a['id']); }),
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(color: adaptiveTealLt(context), borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(12)),
               child: Row(children: [
-                Icon(Icons.rule_rounded, size: 16, color: C.teal),
+                Icon(Icons.rule_rounded, size: 16, color: Theme.of(context).colorScheme.primary),
                 SizedBox(width: 8),
-                Text('Критерии оценивания', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: C.teal)),
+                Text('Критерии оценивания', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
                 SizedBox(width: 4),
                 Text('(${criteria.length})', style: TextStyle(fontSize: 12, color: C.text4)),
                 Spacer(),
                 AnimatedRotation(turns: _expandedCriteria.contains(a['id']) ? 0.5 : 0.0, duration: Duration(milliseconds: 200),
-                  child: Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: C.teal)),
+                  child: Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: Theme.of(context).colorScheme.primary)),
               ]),
             ),
           ),
@@ -606,8 +606,8 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                   if (c['description'] != null && c['description'].toString().isNotEmpty)
                     Padding(padding: EdgeInsets.only(top: 4), child: Text(c['description'], style: TextStyle(fontSize: 12, color: C.text4))),
                 ])),
-                  Container(padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: adaptiveTealLt(context), borderRadius: BorderRadius.circular(8)),
-                    child: Text('${c['weight'] ?? 0}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: C.teal)))])))
+                  Container(padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(8)),
+                    child: Text('${c['weight'] ?? 0}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary)))])))
             ]) : SizedBox.shrink(),
           ),
         ],
@@ -617,7 +617,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
                 RichText(text: TextSpan(children: [
-                  TextSpan(text: '${sub['grade']['score']}', style: TextStyle(fontSize: 42, fontWeight: FontWeight.w900, color: C.teal, height: 1)),
+                  TextSpan(text: '${sub['grade']['score']}', style: TextStyle(fontSize: 42, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.primary, height: 1)),
                   TextSpan(text: ' / ${a['max_score']}', style: TextStyle(fontSize: 18, color: C.text4, fontWeight: FontWeight.w600)),
                 ])),
                 Spacer(),
@@ -625,11 +625,11 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                   Text('${(sub['grade']['score'] / (a['max_score'] ?? 100) * 100).round()}%', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
                   SizedBox(height: 4),
                   Container(padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(color: C.teal.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Icon(sub['grade']['graded_by'] == 'ai' ? Icons.bolt : Icons.person, size: 14, color: C.teal),
+                      Icon(sub['grade']['graded_by'] == 'ai' ? Icons.bolt : Icons.person, size: 14, color: Theme.of(context).colorScheme.primary),
                       SizedBox(width: 4),
-                      Text(sub['grade']['graded_by'] == 'ai' ? 'ИИ-проверка' : 'Учитель', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: C.teal)),
+                      Text(sub['grade']['graded_by'] == 'ai' ? 'ИИ-проверка' : 'Учитель', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
                     ])),
                 ]),
               ]),
@@ -659,7 +659,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     Row(children: [
                       Expanded(child: Text(cs['name'] ?? '', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700))),
                       RichText(text: TextSpan(children: [
-                        TextSpan(text: '${score.toInt()}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: C.teal)),
+                        TextSpan(text: '${score.toInt()}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary)),
                         TextSpan(text: ' / ${maxScore.toInt()}', style: TextStyle(fontSize: 13, color: C.text4)),
                       ])),
                     ]),
@@ -667,7 +667,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                       Padding(padding: EdgeInsets.only(top: 6), child: Text(cs['comment'] ?? cs['feedback'] ?? '', style: TextStyle(fontSize: 13, color: C.text4, height: 1.5))),
                     SizedBox(height: 8),
                     ClipRRect(borderRadius: BorderRadius.circular(3),
-                      child: LinearProgressIndicator(value: pct.toDouble(), backgroundColor: adaptiveBorder(context), color: C.teal, minHeight: 4)),
+                      child: LinearProgressIndicator(value: pct.toDouble(), backgroundColor: adaptiveBorder(context), color: Theme.of(context).colorScheme.primary, minHeight: 4)),
                   ]));
               }).toList();
             })(),
@@ -675,11 +675,11 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
         ],
         if (sub != null && sub['status'] == 'grading' && sub['grade'] == null) ...[
           SizedBox(height: 16),
-          Container(padding: EdgeInsets.all(14), decoration: BoxDecoration(color: C.teal.withOpacity(0.06), borderRadius: BorderRadius.circular(14), border: Border.all(color: C.teal.withOpacity(0.15))),
+          Container(padding: EdgeInsets.all(14), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.06), borderRadius: BorderRadius.circular(14), border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.15))),
             child: Row(children: [
-              SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: C.teal)),
+              SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.primary)),
               SizedBox(width: 12),
-              Expanded(child: Text('ИИ проверяет вашу работу...', style: TextStyle(fontSize: 13, color: C.teal, fontWeight: FontWeight.w500))),
+              Expanded(child: Text('ИИ проверяет вашу работу...', style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w500))),
             ])),
         ],
         if (sub != null && (sub['text_content'] != null || sub['file_urls'] != null)) ...[
@@ -707,11 +707,11 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 return GestureDetector(
                   onTap: () => widget.onOpenFile(url, name),
                   child: Container(margin: EdgeInsets.only(bottom: 6), padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: C.teal.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
+                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
                     child: Row(children: [
-                      Icon(icon, size: 16, color: C.teal), SizedBox(width: 8),
-                      Expanded(child: Text(name, style: TextStyle(fontSize: 13, color: C.teal, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis)),
-                      Icon(Icons.open_in_new_rounded, size: 14, color: C.teal),
+                      Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary), SizedBox(width: 8),
+                      Expanded(child: Text(name, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis)),
+                      Icon(Icons.open_in_new_rounded, size: 14, color: Theme.of(context).colorScheme.primary),
                     ])),
                 );
               }),
@@ -755,11 +755,11 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               final result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
               if (result != null) setS(() => pickedFiles = result.files);
             },
-            child: Container(padding: EdgeInsets.all(14), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(14), border: Border.all(color: C.teal.withOpacity(0.3), width: 1.5)),
+            child: Container(padding: EdgeInsets.all(14), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(14), border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3), width: 1.5)),
               child: Row(children: [
-                Icon(Icons.attach_file, color: C.teal, size: 20),
+                Icon(Icons.attach_file, color: Theme.of(context).colorScheme.primary, size: 20),
                 SizedBox(width: 10),
-                Expanded(child: Text(pickedFiles.isEmpty ? 'Прикрепить файлы' : 'Файлов выбрано: ${pickedFiles.length}', style: TextStyle(fontSize: 14, color: pickedFiles.isEmpty ? C.text4 : C.teal, fontWeight: pickedFiles.isEmpty ? FontWeight.normal : FontWeight.w600))),
+                Expanded(child: Text(pickedFiles.isEmpty ? 'Прикрепить файлы' : 'Файлов выбрано: ${pickedFiles.length}', style: TextStyle(fontSize: 14, color: pickedFiles.isEmpty ? C.text4 : Theme.of(context).colorScheme.primary, fontWeight: pickedFiles.isEmpty ? FontWeight.normal : FontWeight.w600))),
                 Icon(Icons.chevron_right, color: C.text4, size: 18),
               ])),
           ),
@@ -768,7 +768,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             ...pickedFiles.map((f) => Padding(
               padding: EdgeInsets.only(bottom: 4),
               child: Row(children: [
-                Icon(Icons.insert_drive_file_outlined, size: 14, color: C.teal),
+                Icon(Icons.insert_drive_file_outlined, size: 14, color: Theme.of(context).colorScheme.primary),
                 SizedBox(width: 6),
                 Expanded(child: Text(f.name, style: TextStyle(fontSize: 12, color: C.text3), overflow: TextOverflow.ellipsis)),
                 GestureDetector(onTap: () => setS(() => pickedFiles.removeWhere((x) => x.name == f.name)),
@@ -900,7 +900,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.arrow_back, size: 16, color: C.text4), SizedBox(width: 6), Text('Назад к списку', style: TextStyle(fontSize: 13, color: C.text4))]))),
                 SizedBox(height: 16),
                 Row(children: [
-                  CircleAvatar(radius: 22, backgroundColor: C.teal.withOpacity(0.15), child: Text(initials, style: TextStyle(color: C.teal, fontWeight: FontWeight.w800, fontSize: 14))),
+                  CircleAvatar(radius: 22, backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.15), child: Text(initials, style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w800, fontSize: 14))),
                   SizedBox(width: 12),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(name, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
@@ -912,7 +912,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                   Text('РАБОТА СТУДЕНТА', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
                   SizedBox(height: 8),
                   if (selectedSub['text_content'] != null) Container(padding: EdgeInsets.all(12), margin: EdgeInsets.only(bottom: 6),
-                    decoration: BoxDecoration(color: C.teal.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
+                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
                     child: Text(selectedSub['text_content'], style: TextStyle(fontSize: 13))),
                   ...submittedFileUrls.map((url) {
                     final name = _fileDisplayName(url);
@@ -921,11 +921,11 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     return GestureDetector(
                       onTap: () => widget.onOpenFile(url, name),
                       child: Container(padding: EdgeInsets.all(12), margin: EdgeInsets.only(bottom: 6),
-                        decoration: BoxDecoration(color: C.teal.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
+                        decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
                         child: Row(children: [
-                          Icon(icon, size: 18, color: C.teal), SizedBox(width: 8),
-                          Expanded(child: Text(name, style: TextStyle(fontSize: 13, color: C.teal), overflow: TextOverflow.ellipsis)),
-                          Icon(Icons.open_in_new_rounded, size: 14, color: C.teal),
+                          Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary), SizedBox(width: 8),
+                          Expanded(child: Text(name, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary), overflow: TextOverflow.ellipsis)),
+                          Icon(Icons.open_in_new_rounded, size: 14, color: Theme.of(context).colorScheme.primary),
                         ])));
                   }),
                 ],
@@ -935,12 +935,12 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Row(children: [
                         RichText(text: TextSpan(children: [
-                          TextSpan(text: '$score', style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: C.teal)),
+                          TextSpan(text: '$score', style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.primary)),
                           TextSpan(text: ' / 100', style: TextStyle(fontSize: 16, color: C.text4)),
                         ])),
                         Spacer(),
-                        Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: C.teal.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
-                          child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.bolt, size: 14, color: C.teal), SizedBox(width: 4), Text('ИИ-проверка', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: C.teal))])),
+                        Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.bolt, size: 14, color: Theme.of(context).colorScheme.primary), SizedBox(width: 4), Text('ИИ-проверка', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary))])),
                       ]),
                       if (feedback != null) ...[
                         SizedBox(height: 12),
@@ -959,7 +959,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                         Row(children: [
                           Expanded(child: Text(c['name'] ?? '', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700))),
                           RichText(text: TextSpan(children: [
-                            TextSpan(text: '${c['score'] ?? 0}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: C.teal)),
+                            TextSpan(text: '${c['score'] ?? 0}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary)),
                             TextSpan(text: ' / ${c['max_score'] ?? c['weight'] ?? 0}', style: TextStyle(fontSize: 13, color: C.text4)),
                           ])),
                         ]),
@@ -1033,7 +1033,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               Row(children: [
                 _statBox('${subs.length}', 'Всего', adaptiveText1(context)),
                 SizedBox(width: 8),
-                _statBox('$graded', 'Проверено', C.teal),
+                _statBox('$graded', 'Проверено', Theme.of(context).colorScheme.primary),
                 SizedBox(width: 8),
                 _statBox('$pending', 'Ожидают', C.red),
               ]),
@@ -1065,9 +1065,9 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     ),
                     child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                       if (gradingAll) ...[
-                        SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: C.teal)),
+                        SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.primary)),
                         SizedBox(width: 12),
-                        Text('Проверено $gradingDone / $gradingTotal...', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: C.teal)),
+                        Text('Проверено $gradingDone / $gradingTotal...', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
                       ] else ...[
                         Icon(Icons.bolt_rounded, size: 18, color: Colors.white),
                         SizedBox(width: 8),
@@ -1089,7 +1089,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                   child: Container(margin: EdgeInsets.only(bottom: 8), padding: EdgeInsets.all(14),
                     decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(16)),
                     child: Row(children: [
-                      CircleAvatar(radius: 20, backgroundColor: C.teal.withOpacity(0.15), child: Text(initials, style: TextStyle(color: C.teal, fontWeight: FontWeight.w800, fontSize: 13))),
+                      CircleAvatar(radius: 20, backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.15), child: Text(initials, style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w800, fontSize: 13))),
                       SizedBox(width: 12),
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text(name, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
@@ -1097,9 +1097,9 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                         Text(s['submitted_at'] != null ? _fmtDate(s['submitted_at']) : '', style: TextStyle(fontSize: 11, color: C.text4)),
                       ])),
                       Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                        if (score != null) Text('$score/100', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: C.teal))
+                        if (score != null) Text('$score/100', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary))
                         else Text('—', style: TextStyle(fontSize: 16, color: C.text4)),
-                        Text(isGraded ? 'Оценено' : 'Ожидает', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: isGraded ? C.teal : C.yellow)),
+                        Text(isGraded ? 'Оценено' : 'Ожидает', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: isGraded ? Theme.of(context).colorScheme.primary : C.yellow)),
                       ]),
                     ])));
               }),

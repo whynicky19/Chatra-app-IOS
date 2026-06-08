@@ -120,13 +120,13 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
         // Header
         Padding(padding: const EdgeInsets.fromLTRB(20, 24, 20, 0), child: Row(children: [
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(l.t('messages_title'), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: C.teal)),
+            Text(l.t('messages_title'), style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.primary)),
             Text(l.t('your_conversations'), style: const TextStyle(fontSize: 13, color: C.text4)),
           ]),
           const Spacer(),
           GestureDetector(
             onTap: () { FocusScope.of(context).requestFocus(FocusNode()); showToast(context, l.t('find_user_hint')); },
-            child: Container(width: 44, height: 44, decoration: BoxDecoration(color: C.teal, borderRadius: BorderRadius.circular(14)),
+            child: Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, borderRadius: BorderRadius.circular(14)),
               child: const Icon(Icons.edit_outlined, color: Colors.white, size: 20))),
         ])),
         const SizedBox(height: 16),
@@ -264,18 +264,18 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
                                 child: Center(child: Text(initials, style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 20)))),
                               if (unread) Positioned(right: 0, bottom: 0,
                                 child: Container(width: 14, height: 14,
-                                  decoration: BoxDecoration(color: C.teal, shape: BoxShape.circle, border: Border.all(color: surface, width: 2)))),
+                                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, shape: BoxShape.circle, border: Border.all(color: surface, width: 2)))),
                             ]),
                             const SizedBox(width: 14),
                             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                               Row(children: [
                                 Expanded(child: Text(title, style: TextStyle(fontSize: 16, fontWeight: unread ? FontWeight.w800 : FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                                if (time.isNotEmpty) Text(time, style: TextStyle(fontSize: 11, color: unread ? C.teal : C.text4, fontWeight: unread ? FontWeight.w700 : FontWeight.w400)),
+                                if (time.isNotEmpty) Text(time, style: TextStyle(fontSize: 11, color: unread ? Theme.of(context).colorScheme.primary : C.text4, fontWeight: unread ? FontWeight.w700 : FontWeight.w400)),
                               ]),
                               const SizedBox(height: 4),
                               Row(children: [
                                 Expanded(child: Text(preview, style: TextStyle(fontSize: 13, color: unread ? adaptiveText1(context) : C.text4, fontWeight: unread ? FontWeight.w500 : FontWeight.w400), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                                if (unread) Container(width: 8, height: 8, margin: const EdgeInsets.only(left: 8), decoration: const BoxDecoration(color: C.teal, shape: BoxShape.circle)),
+                                if (unread) Container(width: 8, height: 8, margin: const EdgeInsets.only(left: 8), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, shape: BoxShape.circle)),
                               ]),
                             ])),
                           ])),
@@ -291,8 +291,8 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
   Widget _emptyState() {
     final l = context.read<L10n>();
     return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-      Container(width: 80, height: 80, decoration: BoxDecoration(color: C.teal.withOpacity(0.1), shape: BoxShape.circle),
-        child: const Icon(Icons.chat_bubble_outline_rounded, size: 36, color: C.teal)),
+      Container(width: 80, height: 80, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.1), shape: BoxShape.circle),
+        child: Icon(Icons.chat_bubble_outline_rounded, size: 36, color: Theme.of(context).colorScheme.primary)),
       const SizedBox(height: 16),
       Text(l.t('no_chats'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
       const SizedBox(height: 6),
@@ -344,7 +344,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
                   Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800), overflow: TextOverflow.ellipsis),
                   // Typing sub-label in the app bar
                   if (provider.someoneIsTyping)
-                    Text(context.read<L10n>().t('typing_indicator'), style: const TextStyle(fontSize: 11, color: C.teal, fontWeight: FontWeight.w500)),
+                    Text(context.read<L10n>().t('typing_indicator'), style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w500)),
                 ],
               )),
             ]),
@@ -355,7 +355,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
         // Message list
         Expanded(child: msgs.isEmpty
           ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.waving_hand_outlined, size: 48, color: C.teal.withOpacity(0.4)),
+              Icon(Icons.waving_hand_outlined, size: 48, color: Theme.of(context).colorScheme.primary.withOpacity(0.4)),
               const SizedBox(height: 12),
               Text(l.t('start_dialog'), style: const TextStyle(fontSize: 16, color: C.text4, fontWeight: FontWeight.w500)),
             ]))
@@ -389,14 +389,14 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
                         margin: EdgeInsets.only(bottom: showTime ? 12 : 3),
                         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.72),
                         decoration: BoxDecoration(
-                          gradient: isMe ? const LinearGradient(colors: [C.teal, C.tealDk], begin: Alignment.topLeft, end: Alignment.bottomRight) : null,
+                          gradient: isMe ? LinearGradient(colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary], begin: Alignment.topLeft, end: Alignment.bottomRight) : null,
                           color: isMe ? null : Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.only(
                             topLeft: const Radius.circular(20), topRight: const Radius.circular(20),
                             bottomLeft: Radius.circular(isMe ? 20 : 6),
                             bottomRight: Radius.circular(isMe ? 6 : 20)),
                           boxShadow: [BoxShadow(
-                            color: isMe ? C.teal.withOpacity(0.25) : Colors.black.withOpacity(isDark ? 0.2 : 0.08),
+                            color: isMe ? Theme.of(context).colorScheme.primary.withOpacity(0.25) : Colors.black.withOpacity(isDark ? 0.2 : 0.08),
                             blurRadius: 12, offset: const Offset(0, 3))],
                         ),
                         child: _buildMessageContent(m['content'] ?? '', isMe),
@@ -489,8 +489,8 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(color: adaptiveSurface2(ctx), borderRadius: BorderRadius.circular(14)),
       child: Row(children: [
-        Container(width: 40, height: 40, decoration: BoxDecoration(color: C.teal.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-          child: Icon(icon, size: 20, color: C.teal)),
+        Container(width: 40, height: 40, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+          child: Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary)),
         const SizedBox(width: 14),
         Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
         const Spacer(),
@@ -525,13 +525,13 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
             Container(
               padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
               decoration: BoxDecoration(
-                color: isMe ? Colors.white.withOpacity(0.18) : C.tealLt.withOpacity(0.6),
+                color: isMe ? Colors.white.withOpacity(0.18) : Theme.of(context).colorScheme.primary.withOpacity(0.08).withOpacity(0.6),
                 borderRadius: BorderRadius.circular(8),
-                border: Border(left: BorderSide(color: C.teal, width: 3)),
+                border: Border(left: BorderSide(color: Theme.of(context).colorScheme.primary, width: 3)),
               ),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 if (senderName.isNotEmpty)
-                  Text(senderName, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.teal)),
+                  Text(senderName, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
                 Text(quoteText, style: const TextStyle(fontSize: 12, color: C.text3),
                   maxLines: 2, overflow: TextOverflow.ellipsis),
               ]),
@@ -560,7 +560,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
       return ClipRRect(borderRadius: BorderRadius.circular(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Image.network(url, fit: BoxFit.cover, width: double.infinity, height: 200,
           loadingBuilder: (_, child, progress) => progress == null ? child
-              : Container(height: 200, color: adaptiveSurface2(context), child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: C.teal))),
+              : Container(height: 200, color: adaptiveSurface2(context), child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.primary))),
           errorBuilder: (_, __, ___) => Container(height: 80, padding: const EdgeInsets.all(16), child: Row(children: [
             const Icon(Icons.broken_image, color: C.text4), const SizedBox(width: 8),
             Flexible(child: Text(url.split('/').last, style: TextStyle(color: isMe ? Colors.white70 : C.text4, fontSize: 12))),
@@ -579,12 +579,12 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
       return Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         if (before.isNotEmpty) Text(before, style: TextStyle(fontSize: 15, color: isMe ? Colors.white : null)),
         Container(margin: const EdgeInsets.only(top: 6), padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(color: (isMe ? Colors.white : C.teal).withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
+          decoration: BoxDecoration(color: (isMe ? Colors.white : Theme.of(context).colorScheme.primary).withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
           child: Row(children: [
-            Icon(Icons.link, size: 16, color: isMe ? Colors.white70 : C.teal),
+            Icon(Icons.link, size: 16, color: isMe ? Colors.white70 : Theme.of(context).colorScheme.primary),
             const SizedBox(width: 8),
             Flexible(child: Text(url.length > 40 ? '${url.substring(0, 40)}...' : url,
-              style: TextStyle(fontSize: 12, color: isMe ? Colors.white70 : C.teal, decoration: TextDecoration.underline))),
+              style: TextStyle(fontSize: 12, color: isMe ? Colors.white70 : Theme.of(context).colorScheme.primary, decoration: TextDecoration.underline))),
           ])),
         if (after.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4),
           child: Text(after, style: TextStyle(fontSize: 14, color: isMe ? Colors.white70 : C.text4))),
@@ -665,7 +665,7 @@ class _ChatInputBarState extends State<_ChatInputBar> {
               color: adaptiveSurface2(context),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.add_rounded, size: 22, color: C.teal),
+            child: Icon(Icons.add_rounded, size: 22, color: Theme.of(context).colorScheme.primary),
           ),
         ),
         Expanded(
@@ -677,7 +677,7 @@ class _ChatInputBarState extends State<_ChatInputBar> {
               color: adaptiveSurface2(context),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: hasText ? C.teal.withOpacity(0.35) : Colors.transparent,
+                color: hasText ? Theme.of(context).colorScheme.primary.withOpacity(0.35) : Colors.transparent,
                 width: 1.5,
               ),
             ),
@@ -708,13 +708,13 @@ class _ChatInputBarState extends State<_ChatInputBar> {
               shape: BoxShape.circle,
               gradient: LinearGradient(
                 colors: hasText
-                    ? [C.teal, C.tealDk]
-                    : [C.teal.withOpacity(0.55), C.tealDk.withOpacity(0.45)],
+                    ? [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary]
+                    : [Theme.of(context).colorScheme.primary.withOpacity(0.55), Theme.of(context).colorScheme.secondary.withOpacity(0.45)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               boxShadow: hasText
-                  ? [BoxShadow(color: C.teal.withOpacity(0.38), blurRadius: 14, offset: const Offset(0, 4))]
+                  ? [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.38), blurRadius: 14, offset: const Offset(0, 4))]
                   : null,
             ),
             child: AnimatedSwitcher(
@@ -787,7 +787,7 @@ class _TypingBubbleState extends State<_TypingBubble> with SingleTickerProviderS
                   width: 7, height: 7,
                   margin: const EdgeInsets.symmetric(horizontal: 2.5),
                   decoration: BoxDecoration(
-                    color: C.teal.withOpacity(0.3 + 0.7 * brightness),
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.3 + 0.7 * brightness),
                     shape: BoxShape.circle,
                   ),
                 );
@@ -892,10 +892,10 @@ class _SwipeableMessageState extends State<_SwipeableMessage>
                 child: Container(
                   width: 32, height: 32,
                   decoration: BoxDecoration(
-                    color: C.teal.withOpacity(0.12),
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.reply_rounded, size: 18, color: C.teal),
+                  child: Icon(Icons.reply_rounded, size: 18, color: Theme.of(context).colorScheme.primary),
                 ),
               ),
             ),
@@ -940,7 +940,7 @@ class _ReplyPreview extends StatelessWidget {
           decoration: BoxDecoration(
             color: surface,
             border: Border(
-              top: BorderSide(color: C.teal.withOpacity(0.2), width: 1),
+              top: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.2), width: 1),
             ),
             boxShadow: [BoxShadow(
               color: Colors.black.withOpacity(isDark ? 0.12 : 0.04),
@@ -949,12 +949,12 @@ class _ReplyPreview extends StatelessWidget {
           ),
           child: Row(children: [
             Container(width: 3, height: 40, decoration: BoxDecoration(
-              color: C.teal, borderRadius: BorderRadius.circular(2),
+              color: Theme.of(context).colorScheme.primary, borderRadius: BorderRadius.circular(2),
             )),
             const SizedBox(width: 10),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(senderName, style: const TextStyle(
-                fontSize: 12, fontWeight: FontWeight.w700, color: C.teal,
+              Text(senderName, style: TextStyle(
+                fontSize: 12, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary,
               )),
               Text(text, style: const TextStyle(fontSize: 13, color: C.text3),
                 maxLines: 1, overflow: TextOverflow.ellipsis),

@@ -148,7 +148,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                   decoration: BoxDecoration(
                     gradient: LinearGradient(colors: org.gradientColors),
                     borderRadius: BorderRadius.circular(20),
-                    boxShadow: tealGlow(opacity: 0.28),
+                    boxShadow: primaryGlow(org.primaryColor, opacity: 0.28),
                   ),
                   child: const Icon(Icons.person_add_rounded, color: Colors.white, size: 30)),
                 const SizedBox(height: 16),
@@ -321,8 +321,8 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                   Text('${l.t('has_account')} ', style: const TextStyle(fontSize: 13, color: C.text4)),
                   GestureDetector(
                     onTap: widget.onGoLogin,
-                    child: Text(l.t('login_link'), style: const TextStyle(
-                        fontSize: 13, color: C.teal, fontWeight: FontWeight.w700))),
+                    child: Text(l.t('login_link'), style: TextStyle(
+                        fontSize: 13, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w700))),
                 ]),
               ]),
             ),

@@ -252,7 +252,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               child: Icon(Icons.arrow_back, size: 20, color: adaptiveText1(context)))),
           SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(l.t('notifications'), style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: C.teal)),
+            Text(l.t('notifications'), style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.primary)),
             if (!_loading)
               Text(unread > 0 ? '$unread ${l.t('notif_unread')}' : l.t('all_read'), style: TextStyle(fontSize: 12, color: C.text4)),
           ])),
@@ -263,11 +263,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
         // Content
         Expanded(child: _loading
-          ? const Center(child: CircularProgressIndicator(color: C.teal, strokeWidth: 2.5))
+          ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary, strokeWidth: 2.5))
           : _notifs.isEmpty
             ? _emptyState()
             : RefreshIndicator(
-                color: C.teal,
+                color: Theme.of(context).colorScheme.primary,
                 onRefresh: _load,
                 child: ListView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
@@ -353,7 +353,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Map<String, dynamic> _config(_NType type) {
     switch (type) {
       case _NType.grade:
-        return {'icon': Icons.star_rounded, 'color': C.teal, 'bg': C.teal.withOpacity(0.08)};
+        return {'icon': Icons.star_rounded, 'color': Theme.of(context).colorScheme.primary, 'bg': Theme.of(context).colorScheme.primary.withOpacity(0.08)};
       case _NType.deadline:
         return {'icon': Icons.timer_rounded, 'color': Color(0xFFEF4444), 'bg': Color(0xFFEF4444).withOpacity(0.10)};
       case _NType.newAssignment:
@@ -364,8 +364,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget _emptyState() {
     final l = context.read<L10n>();
     return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-      Container(width: 80, height: 80, decoration: BoxDecoration(color: C.teal.withOpacity(0.08), shape: BoxShape.circle),
-        child: Icon(Icons.notifications_none_rounded, size: 38, color: C.teal)),
+      Container(width: 80, height: 80, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.08), shape: BoxShape.circle),
+        child: Icon(Icons.notifications_none_rounded, size: 38, color: Theme.of(context).colorScheme.primary)),
       SizedBox(height: 20),
       Text(l.t('no_notif'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
       SizedBox(height: 6),

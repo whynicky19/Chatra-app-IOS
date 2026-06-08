@@ -43,13 +43,14 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     final l          = context.watch<L10n>();
     final surface    = Theme.of(context).colorScheme.surface;
     final isDark     = Theme.of(context).brightness == Brightness.dark;
+    final primary    = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       body: SafeArea(child: ListView(padding: const EdgeInsets.fromLTRB(16, 20, 16, 90), children: [
 
         // ── Page title ────────────────────────────────────────
         _animated(Padding(padding: const EdgeInsets.fromLTRB(4, 0, 4, 24), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(l.t('settings'), style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: C.teal, letterSpacing: -0.8, height: 1.1)),
+          Text(l.t('settings'), style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: primary, letterSpacing: -0.8, height: 1.1)),
           const SizedBox(height: 2),
           Text(l.t('settings_sub'), style: const TextStyle(fontSize: 13, color: C.text4)),
         ])), 0.0, 0.45),
@@ -65,16 +66,16 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           child: Column(children: [
             // Gradient banner
             Stack(clipBehavior: Clip.none, children: [
-              Container(height: 76, decoration: const BoxDecoration(
-                gradient: LinearGradient(colors: [Color(0xFF006475), C.teal], begin: Alignment.topLeft, end: Alignment.bottomRight),
+              Container(height: 76, decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, primary], begin: Alignment.topLeft, end: Alignment.bottomRight),
               )),
               Positioned(bottom: -36, left: 20, child: Container(
                 width: 72, height: 72,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: const LinearGradient(colors: [C.teal, Color(0xFF006475)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                  gradient: LinearGradient(colors: [primary, Theme.of(context).colorScheme.secondary], begin: Alignment.topLeft, end: Alignment.bottomRight),
                   border: Border.all(color: surface, width: 3),
-                  boxShadow: tealGlow(opacity: 0.30),
+                  boxShadow: primaryGlow(primary, opacity: 0.30),
                 ),
                 child: Center(child: Text(auth.initials, style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w900))),
               )),
@@ -83,7 +84,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             Padding(padding: const EdgeInsets.fromLTRB(20, 0, 20, 20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(auth.fullName.isNotEmpty ? auth.fullName : auth.email, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
               const SizedBox(height: 2),
-              Text(_roleLabel(auth.role, l), style: const TextStyle(fontSize: 13, color: C.teal, fontWeight: FontWeight.w600)),
+              Text(_roleLabel(auth.role, l), style: TextStyle(fontSize: 13, color: primary, fontWeight: FontWeight.w600)),
               // Предупреждение если ФИО не на кириллице
               if (auth.fullName.isNotEmpty && !_isCyrillicName(auth.fullName)) ...[
                 const SizedBox(height: 12),
@@ -139,7 +140,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 onPressed: () async {
                   await auth.updateProfile(_nameCtrl.text.trim());
                   if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(l.t('saved')), backgroundColor: C.teal));
+                    SnackBar(content: Text(l.t('saved')), backgroundColor: primary));
                 },
                 child: Text(l.t('save_changes')),
               )),
@@ -189,9 +190,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                     duration: const Duration(milliseconds: 200),
                     padding: const EdgeInsets.symmetric(vertical: 11),
                     decoration: BoxDecoration(
-                      color: sel ? C.teal : Colors.transparent,
+                      color: sel ? primary : Colors.transparent,
                       borderRadius: BorderRadius.circular(12),
-                      boxShadow: sel ? tealGlow(opacity: 0.22) : null,
+                      boxShadow: sel ? primaryGlow(primary, opacity: 0.22) : null,
                     ),
                     child: Column(children: [
                       Text(lang['code']!, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: sel ? Colors.white : C.text4)),
@@ -245,20 +246,23 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   Widget _divider() => Padding(padding: const EdgeInsets.symmetric(vertical: 2),
     child: Divider(height: 16, color: C.border.withOpacity(0.5)));
 
-  Widget _prefRow(IconData icon, String title, String sub, bool val, Function(bool) onChanged) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 6),
-    child: Row(children: [
-      Container(width: 40, height: 40,
-        decoration: BoxDecoration(color: C.teal.withOpacity(0.10), borderRadius: BorderRadius.circular(12)),
-        child: Icon(icon, size: 19, color: C.teal)),
-      const SizedBox(width: 14),
-      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: adaptiveText1(context))),
-        Text(sub, style: const TextStyle(fontSize: 12, color: C.text4)),
-      ])),
-      Switch(value: val, onChanged: onChanged, activeColor: C.teal, materialTapTargetSize: MaterialTapTargetSize.shrinkWrap),
-    ]),
-  );
+  Widget _prefRow(IconData icon, String title, String sub, bool val, Function(bool) onChanged) {
+    final primary = Theme.of(context).colorScheme.primary;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(children: [
+        Container(width: 40, height: 40,
+          decoration: BoxDecoration(color: primary.withOpacity(0.10), borderRadius: BorderRadius.circular(12)),
+          child: Icon(icon, size: 19, color: primary)),
+        const SizedBox(width: 14),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: adaptiveText1(context))),
+          Text(sub, style: const TextStyle(fontSize: 12, color: C.text4)),
+        ])),
+        Switch(value: val, onChanged: onChanged, activeColor: primary, materialTapTargetSize: MaterialTapTargetSize.shrinkWrap),
+      ]),
+    );
+  }
 
   String _roleLabel(String r, L10n l) => r == 'admin' ? l.t('role_admin') : r == 'teacher' ? l.t('role_teacher') : l.t('role_student');
 }

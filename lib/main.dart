@@ -64,10 +64,12 @@ class ChatraApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
+    final org   = context.watch<OrgProvider>();
+    final isSchool = org.isSchool;
     return MaterialApp(
       title: 'Chatra', debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
+      theme: AppTheme.lightFor(isSchool),
+      darkTheme: AppTheme.darkFor(isSchool),
       themeMode: theme.mode,
       builder: (context, child) => GestureDetector(
         onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
@@ -200,7 +202,7 @@ class _SplashState extends State<_Splash> with TickerProviderStateMixin {
                       width: 100,
                       height: 100,
                       decoration: BoxDecoration(
-                        color: C.teal,
+                        color: Theme.of(context).colorScheme.primary,
                         shape: BoxShape.circle,
                       ),
                       alignment: Alignment.center,
@@ -222,7 +224,7 @@ class _SplashState extends State<_Splash> with TickerProviderStateMixin {
                 style: TextStyle(
                   fontSize: 34,
                   fontWeight: FontWeight.w700,
-                  color: C.teal,
+                  color: Theme.of(context).colorScheme.primary,
                   letterSpacing: 1.5,
                 ),
               ),
@@ -242,7 +244,7 @@ class _SplashState extends State<_Splash> with TickerProviderStateMixin {
                 height: 28,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: C.teal.withOpacity(0.5),
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
                 ),
               ),
             ],

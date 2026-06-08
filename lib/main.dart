@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'services/api_service.dart';
 import 'providers/auth_provider.dart';
+import 'providers/org_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/l10n_provider.dart';
 import 'providers/classes_provider.dart';
@@ -12,6 +13,7 @@ import 'providers/chats_provider.dart';
 import 'theme/app_theme.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
+import 'screens/auth/org_select_screen.dart';
 import 'screens/main_shell.dart';
 import 'screens/classes/class_detail_screen.dart';
 
@@ -33,18 +35,20 @@ void main() {
 
   final api = ApiService(baseUrl: _resolveBaseUrl());
   final auth = AuthProvider(api);
+  final org = OrgProvider();
   final theme = ThemeProvider();
   final l10n = L10n();
   final classes = ClassesProvider(api, auth);
   final chats = ChatsProvider(api, auth);
 
   api.onUnauthorized = () => auth.logout();
-  Future.wait([auth.init(), theme.init(), l10n.init()]);
+  Future.wait([auth.init(), org.init(), theme.init(), l10n.init()]);
 
   runApp(MultiProvider(
     providers: [
       Provider<ApiService>.value(value: api),
       ChangeNotifierProvider<AuthProvider>.value(value: auth),
+      ChangeNotifierProvider<OrgProvider>.value(value: org),
       ChangeNotifierProvider<ThemeProvider>.value(value: theme),
       ChangeNotifierProvider<L10n>.value(value: l10n),
       ChangeNotifierProvider<ClassesProvider>.value(value: classes),
@@ -101,9 +105,10 @@ class _AuthGateState extends State<_AuthGate> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final org = context.watch<OrgProvider>();
 
-    // Показываем splash пока: auth не загрузился ИЛИ минимальное время не прошло
-    if (!auth.initialized || !_splashDone) return const _Splash();
+    // Показываем splash пока: auth/org не загрузились ИЛИ минимальное время не прошло
+    if (!auth.initialized || !org.isInitialized || !_splashDone) return const _Splash();
 
     // Плавный переход от splash к контенту
     return AnimatedSwitcher(
@@ -111,7 +116,9 @@ class _AuthGateState extends State<_AuthGate> {
       switchInCurve: Curves.easeOut,
       child: auth.isAuthenticated
           ? const MainShell(key: ValueKey('main'))
-          : const _AuthNavigator(key: ValueKey('auth')),
+          : !org.isSelected
+              ? const OrgSelectScreen(key: ValueKey('org'))
+              : const _AuthNavigator(key: ValueKey('auth')),
     );
   }
 }

@@ -130,8 +130,10 @@ class ApiService {
 
   // ── Auth ────────────────────────────────────────────────────────────────────
 
-  Future<Map<String, dynamic>> login(String email, String password) async {
-    final response = await _dio.post('/auth/login',
+  Future<Map<String, dynamic>> login(String email, String password, {String orgType = 'university'}) async {
+    final response = await _dio.post(
+      '/auth/login',
+      queryParameters: {'org_type': orgType},
       data: 'username=${Uri.encodeComponent(email)}&password=${Uri.encodeComponent(password)}',
       options: Options(contentType: 'application/x-www-form-urlencoded'),
     );
@@ -139,13 +141,14 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> register(String email, String password, String role,
-      {String? fullName, String? group}) async {
+      {String? fullName, String? group, String orgType = 'university'}) async {
     final response = await _dio.post('/auth/register', data: {
       'email': email,
       'password': password,
       'role': role,
       if (fullName != null) 'full_name': fullName,
       if (group != null) 'group': group,
+      'org_type': orgType,
     });
     return response.data;
   }

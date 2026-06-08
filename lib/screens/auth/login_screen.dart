@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/l10n_provider.dart';
+import '../../providers/org_provider.dart';
 import '../../theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -38,7 +39,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       setState(() => _error = l.t('fill_fields')); return;
     }
     setState(() { _error = null; _busy = true; });
-    final ok = await context.read<AuthProvider>().login(_email.text.trim(), _pw.text);
+    final orgType = context.read<OrgProvider>().orgTypeString;
+    final ok = await context.read<AuthProvider>().login(_email.text.trim(), _pw.text, orgType: orgType);
     if (!mounted) return;
     if (!ok) setState(() { _error = l.t('wrong_creds'); _busy = false; });
     else setState(() => _busy = false);
@@ -47,6 +49,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) {
     final l       = context.watch<L10n>();
+    final org     = context.read<OrgProvider>();
     final isDark  = Theme.of(context).brightness == Brightness.dark;
     final surface = Theme.of(context).colorScheme.surface;
 
@@ -55,14 +58,25 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         // ── Gradient background ──────────────────────────────
         Container(decoration: BoxDecoration(gradient: LinearGradient(
           colors: isDark
-              ? [const Color(0xFF051215), const Color(0xFF082028)]
-              : [const Color(0xFF006475), const Color(0xFF009AAF)],
+              ? [org.primaryColor.withOpacity(0.12), org.primaryColor.withOpacity(0.22)]
+              : org.gradientColors,
           begin: Alignment.topLeft, end: Alignment.bottomRight,
         ))),
         // Decorative blobs
         Positioned(top: -80, right: -60, child: _Blob(size: 260, opacity: 0.07)),
         Positioned(bottom: -100, left: -70, child: _Blob(size: 320, opacity: 0.06)),
         Positioned(top: 160, left: -40, child: _Blob(size: 180, opacity: 0.05)),
+
+        // Кнопка назад → выбор организации
+        Positioned(
+          top: 8, left: 8,
+          child: SafeArea(
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white, size: 20),
+              onPressed: () => context.read<OrgProvider>().clear(),
+            ),
+          ),
+        ),
 
         // ── Card content ──────────────────────────────────────
         SafeArea(child: Center(child: SingleChildScrollView(
@@ -76,7 +90,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                 borderRadius: BorderRadius.circular(28),
                 boxShadow: [
                   BoxShadow(color: Colors.black.withOpacity(0.22), blurRadius: 48, offset: const Offset(0, 20)),
-                  BoxShadow(color: C.teal.withOpacity(0.12), blurRadius: 24, offset: const Offset(0, 8)),
+                  BoxShadow(color: org.primaryColor.withOpacity(0.12), blurRadius: 24, offset: const Offset(0, 8)),
                 ],
               ),
               child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -143,7 +157,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   child: ElevatedButton(
                     onPressed: _busy ? null : _submit,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: C.teal,
+                      backgroundColor: org.primaryColor,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       elevation: 0,
                     ),

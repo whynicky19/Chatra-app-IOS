@@ -51,11 +51,11 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> login(String email, String password) async {
+  Future<bool> login(String email, String password, {String orgType = 'university'}) async {
     _isLoading = true;
     notifyListeners();
     try {
-      final data = await api.login(email, password);
+      final data = await api.login(email, password, orgType: orgType);
       final token = data['access_token'] as String;
       await api.saveToken(token);
       final refreshToken = data['refresh_token'] as String?;
@@ -73,12 +73,12 @@ class AuthProvider extends ChangeNotifier {
 
   String? lastError;
 
-  Future<bool> register(String email, String password, String role, {String? fullName, String? group}) async {
+  Future<bool> register(String email, String password, String role, {String? fullName, String? group, String orgType = 'university'}) async {
     _isLoading = true;
     lastError = null;
     notifyListeners();
     try {
-      await api.register(email, password, role, fullName: fullName, group: group);
+      await api.register(email, password, role, fullName: fullName, group: group, orgType: orgType);
       _isLoading = false;
       notifyListeners();
       return true;

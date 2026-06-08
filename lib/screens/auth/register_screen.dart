@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/l10n_provider.dart';
+import '../../providers/org_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/toast.dart';
@@ -43,14 +44,14 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
     return RegExp(r'^[а-яА-ЯёЁәӘғҒқҚңҢөӨұҰүҮһҺіІ\s\-]+$').hasMatch(n);
   }
 
-  bool get _ok {
+  bool _isValid({required bool isSchool}) {
     final parts = _name.text.trim().split(' ').where((s) => s.isNotEmpty).toList();
     return parts.length >= 2 &&
         _nameIsCyrillic &&
         RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(_email.text.trim()) &&
         _pw.text.length >= 6 &&
         _pwScore > 40 &&
-        _group.isNotEmpty;
+        (isSchool || _group.isNotEmpty);
   }
 
   int get _pwScore {
@@ -72,12 +73,15 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   }
 
   Future<void> _submit() async {
-    if (!_ok || _submitted) return;
+    final org = context.read<OrgProvider>();
+    if (!_isValid(isSchool: org.isSchool) || _submitted) return;
     setState(() => _submitted = true);
     final auth = context.read<AuthProvider>();
     final goLogin = widget.onGoLogin;
     final ok = await auth.register(_email.text.trim(), _pw.text, 'student',
-        fullName: _name.text.trim(), group: _group);
+        fullName: _name.text.trim(),
+        group: org.isSchool ? null : (_group.isEmpty ? null : _group),
+        orgType: org.orgTypeString);
     if (!mounted) {
       if (ok) goLogin?.call();
       return;
@@ -94,9 +98,11 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
-    final l      = context.watch<L10n>();
-    final auth   = context.watch<AuthProvider>();
-    final sc     = _pwScore;
+    final l        = context.watch<L10n>();
+    final auth     = context.watch<AuthProvider>();
+    final org      = context.watch<OrgProvider>();
+    final isSchool = org.isSchool;
+    final sc       = _pwScore;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = Theme.of(context).colorScheme.surface;
 
@@ -104,12 +110,23 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
       body: Stack(children: [
         Container(decoration: BoxDecoration(gradient: LinearGradient(
           colors: isDark
-              ? [const Color(0xFF051215), const Color(0xFF082028)]
-              : [const Color(0xFF006475), const Color(0xFF009AAF)],
+              ? [org.primaryColor.withOpacity(0.12), org.primaryColor.withOpacity(0.22)]
+              : org.gradientColors,
           begin: Alignment.topRight, end: Alignment.bottomLeft,
         ))),
         Positioned(top: -60, left: -50, child: _Blob(size: 240, opacity: 0.07)),
         Positioned(bottom: -80, right: -60, child: _Blob(size: 300, opacity: 0.06)),
+
+        // Кнопка назад → выбор организации
+        Positioned(
+          top: 8, left: 8,
+          child: SafeArea(
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white, size: 20),
+              onPressed: () => context.read<OrgProvider>().clear(),
+            ),
+          ),
+        ),
 
         SafeArea(child: Center(child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
@@ -122,14 +139,14 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                 borderRadius: BorderRadius.circular(28),
                 boxShadow: [
                   BoxShadow(color: Colors.black.withOpacity(0.22), blurRadius: 48, offset: const Offset(0, 20)),
-                  BoxShadow(color: C.teal.withOpacity(0.12), blurRadius: 24, offset: const Offset(0, 8)),
+                  BoxShadow(color: org.primaryColor.withOpacity(0.12), blurRadius: 24, offset: const Offset(0, 8)),
                 ],
               ),
               child: Column(mainAxisSize: MainAxisSize.min, children: [
                 // Icon
                 Container(width: 64, height: 64,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [C.teal, C.tealDk]),
+                    gradient: LinearGradient(colors: org.gradientColors),
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: tealGlow(opacity: 0.28),
                   ),
@@ -151,8 +168,25 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                   ),
                   onChanged: (_) => setState(() {}),
                 ),
+                // Подсказка: нужно минимум 2 слова
+                if (_name.text.isNotEmpty &&
+                    _name.text.trim().split(' ').where((s) => s.isNotEmpty).length < 2)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 7),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(color: const Color(0xFFFFF8E1), borderRadius: BorderRadius.circular(10)),
+                      child: const Row(children: [
+                        Icon(Icons.info_outline_rounded, size: 14, color: Color(0xFFF59E0B)),
+                        SizedBox(width: 7),
+                        Expanded(child: Text('Введите фамилию и имя полностью', style: TextStyle(fontSize: 12, color: Color(0xFFB45309), fontWeight: FontWeight.w500))),
+                      ]),
+                    ),
+                  ),
                 // Предупреждение если ФИО не на кириллице
-                if (_name.text.isNotEmpty && !_nameIsCyrillic)
+                if (_name.text.isNotEmpty &&
+                    _name.text.trim().split(' ').where((s) => s.isNotEmpty).length >= 2 &&
+                    !_nameIsCyrillic)
                   Padding(
                     padding: const EdgeInsets.only(top: 7),
                     child: Container(
@@ -181,35 +215,36 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                 ),
                 const SizedBox(height: 14),
 
-                // Group
-                _fieldLabel(l.t('group_label')),
-                TextField(
-                  controller: _groupQ,
-                  decoration: InputDecoration(
-                    hintText: 'ISU-25',
-                    prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
-                      child: Icon(Icons.group_outlined, size: 18, color: C.text4)),
-                    suffixIcon: _group.isNotEmpty
-                        ? const Icon(Icons.check_circle_rounded, color: C.green, size: 20)
-                        : null,
+                // Group — только для университета
+                if (!isSchool) ...[
+                  _fieldLabel(l.t('group_label')),
+                  TextField(
+                    controller: _groupQ,
+                    decoration: InputDecoration(
+                      hintText: 'ISU-25',
+                      prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
+                        child: Icon(Icons.group_outlined, size: 18, color: C.text4)),
+                      suffixIcon: _group.isNotEmpty
+                          ? const Icon(Icons.check_circle_rounded, color: C.green, size: 20)
+                          : null,
+                    ),
+                    onChanged: (v) { _group = ''; _searchGroups(v); setState(() {}); },
                   ),
-                  onChanged: (v) { _group = ''; _searchGroups(v); setState(() {}); },
-                ),
-                if (_showSugg) Container(
-                  margin: const EdgeInsets.only(top: 4),
-                  constraints: const BoxConstraints(maxHeight: 150),
-                  decoration: BoxDecoration(
-                    color: surface,
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: softShadow(isDark),
-                  ),
-                  child: ListView(shrinkWrap: true, children: _suggestions.map((g) => ListTile(
-                    dense: true,
-                    title: Text(g, style: const TextStyle(fontWeight: FontWeight.w600)),
-                    onTap: () => setState(() { _group = g; _groupQ.text = g; _showSugg = false; }),
-                  )).toList())),
-
-                const SizedBox(height: 14),
+                  if (_showSugg) Container(
+                    margin: const EdgeInsets.only(top: 4),
+                    constraints: const BoxConstraints(maxHeight: 150),
+                    decoration: BoxDecoration(
+                      color: surface,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: softShadow(isDark),
+                    ),
+                    child: ListView(shrinkWrap: true, children: _suggestions.map((g) => ListTile(
+                      dense: true,
+                      title: Text(g, style: const TextStyle(fontWeight: FontWeight.w600)),
+                      onTap: () => setState(() { _group = g; _groupQ.text = g; _showSugg = false; }),
+                    )).toList())),
+                  const SizedBox(height: 14),
+                ],
 
                 // Password
                 _fieldLabel(l.t('password_label')),
@@ -270,9 +305,9 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
 
                 SizedBox(width: double.infinity, height: 52,
                   child: ElevatedButton(
-                    onPressed: auth.isLoading || !_ok || _submitted ? null : _submit,
+                    onPressed: auth.isLoading || !_isValid(isSchool: isSchool) || _submitted ? null : _submit,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: C.teal,
+                      backgroundColor: org.primaryColor,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       elevation: 0,
                     ),

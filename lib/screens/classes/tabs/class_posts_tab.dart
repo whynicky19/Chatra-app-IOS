@@ -80,17 +80,25 @@ class ClassPostsTab extends StatelessWidget {
       ),
     );
 
-    if (posts.isEmpty) return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-      Container(width: 80, height: 80,
-        decoration: BoxDecoration(gradient: RadialGradient(colors: [accentColor.withOpacity(0.18), accentColor.withOpacity(0.04)]), shape: BoxShape.circle),
-        child: Icon(isLecture ? Icons.menu_book_rounded : Icons.inventory_2_outlined, size: 36, color: accentColor)),
-      SizedBox(height: 18),
-      Text(isLecture ? l.t('no_lectures') : l.t('no_materials'),
-        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: adaptiveText1(context))),
-      SizedBox(height: 6),
-      Text(isTeacher ? 'Добавьте первый материал' : 'Здесь появятся материалы курса',
-        style: TextStyle(fontSize: 13, color: C.text4)),
-    ]));
+    if (posts.isEmpty) return CustomScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      slivers: [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(width: 80, height: 80,
+              decoration: BoxDecoration(gradient: RadialGradient(colors: [accentColor.withOpacity(0.18), accentColor.withOpacity(0.04)]), shape: BoxShape.circle),
+              child: Icon(isLecture ? Icons.menu_book_rounded : Icons.inventory_2_outlined, size: 36, color: accentColor)),
+            const SizedBox(height: 18),
+            Text(isLecture ? l.t('no_lectures') : l.t('no_materials'),
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: adaptiveText1(context))),
+            const SizedBox(height: 6),
+            Text(isTeacher ? 'Добавьте первый материал' : 'Здесь появятся материалы курса',
+              style: const TextStyle(fontSize: 13, color: C.text4)),
+          ])),
+        ),
+      ],
+    );
 
     return ListView.builder(padding: EdgeInsets.fromLTRB(14, 14, 14, 90), itemCount: posts.length, itemBuilder: (ctx, i) {
       final p = posts[i];

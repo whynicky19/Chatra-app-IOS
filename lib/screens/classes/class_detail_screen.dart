@@ -409,7 +409,10 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           ),
           // ── Tab content ─────────────────────────────────────────────────────
           Expanded(child: _loading
-            ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))
+            ? CustomScrollView(physics: const AlwaysScrollableScrollPhysics(), slivers: [
+                SliverFillRemaining(hasScrollBody: false,
+                  child: Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))),
+              ])
             : TabBarView(controller: _tabCtrl, children: [
                 ClassPostsTab(
                   posts: _lectures, type: 'lecture', isTeacher: auth.isTeacher, fileTexts: _fileTexts,

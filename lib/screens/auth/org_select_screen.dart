@@ -61,7 +61,7 @@ class _OrgSelectScreenState extends State<OrgSelectScreen>
 
               _OrgCard(
                 title: 'Университет',
-                subtitle: 'Для студентов и преподавателей вузов',
+                subtitle: 'Высшее образование',
                 icon: Icons.school_rounded,
                 primaryColor: const Color(0xFF00B1C9),
                 gradientColors: const [Color(0xFF006475), Color(0xFF009AAF)],
@@ -71,7 +71,7 @@ class _OrgSelectScreenState extends State<OrgSelectScreen>
 
               _OrgCard(
                 title: 'Школа',
-                subtitle: 'Для учеников и учителей школ',
+                subtitle: 'Среднее образование',
                 icon: Icons.menu_book_rounded,
                 primaryColor: const Color(0xFFF59E0B),
                 gradientColors: const [Color(0xFFB45309), Color(0xFFF59E0B)],

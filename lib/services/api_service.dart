@@ -8,7 +8,7 @@ class ApiService {
   String? _token;
   VoidCallback? onUnauthorized;
 
-  static const String defaultBaseUrl = 'http://192.168.10.6:8000';
+  static const String defaultBaseUrl = 'http://172.20.10.2:8000';
   static const _tokenKey = '_tk';
   static const _refreshKey = '_rtk';
 
@@ -23,10 +23,30 @@ class ApiService {
 
   ApiService({String? baseUrl}) : baseUrl = baseUrl ?? defaultBaseUrl {
     _dio = Dio(BaseOptions(
-      baseUrl: this.baseUrl,
-      connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 15),
-    ));
+  baseUrl: this.baseUrl,
+  connectTimeout: const Duration(seconds: 15),
+  receiveTimeout: const Duration(seconds: 15),
+  headers: {
+    'ngrok-skip-browser-warning': 'true',
+  },
+));
+
+    _dio.interceptors.add(InterceptorsWrapper(
+  onRequest: (options, handler) {
+    print('>>> REQUEST: ${options.method} ${options.baseUrl}${options.path}');
+    print('>>> DATA: ${options.data}');
+    return handler.next(options);
+  },
+  onResponse: (response, handler) {
+    print('>>> RESPONSE: ${response.statusCode} ${response.data}');
+    return handler.next(response);
+  },
+  onError: (error, handler) {
+    print('>>> ERROR: ${error.type} ${error.message}');
+    print('>>> ERROR RESPONSE: ${error.response?.data}');
+    return handler.next(error);
+  },
+));
 
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) {

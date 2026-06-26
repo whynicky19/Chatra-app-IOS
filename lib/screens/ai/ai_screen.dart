@@ -158,13 +158,12 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
                   key: const ValueKey('clear_btn'),
                   onTap: () {
                     HapticFeedback.lightImpact();
-                    showDialog(context: context, builder: (ctx) => AlertDialog(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      title: const Text('Очистить чат?', style: TextStyle(fontWeight: FontWeight.w800)),
-                      content: const Text('История переписки будет удалена', style: TextStyle(color: C.text4)),
+                    showCupertinoDialog(context: context, builder: (ctx) => CupertinoAlertDialog(
+                      title: const Text('Очистить чат?'),
+                      content: const Text('История переписки будет удалена'),
                       actions: [
-                        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена', style: TextStyle(color: C.text4))),
-                        TextButton(onPressed: () { Navigator.pop(ctx); setState(() => _msgs.clear()); }, child: const Text('Удалить', style: TextStyle(color: C.red, fontWeight: FontWeight.w700))),
+                        CupertinoDialogAction(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
+                        CupertinoDialogAction(isDestructiveAction: true, onPressed: () { Navigator.pop(ctx); setState(() => _msgs.clear()); }, child: const Text('Удалить')),
                       ],
                     ));
                   },

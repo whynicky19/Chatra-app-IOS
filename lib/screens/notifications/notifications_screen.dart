@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -249,7 +250,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         Padding(padding: EdgeInsets.fromLTRB(20, 20, 20, 16), child: Row(children: [
           GestureDetector(onTap: () => Navigator.pop(context),
             child: Container(width: 40, height: 40, decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
-              child: Icon(Icons.arrow_back, size: 20, color: adaptiveText1(context)))),
+              child: Icon(CupertinoIcons.chevron_left, size: 20, color: adaptiveText1(context)))),
           SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(l.t('notifications'), style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: adaptiveText1(context), letterSpacing: -0.3)),
@@ -258,7 +259,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ])),
           GestureDetector(onTap: _load,
             child: Container(padding: EdgeInsets.all(10), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
-              child: Icon(Icons.refresh, size: 18, color: C.text4))),
+              child: Icon(CupertinoIcons.refresh, size: 18, color: C.text4))),
         ])),
 
         // Content
@@ -299,7 +300,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           alignment: Alignment.centerRight,
                           padding: const EdgeInsets.only(right: 24),
                           child: const Column(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(Icons.delete_rounded, color: Colors.white, size: 24),
+                            Icon(CupertinoIcons.trash, color: Colors.white, size: 24),
                             SizedBox(height: 4),
                             Text('Удалить', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
                           ]),
@@ -330,7 +331,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                   color: adaptiveText1(context)))),
                                 if (!n.isRead) Container(width: 8, height: 8, decoration: BoxDecoration(color: cfg['color'] as Color, shape: BoxShape.circle)),
                                 if (canNavigate) Padding(padding: const EdgeInsets.only(left: 6),
-                                  child: Icon(Icons.arrow_forward_ios_rounded, size: 11, color: C.text4)),
+                                  child: Icon(CupertinoIcons.chevron_right, size: 11, color: C.text4)),
                               ]),
                               const SizedBox(height: 4),
                               Text(n.body, style: const TextStyle(fontSize: 13, color: C.text4, height: 1.4)),
@@ -353,11 +354,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Map<String, dynamic> _config(_NType type) {
     switch (type) {
       case _NType.grade:
-        return {'icon': Icons.star_rounded, 'color': Theme.of(context).colorScheme.primary, 'bg': Theme.of(context).colorScheme.primary.withOpacity(0.08)};
+        return {'icon': CupertinoIcons.star, 'color': Theme.of(context).colorScheme.primary, 'bg': Theme.of(context).colorScheme.primary.withOpacity(0.08)};
       case _NType.deadline:
-        return {'icon': Icons.timer_rounded, 'color': Color(0xFFEF4444), 'bg': Color(0xFFEF4444).withOpacity(0.10)};
+        return {'icon': CupertinoIcons.timer, 'color': Color(0xFFEF4444), 'bg': Color(0xFFEF4444).withOpacity(0.10)};
       case _NType.newAssignment:
-        return {'icon': Icons.assignment_rounded, 'color': Color(0xFF6366F1), 'bg': Color(0xFF6366F1).withOpacity(0.08)};
+        return {'icon': CupertinoIcons.doc_text, 'color': Color(0xFF6366F1), 'bg': Color(0xFF6366F1).withOpacity(0.08)};
     }
   }
 
@@ -365,7 +366,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final l = context.read<L10n>();
     return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
       Container(width: 80, height: 80, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.08), shape: BoxShape.circle),
-        child: Icon(Icons.notifications_none_rounded, size: 38, color: Theme.of(context).colorScheme.primary)),
+        child: Icon(CupertinoIcons.bell, size: 38, color: Theme.of(context).colorScheme.primary)),
       SizedBox(height: 20),
       Text(l.t('no_notif'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
       SizedBox(height: 6),

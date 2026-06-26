@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -116,13 +117,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
       body: SafeArea(
         child: _loading
             ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary, strokeWidth: 2))
-            : RefreshIndicator(
-                color: Theme.of(context).colorScheme.primary,
-                onRefresh: () async {
-                  setState(() => _loading = true);
-                  await _load();
-                },
-                child: CustomScrollView(slivers: [
+            : CustomScrollView(slivers: [
+                  CupertinoSliverRefreshControl(
+                    onRefresh: () async {
+                      setState(() => _loading = true);
+                      await _load();
+                    },
+                  ),
                   // ── Header ──
                   SliverToBoxAdapter(child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 16, 22, 8),
@@ -135,7 +136,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             color: adaptiveSurface2(context),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Icon(Icons.arrow_back_ios_new, size: 16, color: adaptiveText1(context)),
+                          child: Icon(CupertinoIcons.chevron_left, size: 16, color: adaptiveText1(context)),
                         ),
                       ),
                       const SizedBox(width: 14),
@@ -151,7 +152,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   SliverToBoxAdapter(child: _buildDayList(isDark, today)),
                   const SliverToBoxAdapter(child: SizedBox(height: 90)),
                 ]),
-              ),
       ),
     );
   }
@@ -175,14 +175,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
       child: Column(children: [
         // Month nav
         Row(children: [
-          _navBtn(Icons.chevron_left, () => setState(() =>
+          _navBtn(CupertinoIcons.chevron_left, () => setState(() =>
             _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month - 1))),
           Expanded(child: Text(
             '${_monthNamesRU[_focusedMonth.month - 1]} ${_focusedMonth.year}',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary),
           )),
-          _navBtn(Icons.chevron_right, () => setState(() =>
+          _navBtn(CupertinoIcons.chevron_right, () => setState(() =>
             _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month + 1))),
         ]),
         const SizedBox(height: 12),
@@ -346,7 +346,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 40),
         child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.event_available_rounded, size: 52, color: C.text4.withOpacity(0.4)),
+          Icon(CupertinoIcons.calendar_badge_plus, size: 52, color: C.text4.withOpacity(0.4)),
           const SizedBox(height: 12),
           Text(l.t('no_deadlines'), style: const TextStyle(fontSize: 15, color: C.text4)),
         ])),
@@ -410,9 +410,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     ),
                 ])),
                 if (isSubmitted)
-                  const Icon(Icons.check_circle_rounded, size: 20, color: C.green)
+                  const Icon(CupertinoIcons.checkmark_circle_fill, size: 20, color: C.green)
                 else if (classId != null)
-                  const Icon(Icons.chevron_right_rounded, size: 18, color: C.text4),
+                  const Icon(CupertinoIcons.chevron_right, size: 18, color: C.text4),
               ]),
             ),
           );

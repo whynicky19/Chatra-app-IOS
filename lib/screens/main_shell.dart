@@ -137,7 +137,7 @@ class _LiquidGlassNavBar extends StatelessWidget {
     required this.isDark,
   });
 
-  static final _blur = ImageFilter.blur(sigmaX: 14, sigmaY: 14, tileMode: TileMode.mirror);
+  static final _blur = ImageFilter.blur(sigmaX: 20, sigmaY: 20, tileMode: TileMode.mirror);
 
   @override
   Widget build(BuildContext context) {
@@ -174,12 +174,12 @@ class _LiquidGlassNavBar extends StatelessWidget {
                 end: Alignment.bottomCenter,
                 colors: isDark
                     ? [
-                        Colors.white.withOpacity(0.11),
-                        Colors.white.withOpacity(0.05),
+                        Colors.white.withOpacity(0.07),
+                        Colors.white.withOpacity(0.03),
                       ]
                     : [
-                        Colors.white.withOpacity(0.78),
-                        Colors.white.withOpacity(0.56),
+                        Colors.white.withOpacity(0.58),
+                        Colors.white.withOpacity(0.38),
                       ],
               ),
               borderRadius: BorderRadius.circular(32),

@@ -157,35 +157,29 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     // Show download progress dialog
     var progress = 0.0;
     var cancelled = false;
-    showDialog(
+    showCupertinoDialog(
       context: ctx,
       barrierDismissible: false,
       builder: (_) => StatefulBuilder(builder: (dCtx, setD) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        return CupertinoAlertDialog(
+          title: const Text('Открытие файла'),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
-            Container(
-              width: 52, height: 52,
-              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.10), shape: BoxShape.circle),
-              child: Icon(_fileTypeConfig(ext)['icon'] as IconData, color: Theme.of(context).colorScheme.primary, size: 26),
-            ),
-            const SizedBox(height: 14),
-            Text('Открытие файла', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 4),
-            Text(name, style: TextStyle(fontSize: 12, color: C.text4), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
+            Text(name, style: const TextStyle(fontSize: 12, color: C.text4), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis),
+            const SizedBox(height: 12),
             ClipRRect(
               borderRadius: BorderRadius.circular(4),
               child: StatefulBuilder(builder: (_, sp) => LinearProgressIndicator(value: progress > 0 ? progress : null, color: Theme.of(context).colorScheme.primary, backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.12), minHeight: 5)),
             ),
-            const SizedBox(height: 10),
-            Text(progress > 0 ? '${(progress * 100).toInt()}%' : 'Загрузка...', style: TextStyle(fontSize: 12, color: C.text4)),
-            const SizedBox(height: 4),
-            TextButton(
-              onPressed: () { cancelled = true; Navigator.pop(dCtx); },
-              child: Text('Отмена', style: TextStyle(color: C.text4)),
-            ),
+            const SizedBox(height: 6),
+            Text(progress > 0 ? '${(progress * 100).toInt()}%' : 'Загрузка...', style: const TextStyle(fontSize: 12, color: C.text4)),
           ]),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () { cancelled = true; Navigator.pop(dCtx); },
+              child: const Text('Отмена'),
+            ),
+          ],
         );
       }),
     );

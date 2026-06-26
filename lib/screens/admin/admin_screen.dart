@@ -873,26 +873,26 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     final emailCtrl = TextEditingController(), pwCtrl = TextEditingController();
     String role = 'student';
     final l = context.read<L10n>();
-    showDialog(context: context, builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      title: Text(l.t('create_user'), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
-      content: Column(mainAxisSize: MainAxisSize.min, children: [
-        TextField(controller: emailCtrl, keyboardType: TextInputType.emailAddress,
-          decoration: const InputDecoration(hintText: 'Email', prefixIcon: Padding(padding: EdgeInsets.only(left: 4), child: Icon(CupertinoIcons.mail, size: 18, color: C.text4)))),
-        const SizedBox(height: 12),
-        TextField(controller: pwCtrl, obscureText: true,
-          decoration: const InputDecoration(hintText: 'Пароль', prefixIcon: Padding(padding: EdgeInsets.only(left: 4), child: Icon(CupertinoIcons.lock, size: 18, color: C.text4)))),
-        const SizedBox(height: 12),
+    showCupertinoDialog(context: context, builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => CupertinoAlertDialog(
+      title: Text(l.t('create_user')),
+      content: Padding(padding: const EdgeInsets.only(top: 8), child: Column(mainAxisSize: MainAxisSize.min, children: [
+        CupertinoTextField(controller: emailCtrl, keyboardType: TextInputType.emailAddress, placeholder: 'Email',
+          prefix: const Padding(padding: EdgeInsets.only(left: 8), child: Icon(CupertinoIcons.mail, size: 18, color: C.text4))),
+        const SizedBox(height: 8),
+        CupertinoTextField(controller: pwCtrl, obscureText: true, placeholder: 'Пароль',
+          prefix: const Padding(padding: EdgeInsets.only(left: 8), child: Icon(CupertinoIcons.lock, size: 18, color: C.text4))),
+        const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           value: role,
           decoration: const InputDecoration(prefixIcon: Padding(padding: EdgeInsets.only(left: 4), child: Icon(CupertinoIcons.tag, size: 18, color: C.text4))),
           items: ['student', 'teacher', 'admin'].map((r) => DropdownMenuItem(value: r, child: Text(r, style: const TextStyle(fontWeight: FontWeight.w600)))).toList(),
           onChanged: (v) => setS(() => role = v!),
         ),
-      ]),
+      ])),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l.t('cancel'))),
-        ElevatedButton(
+        CupertinoDialogAction(onPressed: () => Navigator.pop(ctx), child: Text(l.t('cancel'))),
+        CupertinoDialogAction(
+          isDefaultAction: true,
           onPressed: () async {
             try {
               await context.read<ApiService>().adminCreateUser(emailCtrl.text.trim(), pwCtrl.text, role);

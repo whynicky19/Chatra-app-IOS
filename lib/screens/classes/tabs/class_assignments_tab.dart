@@ -827,13 +827,12 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             OutlinedButton(
               onPressed: () async {
                 Navigator.pop(ctx);
-                final ok = await showDialog<bool>(context: context, builder: (d) => AlertDialog(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  title: Text('Удалить задание?', style: TextStyle(fontWeight: FontWeight.w800)),
-                  content: Text('Это действие нельзя отменить', style: TextStyle(color: C.text4)),
+                final ok = await showCupertinoDialog<bool>(context: context, builder: (d) => CupertinoAlertDialog(
+                  title: const Text('Удалить задание?'),
+                  content: const Text('Это действие нельзя отменить'),
                   actions: [
-                    TextButton(onPressed: () => Navigator.pop(d, false), child: Text('Отмена')),
-                    ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: C.red), onPressed: () => Navigator.pop(d, true), child: Text('Удалить')),
+                    CupertinoDialogAction(onPressed: () => Navigator.pop(d, false), child: const Text('Отмена')),
+                    CupertinoDialogAction(isDestructiveAction: true, onPressed: () => Navigator.pop(d, true), child: const Text('Удалить')),
                   ],
                 ));
                 if (ok == true) {

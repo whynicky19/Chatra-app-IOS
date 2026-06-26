@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -67,7 +68,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           top: 8, left: 8,
           child: SafeArea(
             child: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white, size: 20),
+              icon: const Icon(CupertinoIcons.chevron_left, color: Colors.white, size: 20),
               onPressed: () => context.read<OrgProvider>().clear(),
             ),
           ),
@@ -107,7 +108,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   decoration: InputDecoration(
                     hintText: 'you@example.com',
                     prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
-                      child: Icon(Icons.mail_outline_rounded, size: 18, color: C.text4)),
+                      child: Icon(CupertinoIcons.mail, size: 18, color: C.text4)),
                   ),
                   onSubmitted: (_) => _submit(),
                 ),
@@ -121,9 +122,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   decoration: InputDecoration(
                     hintText: '••••••••',
                     prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
-                      child: Icon(Icons.lock_outline_rounded, size: 18, color: C.text4)),
+                      child: Icon(CupertinoIcons.lock, size: 18, color: C.text4)),
                     suffixIcon: IconButton(
-                      icon: Icon(_showPw ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                      icon: Icon(_showPw ? CupertinoIcons.eye_slash : CupertinoIcons.eye,
                           color: C.text4, size: 18),
                       onPressed: () => setState(() => _showPw = !_showPw),
                     ),
@@ -138,7 +139,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                     decoration: BoxDecoration(color: C.redLt, borderRadius: BorderRadius.circular(14)),
                     child: Row(children: [
-                      const Icon(Icons.error_outline_rounded, color: C.red, size: 16),
+                      const Icon(CupertinoIcons.exclamationmark_circle, color: C.red, size: 16),
                       const SizedBox(width: 8),
                       Expanded(child: Text(_error!, style: const TextStyle(color: C.red, fontSize: 13, fontWeight: FontWeight.w500))),
                     ]),

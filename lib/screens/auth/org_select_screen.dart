@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/org_provider.dart';
@@ -62,7 +63,7 @@ class _OrgSelectScreenState extends State<OrgSelectScreen>
               _OrgCard(
                 title: 'Университет',
                 subtitle: 'Высшее образование',
-                icon: Icons.school_rounded,
+                icon: CupertinoIcons.book_fill,
                 primaryColor: const Color(0xFF00B1C9),
                 gradientColors: const [Color(0xFF006475), Color(0xFF009AAF)],
                 onTap: () => _select(OrgType.university),
@@ -72,7 +73,7 @@ class _OrgSelectScreenState extends State<OrgSelectScreen>
               _OrgCard(
                 title: 'Школа',
                 subtitle: 'Среднее образование',
-                icon: Icons.menu_book_rounded,
+                icon: CupertinoIcons.book,
                 primaryColor: const Color(0xFFF59E0B),
                 gradientColors: const [Color(0xFFB45309), Color(0xFFF59E0B)],
                 onTap: () => _select(OrgType.school),
@@ -131,7 +132,7 @@ class _OrgCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(subtitle, style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.6))),
           ])),
-          Icon(Icons.arrow_forward_ios_rounded, color: primaryColor, size: 18),
+          Icon(CupertinoIcons.chevron_right, color: primaryColor, size: 18),
         ]),
       ),
     );

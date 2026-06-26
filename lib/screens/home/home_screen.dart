@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -162,10 +163,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final primary = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
-      body: SafeArea(child: RefreshIndicator(
-        color: primary,
-        onRefresh: () => context.read<ClassesProvider>().load(),
-        child: CustomScrollView(slivers: [
+      body: SafeArea(child: CustomScrollView(slivers: [
+          CupertinoSliverRefreshControl(
+            onRefresh: () => context.read<ClassesProvider>().load(),
+          ),
 
           // ── Header ──────────────────────────────────────────
           SliverToBoxAdapter(child: AnimatedBuilder(
@@ -182,11 +183,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 color: adaptiveText1(context), letterSpacing: -0.8, height: 1.1,
               ))),
               const SizedBox(width: 8),
-              _HeaderBtn(icon: Icons.calendar_month_rounded, onTap: _openCalendar, isDark: isDark),
+              _HeaderBtn(icon: CupertinoIcons.calendar, onTap: _openCalendar, isDark: isDark),
               const SizedBox(width: 8),
               if (auth.isTeacher) ...[
                 if (!auth.isAdmin) ...[
-                  _HeaderBtn(icon: Icons.vpn_key_rounded, onTap: _showJoinDialog, isDark: isDark),
+                  _HeaderBtn(icon: CupertinoIcons.lock, onTap: _showJoinDialog, isDark: isDark),
                   const SizedBox(width: 8),
                 ],
                 GestureDetector(onTap: _showCreateClass,
@@ -197,7 +198,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       borderRadius: BorderRadius.circular(13),
                       boxShadow: primaryGlow(primary, opacity: 0.30),
                     ),
-                    child: const Icon(Icons.add_rounded, color: Colors.white, size: 20),
+                    child: const Icon(CupertinoIcons.add, color: Colors.white, size: 20),
                   )),
               ] else ...[
                 GestureDetector(
@@ -207,7 +208,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     context.read<ClassesProvider>().loadNotifBadge();
                   },
                   child: Stack(children: [
-                    _HeaderBtn(icon: Icons.notifications_outlined, onTap: null, isDark: isDark),
+                    _HeaderBtn(icon: CupertinoIcons.bell, onTap: null, isDark: isDark),
                     if (provider.unreadNotifCount > 0)
                       Positioned(top: 7, right: 7, child: Container(
                         width: 9, height: 9,
@@ -227,7 +228,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       borderRadius: BorderRadius.circular(13),
                       boxShadow: primaryGlow(primary, opacity: 0.30),
                     ),
-                    child: const Icon(Icons.vpn_key_rounded, color: Colors.white, size: 18))),
+                    child: const Icon(CupertinoIcons.lock, color: Colors.white, size: 18))),
               ],
             ]),
           ))),
@@ -261,13 +262,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(children: [
-                    Icon(Icons.drag_indicator_rounded, color: primary, size: 20),
+                    Icon(CupertinoIcons.line_horizontal_3, color: primary, size: 20),
                     const SizedBox(width: 10),
                     Expanded(child: Text(l.t('drag_hint'),
                       style: TextStyle(fontSize: 13, color: primary, fontWeight: FontWeight.w500))),
                     GestureDetector(
                       onTap: _dismissDragHint,
-                      child: Icon(Icons.close, color: primary, size: 18),
+                      child: Icon(CupertinoIcons.xmark, color: primary, size: 18),
                     ),
                   ]),
                 ),
@@ -359,7 +360,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           shape: BoxShape.circle,
                           border: Border.all(color: primary.withOpacity(0.5), width: 1.5),
                         ),
-                        child: Icon(Icons.add_rounded, color: primary, size: 26)),
+                        child: Icon(CupertinoIcons.add, color: primary, size: 26)),
                       const SizedBox(height: 12),
                       Text(l.t('add_subject'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
                       const SizedBox(height: 3),
@@ -372,7 +373,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           else if (!provider.loading)
             const SliverToBoxAdapter(child: SizedBox(height: 90)),
         ]),
-      )),
+      ),
     );
   }
 
@@ -427,13 +428,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 },
                 onLeave: () async {
                   Navigator.pop(ctx);
-                  final ok = await showDialog<bool>(context: context, builder: (c) => AlertDialog(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                    title: Text(l.t('leave_class'), style: const TextStyle(fontWeight: FontWeight.w800)),
+                  final ok = await showCupertinoDialog<bool>(context: context, builder: (c) => CupertinoAlertDialog(
+                    title: Text(l.t('leave_class')),
                     content: Text(l.t('leave_class_sub')),
                     actions: [
-                      TextButton(onPressed: () => Navigator.pop(c, false), child: Text(l.t('no'))),
-                      ElevatedButton(onPressed: () => Navigator.pop(c, true), child: Text(l.t('leave_btn'))),
+                      CupertinoDialogAction(onPressed: () => Navigator.pop(c, false), child: Text(l.t('no'))),
+                      CupertinoDialogAction(isDestructiveAction: true, onPressed: () => Navigator.pop(c, true), child: Text(l.t('leave_btn'))),
                     ],
                   ));
                   if (!mounted) return;
@@ -452,26 +452,27 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 onDelete: () async {
                   Navigator.pop(ctx);
                   final nameCtrl = TextEditingController();
-                  final ok = await showDialog<bool>(context: context, builder: (c) => AlertDialog(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                    title: Text(l.t('delete_class'), style: const TextStyle(fontWeight: FontWeight.w800)),
+                  final ok = await showCupertinoDialog<bool>(context: context, builder: (c) => StatefulBuilder(builder: (c, setS) => CupertinoAlertDialog(
+                    title: Text(l.t('delete_class')),
                     content: Column(mainAxisSize: MainAxisSize.min, children: [
+                      const SizedBox(height: 6),
                       Text(l.t('confirm_delete_hint'), style: const TextStyle(fontSize: 13, color: C.text4)),
-                      const SizedBox(height: 12),
-                      TextField(
+                      const SizedBox(height: 10),
+                      CupertinoTextField(
                         controller: nameCtrl,
-                        decoration: InputDecoration(hintText: title),
+                        placeholder: title,
+                        onChanged: (_) => setS(() {}),
                       ),
                     ]),
                     actions: [
-                      TextButton(onPressed: () => Navigator.pop(c, false), child: Text(l.t('cancel'))),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: C.red),
+                      CupertinoDialogAction(onPressed: () => Navigator.pop(c, false), child: Text(l.t('cancel'))),
+                      CupertinoDialogAction(
+                        isDestructiveAction: true,
                         onPressed: () => Navigator.pop(c, nameCtrl.text.trim() == title),
                         child: Text(l.t('delete')),
                       ),
                     ],
-                  ));
+                  )));
                   if (!mounted) return;
                   if (ok == true) {
                     await context.read<ClassesProvider>().deleteClass(id);
@@ -520,10 +521,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             Align(alignment: Alignment.topRight,
               child: GestureDetector(onTap: () => Navigator.pop(ctx),
                 child: Container(width: 32, height: 32, decoration: BoxDecoration(color: adaptiveSurface2(context), shape: BoxShape.circle),
-                  child: const Icon(Icons.close, size: 16, color: C.text4)))),
+                  child: const Icon(CupertinoIcons.xmark, size: 16, color: C.text4)))),
             const SizedBox(height: 4),
             Container(width: 68, height: 68, decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(20)),
-              child: Icon(Icons.lock_outline_rounded, color: Theme.of(context).colorScheme.primary, size: 32)),
+              child: Icon(CupertinoIcons.lock, color: Theme.of(context).colorScheme.primary, size: 32)),
             const SizedBox(height: 16),
             Text(l.t('join_class_title'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),
@@ -552,7 +553,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               final found = provider.allClasses.where((c) => classCode(c['id']) == code).toList();
               if (found.isEmpty) return Padding(padding: const EdgeInsets.only(top: 16),
                 child: Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: C.redLt, borderRadius: BorderRadius.circular(12)),
-                  child: Row(children: [const Icon(Icons.error_outline, size: 16, color: C.red), const SizedBox(width: 8), Text(l.t('not_found'), style: const TextStyle(fontSize: 13, color: C.red, fontWeight: FontWeight.w500))])));
+                  child: Row(children: [const Icon(CupertinoIcons.exclamationmark_circle, size: 16, color: C.red), const SizedBox(width: 8), Text(l.t('not_found'), style: const TextStyle(fontSize: 13, color: C.red, fontWeight: FontWeight.w500))])));
               final cls = found.first;
               final coverImg = cls['cover_image'];
               final teacherName = cls['teacher_name'] ?? '';
@@ -628,7 +629,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             Padding(padding: const EdgeInsets.fromLTRB(24, 20, 16, 0), child: Row(children: [
               Text(l.t('create_class_title'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
               const Spacer(),
-              IconButton(icon: const Icon(Icons.close, size: 22), onPressed: () => Navigator.pop(ctx)),
+              IconButton(icon: const Icon(CupertinoIcons.xmark, size: 22), onPressed: () => Navigator.pop(ctx)),
             ])),
             Expanded(child: SingleChildScrollView(padding: const EdgeInsets.fromLTRB(24, 16, 24, 0), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               _fl3(l.t('class_cover')),
@@ -639,7 +640,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3), width: 1.5), color: coverB64 != null ? null : adaptivePrimaryLt(context).withOpacity(0.3)),
                 child: coverB64 != null
                     ? ClipRRect(borderRadius: BorderRadius.circular(16), child: Image.memory(base64Decode(coverB64!.split(',').last), fit: BoxFit.cover, width: double.infinity))
-                    : Column(mainAxisAlignment: MainAxisAlignment.center, children: [Container(width: 50, height: 50, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.15), borderRadius: BorderRadius.circular(14)), child: Icon(Icons.image_outlined, size: 26, color: Theme.of(context).colorScheme.primary)), const SizedBox(height: 10), Text(l.t('click_to_upload'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)), const Text('JPG, PNG', style: TextStyle(fontSize: 12, color: C.text4))]))),
+                    : Column(mainAxisAlignment: MainAxisAlignment.center, children: [Container(width: 50, height: 50, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.15), borderRadius: BorderRadius.circular(14)), child: Icon(CupertinoIcons.photo, size: 26, color: Theme.of(context).colorScheme.primary)), const SizedBox(height: 10), Text(l.t('click_to_upload'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)), const Text('JPG, PNG', style: TextStyle(fontSize: 12, color: C.text4))]))),
               const SizedBox(height: 20),
               _fl3(l.t('class_name_required')), TextField(controller: nameC, decoration: InputDecoration(hintText: l.t('class_name_hint'))),
               const SizedBox(height: 16), _fl3(l.t('class_desc')), TextField(controller: descC, decoration: InputDecoration(hintText: l.t('class_desc_hint')), maxLines: 3),
@@ -766,13 +767,13 @@ class _ClassContextMenu extends StatelessWidget {
                     border: Border.all(color: primary.withOpacity(0.2)),
                   ),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(Icons.tag_rounded, size: 12, color: primary),
+                    Icon(CupertinoIcons.tag, size: 12, color: primary),
                     const SizedBox(width: 4),
                     Text(code, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: primary, letterSpacing: 2)),
                   ]),
                 ),
                 const Spacer(),
-                _SmallAction(icon: Icons.copy_all_rounded, bg: primary.withOpacity(0.1), iconColor: primary, onTap: onCopyCode),
+                _SmallAction(icon: CupertinoIcons.doc_on_doc, bg: primary.withOpacity(0.1), iconColor: primary, onTap: onCopyCode),
               ]),
             ),
 
@@ -781,7 +782,7 @@ class _ClassContextMenu extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
               child: Column(children: [
                 _ActionRow(
-                  icon: isPinned ? Icons.push_pin_outlined : Icons.push_pin_rounded,
+                  icon: isPinned ? CupertinoIcons.pin : CupertinoIcons.pin_fill,
                   iconBg: primary.withOpacity(0.12),
                   iconColor: primary,
                   label: isPinned ? l.t('unpin_class') : l.t('pin_class'),
@@ -791,7 +792,7 @@ class _ClassContextMenu extends StatelessWidget {
                 if (isTeacher) ...[
                   const SizedBox(height: 6),
                   _ActionRow(
-                    icon: Icons.group_rounded,
+                    icon: CupertinoIcons.person_2_fill,
                     iconBg: C.green.withOpacity(0.12),
                     iconColor: C.green,
                     label: l.t('class_members'),
@@ -806,7 +807,7 @@ class _ClassContextMenu extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
               child: _ActionRow(
-                icon: isTeacher ? Icons.delete_outline_rounded : Icons.logout_rounded,
+                icon: isTeacher ? CupertinoIcons.trash : CupertinoIcons.arrow_right_square,
                 iconBg: C.red.withOpacity(0.12),
                 iconColor: C.red,
                 label: isTeacher ? l.t('delete_class') : l.t('leave_class'),
@@ -880,7 +881,7 @@ class _ActionRow extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(child: Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: labelColor))),
-              Icon(Icons.chevron_right_rounded, size: 16, color: labelColor.withOpacity(0.35)),
+              Icon(CupertinoIcons.chevron_right, size: 16, color: labelColor.withOpacity(0.35)),
             ]),
           ),
         ),
@@ -992,20 +993,20 @@ class _ClassCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(color: Colors.black.withOpacity(0.55), borderRadius: BorderRadius.circular(8)),
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          const Icon(Icons.copy, size: 11, color: Colors.white60),
+                          const Icon(CupertinoIcons.doc_on_doc, size: 11, color: Colors.white60),
                           const SizedBox(width: 4),
                           Text(classCode(id), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 2)),
                         ]),
                       ))),
                   // Pin icon
                   if (isPinned)
-                    const Positioned(top: 10, right: 10, child: Icon(Icons.push_pin_rounded, color: Colors.white, size: 18)),
+                    const Positioned(top: 10, right: 10, child: Icon(CupertinoIcons.pin_fill, color: Colors.white, size: 18)),
                   // Drag handle
                   Positioned(bottom: 8, right: 8,
                     child: ReorderableDragStartListener(
                       index: index,
                       child: SizedBox(width: 44, height: 44,
-                        child: Center(child: Icon(Icons.drag_indicator_rounded, size: 20, color: Colors.white.withOpacity(0.5)))),
+                        child: Center(child: Icon(CupertinoIcons.line_horizontal_3, size: 20, color: Colors.white.withOpacity(0.5)))),
                     )),
                   // Lesson count badge
                   Positioned(bottom: 10, left: 12,
@@ -1013,7 +1014,7 @@ class _ClassCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                       decoration: BoxDecoration(color: Colors.black.withOpacity(0.48), borderRadius: BorderRadius.circular(8)),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        const Icon(Icons.play_circle_outline_rounded, size: 13, color: Colors.white70),
+                        const Icon(CupertinoIcons.play_circle, size: 13, color: Colors.white70),
                         const SizedBox(width: 4),
                         Text('$lectureCount', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
                       ]),
@@ -1026,8 +1027,8 @@ class _ClassCard extends StatelessWidget {
               Text(cls['title'] ?? '', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: adaptiveText1(context), height: 1.2), maxLines: 2, overflow: TextOverflow.ellipsis),
               const SizedBox(height: 8),
               Wrap(spacing: 6, runSpacing: 6, children: [
-                if (group.isNotEmpty) _MetaChip(label: group, icon: Icons.group_outlined, isDark: isDark),
-                if (teacherName.isNotEmpty) _MetaChip(label: teacherName, icon: Icons.person_outline_rounded, isDark: isDark, color: Theme.of(context).colorScheme.primary),
+                if (group.isNotEmpty) _MetaChip(label: group, icon: CupertinoIcons.person_2, isDark: isDark),
+                if (teacherName.isNotEmpty) _MetaChip(label: teacherName, icon: CupertinoIcons.person, isDark: isDark, color: Theme.of(context).colorScheme.primary),
               ]),
               const SizedBox(height: 12),
               Row(children: [
@@ -1037,36 +1038,32 @@ class _ClassCard extends StatelessWidget {
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Text(openLabel, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
                     const SizedBox(width: 4),
-                    Icon(Icons.arrow_forward_rounded, size: 14, color: Theme.of(context).colorScheme.primary),
+                    Icon(CupertinoIcons.arrow_right, size: 14, color: Theme.of(context).colorScheme.primary),
                   ]),
                 ),
                 const Spacer(),
                 if (isTeacher) _ActionBtn(
-                  icon: Icons.delete_outline_rounded, color: C.text4, isDark: isDark,
+                  icon: CupertinoIcons.trash, color: C.text4, isDark: isDark,
                   onTap: () async {
-                    final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      title: Text(deleteLabel, style: const TextStyle(fontWeight: FontWeight.w800)),
+                    final ok = await showCupertinoDialog<bool>(context: context, builder: (ctx) => CupertinoAlertDialog(
+                      title: Text(deleteLabel),
                       actions: [
-                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(noLabel)),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(backgroundColor: C.red),
-                          onPressed: () => Navigator.pop(ctx, true), child: Text(deleteConfirmLabel)),
+                        CupertinoDialogAction(onPressed: () => Navigator.pop(ctx, false), child: Text(noLabel)),
+                        CupertinoDialogAction(isDestructiveAction: true, onPressed: () => Navigator.pop(ctx, true), child: Text(deleteConfirmLabel)),
                       ],
                     ));
                     if (ok == true) await onDelete();
                   },
                 ),
                 if (!isTeacher) _ActionBtn(
-                  icon: Icons.logout_rounded, color: C.text4, isDark: isDark,
+                  icon: CupertinoIcons.arrow_right_square, color: C.text4, isDark: isDark,
                   onTap: () async {
-                    final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      title: Text(leaveLabel, style: const TextStyle(fontWeight: FontWeight.w800)),
+                    final ok = await showCupertinoDialog<bool>(context: context, builder: (ctx) => CupertinoAlertDialog(
+                      title: Text(leaveLabel),
                       content: Text(leaveSub),
                       actions: [
-                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(noLabel)),
-                        ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: Text(leaveBtnLabel)),
+                        CupertinoDialogAction(onPressed: () => Navigator.pop(ctx, false), child: Text(noLabel)),
+                        CupertinoDialogAction(isDestructiveAction: true, onPressed: () => Navigator.pop(ctx, true), child: Text(leaveBtnLabel)),
                       ],
                     ));
                     if (ok == true) await onLeave();
@@ -1164,7 +1161,7 @@ class _EmptyState extends StatelessWidget {
             gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primary.withOpacity(0.18), Theme.of(context).colorScheme.primary.withOpacity(0.06)]),
             shape: BoxShape.circle,
           ),
-          child: Icon(Icons.menu_book_rounded, color: Theme.of(context).colorScheme.primary, size: 40)),
+          child: Icon(CupertinoIcons.book, color: Theme.of(context).colorScheme.primary, size: 40)),
         const SizedBox(height: 22),
         Text(l.t('no_classes'), style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: adaptiveText1(context), letterSpacing: -0.4)),
         const SizedBox(height: 8),
@@ -1174,21 +1171,21 @@ class _EmptyState extends StatelessWidget {
         if (isTeacher) ...[
           SizedBox(width: double.infinity, child: ElevatedButton.icon(
             onPressed: onCreate,
-            icon: const Icon(Icons.add_rounded, size: 18),
+            icon: const Icon(CupertinoIcons.add, size: 18),
             label: Text(l.t('create_class')),
             style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
           )),
           const SizedBox(height: 10),
           SizedBox(width: double.infinity, child: OutlinedButton.icon(
             onPressed: onJoin,
-            icon: const Icon(Icons.vpn_key_rounded, size: 16),
+            icon: const Icon(CupertinoIcons.lock, size: 16),
             label: Text(l.t('enter_code')),
             style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
           )),
         ] else
           SizedBox(width: double.infinity, child: ElevatedButton.icon(
             onPressed: onJoin,
-            icon: const Icon(Icons.vpn_key_rounded, size: 18),
+            icon: const Icon(CupertinoIcons.lock, size: 18),
             label: Text(l.t('enter_code')),
             style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
           )),

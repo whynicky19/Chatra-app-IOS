@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -121,7 +122,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
           top: 8, left: 8,
           child: SafeArea(
             child: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white, size: 20),
+              icon: const Icon(CupertinoIcons.chevron_left, color: Colors.white, size: 20),
               onPressed: () => context.read<OrgProvider>().clear(),
             ),
           ),
@@ -148,7 +149,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: primaryGlow(org.primaryColor, opacity: 0.28),
                   ),
-                  child: const Icon(Icons.person_add_rounded, color: Colors.white, size: 30)),
+                  child: const Icon(CupertinoIcons.person_badge_plus, color: Colors.white, size: 30)),
                 const SizedBox(height: 16),
                 Text(l.t('register'), style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: adaptiveText1(context), letterSpacing: -0.4)),
                 const SizedBox(height: 4),
@@ -162,7 +163,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                   decoration: InputDecoration(
                     hintText: 'Иванов Иван Иванович',
                     prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
-                      child: Icon(Icons.person_outline_rounded, size: 18, color: C.text4)),
+                      child: Icon(CupertinoIcons.person, size: 18, color: C.text4)),
                   ),
                   onChanged: (_) => setState(() {}),
                 ),
@@ -175,7 +176,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(color: const Color(0xFFFFF8E1), borderRadius: BorderRadius.circular(10)),
                       child: const Row(children: [
-                        Icon(Icons.info_outline_rounded, size: 14, color: Color(0xFFF59E0B)),
+                        Icon(CupertinoIcons.info_circle, size: 14, color: Color(0xFFF59E0B)),
                         SizedBox(width: 7),
                         Expanded(child: Text('Введите фамилию и имя полностью', style: TextStyle(fontSize: 12, color: Color(0xFFB45309), fontWeight: FontWeight.w500))),
                       ]),
@@ -191,7 +192,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(color: C.redLt, borderRadius: BorderRadius.circular(10)),
                       child: const Row(children: [
-                        Icon(Icons.error_outline_rounded, size: 14, color: C.red),
+                        Icon(CupertinoIcons.exclamationmark_circle, size: 14, color: C.red),
                         SizedBox(width: 7),
                         Expanded(child: Text('ФИО должно быть на кириллице (рус/каз)', style: TextStyle(fontSize: 12, color: C.red, fontWeight: FontWeight.w500))),
                       ]),
@@ -207,7 +208,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                   decoration: InputDecoration(
                     hintText: 'you@example.com',
                     prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
-                      child: Icon(Icons.mail_outline_rounded, size: 18, color: C.text4)),
+                      child: Icon(CupertinoIcons.mail, size: 18, color: C.text4)),
                   ),
                   onChanged: (_) => setState(() {}),
                 ),
@@ -221,9 +222,9 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                     decoration: InputDecoration(
                       hintText: 'ISU-25',
                       prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
-                        child: Icon(Icons.group_outlined, size: 18, color: C.text4)),
+                        child: Icon(CupertinoIcons.person_2, size: 18, color: C.text4)),
                       suffixIcon: _group.isNotEmpty
-                          ? const Icon(Icons.check_circle_rounded, color: C.green, size: 20)
+                          ? const Icon(CupertinoIcons.checkmark_circle_fill, color: C.green, size: 20)
                           : null,
                     ),
                     onChanged: (v) {
@@ -257,7 +258,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                   decoration: const InputDecoration(
                     hintText: '••••••••',
                     prefixIcon: Padding(padding: EdgeInsets.only(left: 4),
-                      child: Icon(Icons.lock_outline_rounded, size: 18, color: C.text4)),
+                      child: Icon(CupertinoIcons.lock, size: 18, color: C.text4)),
                   ),
                   onChanged: (_) => setState(() {}),
                 ),
@@ -289,7 +290,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(color: C.redLt, borderRadius: BorderRadius.circular(10)),
                           child: Row(children: [
-                            const Icon(Icons.error_outline_rounded, size: 14, color: C.red),
+                            const Icon(CupertinoIcons.exclamationmark_circle, size: 14, color: C.red),
                             const SizedBox(width: 7),
                             Expanded(child: Text(
                               l.lang == 'KZ'

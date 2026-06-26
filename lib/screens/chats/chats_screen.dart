@@ -239,19 +239,14 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
                       ),
                       confirmDismiss: (_) async {
                         HapticFeedback.mediumImpact();
-                        return await showDialog<bool>(
+                        return await showCupertinoDialog<bool>(
                           context: context,
-                          builder: (d) => AlertDialog(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                            title: const Text('Удалить чат?', style: TextStyle(fontWeight: FontWeight.w800)),
-                            content: Text('Чат с $title будет удалён навсегда.', style: const TextStyle(color: C.text4)),
+                          builder: (d) => CupertinoAlertDialog(
+                            title: const Text('Удалить чат?'),
+                            content: Text('Чат с $title будет удалён навсегда.'),
                             actions: [
-                              TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('Отмена')),
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444), foregroundColor: Colors.white),
-                                onPressed: () => Navigator.pop(d, true),
-                                child: const Text('Удалить'),
-                              ),
+                              CupertinoDialogAction(onPressed: () => Navigator.pop(d, false), child: const Text('Отмена')),
+                              CupertinoDialogAction(isDestructiveAction: true, onPressed: () => Navigator.pop(d, true), child: const Text('Удалить')),
                             ],
                           ),
                         ) ?? false;

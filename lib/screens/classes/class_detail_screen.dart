@@ -60,9 +60,10 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       _coverPrecached = true;
       final clsData = context.read<ClassesProvider>().allClasses
           .firstWhere((c) => c['id'] == widget.classId, orElse: () => <String, dynamic>{});
-      final url = clsData['cover_image'];
-      if (url != null && url.toString().isNotEmpty && !url.toString().startsWith('data:')) {
-        precacheImage(CachedNetworkImageProvider(url.toString()), context);
+      final rawUrl = clsData['cover_image'];
+      if (rawUrl != null && rawUrl.toString().isNotEmpty && !rawUrl.toString().startsWith('data:')) {
+        final url = _fixFileUrl(rawUrl.toString());
+        precacheImage(CachedNetworkImageProvider(url), context);
       }
     }
   }
@@ -287,7 +288,10 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     // so CachedNetworkImage mounts during the page-push animation, not after.
     final clsData = context.read<ClassesProvider>().allClasses
         .firstWhere((c) => c['id'] == widget.classId, orElse: () => <String, dynamic>{});
-    final coverImg = meta['cover_image'] ?? clsData['cover_image'];
+    final _rawCoverImg = meta['cover_image'] ?? clsData['cover_image'];
+    final coverImg = (_rawCoverImg != null && !_rawCoverImg.toString().startsWith('data:'))
+        ? _fixFileUrl(_rawCoverImg.toString())
+        : _rawCoverImg;
     final displayTitle = _title.isNotEmpty ? _title : (clsData['title'] ?? '');
     final displayDesc = (meta['description'] ?? clsData['description'] ?? '').toString();
 

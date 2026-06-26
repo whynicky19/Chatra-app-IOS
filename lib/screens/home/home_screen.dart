@@ -9,6 +9,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../providers/classes_provider.dart';
+import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/class_utils.dart';
 import '../../widgets/skeleton.dart';
@@ -564,7 +565,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       child: coverImg != null && coverImg.toString().startsWith('data:')
                           ? Builder(builder: (_) { try { return Image.memory(base64Decode(coverImg.toString().split(',').last), fit: BoxFit.cover, width: double.infinity); } catch (_) { return Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))); } })
                           : coverImg != null
-                              ? CachedNetworkImage(imageUrl: coverImg, fit: BoxFit.cover, width: double.infinity, fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero, placeholder: (_, __) => const SizedBox.shrink(), errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))))
+                              ? CachedNetworkImage(imageUrl: context.read<ApiService>().fixUrl(coverImg.toString()), fit: BoxFit.cover, width: double.infinity, fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero, placeholder: (_, __) => const SizedBox.shrink(), errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))))
                               : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary])))),
                     Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text(cls['title'] ?? '', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -739,7 +740,7 @@ class _ClassContextMenu extends StatelessWidget {
                 coverImg != null && coverImg.toString().startsWith('data:')
                     ? Builder(builder: (_) { try { return Image.memory(base64Decode(coverImg.toString().split(',').last), fit: BoxFit.cover); } catch (_) { return Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))); } })
                     : coverImg != null
-                        ? CachedNetworkImage(imageUrl: coverImg, fit: BoxFit.cover, fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero, placeholder: (_, __) => const SizedBox.shrink(), errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))))
+                        ? CachedNetworkImage(imageUrl: context.read<ApiService>().fixUrl(coverImg.toString()), fit: BoxFit.cover, fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero, placeholder: (_, __) => const SizedBox.shrink(), errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))))
                         : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight))),
                 Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                   begin: Alignment.topCenter, end: Alignment.bottomCenter,
@@ -972,7 +973,7 @@ class _ClassCard extends StatelessWidget {
                     })
                   else if (coverImg != null)
                     CachedNetworkImage(
-                      imageUrl: coverImg.toString(),
+                      imageUrl: context.read<ApiService>().fixUrl(coverImg.toString()),
                       fit: BoxFit.cover,
                       fadeInDuration: Duration.zero,
                       fadeOutDuration: Duration.zero,

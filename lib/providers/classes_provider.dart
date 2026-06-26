@@ -9,6 +9,7 @@ class ClassesProvider extends ChangeNotifier {
   final AuthProvider _auth;
 
   List<dynamic> posts = [];
+  List<Map<String, dynamic>> _cachedAllClasses = [];
   Set<int> joinedClassIds = {};
   int unreadNotifCount = 0;
   bool loading = true;
@@ -29,8 +30,20 @@ class ClassesProvider extends ChangeNotifier {
     } catch (e) {
       errorMessage = 'Не удалось загрузить данные: $e';
     }
+    _recomputeAllClasses();
     loading = false;
     notifyListeners();
+  }
+
+  void _recomputeAllClasses() {
+    _cachedAllClasses = posts.where((p) {
+      try { return jsonDecode(p['body'])['type'] == 'class'; } catch (_) { return false; }
+    }).map((p) {
+      try {
+        final b = jsonDecode(p['body']);
+        return {...p as Map<String, dynamic>, ...b as Map<String, dynamic>, 'title': p['title']};
+      } catch (_) { return p as Map<String, dynamic>; }
+    }).toList();
   }
 
   Future<void> loadJoined() async {
@@ -150,16 +163,7 @@ class ClassesProvider extends ChangeNotifier {
     }
   }
 
-  List<Map<String, dynamic>> get allClasses {
-    return posts.where((p) {
-      try { return jsonDecode(p['body'])['type'] == 'class'; } catch (_) { return false; }
-    }).map((p) {
-      try {
-        final b = jsonDecode(p['body']);
-        return {...p as Map<String, dynamic>, ...b as Map<String, dynamic>, 'title': p['title']};
-      } catch (_) { return p as Map<String, dynamic>; }
-    }).toList();
-  }
+  List<Map<String, dynamic>> get allClasses => _cachedAllClasses;
 
   List<Map<String, dynamic>> get classes {
     if (_auth.isAdmin) return allClasses;

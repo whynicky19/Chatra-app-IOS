@@ -8,7 +8,7 @@ class ApiService {
   String? _token;
   VoidCallback? onUnauthorized;
 
-  static const String defaultBaseUrl = 'http://172.20.10.2:8000';
+  static const String defaultBaseUrl = 'http://localhost:8000';
   static const _tokenKey = '_tk';
   static const _refreshKey = '_rtk';
 
@@ -33,17 +33,21 @@ class ApiService {
 
     _dio.interceptors.add(InterceptorsWrapper(
   onRequest: (options, handler) {
-    print('>>> REQUEST: ${options.method} ${options.baseUrl}${options.path}');
-    print('>>> DATA: ${options.data}');
+    if (kDebugMode) {
+      print('>>> REQUEST: ${options.method} ${options.baseUrl}${options.path}');
+      print('>>> DATA: ${options.data}');
+    }
     return handler.next(options);
   },
   onResponse: (response, handler) {
-    print('>>> RESPONSE: ${response.statusCode} ${response.data}');
+    if (kDebugMode) print('>>> RESPONSE: ${response.statusCode} ${response.data}');
     return handler.next(response);
   },
   onError: (error, handler) {
-    print('>>> ERROR: ${error.type} ${error.message}');
-    print('>>> ERROR RESPONSE: ${error.response?.data}');
+    if (kDebugMode) {
+      print('>>> ERROR: ${error.type} ${error.message}');
+      print('>>> ERROR RESPONSE: ${error.response?.data}');
+    }
     return handler.next(error);
   },
 ));
@@ -459,6 +463,17 @@ class ApiService {
     } catch (_) {
       return '';
     }
+  }
+
+  String fixUrl(String url) {
+    if (url.isEmpty) return url;
+    var fixed = url
+        .replaceAll(RegExp(r'https?://localhost:\d+'), baseUrl)
+        .replaceAll(RegExp(r'https?://127\.0\.0\.1:\d+'), baseUrl);
+    if (!fixed.startsWith('http') && !fixed.startsWith('ws')) {
+      fixed = '$baseUrl${fixed.startsWith('/') ? '' : '/'}$fixed';
+    }
+    return fixed;
   }
 
   String get wsBaseUrl => baseUrl.replaceFirst('http', 'ws');

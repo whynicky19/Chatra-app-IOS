@@ -252,7 +252,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               child: Icon(Icons.arrow_back, size: 20, color: adaptiveText1(context)))),
           SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(l.t('notifications'), style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.primary)),
+            Text(l.t('notifications'), style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: adaptiveText1(context), letterSpacing: -0.3)),
             if (!_loading)
               Text(unread > 0 ? '$unread ${l.t('notif_unread')}' : l.t('all_read'), style: TextStyle(fontSize: 12, color: C.text4)),
           ])),

@@ -62,11 +62,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               : org.gradientColors,
           begin: Alignment.topLeft, end: Alignment.bottomRight,
         ))),
-        // Decorative blobs
-        Positioned(top: -80, right: -60, child: _Blob(size: 260, opacity: 0.07)),
-        Positioned(bottom: -100, left: -70, child: _Blob(size: 320, opacity: 0.06)),
-        Positioned(top: 160, left: -40, child: _Blob(size: 180, opacity: 0.05)),
-
         // Кнопка назад → выбор организации
         Positioned(
           top: 8, left: 8,
@@ -84,13 +79,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           child: FadeTransition(opacity: _fade, child: SlideTransition(position: _slide,
             child: Container(
               constraints: const BoxConstraints(maxWidth: 420),
-              padding: const EdgeInsets.all(32),
+              padding: const EdgeInsets.all(36),
               decoration: BoxDecoration(
                 color: surface,
                 borderRadius: BorderRadius.circular(28),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.22), blurRadius: 48, offset: const Offset(0, 20)),
-                  BoxShadow(color: org.primaryColor.withOpacity(0.12), blurRadius: 24, offset: const Offset(0, 8)),
+                  BoxShadow(color: Colors.black.withOpacity(0.18), blurRadius: 40, offset: const Offset(0, 16)),
                 ],
               ),
               child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -158,7 +152,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     onPressed: _busy ? null : _submit,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: org.primaryColor,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       elevation: 0,
                     ),
                     child: _busy
@@ -185,7 +179,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   Widget _fieldLabel(String s) => Padding(
     padding: const EdgeInsets.only(bottom: 7),
     child: Align(alignment: Alignment.centerLeft,
-      child: Text(s, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 0.3))));
+      child: Text(s, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: C.text3))));
 }
 
 class _Blob extends StatelessWidget {

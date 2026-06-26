@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
@@ -9,7 +10,7 @@ void showToast(BuildContext context, String msg, {bool error = false}) {
         width: 30, height: 30,
         decoration: BoxDecoration(color: Colors.white.withOpacity(0.18), shape: BoxShape.circle),
         child: Icon(
-          error ? Icons.error_outline_rounded : Icons.check_circle_rounded,
+          error ? CupertinoIcons.exclamationmark_circle : CupertinoIcons.checkmark_circle_fill,
           color: Colors.white, size: 17,
         ),
       ),

@@ -176,7 +176,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             child: Row(children: [
               Expanded(child: Text(l.t('classes'), style: TextStyle(
                 fontSize: 30, fontWeight: FontWeight.w900,
-                color: primary, letterSpacing: -0.8, height: 1.1,
+                color: adaptiveText1(context), letterSpacing: -0.8, height: 1.1,
               ))),
               const SizedBox(width: 8),
               _HeaderBtn(icon: Icons.calendar_month_rounded, onTap: _openCalendar, isDark: isDark),
@@ -674,7 +674,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Widget _fl3(String s) => Padding(padding: const EdgeInsets.only(bottom: 8),
-    child: Text(s, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)));
+    child: Text(s, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)));
 }
 
 // ── Class Context Menu ────────────────────────────────────────────────────────
@@ -1093,9 +1093,11 @@ class _HeaderBtn extends StatelessWidget {
       decoration: BoxDecoration(
         color: adaptiveSurface2(context),
         borderRadius: BorderRadius.circular(13),
-        border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.25)),
+        border: Border.all(color: adaptiveBorder(context)),
       ),
-      child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 19)),
+      child: Icon(icon,
+        color: Theme.of(context).brightness == Brightness.dark ? C.darkText2 : C.text3,
+        size: 19)),
   );
 }
 

@@ -53,10 +53,10 @@ class _OrgSelectScreenState extends State<OrgSelectScreen>
           child: FadeTransition(opacity: _fade, child: SlideTransition(position: _slide,
             child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
               const Text('Добро пожаловать',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
+                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -0.5)),
               const SizedBox(height: 8),
               Text('Выберите тип вашей организации',
-                  style: TextStyle(fontSize: 15, color: Colors.white.withOpacity(0.6))),
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w400, color: Colors.white.withOpacity(0.6))),
               const SizedBox(height: 48),
 
               _OrgCard(
@@ -111,12 +111,9 @@ class _OrgCard extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 420),
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: primaryColor.withOpacity(0.3), width: 1.5),
-          boxShadow: [
-            BoxShadow(color: primaryColor.withOpacity(0.15), blurRadius: 24, offset: const Offset(0, 8)),
-          ],
+          color: Colors.white.withOpacity(0.10),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withOpacity(0.18), width: 1),
         ),
         child: Row(children: [
           Container(
@@ -130,7 +127,7 @@ class _OrgCard extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+            Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Colors.white)),
             const SizedBox(height: 4),
             Text(subtitle, style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.6))),
           ])),

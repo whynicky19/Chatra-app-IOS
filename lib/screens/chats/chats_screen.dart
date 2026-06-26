@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -119,33 +120,41 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
       body: SafeArea(child: Column(children: [
         // Header
         Padding(padding: const EdgeInsets.fromLTRB(20, 24, 20, 0), child: Row(children: [
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(l.t('messages_title'), style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.primary)),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(l.t('messages_title'), style: TextStyle(fontSize: 30, fontWeight: FontWeight.w700, color: adaptiveText1(context), letterSpacing: -0.8)),
             Text(l.t('your_conversations'), style: const TextStyle(fontSize: 13, color: C.text4)),
-          ]),
-          const Spacer(),
+          ])),
           GestureDetector(
             onTap: () { FocusScope.of(context).requestFocus(FocusNode()); showToast(context, l.t('find_user_hint')); },
-            child: Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, borderRadius: BorderRadius.circular(14)),
-              child: const Icon(Icons.edit_outlined, color: Colors.white, size: 20))),
+            child: Container(width: 40, height: 40, decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
+              child: Icon(CupertinoIcons.pencil, color: Theme.of(context).colorScheme.primary, size: 18))),
         ])),
-        const SizedBox(height: 16),
-        // Search bar
+        const SizedBox(height: 14),
+        // Search bar — iOS style pill
         Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Container(
-          decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(16),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.04), blurRadius: 8, offset: const Offset(0, 2))]),
-          child: TextField(
-            controller: _searchCtrl,
-            decoration: const InputDecoration(
-              hintText: 'Найти или начать диалог...',
-              prefixIcon: Icon(Icons.search_rounded, size: 20, color: C.text4),
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-              filled: false,
-              contentPadding: EdgeInsets.symmetric(vertical: 14)),
-            onChanged: (q) => context.read<ChatsProvider>().searchUsers(q),
-          ))),
+          height: 38,
+          decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
+          child: Row(children: [
+            const Padding(padding: EdgeInsets.only(left: 10),
+              child: Icon(CupertinoIcons.search, size: 16, color: C.text4)),
+            const SizedBox(width: 6),
+            Expanded(child: TextField(
+              controller: _searchCtrl,
+              style: const TextStyle(fontSize: 15),
+              decoration: const InputDecoration(
+                hintText: 'Найти или начать диалог...',
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                filled: false,
+                hintStyle: TextStyle(color: C.text4, fontSize: 15),
+                contentPadding: EdgeInsets.zero,
+                isDense: true,
+              ),
+              onChanged: (q) => context.read<ChatsProvider>().searchUsers(q),
+            )),
+          ]),
+        )),
         // Search results
         if (provider.searchResults.isNotEmpty) Container(
           constraints: const BoxConstraints(maxHeight: 220),
@@ -215,7 +224,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
                         alignment: Alignment.centerRight,
                         padding: const EdgeInsets.only(right: 24),
                         child: const Column(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(Icons.delete_rounded, color: Colors.white, size: 26),
+                          Icon(CupertinoIcons.trash, color: Colors.white, size: 24),
                           SizedBox(height: 4),
                           Text('Удалить', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
                         ]),
@@ -292,7 +301,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
     final l = context.read<L10n>();
     return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
       Container(width: 80, height: 80, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.1), shape: BoxShape.circle),
-        child: Icon(Icons.chat_bubble_outline_rounded, size: 36, color: Theme.of(context).colorScheme.primary)),
+        child: Icon(CupertinoIcons.bubble_left, size: 36, color: Theme.of(context).colorScheme.primary)),
       const SizedBox(height: 16),
       Text(l.t('no_chats'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
       const SizedBox(height: 6),
@@ -325,7 +334,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             child: Row(children: [
               IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+                icon: const Icon(CupertinoIcons.chevron_left, size: 18),
                 onPressed: () {
                   HapticFeedback.lightImpact();
                   final p = context.read<ChatsProvider>();
@@ -355,7 +364,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
         // Message list
         Expanded(child: msgs.isEmpty
           ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.waving_hand_outlined, size: 48, color: Theme.of(context).colorScheme.primary.withOpacity(0.4)),
+              Icon(CupertinoIcons.smiley, size: 48, color: Theme.of(context).colorScheme.primary.withOpacity(0.4)),
               const SizedBox(height: 12),
               Text(l.t('start_dialog'), style: const TextStyle(fontSize: 16, color: C.text4, fontWeight: FontWeight.w500)),
             ]))
@@ -465,14 +474,14 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
           Container(width: 36, height: 4,
             decoration: BoxDecoration(color: C.text4.withOpacity(0.3), borderRadius: BorderRadius.circular(2))),
           const SizedBox(height: 20),
-          _photoOption(ctx, Icons.photo_library_rounded, context.read<L10n>().t('gallery'), () async {
+          _photoOption(ctx, CupertinoIcons.photo, context.read<L10n>().t('gallery'), () async {
             Navigator.pop(ctx);
             final img = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1200, imageQuality: 85);
             if (!mounted) return;
             if (img != null) await _uploadAndSend(chatId, img);
           }),
           const SizedBox(height: 8),
-          _photoOption(ctx, Icons.camera_alt_rounded, context.read<L10n>().t('camera'), () async {
+          _photoOption(ctx, CupertinoIcons.camera, context.read<L10n>().t('camera'), () async {
             Navigator.pop(ctx);
             final img = await ImagePicker().pickImage(source: ImageSource.camera, maxWidth: 1200, imageQuality: 85);
             if (!mounted) return;
@@ -494,7 +503,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
         const SizedBox(width: 14),
         Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
         const Spacer(),
-        const Icon(Icons.chevron_right, size: 20, color: C.text4),
+        const Icon(CupertinoIcons.chevron_right, size: 18, color: C.text4),
       ]),
     ),
   );
@@ -562,7 +571,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
           loadingBuilder: (_, child, progress) => progress == null ? child
               : Container(height: 200, color: adaptiveSurface2(context), child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.primary))),
           errorBuilder: (_, __, ___) => Container(height: 80, padding: const EdgeInsets.all(16), child: Row(children: [
-            const Icon(Icons.broken_image, color: C.text4), const SizedBox(width: 8),
+            const Icon(CupertinoIcons.photo, color: C.text4), const SizedBox(width: 8),
             Flexible(child: Text(url.split('/').last, style: TextStyle(color: isMe ? Colors.white70 : C.text4, fontSize: 12))),
           ]))),
         if (textPart.isNotEmpty) Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
@@ -581,7 +590,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
         Container(margin: const EdgeInsets.only(top: 6), padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(color: (isMe ? Colors.white : Theme.of(context).colorScheme.primary).withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
           child: Row(children: [
-            Icon(Icons.link, size: 16, color: isMe ? Colors.white70 : Theme.of(context).colorScheme.primary),
+            Icon(CupertinoIcons.link, size: 16, color: isMe ? Colors.white70 : Theme.of(context).colorScheme.primary),
             const SizedBox(width: 8),
             Flexible(child: Text(url.length > 40 ? '${url.substring(0, 40)}...' : url,
               style: TextStyle(fontSize: 12, color: isMe ? Colors.white70 : Theme.of(context).colorScheme.primary, decoration: TextDecoration.underline))),
@@ -665,7 +674,7 @@ class _ChatInputBarState extends State<_ChatInputBar> {
               color: adaptiveSurface2(context),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(Icons.add_rounded, size: 22, color: Theme.of(context).colorScheme.primary),
+            child: Icon(CupertinoIcons.plus, size: 22, color: Theme.of(context).colorScheme.primary),
           ),
         ),
         Expanded(
@@ -723,7 +732,7 @@ class _ChatInputBarState extends State<_ChatInputBar> {
               switchOutCurve: Curves.easeIn,
               transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
               child: Icon(
-                hasText ? Icons.send_rounded : Icons.send_rounded,
+                hasText ? CupertinoIcons.paperplane_fill : CupertinoIcons.paperplane_fill,
                 key: ValueKey(hasText),
                 color: Colors.white, size: 20,
               ),
@@ -895,7 +904,7 @@ class _SwipeableMessageState extends State<_SwipeableMessage>
                     color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.reply_rounded, size: 18, color: Theme.of(context).colorScheme.primary),
+                  child: Icon(CupertinoIcons.arrowshape_turn_up_left, size: 18, color: Theme.of(context).colorScheme.primary),
                 ),
               ),
             ),
@@ -967,7 +976,7 @@ class _ReplyPreview extends StatelessWidget {
                   color: adaptiveSurface2(context),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.close, size: 14, color: C.text4),
+                child: const Icon(CupertinoIcons.xmark, size: 12, color: C.text4),
               ),
             ),
           ]),

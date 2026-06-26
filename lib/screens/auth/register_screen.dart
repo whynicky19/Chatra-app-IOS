@@ -114,9 +114,6 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
               : org.gradientColors,
           begin: Alignment.topRight, end: Alignment.bottomLeft,
         ))),
-        Positioned(top: -60, left: -50, child: _Blob(size: 240, opacity: 0.07)),
-        Positioned(bottom: -80, right: -60, child: _Blob(size: 300, opacity: 0.06)),
-
         // Кнопка назад → выбор организации
         Positioned(
           top: 8, left: 8,
@@ -133,13 +130,12 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
           child: FadeTransition(opacity: _fade, child: SlideTransition(position: _slide,
             child: Container(
               constraints: const BoxConstraints(maxWidth: 420),
-              padding: const EdgeInsets.all(28),
+              padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
                 color: surface,
                 borderRadius: BorderRadius.circular(28),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.22), blurRadius: 48, offset: const Offset(0, 20)),
-                  BoxShadow(color: org.primaryColor.withOpacity(0.12), blurRadius: 24, offset: const Offset(0, 8)),
+                  BoxShadow(color: Colors.black.withOpacity(0.18), blurRadius: 40, offset: const Offset(0, 16)),
                 ],
               ),
               child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -335,7 +331,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   Widget _fieldLabel(String s) => Padding(
     padding: const EdgeInsets.only(bottom: 7),
     child: Align(alignment: Alignment.centerLeft,
-      child: Text(s, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 0.3))));
+      child: Text(s, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: C.text3))));
 }
 
 class _Blob extends StatelessWidget {

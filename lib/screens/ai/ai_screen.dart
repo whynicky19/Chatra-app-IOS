@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -28,25 +29,25 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
     final isEN = l.lang == 'EN';
     return [
       {
-        'icon': Icons.menu_book_rounded,
+        'icon': CupertinoIcons.book,
         'title': isKZ ? 'Тақырыпты түсіндір' : isEN ? 'Explain Topic' : 'Объяснить тему',
         'desc':  isKZ ? 'Күрделі тұжырымды қарапайым сөздермен' : isEN ? 'Break down complex concepts in simple words' : 'Разбери сложную концепцию простыми словами',
         'prompt': l.t('tip_explain'),
       },
       {
-        'icon': Icons.lightbulb_outline_rounded,
+        'icon': CupertinoIcons.lightbulb,
         'title': isKZ ? 'Тұжырымдарды ашу' : isEN ? 'Break Down Concepts' : 'Разобрать концепции',
         'desc':  isKZ ? 'Тәсілдер арасындағы айырмашылықты түсін' : isEN ? 'Understand the difference between approaches' : 'Помоги понять разницу между подходами',
         'prompt': l.t('tip_concepts'),
       },
       {
-        'icon': Icons.edit_outlined,
+        'icon': CupertinoIcons.pencil,
         'title': isKZ ? 'Тапсырмаға көмек' : isEN ? 'Help with Task' : 'Помочь с заданием',
         'desc':  isKZ ? 'Шешімді қайдан бастау керектігін айт' : isEN ? 'Tell me where to start the solution' : 'Подскажи, с чего начать решение',
         'prompt': l.t('tip_help'),
       },
       {
-        'icon': Icons.warning_amber_rounded,
+        'icon': CupertinoIcons.exclamationmark_triangle,
         'title': isKZ ? 'Қателерді тап' : isEN ? 'Find Mistakes' : 'Найти ошибки',
         'desc':  isKZ ? 'Кодымды тексеріп, мәселелерді көрсет' : isEN ? 'Review my code and point out issues' : 'Проверь мой код и укажи на проблемы',
         'prompt': l.t('tip_mistakes'),
@@ -170,7 +171,7 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
                   child: Container(
                     width: 38, height: 38,
                     decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
-                    child: Icon(Icons.delete_outline_rounded, color: Theme.of(context).colorScheme.primary, size: 19),
+                    child: Icon(CupertinoIcons.trash, color: Theme.of(context).colorScheme.primary, size: 19),
                   ),
                 )
               : const SizedBox.shrink(key: ValueKey('empty')),
@@ -216,7 +217,7 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
               ),
             ),
             const SizedBox(height: 14),
-            const Text('Chatra AI', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
+            Text('Chatra AI', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: adaptiveText1(context), letterSpacing: -0.5)),
             const SizedBox(height: 6),
             Text(subtitle, style: const TextStyle(fontSize: 13, color: C.text4, height: 1.4), textAlign: TextAlign.center),
             const SizedBox(height: 20),
@@ -325,7 +326,7 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
         Row(mainAxisSize: MainAxisSize.min, children: [
           Text(timeStr, style: const TextStyle(fontSize: 10, color: C.text4)),
           const SizedBox(width: 4),
-          Icon(Icons.done_all_rounded, size: 13, color: Theme.of(context).colorScheme.primary),
+          Icon(CupertinoIcons.checkmark_alt, size: 13, color: Theme.of(context).colorScheme.primary),
         ]),
       ]),
     );
@@ -523,7 +524,7 @@ class _AiInputBarState extends State<_AiInputBar> {
                     switchOutCurve: Curves.easeIn,
                     transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
                     child: Icon(
-                      hasText ? Icons.send_rounded : Icons.send_rounded,
+                      hasText ? CupertinoIcons.paperplane_fill : CupertinoIcons.paperplane_fill,
                       key: ValueKey(hasText),
                       color: Colors.white,
                       size: 20,

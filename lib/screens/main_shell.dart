@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -69,12 +70,12 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
     ];
 
     final items = <_NavItem>[
-      _NavItem(Icons.school_outlined,              Icons.school_rounded,              l.t('nav_classes')),
-      _NavItem(Icons.chat_bubble_outline_rounded,  Icons.chat_bubble_rounded,         l.t('nav_chats')),
-      _NavItem(Icons.auto_awesome_outlined,        Icons.auto_awesome,                l.t('nav_ai')),
+      _NavItem(CupertinoIcons.book,               CupertinoIcons.book_fill,              l.t('nav_classes')),
+      _NavItem(CupertinoIcons.bubble_left,        CupertinoIcons.bubble_left_fill,       l.t('nav_chats')),
+      _NavItem(CupertinoIcons.sparkles,           CupertinoIcons.sparkles,               l.t('nav_ai')),
       if (isAdmin)
-        _NavItem(Icons.admin_panel_settings_outlined, Icons.admin_panel_settings,     l.t('nav_admin')),
-      _NavItem(Icons.settings_outlined,            Icons.settings_rounded,            l.t('nav_settings')),
+        _NavItem(CupertinoIcons.shield,           CupertinoIcons.shield_fill,            l.t('nav_admin')),
+      _NavItem(CupertinoIcons.gear,               CupertinoIcons.gear_alt_fill,          l.t('nav_settings')),
     ];
 
     if (_idx >= screens.length) _idx = 0;
@@ -359,7 +360,7 @@ class _OfflineBanner extends StatelessWidget {
         color: const Color(0xFFB71C1C),
         padding: EdgeInsets.fromLTRB(16, topPad + 6, 16, 8),
         child: Row(children: [
-          const Icon(Icons.wifi_off_rounded, size: 16, color: Colors.white),
+          const Icon(CupertinoIcons.wifi_slash, size: 16, color: Colors.white),
           const SizedBox(width: 10),
           Expanded(
             child: Text(

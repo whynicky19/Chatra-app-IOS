@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/l10n_provider.dart';
@@ -88,7 +89,7 @@ class ClassPostsTab extends StatelessWidget {
           child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
             Container(width: 80, height: 80,
               decoration: BoxDecoration(gradient: RadialGradient(colors: [accentColor.withOpacity(0.18), accentColor.withOpacity(0.04)]), shape: BoxShape.circle),
-              child: Icon(isLecture ? Icons.menu_book_rounded : Icons.inventory_2_outlined, size: 36, color: accentColor)),
+              child: Icon(isLecture ? CupertinoIcons.book : CupertinoIcons.tray, size: 36, color: accentColor)),
             const SizedBox(height: 18),
             Text(isLecture ? l.t('no_lectures') : l.t('no_materials'),
               style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: adaptiveText1(context))),
@@ -125,7 +126,7 @@ class ClassPostsTab extends StatelessWidget {
                     border: Border.all(color: accentColor.withOpacity(0.18)),
                   ),
                   child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Icon(isLecture ? Icons.menu_book_rounded : Icons.inventory_2_outlined, color: accentColor, size: 20),
+                    Icon(isLecture ? CupertinoIcons.book : CupertinoIcons.tray, color: accentColor, size: 20),
                     SizedBox(height: 2),
                     Text('$num', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: accentColor, height: 1)),
                   ])),
@@ -145,9 +146,9 @@ class ClassPostsTab extends StatelessWidget {
                     child: Text(body, style: TextStyle(fontSize: 13, color: C.text4, height: 1.45), maxLines: 2, overflow: TextOverflow.ellipsis)),
                 ])),
                 if (isTeacher) Column(mainAxisSize: MainAxisSize.min, children: [
-                  iconBtn(Icons.edit_outlined, () => onEditPost(p)),
+                  iconBtn(CupertinoIcons.pencil, () => onEditPost(p)),
                   SizedBox(height: 4),
-                  iconBtn(Icons.delete_outline, () => onDeletePost(p['id'] as int)),
+                  iconBtn(CupertinoIcons.trash, () => onDeletePost(p['id'] as int)),
                 ]),
               ])),
               Container(
@@ -157,7 +158,7 @@ class ClassPostsTab extends StatelessWidget {
                   borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
                 ),
                 child: Row(children: [
-                  Icon(Icons.access_time_rounded, size: 12, color: C.text4),
+                  Icon(CupertinoIcons.clock, size: 12, color: C.text4),
                   SizedBox(width: 4),
                   Text(fmtDate(p['created_at'] ?? ''), style: TextStyle(fontSize: 12, color: C.text4)),
                   if (files.isNotEmpty) ...[
@@ -166,7 +167,7 @@ class ClassPostsTab extends StatelessWidget {
                       padding: EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                       decoration: BoxDecoration(color: accentColor.withOpacity(0.10), borderRadius: BorderRadius.circular(6)),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(Icons.attach_file_rounded, size: 10, color: accentColor),
+                        Icon(CupertinoIcons.paperclip, size: 10, color: accentColor),
                         SizedBox(width: 3),
                         Text('${files.length}', style: TextStyle(fontSize: 11, color: accentColor, fontWeight: FontWeight.w700)),
                       ])),
@@ -178,7 +179,7 @@ class ClassPostsTab extends StatelessWidget {
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       Text(l.t('open'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: accentColor)),
                       SizedBox(width: 3),
-                      Icon(Icons.arrow_forward_rounded, size: 12, color: accentColor),
+                      Icon(CupertinoIcons.chevron_right, size: 12, color: accentColor),
                     ]),
                   ),
                 ]),

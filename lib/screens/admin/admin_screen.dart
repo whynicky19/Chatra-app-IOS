@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -167,11 +168,11 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: primaryGlow(primary, opacity: 0.32),
                   ),
-                  child: const Icon(Icons.shield_rounded, color: Colors.white, size: 22),
+                  child: const Icon(CupertinoIcons.shield_fill, color: Colors.white, size: 22),
                 ),
                 const SizedBox(width: 12),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(l.t('admin'), style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: primary, letterSpacing: -0.5)),
+                  Text(l.t('admin'), style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: adaptiveText1(context), letterSpacing: -0.5)),
                   Text(l.t('admin_sub'), style: const TextStyle(fontSize: 12, color: C.text4)),
                 ])),
                 GestureDetector(
@@ -180,7 +181,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(color: primary, borderRadius: BorderRadius.circular(12), boxShadow: primaryGlow(primary, opacity: 0.28)),
                     child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                      Icon(Icons.person_add_rounded, color: Colors.white, size: 16),
+                      Icon(CupertinoIcons.person_badge_plus, color: Colors.white, size: 16),
                       SizedBox(width: 6),
                       Text('Добавить', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
                     ]),
@@ -192,11 +193,11 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: Row(children: [
-                _StatCard(icon: Icons.people_rounded,  value: '${_users.length}', label: l.t('total_label'),    color: primary,                    isDark: isDark),
+                _StatCard(icon: CupertinoIcons.person_2,   value: '${_users.length}', label: l.t('total_label'),    color: primary,                    isDark: isDark),
                 const SizedBox(width: 8),
-                _StatCard(icon: Icons.school_rounded,   value: '$teachers',       label: l.t('teachers_label'), color: const Color(0xFF6366F1), isDark: isDark),
+                _StatCard(icon: CupertinoIcons.book,       value: '$teachers',        label: l.t('teachers_label'), color: const Color(0xFF6366F1), isDark: isDark),
                 const SizedBox(width: 8),
-                _StatCard(icon: Icons.person_rounded,   value: '$students',       label: l.t('students_label'), color: const Color(0xFF059669), isDark: isDark),
+                _StatCard(icon: CupertinoIcons.person,     value: '$students',        label: l.t('students_label'), color: const Color(0xFF059669), isDark: isDark),
               ]),
             ),
           ])),
@@ -244,7 +245,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           decoration: InputDecoration(
             hintText: l.t('search_users'),
             prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
-              child: Icon(Icons.search_rounded, size: 18, color: C.text4)),
+              child: Icon(CupertinoIcons.search, size: 18, color: C.text4)),
             contentPadding: const EdgeInsets.symmetric(vertical: 12),
           ),
           onChanged: (v) => setState(() => _search = v),
@@ -308,7 +309,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                       const SizedBox(width: 8),
                       _RoleBadge(role: role),
                       PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_vert_rounded, size: 20, color: C.text4),
+                        icon: const Icon(CupertinoIcons.ellipsis, size: 20, color: C.text4),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         onSelected: (v) => _action(u, v),
                         itemBuilder: (_) => [
@@ -361,7 +362,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           child: Row(children: [
             Container(width: 48, height: 48,
               decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(14)),
-              child: const Icon(Icons.bolt_rounded, color: Colors.white, size: 26)),
+              child: const Icon(CupertinoIcons.bolt_fill, color: Colors.white, size: 26)),
             const SizedBox(width: 16),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(l.t('total_tokens'), style: const TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.w600, letterSpacing: 0.3)),
@@ -374,7 +375,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(color: Colors.white.withOpacity(0.18), borderRadius: BorderRadius.circular(10)),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(Icons.refresh_rounded, size: 14, color: Colors.white),
+                  const Icon(CupertinoIcons.arrow_counterclockwise, size: 14, color: Colors.white),
                   const SizedBox(width: 4),
                   Text(l.t('refresh'), style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600)),
                 ]),
@@ -407,7 +408,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                 child: Row(children: [
                   Container(width: 44, height: 44,
                     decoration: BoxDecoration(color: primary.withOpacity(0.10), borderRadius: BorderRadius.circular(13)),
-                    child: Icon(Icons.class_rounded, size: 20, color: primary)),
+                    child: Icon(CupertinoIcons.book, size: 20, color: primary)),
                   const SizedBox(width: 12),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(className, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700), overflow: TextOverflow.ellipsis),
@@ -534,7 +535,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
 
         if (_aiSummary.isEmpty && _aiLogs.isEmpty)
           Padding(padding: const EdgeInsets.all(48), child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(Icons.bolt_rounded, size: 52, color: C.text4),
+            const Icon(CupertinoIcons.bolt, size: 52, color: C.text4),
             const SizedBox(height: 14),
             Text(l.t('no_ai_data'), style: const TextStyle(color: C.text4, fontSize: 15, fontWeight: FontWeight.w600)),
           ]))),
@@ -553,7 +554,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     final userNames = _userNameMap;
 
     if (classes.isEmpty) return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-      const Icon(Icons.class_rounded, size: 52, color: C.text4),
+      const Icon(CupertinoIcons.book, size: 52, color: C.text4),
       const SizedBox(height: 14),
       Text(l.t('no_classes_admin'), style: const TextStyle(color: C.text4, fontSize: 15, fontWeight: FontWeight.w600)),
     ]));
@@ -604,7 +605,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(color: Colors.black.withOpacity(0.52), borderRadius: BorderRadius.circular(20)),
                           child: Row(mainAxisSize: MainAxisSize.min, children: [
-                            const Icon(Icons.people_rounded, size: 13, color: Colors.white),
+                            const Icon(CupertinoIcons.person_2, size: 13, color: Colors.white),
                             const SizedBox(width: 4),
                             Text('${members.length}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.white)),
                           ]),
@@ -643,7 +644,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                     ),
                     if (teacherName.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8),
                       child: Row(children: [
-                        const Icon(Icons.person_outline_rounded, size: 13, color: C.text4),
+                        const Icon(CupertinoIcons.person, size: 13, color: C.text4),
                         const SizedBox(width: 4),
                         Text(teacherName, style: const TextStyle(fontSize: 12, color: C.text4)),
                       ])),
@@ -676,7 +677,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                           ? Text(l.t('no_students_class'), style: const TextStyle(fontSize: 13, color: C.text4))
                           : Text('${students.length} ${l.t('students_count')}',
                               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: primary))),
-                        Icon(Icons.arrow_forward_ios_rounded, size: 13, color: primary),
+                        Icon(CupertinoIcons.chevron_right, size: 13, color: primary),
                       ]),
                     ),
                   ])),
@@ -730,7 +731,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                   Text(className, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800), maxLines: 2, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 3),
                   Row(children: [
-                    Icon(Icons.people_rounded, size: 13, color: primary),
+                    Icon(CupertinoIcons.person_2, size: 13, color: primary),
                     const SizedBox(width: 4),
                     Text('$studentCount ${l.t('students_count')}',
                       style: TextStyle(fontSize: 12, color: primary, fontWeight: FontWeight.w600)),
@@ -743,7 +744,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                   child: Container(
                     width: 36, height: 36,
                     decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(10)),
-                    child: Icon(Icons.refresh_rounded, size: 18, color: primary),
+                    child: Icon(CupertinoIcons.arrow_counterclockwise, size: 18, color: primary),
                   ),
                 ),
               ])),
@@ -753,7 +754,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               // List
               Expanded(child: members.isEmpty
                 ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(Icons.people_outline_rounded, size: 52, color: C.text4),
+                    const Icon(CupertinoIcons.person_2, size: 52, color: C.text4),
                     const SizedBox(height: 14),
                     Text(l.t('no_students_class'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: C.text4)),
                     const SizedBox(height: 16),
@@ -763,7 +764,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
                         decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(Icons.refresh_rounded, size: 15, color: primary),
+                          Icon(CupertinoIcons.arrow_counterclockwise, size: 15, color: primary),
                           const SizedBox(width: 6),
                           Text('Обновить список', style: TextStyle(fontSize: 13, color: primary, fontWeight: FontWeight.w600)),
                         ]),
@@ -874,14 +875,14 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
       title: Text(l.t('create_user'), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
       content: Column(mainAxisSize: MainAxisSize.min, children: [
         TextField(controller: emailCtrl, keyboardType: TextInputType.emailAddress,
-          decoration: const InputDecoration(hintText: 'Email', prefixIcon: Padding(padding: EdgeInsets.only(left: 4), child: Icon(Icons.mail_outline_rounded, size: 18, color: C.text4)))),
+          decoration: const InputDecoration(hintText: 'Email', prefixIcon: Padding(padding: EdgeInsets.only(left: 4), child: Icon(CupertinoIcons.mail, size: 18, color: C.text4)))),
         const SizedBox(height: 12),
         TextField(controller: pwCtrl, obscureText: true,
-          decoration: const InputDecoration(hintText: 'Пароль', prefixIcon: Padding(padding: EdgeInsets.only(left: 4), child: Icon(Icons.lock_outline_rounded, size: 18, color: C.text4)))),
+          decoration: const InputDecoration(hintText: 'Пароль', prefixIcon: Padding(padding: EdgeInsets.only(left: 4), child: Icon(CupertinoIcons.lock, size: 18, color: C.text4)))),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           value: role,
-          decoration: const InputDecoration(prefixIcon: Padding(padding: EdgeInsets.only(left: 4), child: Icon(Icons.badge_outlined, size: 18, color: C.text4))),
+          decoration: const InputDecoration(prefixIcon: Padding(padding: EdgeInsets.only(left: 4), child: Icon(CupertinoIcons.tag, size: 18, color: C.text4))),
           items: ['student', 'teacher', 'admin'].map((r) => DropdownMenuItem(value: r, child: Text(r, style: const TextStyle(fontWeight: FontWeight.w600)))).toList(),
           onChanged: (v) => setS(() => role = v!),
         ),

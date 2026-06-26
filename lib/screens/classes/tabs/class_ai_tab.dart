@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../services/api_service.dart';
@@ -26,10 +27,10 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
   late final AnimationController _fadeCtrl;
 
   static const _tips = [
-    {'icon': Icons.menu_book_rounded,         'title': 'Объясни материал',  'desc': 'Разбери тему простыми словами'},
-    {'icon': Icons.lightbulb_outline_rounded, 'title': 'Ключевые понятия',  'desc': 'Назови главные идеи курса'},
-    {'icon': Icons.assignment_outlined,       'title': 'Помощь с заданием', 'desc': 'Подскажи, с чего начать'},
-    {'icon': Icons.warning_amber_rounded,     'title': 'Частые ошибки',     'desc': 'Что чаще всего понимают неверно'},
+    {'icon': CupertinoIcons.book,         'title': 'Объясни материал',  'desc': 'Разбери тему простыми словами'},
+    {'icon': CupertinoIcons.lightbulb, 'title': 'Ключевые понятия',  'desc': 'Назови главные идеи курса'},
+    {'icon': CupertinoIcons.doc_text,       'title': 'Помощь с заданием', 'desc': 'Подскажи, с чего начать'},
+    {'icon': CupertinoIcons.exclamationmark_triangle,     'title': 'Частые ошибки',     'desc': 'Что чаще всего понимают неверно'},
   ];
 
   @override
@@ -147,7 +148,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
               ),
               child: _loading
                   ? Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Theme.of(context).colorScheme.primary)))
-                  : const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                  : const Icon(CupertinoIcons.paperplane_fill, color: Colors.white, size: 20),
             ),
           ),
         ]),
@@ -274,7 +275,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
         Row(mainAxisSize: MainAxisSize.min, children: [
           Text(timeStr, style: const TextStyle(fontSize: 10, color: C.text4)),
           const SizedBox(width: 4),
-          Icon(Icons.done_all_rounded, size: 13, color: Theme.of(context).colorScheme.primary),
+          Icon(CupertinoIcons.checkmark_alt, size: 13, color: Theme.of(context).colorScheme.primary),
         ]),
       ]),
     );

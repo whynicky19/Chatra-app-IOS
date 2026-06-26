@@ -6,14 +6,15 @@ class C {
   static const teal    = Color(0xFF00B1C9);
   static const tealDk  = Color(0xFF009AAF);
   static const tealLt  = Color(0xFFE6F9FB);
-  static const bg      = Color(0xFFF4F7F9);
+  // ── Light mode neutrals (iOS HIG) ──────────────────────────
+  static const bg      = Color(0xFFF2F2F7);   // systemGroupedBackground
   static const surface = Colors.white;
-  static const surface2 = Color(0xFFEEF3F5);
-  static const border  = Color(0xFFDDE5EA);
-  static const text1   = Color(0xFF0D2D33);
-  static const text2   = Color(0xFF1E3A44);
-  static const text3   = Color(0xFF4A7A86);
-  static const text4   = Color(0xFF8AABB5);
+  static const surface2 = Color(0xFFE5E5EA);  // secondarySystemFill
+  static const border  = Color(0xFFD1D1D6);   // separator
+  static const text1   = Color(0xFF1C1C1E);   // label
+  static const text2   = Color(0xFF3A3A3C);   // secondaryLabel
+  static const text3   = Color(0xFF6C6C70);   // tertiaryLabel
+  static const text4   = Color(0xFF8E8E93);   // quaternaryLabel
   static const red     = Color(0xFFDC2626);
   static const redLt   = Color(0xFFFEE2E2);
   static const redLight  = redLt;
@@ -24,12 +25,13 @@ class C {
   static const tealLight = tealLt;
   static const yellowLt  = Color(0xFFFEF9C3);
 
-  static const darkBg      = Color(0xFF080F11);
-  static const darkSurface  = Color(0xFF0F1A1D);
-  static const darkSurface2 = Color(0xFF172229);
-  static const darkBorder   = Color(0xFF1C2E38);
-  static const darkText1    = Color(0xFFE8F4F6);
-  static const darkText2    = Color(0xFFB0CDD4);
+  // ── Dark mode neutrals (iOS HIG) ───────────────────────────
+  static const darkBg      = Color(0xFF000000);   // systemBackground dark
+  static const darkSurface  = Color(0xFF1C1C1E);  // secondarySystemBackground dark
+  static const darkSurface2 = Color(0xFF2C2C2E);  // tertiarySystemBackground dark
+  static const darkBorder   = Color(0xFF38383A);  // separator dark
+  static const darkText1    = Color(0xFFFFFFFF);  // label dark
+  static const darkText2    = Color(0xFFAEAEB2);  // secondaryLabel dark
   static const darkTealLt   = Color(0xFF0A2228);
 
   // School / amber palette
@@ -109,6 +111,21 @@ const _pageTransitions = PageTransitionsTheme(builders: {
   TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
 });
 
+const _textTheme = TextTheme(
+  displayLarge:   TextStyle(fontSize: 34, fontWeight: FontWeight.w700, letterSpacing: -0.4, height: 1.1),
+  headlineLarge:  TextStyle(fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: -0.3, height: 1.15),
+  headlineMedium: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.2, height: 1.2),
+  titleLarge:     TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.1),
+  titleMedium:    TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+  titleSmall:     TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+  bodyLarge:      TextStyle(fontSize: 17, fontWeight: FontWeight.w400, height: 1.45),
+  bodyMedium:     TextStyle(fontSize: 15, fontWeight: FontWeight.w400, height: 1.45),
+  bodySmall:      TextStyle(fontSize: 13, fontWeight: FontWeight.w400, height: 1.4),
+  labelLarge:     TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+  labelMedium:    TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+  labelSmall:     TextStyle(fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.8),
+);
+
 class AppTheme {
   static ThemeData lightFor(bool isSchool) {
     final primary   = isSchool ? C.amber   : C.teal;
@@ -146,6 +163,19 @@ class AppTheme {
           borderRadius: BorderRadius.all(Radius.circular(16)),
         ),
       ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: C.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        elevation: 0,
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? Colors.white : null),
+        trackColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? primary : null),
+      ),
+      textTheme: _textTheme,
       pageTransitionsTheme: _pageTransitions,
       dividerColor: C.border,
     );
@@ -188,6 +218,19 @@ class AppTheme {
         ),
         backgroundColor: C.darkSurface2,
       ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: C.darkSurface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        elevation: 0,
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? Colors.white : null),
+        trackColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? primary : null),
+      ),
+      textTheme: _textTheme,
       pageTransitionsTheme: _pageTransitions,
       dividerColor: C.darkBorder.withOpacity(0.5),
     );

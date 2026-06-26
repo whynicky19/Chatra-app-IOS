@@ -36,6 +36,11 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   List<dynamic> _mySubs = [];
   Map<String, dynamic> _rating = {};
   Map<String, String> _fileTexts = {};
+  // Cached derived data — computed once in _load() instead of jsonDecode on every getter access.
+  Map<String, dynamic> _meta = {};
+  String _title = '';
+  List<dynamic> _lectures = [];
+  List<dynamic> _materials = [];
   bool _loading = true, _loadingAsg = false;
   bool _coverPrecached = false;
 
@@ -65,12 +70,34 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   Future<void> _load() async {
     if (!mounted) return;
     final api = context.read<ApiService>();
-    try { _posts = await api.getPosts(); } catch (_) {}
-    if (!context.read<AuthProvider>().isTeacher) {
-      try { _rating = await api.getMyRating(classId: widget.classId); } catch (_) {}
-    }
+    final isTeacher = context.read<AuthProvider>().isTeacher;
+    // Posts and rating are independent — fetch them in parallel.
+    final results = await Future.wait([
+      api.getPosts().catchError((_) => _posts),
+      isTeacher
+          ? Future<Map<String, dynamic>>.value(_rating)
+          : api.getMyRating(classId: widget.classId).catchError((_) => _rating),
+    ]);
+    _posts = results[0] as List<dynamic>;
+    if (!isTeacher) _rating = results[1] as Map<String, dynamic>;
+    _recomputeDerived();
     if (mounted) setState(() => _loading = false);
     _loadFileTexts();
+  }
+
+  // Parses post bodies once (after data arrives) and caches the results so that
+  // build()/getters don't run jsonDecode on every access.
+  void _recomputeDerived() {
+    _lectures = _posts.where((p) => (p['title'] ?? '').startsWith('[LECTURE][${widget.classId}]')).toList();
+    _materials = _posts.where((p) => (p['title'] ?? '').startsWith('[HW][${widget.classId}]')).toList();
+    final metaPost = _posts.firstWhere(
+      (p) => p['id'] == widget.classId && (() { try { return jsonDecode(p['body'])['type'] == 'class'; } catch (_) { return false; } })(),
+      orElse: () => null,
+    );
+    _meta = metaPost != null
+        ? (() { try { return jsonDecode(metaPost['body']) as Map<String, dynamic>; } catch (_) { return <String, dynamic>{}; } })()
+        : <String, dynamic>{};
+    _title = (_posts.firstWhere((p) => p['id'] == widget.classId, orElse: () => {'title': 'Класс #${widget.classId}'})['title'] ?? '') as String;
   }
 
   Future<void> _loadFileTexts() async {
@@ -111,14 +138,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     if (mounted) setState(() => _loadingAsg = false);
   }
 
-  Map<String, dynamic> get _meta {
-    final p = _posts.firstWhere((p) => p['id'] == widget.classId && (() { try { return jsonDecode(p['body'])['type'] == 'class'; } catch (_) { return false; } })(), orElse: () => null);
-    if (p == null) return {};
-    try { return jsonDecode(p['body']); } catch (_) { return {}; }
-  }
-  String get _title => _posts.firstWhere((p) => p['id'] == widget.classId, orElse: () => {'title': 'Класс #${widget.classId}'})?['title'] ?? '';
-  List<dynamic> get _lectures => _posts.where((p) => (p['title'] ?? '').startsWith('[LECTURE][${widget.classId}]')).toList();
-  List<dynamic> get _materials => _posts.where((p) => (p['title'] ?? '').startsWith('[HW][${widget.classId}]')).toList();
   String _clean(String t) => t.replaceFirst(RegExp(r'^\[(LECTURE|HW)\]\[\d+\]\s*'), '').trim();
   String _fmtDate(String? d) { if (d == null) return ''; try { final dt = DateTime.parse(d); return '${dt.day}.${dt.month.toString().padLeft(2, '0')}.${dt.year}'; } catch (_) { return d; } }
 
@@ -216,10 +235,13 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             Center(child: InteractiveViewer(
               minScale: 0.5,
               maxScale: 5.0,
-              child: Image.network(url, fit: BoxFit.contain,
-                loadingBuilder: (_, child, progress) => progress == null ? child
-                    : Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary, strokeWidth: 2)),
-                errorBuilder: (_, __, ___) => Icon(CupertinoIcons.photo, color: Colors.white54, size: 64),
+              child: CachedNetworkImage(
+                imageUrl: url,
+                fit: BoxFit.contain,
+                fadeInDuration: Duration.zero,
+                fadeOutDuration: Duration.zero,
+                placeholder: (_, __) => Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary, strokeWidth: 2)),
+                errorWidget: (_, __, ___) => Icon(CupertinoIcons.photo, color: Colors.white54, size: 64),
               ),
             )),
             Positioned(top: MediaQuery.of(ctx).padding.top + 8, right: 16,
@@ -514,7 +536,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               }, child: Text('Сохранить'))),
             ]),
           ])));
-      }));
+      })).then((_) { tc.dispose(); cc.dispose(); });
   }
 
   List<String> _extractFiles(dynamic p) {
@@ -915,7 +937,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 } catch (_) { showToast(context, 'Ошибка', error: true); }
               })),
           ]),
-        ]))));
+        ])))).then((_) { tc.dispose(); cc.dispose(); });
   }
 
   void _createAssignment() {
@@ -1123,7 +1145,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               })),
           ]),
           SizedBox(height: 24),
-        ]))));
+        ])))).then((_) { tc.dispose(); dc.dispose(); sc.dispose(); });
   }
 
   Widget _fieldLabel2(String s) => Padding(padding: EdgeInsets.only(bottom: 8), child: Text(s, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)));
@@ -1315,7 +1337,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           SizedBox(height: 24),
         ]),
       )),
-    );
+    ).then((_) { tc.dispose(); dc.dispose(); sc.dispose(); });
   }
 
   void _editClass() {
@@ -1354,7 +1376,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 if (newCoverBase64 != null && newCoverBase64!.startsWith('data:'))
                   Builder(builder: (_) { try { return Image.memory(base64Decode(newCoverBase64!.split(',').last), fit: BoxFit.cover); } catch (_) { return Container(color: Theme.of(context).colorScheme.primary.withOpacity(0.1)); } })
                 else if (newCoverBase64 != null)
-                  Image.network(newCoverBase64!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF006475), Theme.of(context).colorScheme.primary]))))
+                  CachedNetworkImage(imageUrl: newCoverBase64!, fit: BoxFit.cover, fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero, placeholder: (_, __) => const SizedBox.shrink(), errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF006475), Theme.of(context).colorScheme.primary]))))
                 else
                   Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF006475), Theme.of(context).colorScheme.primary], begin: Alignment.topLeft, end: Alignment.bottomRight))),
                 // Overlay
@@ -1404,7 +1426,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             )),
           ]),
           SizedBox(height: 24),
-        ]))));
+        ])))).then((_) { tc.dispose(); dc.dispose(); tn.dispose(); });
   }
 
   @override void dispose() {

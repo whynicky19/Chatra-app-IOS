@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -19,6 +20,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   final _pw     = TextEditingController();
   final _groupQ = TextEditingController();
   String _group = '';
+  Timer? _groupDebounce;
   List<String> _suggestions = [];
   bool _showSugg = false;
   bool _submitted = false;
@@ -36,7 +38,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
     _anim.forward();
   }
 
-  @override void dispose() { _anim.dispose(); super.dispose(); }
+  @override void dispose() { _groupDebounce?.cancel(); _anim.dispose(); super.dispose(); }
 
   bool get _nameIsCyrillic {
     final n = _name.text.trim();
@@ -224,7 +226,12 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                           ? const Icon(Icons.check_circle_rounded, color: C.green, size: 20)
                           : null,
                     ),
-                    onChanged: (v) { _group = ''; _searchGroups(v); setState(() {}); },
+                    onChanged: (v) {
+                      _group = '';
+                      _groupDebounce?.cancel();
+                      _groupDebounce = Timer(const Duration(milliseconds: 350), () => _searchGroups(v));
+                      setState(() {});
+                    },
                   ),
                   if (_showSugg) Container(
                     margin: const EdgeInsets.only(top: 4),

@@ -22,8 +22,12 @@ import 'screens/classes/class_detail_screen.dart';
 /// - iOS simulator / macOS / web: 127.0.0.1
 /// - Реальное устройство: подставь IP машины с бэком вручную ниже
 String _resolveBaseUrl() {
+  // Override via: flutter run --dart-define=API_URL=https://yourserver.com
+  // (some build scripts use API_BASE_URL — both names are accepted)
   const overrideUrl = String.fromEnvironment('API_URL');
   if (overrideUrl.isNotEmpty) return overrideUrl;
+  const overrideUrl2 = String.fromEnvironment('API_BASE_URL');
+  if (overrideUrl2.isNotEmpty) return overrideUrl2;
   if (kIsWeb) return 'http://127.0.0.1:8000';
   if (Platform.isAndroid) return 'http://10.0.2.2:8000';
   return 'https://glacier-radiated-wipe.ngrok-free.dev';

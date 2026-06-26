@@ -7,6 +7,7 @@ import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/toast.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -848,8 +849,10 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
       try { return Image.memory(base64Decode(coverImg.toString().split(',').last), fit: BoxFit.cover, width: double.infinity); }
       catch (_) { return Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))); }
     }
-    return Image.network(coverImg, fit: BoxFit.cover, width: double.infinity,
-      errorBuilder: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))));
+    return CachedNetworkImage(imageUrl: coverImg.toString(), fit: BoxFit.cover, width: double.infinity,
+      fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero,
+      placeholder: (_, __) => const SizedBox.shrink(),
+      errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))));
   }
 
   void _action(dynamic u, String action) async {

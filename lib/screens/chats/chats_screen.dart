@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../providers/chats_provider.dart';
@@ -24,6 +25,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
   // Background timer: refreshes unread badges for the chat list.
   // Runs at 10 s; WS handles the open-chat stream in real time.
   Timer? _bgPoller;
+  Timer? _searchDebounce;
   late AnimationController _listAnim;
   late AnimationController _replyAnim;
   final ScrollController _chatScrollCtrl = ScrollController();
@@ -61,6 +63,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
   @override
   void dispose() {
     _bgPoller?.cancel();
+    _searchDebounce?.cancel();
     _listAnim.dispose();
     _replyAnim.dispose();
     _chatScrollCtrl.dispose();
@@ -151,7 +154,12 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
                 contentPadding: EdgeInsets.zero,
                 isDense: true,
               ),
-              onChanged: (q) => context.read<ChatsProvider>().searchUsers(q),
+              onChanged: (q) {
+                _searchDebounce?.cancel();
+                _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+                  context.read<ChatsProvider>().searchUsers(q);
+                });
+              },
             )),
           ]),
         )),
@@ -567,10 +575,15 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
       final url = imgMatch.group(0)!;
       final textPart = fixedContent.replaceAll(RegExp(r'\[.*?\]\(.*?\)'), '').replaceAll(url, '').trim();
       return ClipRRect(borderRadius: BorderRadius.circular(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Image.network(url, fit: BoxFit.cover, width: double.infinity, height: 200,
-          loadingBuilder: (_, child, progress) => progress == null ? child
-              : Container(height: 200, color: adaptiveSurface2(context), child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.primary))),
-          errorBuilder: (_, __, ___) => Container(height: 80, padding: const EdgeInsets.all(16), child: Row(children: [
+        CachedNetworkImage(
+          imageUrl: url,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: 200,
+          fadeInDuration: Duration.zero,
+          fadeOutDuration: Duration.zero,
+          placeholder: (_, __) => Container(height: 200, color: adaptiveSurface2(context), child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.primary))),
+          errorWidget: (_, __, ___) => Container(height: 80, padding: const EdgeInsets.all(16), child: Row(children: [
             const Icon(CupertinoIcons.photo, color: C.text4), const SizedBox(width: 8),
             Flexible(child: Text(url.split('/').last, style: TextStyle(color: isMe ? Colors.white70 : C.text4, fontSize: 12))),
           ]))),

@@ -187,19 +187,26 @@ class ChatsProvider extends ChangeNotifier {
     notifyListeners();
     try {
       chats = await _api.getChats();
-      for (final c in chats) {
+      // Load users + messages for all chats in parallel instead of sequentially.
+      await Future.wait(chats.map((c) async {
         final id = c['id'] as int;
-        try {
-          chatUsers[id] = await _api.getChatUsers(id);
-        } catch (e) {
-          errorMessage = 'Ошибка загрузки участников чата: $e';
-        }
-        try {
-          messages[id] = await _api.getMessages(id);
-        } catch (e) {
-          errorMessage = 'Ошибка загрузки сообщений: $e';
-        }
-      }
+        await Future.wait([
+          () async {
+            try {
+              chatUsers[id] = await _api.getChatUsers(id);
+            } catch (e) {
+              errorMessage = 'Ошибка загрузки участников чата: $e';
+            }
+          }(),
+          () async {
+            try {
+              messages[id] = await _api.getMessages(id);
+            } catch (e) {
+              errorMessage = 'Ошибка загрузки сообщений: $e';
+            }
+          }(),
+        ]);
+      }));
     } catch (e) {
       errorMessage = 'Не удалось загрузить чаты: $e';
     }

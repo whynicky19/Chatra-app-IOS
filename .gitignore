@@ -60,3 +60,4 @@ ios/.symlinks/
 .claude/skills/
 *.md.save
 ios/Podfile.lock
+.claude

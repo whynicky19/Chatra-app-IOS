@@ -12,12 +12,14 @@ class ClassAiTab extends StatefulWidget {
   final String className;
   final String lectureContext;
   final List<String> lectureImageUrls;
+  final bool isActive;
   const ClassAiTab({
     super.key,
     required this.classId,
     required this.className,
     this.lectureContext = '',
     this.lectureImageUrls = const [],
+    this.isActive = true,
   });
   @override State<ClassAiTab> createState() => _ClassAiTabState();
 }
@@ -42,11 +44,24 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _scrollCtrl = ScrollController();
-    _pulseCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat(reverse: true);
+    _pulseCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 2));
+    if (widget.isActive) _pulseCtrl.repeat(reverse: true);
     _fadeCtrl  = AnimationController(vsync: this, duration: const Duration(milliseconds: 600))..forward();
     final uid = context.read<AuthProvider>().userId?.toString() ?? 'anon';
     _historyKey = 'ai_chat_history_${widget.classId}_$uid';
     _loadHistory();
+  }
+
+  @override
+  void didUpdateWidget(ClassAiTab old) {
+    super.didUpdateWidget(old);
+    if (old.isActive != widget.isActive) {
+      if (widget.isActive) {
+        _pulseCtrl.repeat(reverse: true);
+      } else {
+        _pulseCtrl.stop();
+      }
+    }
   }
 
   @override
@@ -310,7 +325,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
           curve: Curves.easeOutCubic,
           builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(
             offset: Offset(isU ? 16*(1-t) : -16*(1-t), 6*(1-t)), child: child)),
-          child: isU ? _userBubble(m['text'] ?? '') : _aiBubble(m['text'] ?? '', isDark),
+          child: RepaintBoundary(child: isU ? _userBubble(m['text'] ?? '') : _aiBubble(m['text'] ?? '', isDark)),
         );
       },
     );

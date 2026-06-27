@@ -273,7 +273,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                   duration: Duration(milliseconds: 300 + i * 40),
                   curve: Curves.easeOutCubic,
                   builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 12 * (1-t)), child: child)),
-                  child: Container(
+                  child: RepaintBoundary(child: Container(
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
@@ -326,7 +326,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                         ],
                       ),
                     ]),
-                  ),
+                  )),
                 );
               },
             ),
@@ -404,7 +404,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               duration: Duration(milliseconds: 280 + i * 40),
               curve: Curves.easeOutCubic,
               builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 10 * (1-t)), child: child)),
-              child: Container(
+              child: RepaintBoundary(child: Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(16), boxShadow: softShadow(isDark)),
@@ -423,7 +423,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                     const Text('токенов', style: TextStyle(fontSize: 10, color: C.text4)),
                   ]),
                 ]),
-              ),
+              )),
             );
           }),
           const SizedBox(height: 20),
@@ -446,7 +446,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               duration: Duration(milliseconds: 300 + i * 40),
               curve: Curves.easeOutCubic,
               builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 10*(1-t)), child: child)),
-              child: Container(
+              child: RepaintBoundary(child: Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(16), boxShadow: softShadow(isDark)),
@@ -469,7 +469,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                     const Text('токенов', style: TextStyle(fontSize: 10, color: C.text4)),
                   ]),
                 ]),
-              ),
+              )),
             );
           }),
           const SizedBox(height: 20),
@@ -588,7 +588,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             duration: Duration(milliseconds: 320 + i * 50),
             curve: Curves.easeOutCubic,
             builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 16*(1-t)), child: child)),
-            child: GestureDetector(
+            child: RepaintBoundary(child: GestureDetector(
               onTap: () => _showStudentsSheet(classId, title, coverImg, i),
               child: Container(
                 margin: const EdgeInsets.only(bottom: 14),
@@ -686,7 +686,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                   ])),
                 ]),
               ),
-            ),
+            )),
           );
         },
       ),

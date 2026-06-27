@@ -283,7 +283,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       duration: Duration(milliseconds: 320 + i * 45),
                       curve: Curves.easeOutCubic,
                       builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 14 * (1 - t)), child: child)),
-                      child: Dismissible(
+                      child: RepaintBoundary(child: Dismissible(
                         key: ValueKey('dismiss_${n.key}'),
                         direction: DismissDirection.endToStart,
                         dismissThresholds: const {DismissDirection.endToStart: 0.4},
@@ -342,7 +342,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           ])),
                         ),
                         ),
-                      ),
+                      )),
                     );
                   },
                 ),

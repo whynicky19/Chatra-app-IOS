@@ -43,14 +43,21 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   String _title = '';
   List<dynamic> _lectures = [];
   List<dynamic> _materials = [];
-  bool _loading = true, _loadingAsg = false;
+  bool _loading = true, _loadingAsg = false, _aiTabActive = false;
   bool _coverPrecached = false;
 
   @override
   void initState() {
     super.initState();
     _tabCtrl = TabController(length: 4, vsync: this, initialIndex: widget.initialTab);
-    _tabCtrl.addListener(() { if (_tabCtrl.index == 2 && _assignments.isEmpty) _loadAssignments(); });
+    _aiTabActive = widget.initialTab == 3;
+    _tabCtrl.addListener(() {
+      if (_tabCtrl.index == 2 && _assignments.isEmpty) _loadAssignments();
+      if (!_tabCtrl.indexIsChanging) {
+        final isAi = _tabCtrl.index == 3;
+        if (_aiTabActive != isAi) setState(() => _aiTabActive = isAi);
+      }
+    });
     _load();
     if (widget.initialTab == 2) _loadAssignments();
   }
@@ -388,12 +395,15 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   begin: Alignment.topLeft, end: Alignment.bottomRight,
                 ))),
                 if (coverImg != null && !coverImg.toString().startsWith('data:'))
-                  RepaintBoundary(child: Image(
-                    image: CachedNetworkImageProvider(coverImg.toString()),
+                  RepaintBoundary(child: CachedNetworkImage(
+                    imageUrl: coverImg.toString(),
+                    cacheKey: 'class_cover_${widget.classId}',
                     fit: BoxFit.cover,
                     alignment: Alignment.topCenter,
-                    gaplessPlayback: true,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    fadeInDuration: Duration.zero,
+                    fadeOutDuration: Duration.zero,
+                    placeholder: (_, __) => const SizedBox.shrink(),
+                    errorWidget: (_, __, ___) => const SizedBox.shrink(),
                   )),
                 if (coverImg != null && coverImg.toString().startsWith('data:'))
                   Builder(builder: (_) {
@@ -629,7 +639,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
 
 
   // ── AI Chat tab ──
-  Widget _aiTab() => ClassAiTab(classId: widget.classId, className: _title, lectureContext: _cachedLectureContext, lectureImageUrls: _cachedLectureImageUrls);
+  Widget _aiTab() => ClassAiTab(classId: widget.classId, className: _title, lectureContext: _cachedLectureContext, lectureImageUrls: _cachedLectureImageUrls, isActive: _aiTabActive);
 
   // ── Show post detail ──
   void _showPost(dynamic p, String type, int num) {

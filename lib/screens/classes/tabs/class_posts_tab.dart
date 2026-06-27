@@ -103,7 +103,7 @@ class ClassPostsTab extends StatelessWidget {
         duration: Duration(milliseconds: 260 + i * 55),
         curve: Curves.easeOutCubic,
         builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 18 * (1 - t)), child: child)),
-        child: GestureDetector(
+        child: RepaintBoundary(child: GestureDetector(
           onTap: () => onShowPost(p, type, num),
           child: Container(
             margin: EdgeInsets.only(bottom: 12),
@@ -177,7 +177,7 @@ class ClassPostsTab extends StatelessWidget {
               ),
             ]),
           ),
-        ),
+        )),
       );
     });
   }

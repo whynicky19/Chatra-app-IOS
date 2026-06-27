@@ -110,9 +110,9 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     return map;
   }
 
-  Map<int, String> get _classNameMap {
+  Map<int, String> _classNameMapFrom(List<Map<String, dynamic>> classes) {
     final map = <int, String>{};
-    for (final c in _allClassPosts) {
+    for (final c in classes) {
       final id = (c['id'] as num?)?.toInt();
       if (id == null) continue;
       map[id] = c['title']?.toString() ?? 'Класс #$id';
@@ -239,6 +239,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     final l       = context.read<L10n>();
     final isDark  = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
+    final filtered = _filtered;
     return Column(children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
@@ -259,9 +260,9 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             onRefresh: _load,
             child: ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 90),
-              itemCount: _filtered.length,
+              itemCount: filtered.length,
               itemBuilder: (ctx, i) {
-                final u    = _filtered[i];
+                final u    = filtered[i];
                 final name = u['full_name'] ?? u['email']?.split('@').first ?? '';
                 final role = u['role'] ?? 'student';
                 final isBlocked = u['is_active'] == false;
@@ -342,7 +343,8 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
 
     if (_aiLoading) return Center(child: CircularProgressIndicator(color: primary, strokeWidth: 2.5));
 
-    final classNames   = _classNameMap;
+    final classes      = _allClassPosts;
+    final classNames   = _classNameMapFrom(classes);
     final userNames    = _userNameMap;
     final userSummary  = _perUserSummary();
     final maxTokens    = userSummary.isNotEmpty ? (userSummary.first['tokens'] as int) : 1;

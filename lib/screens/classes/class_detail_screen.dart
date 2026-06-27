@@ -36,6 +36,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   List<dynamic> _mySubs = [];
   Map<String, dynamic> _rating = {};
   Map<String, String> _fileTexts = {};
+  String _cachedLectureContext = '';
+  List<String> _cachedLectureImageUrls = [];
   // Cached derived data — computed once in _load() instead of jsonDecode on every getter access.
   Map<String, dynamic> _meta = {};
   String _title = '';
@@ -99,12 +101,67 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
         ? (() { try { return jsonDecode(metaPost['body']) as Map<String, dynamic>; } catch (_) { return <String, dynamic>{}; } })()
         : <String, dynamic>{};
     _title = (_posts.firstWhere((p) => p['id'] == widget.classId, orElse: () => {'title': 'Класс #${widget.classId}'})['title'] ?? '') as String;
+    _recomputeAiContext();
+  }
+
+  void _recomputeAiContext() {
+    // Lecture context for AI
+    final all = [..._lectures, ..._materials].take(12);
+    final parts = <String>[];
+    for (final p in all) {
+      final title = _clean(p['title'] ?? '');
+      String content = '';
+      List<dynamic> files = [];
+      try {
+        final b = jsonDecode(p['body']);
+        content = (b['content'] ?? b['description'] ?? '').toString();
+        if (b['files'] is List) files = b['files'] as List;
+      } catch (_) { content = p['body'] ?? ''; }
+      content = content.replaceAll(RegExp(r'\n{3,}'), '\n\n').trim();
+      if (content.length > 4000) content = content.substring(0, 4000);
+      final sb = StringBuffer();
+      if (title.isNotEmpty) sb.write('### $title\n');
+      if (content.isNotEmpty) sb.write(content);
+      if (files.isNotEmpty) {
+        for (final f in files) {
+          final url = context.read<ApiService>().fixUrl(f.toString());
+          final name = _fileDisplayName(url);
+          final ext = _cleanFileUrl(url).split('?').first.split('.').last.toLowerCase();
+          if (_fileTexts.containsKey(url)) {
+            var text = _fileTexts[url]!;
+            if (text.length > 5000) text = '${text.substring(0, 5000)}...';
+            sb.write('\n[Файл "$name"]\n$text');
+          } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(ext)) {
+            sb.write('\n[Изображение: $name]');
+          } else {
+            sb.write('\n[Прикреплённый файл: $name]');
+          }
+        }
+      }
+      if (sb.isNotEmpty) parts.add(sb.toString());
+    }
+    _cachedLectureContext = parts.join('\n\n');
+
+    // Image URLs for AI
+    final allPosts = [..._lectures, ..._materials];
+    final urls = <String>[];
+    for (final p in allPosts) {
+      for (final f in _extractFiles(p)) {
+        final ext = _cleanFileUrl(f).split('?').first.split('.').last.toLowerCase();
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(ext)) urls.add(f);
+        if (urls.length >= 3) break;
+      }
+      if (urls.length >= 3) break;
+    }
+    _cachedLectureImageUrls = urls;
   }
 
   Future<void> _loadFileTexts() async {
     if (!mounted) return;
     final api = context.read<ApiService>();
     final result = <String, String>{};
+
+    final filePairs = <({String url, String cleanUrl})>[];
     for (final p in [..._lectures, ..._materials]) {
       List<dynamic> files = [];
       try {
@@ -113,18 +170,25 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       } catch (_) {}
       for (final f in files) {
         final url = context.read<ApiService>().fixUrl(f.toString());
-        final cleanUrl = _cleanFileUrl(url);
-        try {
-          final resp = await api.dio.get<Map<String, dynamic>>(
-            '/upload/utils/file-text',
-            queryParameters: {'url': cleanUrl},
-          );
-          final text = (resp.data?['text'] as String?) ?? '';
-          if (text.isNotEmpty) result[url] = text;
-        } catch (_) {}
+        filePairs.add((url: url, cleanUrl: _cleanFileUrl(url)));
       }
     }
-    if (mounted) setState(() => _fileTexts = result);
+
+    await Future.wait(filePairs.map((pair) async {
+      try {
+        final resp = await api.dio.get<Map<String, dynamic>>(
+          '/upload/utils/file-text',
+          queryParameters: {'url': pair.cleanUrl},
+        );
+        final text = (resp.data?['text'] as String?) ?? '';
+        if (text.isNotEmpty) result[pair.url] = text;
+      } catch (_) {}
+    }));
+
+    if (mounted) setState(() {
+      _fileTexts = result;
+      _recomputeAiContext();
+    });
   }
 
   Future<void> _loadAssignments() async {
@@ -565,58 +629,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
 
 
   // ── AI Chat tab ──
-  String get _lectureContextForAI {
-    final all = [..._lectures, ..._materials].take(12);
-    final parts = <String>[];
-    for (final p in all) {
-      final title = _clean(p['title'] ?? '');
-      String content = '';
-      List<dynamic> files = [];
-      try {
-        final b = jsonDecode(p['body']);
-        content = (b['content'] ?? b['description'] ?? '').toString();
-        if (b['files'] is List) files = b['files'] as List;
-      } catch (_) { content = p['body'] ?? ''; }
-      content = content.replaceAll(RegExp(r'\n{3,}'), '\n\n').trim();
-      if (content.length > 4000) content = content.substring(0, 4000);
-      final sb = StringBuffer();
-      if (title.isNotEmpty) sb.write('### $title\n');
-      if (content.isNotEmpty) sb.write(content);
-      if (files.isNotEmpty) {
-        for (final f in files) {
-          final url = context.read<ApiService>().fixUrl(f.toString());
-          final name = _fileDisplayName(url);
-          final ext = _cleanFileUrl(url).split('?').first.split('.').last.toLowerCase();
-          if (_fileTexts.containsKey(url)) {
-            var text = _fileTexts[url]!;
-            if (text.length > 5000) text = '${text.substring(0, 5000)}...';
-            sb.write('\n[Файл "$name"]\n$text');
-          } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(ext)) {
-            sb.write('\n[Изображение: $name]');
-          } else {
-            sb.write('\n[Прикреплённый файл: $name]');
-          }
-        }
-      }
-      if (sb.isNotEmpty) parts.add(sb.toString());
-    }
-    return parts.join('\n\n');
-  }
-
-  List<String> get _lectureImageUrls {
-    final all = [..._lectures, ..._materials];
-    final urls = <String>[];
-    for (final p in all) {
-      for (final f in _extractFiles(p)) {
-        final ext = _cleanFileUrl(f).split('?').first.split('.').last.toLowerCase();
-        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(ext)) urls.add(f);
-        if (urls.length >= 3) return urls;
-      }
-    }
-    return urls;
-  }
-
-  Widget _aiTab() => ClassAiTab(classId: widget.classId, className: _title, lectureContext: _lectureContextForAI, lectureImageUrls: _lectureImageUrls);
+  Widget _aiTab() => ClassAiTab(classId: widget.classId, className: _title, lectureContext: _cachedLectureContext, lectureImageUrls: _cachedLectureImageUrls);
 
   // ── Show post detail ──
   void _showPost(dynamic p, String type, int num) {

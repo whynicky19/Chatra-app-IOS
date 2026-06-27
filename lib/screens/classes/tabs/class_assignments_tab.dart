@@ -54,18 +54,6 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
     } catch (_) { return url; }
   }
 
-  String _fixFileUrl(String url) {
-    if (url.isEmpty) return url;
-    final base = context.read<ApiService>().baseUrl;
-    var fixed = url
-        .replaceAll(RegExp(r'https?://localhost:\d+'), base)
-        .replaceAll(RegExp(r'https?://127\.0\.0\.1:\d+'), base);
-    if (!fixed.startsWith('http') && !fixed.startsWith('ws')) {
-      fixed = '$base${fixed.startsWith('/') ? '' : '/'}$fixed';
-    }
-    return fixed;
-  }
-
   String _cleanContent(String content) {
     return content
         .replaceAll(RegExp(r'https?://[^\s"<>]+\.(pdf|doc|docx|txt|png|jpg|jpeg|pptx?|xlsx?)', caseSensitive: false), '')
@@ -75,23 +63,23 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
 
   List<String> _extractFilesFromText(String text) {
     final matches = RegExp(r'https?://[^\s"<>]+\.(pdf|doc|docx|txt|png|jpg|jpeg|pptx?|xlsx?)', caseSensitive: false).allMatches(text);
-    return matches.map((m) => _fixFileUrl(m.group(0)!)).toList();
+    return matches.map((m) => context.read<ApiService>().fixUrl(m.group(0)!)).toList();
   }
 
   List<String> _parseFileUrls(dynamic raw) {
     if (raw == null) return [];
     if (raw is List) {
-      return raw.map((f) => _fixFileUrl(f.toString())).where((s) => s.isNotEmpty).toList();
+      return raw.map((f) => context.read<ApiService>().fixUrl(f.toString())).where((s) => s.isNotEmpty).toList();
     }
     if (raw is String && raw.isNotEmpty) {
       try {
         final decoded = jsonDecode(raw);
         if (decoded is List) {
-          return decoded.map((f) => _fixFileUrl(f.toString())).where((s) => s.isNotEmpty).toList();
+          return decoded.map((f) => context.read<ApiService>().fixUrl(f.toString())).where((s) => s.isNotEmpty).toList();
         }
-        if (decoded is String && decoded.isNotEmpty) return [_fixFileUrl(decoded)];
+        if (decoded is String && decoded.isNotEmpty) return [context.read<ApiService>().fixUrl(decoded)];
       } catch (_) {}
-      if (raw.startsWith('http') || raw.startsWith('/')) return [_fixFileUrl(raw)];
+      if (raw.startsWith('http') || raw.startsWith('/')) return [context.read<ApiService>().fixUrl(raw)];
     }
     return [];
   }
@@ -103,12 +91,11 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
       result.addAll(_parseFileUrls(src['file_urls']));
       result.addAll(_parseFileUrls(src['files']));
       result.addAll(_parseFileUrls(src['attachments']));
-      if (src['file_url'] != null) result.add(_fixFileUrl(src['file_url'].toString()));
+      if (src['file_url'] != null) result.add(context.read<ApiService>().fixUrl(src['file_url'].toString()));
       if (src['description'] != null) {
         result.addAll(_extractFilesFromText(src['description'].toString()));
       }
     }
-    debugPrint('[Files] listA file_urls=${listA?['file_urls']} detailA file_urls=${detailA?['file_urls']} result=$result');
     return result.where((s) => s.isNotEmpty).toList();
   }
 
@@ -694,9 +681,9 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             List<String> urls = [];
             final raw = sub['file_urls'];
             if (raw is String && raw.isNotEmpty) {
-              try { urls = (jsonDecode(raw) as List).map((f) => _fixFileUrl(f.toString())).toList(); } catch (_) {}
+              try { urls = (jsonDecode(raw) as List).map((f) => context.read<ApiService>().fixUrl(f.toString())).toList(); } catch (_) {}
             } else if (raw is List) {
-              urls = raw.map((f) => _fixFileUrl(f.toString())).toList();
+              urls = raw.map((f) => context.read<ApiService>().fixUrl(f.toString())).toList();
             }
             if (urls.isEmpty) return <Widget>[];
             return [
@@ -889,9 +876,9 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               List<String> submittedFileUrls = [];
               final rawUrls = selectedSub['file_urls'];
               if (rawUrls is List) {
-                submittedFileUrls = rawUrls.map((f) => _fixFileUrl(f.toString())).toList();
+                submittedFileUrls = rawUrls.map((f) => context.read<ApiService>().fixUrl(f.toString())).toList();
               } else if (rawUrls is String && rawUrls.isNotEmpty) {
-                try { submittedFileUrls = (jsonDecode(rawUrls) as List).map((f) => _fixFileUrl(f.toString())).toList(); } catch (_) {}
+                try { submittedFileUrls = (jsonDecode(rawUrls) as List).map((f) => context.read<ApiService>().fixUrl(f.toString())).toList(); } catch (_) {}
               }
               return ListView(controller: sc, padding: EdgeInsets.all(20), children: [
                 Center(child: Container(width: 40, height: 4, margin: EdgeInsets.only(bottom: 16), decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2)))),

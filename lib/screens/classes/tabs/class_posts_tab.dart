@@ -33,18 +33,7 @@ class ClassPostsTab extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isLecture = type == 'lecture';
     final accentColor = isLecture ? Theme.of(context).colorScheme.primary : const Color(0xFF6366F1);
-    final baseUrl = context.read<ApiService>().baseUrl;
-
-    String fixFileUrl(String url) {
-      if (url.isEmpty) return url;
-      var fixed = url
-          .replaceAll(RegExp(r'https?://localhost:\d+'), baseUrl)
-          .replaceAll(RegExp(r'https?://127\.0\.0\.1:\d+'), baseUrl);
-      if (!fixed.startsWith('http') && !fixed.startsWith('ws')) {
-        fixed = '$baseUrl${fixed.startsWith('/') ? '' : '/'}$fixed';
-      }
-      return fixed;
-    }
+    final api = context.read<ApiService>();
 
     String clean(String t) => t.replaceFirst(RegExp(r'^\[(LECTURE|HW)\]\[\d+\]\s*'), '').trim();
 
@@ -64,12 +53,12 @@ class ClassPostsTab extends StatelessWidget {
       try {
         final b = jsonDecode(p['body'] ?? '');
         if (b['files'] is List && (b['files'] as List).isNotEmpty) {
-          return (b['files'] as List).map((f) => fixFileUrl(f.toString())).toList();
+          return (b['files'] as List).map((f) => api.fixUrl(f.toString())).toList();
         }
       } catch (_) {}
       final body = p['body'] ?? '';
       final matches = RegExp(r'https?://[^\s"<>]+\.(pdf|doc|docx|txt|png|jpg|jpeg|pptx?|xlsx?)', caseSensitive: false).allMatches(body);
-      return matches.map((m) => fixFileUrl(m.group(0)!)).toList();
+      return matches.map((m) => api.fixUrl(m.group(0)!)).toList();
     }
 
     Widget iconBtn(IconData ic, VoidCallback onTap) => GestureDetector(
@@ -101,9 +90,11 @@ class ClassPostsTab extends StatelessWidget {
       ],
     );
 
+    final filesPerPost = posts.map(extractFiles).toList();
+
     return ListView.builder(padding: EdgeInsets.fromLTRB(14, 14, 14, 90), itemCount: posts.length, itemBuilder: (ctx, i) {
       final p = posts[i];
-      final files = extractFiles(p);
+      final files = filesPerPost[i];
       final body = preview(p);
       final num = posts.length - i;
 

@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../services/api_service.dart';
 import '../../../theme/app_theme.dart';
 
@@ -25,6 +28,8 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
   bool _loading = false;
   late final AnimationController _pulseCtrl;
   late final AnimationController _fadeCtrl;
+  late final ScrollController _scrollCtrl;
+  late final String _historyKey;
 
   static const _tips = [
     {'icon': CupertinoIcons.book,         'title': 'Объясни материал',  'desc': 'Разбери тему простыми словами'},
@@ -36,21 +41,60 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    _scrollCtrl = ScrollController();
     _pulseCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat(reverse: true);
     _fadeCtrl  = AnimationController(vsync: this, duration: const Duration(milliseconds: 600))..forward();
+    final uid = context.read<AuthProvider>().userId?.toString() ?? 'anon';
+    _historyKey = 'ai_chat_history_${widget.classId}_$uid';
+    _loadHistory();
   }
 
   @override
-  void dispose() { _pulseCtrl.dispose(); _fadeCtrl.dispose(); _ctrl.dispose(); super.dispose(); }
+  void dispose() { _scrollCtrl.dispose(); _pulseCtrl.dispose(); _fadeCtrl.dispose(); _ctrl.dispose(); super.dispose(); }
+
+  Future<void> _loadHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_historyKey);
+      if (raw != null && raw.isNotEmpty && mounted) {
+        final list = jsonDecode(raw) as List;
+        setState(() => _msgs.addAll(list.map((e) => Map<String, String>.from(e as Map))));
+      }
+    } catch (_) {}
+  }
+
+  void _saveHistory() {
+    SharedPreferences.getInstance().then((prefs) {
+      try { prefs.setString(_historyKey, jsonEncode(_msgs)); } catch (_) {}
+    }).catchError((_) {});
+  }
+
+  Future<void> _clearHistory() async {
+    final ok = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (d) => CupertinoAlertDialog(
+        title: const Text('Очистить историю?'),
+        content: const Text('Все сообщения этого чата будут удалены.'),
+        actions: [
+          CupertinoDialogAction(onPressed: () => Navigator.pop(d, false), child: const Text('Отмена')),
+          CupertinoDialogAction(isDestructiveAction: true, onPressed: () => Navigator.pop(d, true), child: const Text('Очистить')),
+        ],
+      ),
+    );
+    if (ok == true && mounted) {
+      setState(() => _msgs.clear());
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(_historyKey);
+      } catch (_) {}
+    }
+  }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final ctrl = PrimaryScrollController.of(context);
-      if (ctrl.hasClients) {
-        ctrl.animateTo(ctrl.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
-      }
+      if (!mounted || !_scrollCtrl.hasClients) return;
+      _scrollCtrl.animateTo(_scrollCtrl.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
     });
   }
 
@@ -60,6 +104,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
     setState(() { _msgs.add({'role': 'user', 'text': text}); _loading = true; });
     _ctrl.clear();
     _scrollToBottom();
+    _saveHistory();
     try {
       final api = context.read<ApiService>();
       final lectureBlock = widget.lectureContext.isNotEmpty
@@ -82,9 +127,9 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
         classId: widget.classId,
         lectureContext: widget.lectureContext.isNotEmpty ? widget.lectureContext : null,
       );
-      if (mounted) { setState(() => _msgs.add({'role': 'assistant', 'text': data['content'] ?? 'Нет ответа'})); _scrollToBottom(); }
+      if (mounted) { setState(() => _msgs.add({'role': 'assistant', 'text': data['content'] ?? 'Нет ответа'})); _saveHistory(); _scrollToBottom(); }
     } catch (_) {
-      if (mounted) { setState(() => _msgs.add({'role': 'assistant', 'text': 'Ошибка соединения'})); _scrollToBottom(); }
+      if (mounted) { setState(() => _msgs.add({'role': 'assistant', 'text': 'Ошибка соединения'})); _saveHistory(); _scrollToBottom(); }
     }
     if (mounted) setState(() => _loading = false);
   }
@@ -99,7 +144,24 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
       onTap: () => FocusScope.of(context).unfocus(),
       behavior: HitTestBehavior.translucent,
       child: Column(children: [
-      Expanded(child: _msgs.isEmpty ? _emptyState(isDark) : _messageList(isDark)),
+      Expanded(child: Stack(children: [
+        _msgs.isEmpty ? _emptyState(isDark) : _messageList(isDark),
+        if (_msgs.isNotEmpty) Positioned(
+          top: 8, right: 12,
+          child: GestureDetector(
+            onTap: _clearHistory,
+            child: Container(
+              width: 34, height: 34,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                shape: BoxShape.circle,
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.25 : 0.10), blurRadius: 8, offset: const Offset(0, 2))],
+              ),
+              child: const Icon(CupertinoIcons.trash, size: 16, color: C.text4),
+            ),
+          ),
+        ),
+      ])),
 
       Container(
         padding: EdgeInsets.fromLTRB(12, 9, 12, MediaQuery.of(context).padding.bottom + 9),
@@ -235,6 +297,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
 
   Widget _messageList(bool isDark) {
     return ListView.builder(
+      controller: _scrollCtrl,
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
       itemCount: _msgs.length + (_loading ? 1 : 0),
       itemBuilder: (ctx, i) {

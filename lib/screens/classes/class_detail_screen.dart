@@ -62,7 +62,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           .firstWhere((c) => c['id'] == widget.classId, orElse: () => <String, dynamic>{});
       final rawUrl = clsData['cover_image'];
       if (rawUrl != null && rawUrl.toString().isNotEmpty && !rawUrl.toString().startsWith('data:')) {
-        final url = _fixFileUrl(rawUrl.toString());
+        final url = context.read<ApiService>().fixUrl(rawUrl.toString());
         precacheImage(CachedNetworkImageProvider(url), context);
       }
     }
@@ -112,7 +112,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
         if (b['files'] is List) files = b['files'] as List;
       } catch (_) {}
       for (final f in files) {
-        final url = _fixFileUrl(f.toString());
+        final url = context.read<ApiService>().fixUrl(f.toString());
         final cleanUrl = _cleanFileUrl(url);
         try {
           final resp = await api.dio.get<Map<String, dynamic>>(
@@ -284,7 +284,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
         .firstWhere((c) => c['id'] == widget.classId, orElse: () => <String, dynamic>{});
     final _rawCoverImg = meta['cover_image'] ?? clsData['cover_image'];
     final coverImg = (_rawCoverImg != null && !_rawCoverImg.toString().startsWith('data:'))
-        ? _fixFileUrl(_rawCoverImg.toString())
+        ? context.read<ApiService>().fixUrl(_rawCoverImg.toString())
         : _rawCoverImg;
     final displayTitle = _title.isNotEmpty ? _title : (clsData['title'] ?? '');
     final displayDesc = (meta['description'] ?? clsData['description'] ?? '').toString();
@@ -541,27 +541,12 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     try {
       final b = jsonDecode(p['body'] ?? '');
       if (b['files'] is List && (b['files'] as List).isNotEmpty) {
-        return (b['files'] as List).map((f) => _fixFileUrl(f.toString())).toList();
+        return (b['files'] as List).map((f) => context.read<ApiService>().fixUrl(f.toString())).toList();
       }
     } catch (_) {}
     final body = p['body'] ?? '';
     final matches = RegExp(r'https?://[^\s"<>]+\.(pdf|doc|docx|txt|png|jpg|jpeg|pptx?|xlsx?)', caseSensitive: false).allMatches(body);
-    return matches.map((m) => _fixFileUrl(m.group(0)!)).toList();
-  }
-
-  /// Fix localhost/127.0.0.1 URLs and relative paths to use the actual API base URL
-  String _fixFileUrl(String url) {
-    if (url.isEmpty) return url;
-    final api = context.read<ApiService>();
-    final base = api.baseUrl; // e.g. http://10.0.2.2:8000
-    var fixed = url
-        .replaceAll(RegExp(r'https?://localhost:\d+'), base)
-        .replaceAll(RegExp(r'https?://127\.0\.0\.1:\d+'), base);
-    // Handle relative paths like /uploads/file.pdf
-    if (!fixed.startsWith('http') && !fixed.startsWith('ws')) {
-      fixed = '$base${fixed.startsWith('/') ? '' : '/'}$fixed';
-    }
-    return fixed;
+    return matches.map((m) => context.read<ApiService>().fixUrl(m.group(0)!)).toList();
   }
 
   /// Remove raw file URLs from content for cleaner display
@@ -575,7 +560,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   /// Extract file URLs from plain text
   List<String> _extractFilesFromText(String text) {
     final matches = RegExp(r'https?://[^\s"<>]+\.(pdf|doc|docx|txt|png|jpg|jpeg|pptx?|xlsx?)', caseSensitive: false).allMatches(text);
-    return matches.map((m) => _fixFileUrl(m.group(0)!)).toList();
+    return matches.map((m) => context.read<ApiService>().fixUrl(m.group(0)!)).toList();
   }
 
 
@@ -599,7 +584,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       if (content.isNotEmpty) sb.write(content);
       if (files.isNotEmpty) {
         for (final f in files) {
-          final url = _fixFileUrl(f.toString());
+          final url = context.read<ApiService>().fixUrl(f.toString());
           final name = _fileDisplayName(url);
           final ext = _cleanFileUrl(url).split('?').first.split('.').last.toLowerCase();
           if (_fileTexts.containsKey(url)) {
@@ -1092,19 +1077,15 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                         final url = res['url'] ?? res['file_url'] ?? res['path'];
                         if (url != null && url.toString().isNotEmpty) {
                           fileUrls.add('${url}#${Uri.encodeComponent(pf.name)}');
-                          debugPrint('[Upload] OK: $url');
-                        } else {
-                          debugPrint('[Upload] No URL in response: $res');
                         }
                       } catch (e) {
-                        debugPrint('[Upload] Error for ${pf.name}: $e');
                         if (mounted) showToast(context, 'Ошибка загрузки ${pf.name}', error: true);
                       }
                     }
                   }
 
                   // Нормализуем URL: localhost → реальный сервер
-                  final fixedUrls = fileUrls.map(_fixFileUrl).toList();
+                  final fixedUrls = fileUrls.map(context.read<ApiService>().fixUrl).toList();
 
                   // Встраиваем URL файлов в description (бэкенд не сохраняет file_urls)
                   final baseDesc = dc.text.trim();
@@ -1113,8 +1094,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                       : baseDesc.isEmpty
                           ? fixedUrls.join('\n')
                           : '$baseDesc\n${fixedUrls.join('\n')}';
-
-                  debugPrint('[CreateAssignment] fixedUrls=$fixedUrls descWithFiles=$descWithFiles');
 
                   final maxScore = int.tryParse(sc.text) ?? 100;
                   final filteredCriteria = criteria.where((c) => c['name'].toString().isNotEmpty).toList();
@@ -1137,7 +1116,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                       ? 'Задание создано (${fileUrls.length} файл)'
                       : 'Задание создано');
                 } catch (e) {
-                  debugPrint('[CreateAssignment] Error: $e');
                   showToast(context, 'Ошибка: $e', error: true);
                 }
               })),
@@ -1304,8 +1282,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     }
                   }
                   // Фиксируем URL (localhost → реальный сервер) и объединяем
-                  final fixedNewUrls = uploadedUrls.map(_fixFileUrl).toList();
-                  final fixedKeepUrls = keepUrls.map(_fixFileUrl).toList();
+                  final fixedNewUrls = uploadedUrls.map(context.read<ApiService>().fixUrl).toList();
+                  final fixedKeepUrls = keepUrls.map(context.read<ApiService>().fixUrl).toList();
                   final allUrls = [...fixedKeepUrls, ...fixedNewUrls];
 
                   // Встраиваем URL файлов в description (бэкенд не сохраняет file_urls)

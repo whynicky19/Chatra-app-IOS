@@ -13,7 +13,6 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProviderStateMixin {
   final _nameCtrl = TextEditingController();
-  bool _notif = true, _aiInsights = true;
   late AnimationController _entry;
 
   @override
@@ -173,24 +172,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               value: themeProv.isDark,
               onChanged: (_) => themeProv.toggle(),
             ),
-            _insetDivider(isDark),
-            _prefRow(
-              icon: CupertinoIcons.bell_fill,
-              iconBg: const Color(0xFFFF3B30),
-              title: l.t('notif'),
-              sub: l.t('notif_sub'),
-              value: _notif,
-              onChanged: (v) => setState(() => _notif = v),
-            ),
-            _insetDivider(isDark),
-            _prefRow(
-              icon: CupertinoIcons.sparkles,
-              iconBg: const Color(0xFF34C759),
-              title: l.t('ai_insights'),
-              sub: l.t('ai_sub'),
-              value: _aiInsights,
-              onChanged: (v) => setState(() => _aiInsights = v),
-            ),
           ]),
         ), 0.35, 0.75),
 
@@ -251,7 +232,27 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         // ── Logout ──────────────────────────────────────────────
         _animated(
           GestureDetector(
-            onTap: () => auth.logout(),
+            onTap: () async {
+              final ok = await showCupertinoDialog<bool>(
+                context: context,
+                builder: (d) => CupertinoAlertDialog(
+                  title: const Text('Выйти из аккаунта?'),
+                  content: const Text('Вы будете перенаправлены на экран входа.'),
+                  actions: [
+                    CupertinoDialogAction(
+                      onPressed: () => Navigator.pop(d, false),
+                      child: const Text('Отмена'),
+                    ),
+                    CupertinoDialogAction(
+                      isDestructiveAction: true,
+                      onPressed: () => Navigator.pop(d, true),
+                      child: const Text('Выйти'),
+                    ),
+                  ],
+                ),
+              );
+              if (ok == true && mounted) auth.logout();
+            },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
@@ -289,14 +290,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
   Widget _fieldLabel(String s) => Padding(padding: const EdgeInsets.only(bottom: 7),
     child: Text(s, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: C.text3)));
-
-  Widget _insetDivider(bool isDark) => Padding(
-    padding: const EdgeInsets.only(left: 58),
-    child: Divider(
-      height: 0.5, thickness: 0.5,
-      color: isDark ? C.darkBorder : C.border,
-    ),
-  );
 
   Widget _prefRow({
     required IconData icon,

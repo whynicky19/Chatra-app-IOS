@@ -57,7 +57,7 @@ class _OrgSelectScreenState extends State<OrgSelectScreen>
                   style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -0.5)),
               const SizedBox(height: 8),
               Text('Выберите тип вашей организации',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w400, color: Colors.white.withOpacity(0.6))),
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w400, color: Colors.white.withValues(alpha: 0.6))),
               const SizedBox(height: 48),
 
               _OrgCard(
@@ -112,9 +112,9 @@ class _OrgCard extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 420),
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.10),
+          color: Colors.white.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.18), width: 1),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.18), width: 1),
         ),
         child: Row(children: [
           Container(
@@ -130,7 +130,7 @@ class _OrgCard extends StatelessWidget {
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Colors.white)),
             const SizedBox(height: 4),
-            Text(subtitle, style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.6))),
+            Text(subtitle, style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.6))),
           ])),
           Icon(CupertinoIcons.chevron_right, color: primaryColor, size: 18),
         ]),

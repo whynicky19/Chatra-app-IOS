@@ -1,3 +1,7 @@
+// SECURITY: код детерминирован и вычислим из id — генерация должна переехать
+// на сервер (случайный код в БД), иначе любой пользователь может перебрать
+// коды классов простым перебором id.
+// TODO(security): move class-code generation server-side (random code in DB).
 String classCode(int id) {
   const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   var s = '';

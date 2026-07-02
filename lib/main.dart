@@ -46,7 +46,14 @@ void main() {
   final chats = ChatsProvider(api, auth);
 
   api.onUnauthorized = () => auth.logout();
-  Future.wait([auth.init(), org.init(), theme.init(), l10n.init()]);
+  // Kick off initialization but never let a failing init() bubble up as an
+  // unhandled async error — the app must still start (providers fall back to
+  // their default state and _AuthGate shows the splash until they settle).
+  Future.wait([auth.init(), org.init(), theme.init(), l10n.init()])
+      .catchError((Object e, StackTrace st) {
+    debugPrint('Initialization error: $e');
+    return const <void>[];
+  });
 
   runApp(MultiProvider(
     providers: [
@@ -247,7 +254,7 @@ class _SplashState extends State<_Splash> with TickerProviderStateMixin {
                 height: 28,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
                 ),
               ),
             ],

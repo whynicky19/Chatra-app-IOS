@@ -317,8 +317,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? Colors.white.withOpacity(0.25)
-                          : (allDone ? C.green.withOpacity(0.15) : Theme.of(context).colorScheme.primary.withOpacity(0.12)),
+                          ? Colors.white.withValues(alpha: 0.25)
+                          : (allDone ? C.green.withValues(alpha: 0.15) : Theme.of(context).colorScheme.primary.withValues(alpha: 0.12)),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text('$count', style: TextStyle(
@@ -346,7 +346,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 40),
         child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(CupertinoIcons.calendar_badge_plus, size: 52, color: C.text4.withOpacity(0.4)),
+          Icon(CupertinoIcons.calendar_badge_plus, size: 52, color: C.text4.withValues(alpha: 0.4)),
           const SizedBox(height: 12),
           Text(l.t('no_deadlines'), style: const TextStyle(fontSize: 15, color: C.text4)),
         ])),
@@ -366,9 +366,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
           // Background color logic
           Color bg;
           if (isSubmitted) {
-            bg = isDark ? C.green.withOpacity(0.15) : C.greenLt;
+            bg = isDark ? C.green.withValues(alpha: 0.15) : C.greenLt;
           } else if (_selectedDay == today) {
-            bg = isDark ? C.yellow.withOpacity(0.1) : C.yellowLt;
+            bg = isDark ? C.yellow.withValues(alpha: 0.1) : C.yellowLt;
           } else if (_selectedDay == tomorrow) {
             bg = adaptivePrimaryLt(context);
           } else {

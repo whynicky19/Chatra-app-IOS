@@ -65,7 +65,7 @@ class ClassPostsTab extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: 34, height: 34,
-        decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.08), borderRadius: BorderRadius.circular(10)),
+        decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(10)),
         child: Icon(ic, size: 17, color: C.text4),
       ),
     );
@@ -77,7 +77,7 @@ class ClassPostsTab extends StatelessWidget {
           hasScrollBody: false,
           child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
             Container(width: 80, height: 80,
-              decoration: BoxDecoration(gradient: RadialGradient(colors: [accentColor.withOpacity(0.18), accentColor.withOpacity(0.04)]), shape: BoxShape.circle),
+              decoration: BoxDecoration(gradient: RadialGradient(colors: [accentColor.withValues(alpha: 0.18), accentColor.withValues(alpha: 0.04)]), shape: BoxShape.circle),
               child: Icon(isLecture ? CupertinoIcons.book : CupertinoIcons.tray, size: 36, color: accentColor)),
             const SizedBox(height: 18),
             Text(isLecture ? l.t('no_lectures') : l.t('no_materials'),
@@ -112,9 +112,9 @@ class ClassPostsTab extends StatelessWidget {
               Padding(padding: EdgeInsets.fromLTRB(16, 16, 14, 14), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Container(width: 54, height: 54,
                   decoration: BoxDecoration(
-                    color: accentColor.withOpacity(0.10),
+                    color: accentColor.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: accentColor.withOpacity(0.18)),
+                    border: Border.all(color: accentColor.withValues(alpha: 0.18)),
                   ),
                   child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                     Icon(isLecture ? CupertinoIcons.book : CupertinoIcons.tray, color: accentColor, size: 20),
@@ -125,7 +125,7 @@ class ClassPostsTab extends StatelessWidget {
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(color: accentColor.withOpacity(0.08), borderRadius: BorderRadius.circular(6)),
+                    decoration: BoxDecoration(color: accentColor.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(6)),
                     child: Text('${isLecture ? 'ЛЕКЦИЯ' : 'МАТЕРИАЛ'} $num',
                       style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: accentColor, letterSpacing: 0.6)),
                   ),
@@ -145,7 +145,7 @@ class ClassPostsTab extends StatelessWidget {
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 16, vertical: 9),
                 decoration: BoxDecoration(
-                  color: adaptiveSurface2(context).withOpacity(0.55),
+                  color: adaptiveSurface2(context).withValues(alpha: 0.55),
                   borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
                 ),
                 child: Row(children: [
@@ -156,7 +156,7 @@ class ClassPostsTab extends StatelessWidget {
                     SizedBox(width: 8),
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                      decoration: BoxDecoration(color: accentColor.withOpacity(0.10), borderRadius: BorderRadius.circular(6)),
+                      decoration: BoxDecoration(color: accentColor.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(6)),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
                         Icon(CupertinoIcons.paperclip, size: 10, color: accentColor),
                         SizedBox(width: 3),
@@ -166,7 +166,7 @@ class ClassPostsTab extends StatelessWidget {
                   Spacer(),
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(color: accentColor.withOpacity(0.10), borderRadius: BorderRadius.circular(8)),
+                    decoration: BoxDecoration(color: accentColor.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(8)),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       Text(l.t('open'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: accentColor)),
                       SizedBox(width: 3),

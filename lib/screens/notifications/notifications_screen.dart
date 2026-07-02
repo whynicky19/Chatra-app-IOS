@@ -313,13 +313,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           decoration: BoxDecoration(
                             color: n.isRead ? surface : cfg['bg'] as Color,
                             borderRadius: BorderRadius.circular(18),
-                            border: n.isRead ? null : Border.all(color: (cfg['color'] as Color).withOpacity(0.22)),
+                            border: n.isRead ? null : Border.all(color: (cfg['color'] as Color).withValues(alpha: 0.22)),
                             boxShadow: cardShadow(isDark),
                           ),
                           child: Padding(padding: const EdgeInsets.all(14), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                             Container(width: 44, height: 44,
                               decoration: BoxDecoration(
-                                color: (cfg['color'] as Color).withOpacity(n.isRead ? 0.08 : 0.14),
+                                color: (cfg['color'] as Color).withValues(alpha: n.isRead ? 0.08 : 0.14),
                                 borderRadius: BorderRadius.circular(13),
                               ),
                               child: Icon(cfg['icon'] as IconData, size: 20, color: cfg['color'] as Color)),
@@ -337,7 +337,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               Text(n.body, style: const TextStyle(fontSize: 13, color: C.text4, height: 1.4)),
                               const SizedBox(height: 6),
                               Text(_timeAgo(n.date, l), style: TextStyle(
-                                fontSize: 11, color: C.text4.withOpacity(0.7), fontWeight: FontWeight.w600)),
+                                fontSize: 11, color: C.text4.withValues(alpha: 0.7), fontWeight: FontWeight.w600)),
                             ])),
                           ])),
                         ),
@@ -354,18 +354,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Map<String, dynamic> _config(_NType type) {
     switch (type) {
       case _NType.grade:
-        return {'icon': CupertinoIcons.star, 'color': Theme.of(context).colorScheme.primary, 'bg': Theme.of(context).colorScheme.primary.withOpacity(0.08)};
+        return {'icon': CupertinoIcons.star, 'color': Theme.of(context).colorScheme.primary, 'bg': Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)};
       case _NType.deadline:
-        return {'icon': CupertinoIcons.timer, 'color': Color(0xFFEF4444), 'bg': Color(0xFFEF4444).withOpacity(0.10)};
+        return {'icon': CupertinoIcons.timer, 'color': Color(0xFFEF4444), 'bg': Color(0xFFEF4444).withValues(alpha: 0.10)};
       case _NType.newAssignment:
-        return {'icon': CupertinoIcons.doc_text, 'color': Color(0xFF6366F1), 'bg': Color(0xFF6366F1).withOpacity(0.08)};
+        return {'icon': CupertinoIcons.doc_text, 'color': Color(0xFF6366F1), 'bg': Color(0xFF6366F1).withValues(alpha: 0.08)};
     }
   }
 
   Widget _emptyState() {
     final l = context.read<L10n>();
     return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-      Container(width: 80, height: 80, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.08), shape: BoxShape.circle),
+      Container(width: 80, height: 80, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08), shape: BoxShape.circle),
         child: Icon(CupertinoIcons.bell, size: 38, color: Theme.of(context).colorScheme.primary)),
       SizedBox(height: 20),
       Text(l.t('no_notif'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: adaptiveText1(context))),

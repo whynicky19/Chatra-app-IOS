@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/image_cache.dart';
 import '../../widgets/toast.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -286,7 +287,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                       Container(
                         width: 46, height: 46,
                         decoration: BoxDecoration(
-                          gradient: RadialGradient(colors: [primary.withOpacity(0.22), primary.withOpacity(0.07)]),
+                          gradient: RadialGradient(colors: [primary.withValues(alpha: 0.22), primary.withValues(alpha: 0.07)]),
                           shape: BoxShape.circle,
                         ),
                         child: Center(child: Text(
@@ -301,7 +302,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                           if (isBlocked) Container(
                             margin: const EdgeInsets.only(left: 6),
                             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                            decoration: BoxDecoration(color: C.red.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+                            decoration: BoxDecoration(color: C.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
                             child: const Text('блок', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.red)),
                           ),
                         ]),
@@ -364,7 +365,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           ),
           child: Row(children: [
             Container(width: 48, height: 48,
-              decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(14)),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(14)),
               child: const Icon(CupertinoIcons.bolt_fill, color: Colors.white, size: 26)),
             const SizedBox(width: 16),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -376,7 +377,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               onTap: _loadAi,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(color: Colors.white.withOpacity(0.18), borderRadius: BorderRadius.circular(10)),
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(10)),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
                   const Icon(CupertinoIcons.arrow_counterclockwise, size: 14, color: Colors.white),
                   const SizedBox(width: 4),
@@ -410,7 +411,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                 decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(16), boxShadow: softShadow(isDark)),
                 child: Row(children: [
                   Container(width: 44, height: 44,
-                    decoration: BoxDecoration(color: primary.withOpacity(0.10), borderRadius: BorderRadius.circular(13)),
+                    decoration: BoxDecoration(color: primary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(13)),
                     child: Icon(CupertinoIcons.book, size: 20, color: primary)),
                   const SizedBox(width: 12),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -452,14 +453,14 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                 decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(16), boxShadow: softShadow(isDark)),
                 child: Row(children: [
                   Container(width: 44, height: 44,
-                    decoration: BoxDecoration(gradient: RadialGradient(colors: [primary.withOpacity(0.22), primary.withOpacity(0.06)]), shape: BoxShape.circle),
+                    decoration: BoxDecoration(gradient: RadialGradient(colors: [primary.withValues(alpha: 0.22), primary.withValues(alpha: 0.06)]), shape: BoxShape.circle),
                     child: Center(child: Text(initials, style: TextStyle(color: primary, fontWeight: FontWeight.w900, fontSize: 15)))),
                   const SizedBox(width: 12),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700), overflow: TextOverflow.ellipsis, maxLines: 1),
                     const SizedBox(height: 6),
                     ClipRRect(borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(value: pct, backgroundColor: primary.withOpacity(0.08), color: primary, minHeight: 5)),
+                      child: LinearProgressIndicator(value: pct, backgroundColor: primary.withValues(alpha: 0.08), color: primary, minHeight: 5)),
                     const SizedBox(height: 3),
                     Text('$count запр.', style: const TextStyle(fontSize: 10, color: C.text4)),
                   ])),
@@ -492,7 +493,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                   SizedBox(width: 60, child: const Text('ТОКЕНЫ', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 0.5), textAlign: TextAlign.right)),
                 ]),
               ),
-              Divider(height: 1, color: C.border.withOpacity(0.5)),
+              Divider(height: 1, color: C.border.withValues(alpha: 0.5)),
               ...List.generate(_aiLogs.length, (i) {
                 final entry     = _aiLogs[i];
                 final uid       = (entry['user_id'] as num?)?.toInt();
@@ -506,7 +507,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                 })() : '';
                 return Container(
                   decoration: BoxDecoration(
-                    color: i.isOdd ? adaptiveSurface2(context).withOpacity(0.4) : Colors.transparent,
+                    color: i.isOdd ? adaptiveSurface2(context).withValues(alpha: 0.4) : Colors.transparent,
                     borderRadius: i == _aiLogs.length - 1 ? const BorderRadius.vertical(bottom: Radius.circular(16)) : null,
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
@@ -522,7 +523,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                         margin: const EdgeInsets.only(top: 2),
                         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                         decoration: BoxDecoration(
-                          color: isGrade ? primary.withOpacity(0.1) : C.green.withOpacity(0.1),
+                          color: isGrade ? primary.withValues(alpha: 0.1) : C.green.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(isGrade ? 'Проверка' : 'Чат', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: isGrade ? primary : C.green)),
@@ -599,14 +600,14 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                     child: SizedBox(height: 128, width: double.infinity,
                       child: Stack(fit: StackFit.expand, children: [
-                        _classCover(coverImg, i),
+                        _classCover(coverImg, i, classId: classId),
                         Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                           begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                          stops: const [0.5, 1.0], colors: [Colors.transparent, Colors.black.withOpacity(0.42)],
+                          stops: const [0.5, 1.0], colors: [Colors.transparent, Colors.black.withValues(alpha: 0.42)],
                         )))),
                         Positioned(top: 10, right: 10, child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(color: Colors.black.withOpacity(0.52), borderRadius: BorderRadius.circular(20)),
+                          decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.52), borderRadius: BorderRadius.circular(20)),
                           child: Row(mainAxisSize: MainAxisSize.min, children: [
                             const Icon(CupertinoIcons.person_2, size: 13, color: Colors.white),
                             const SizedBox(width: 4),
@@ -624,10 +625,10 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                     // Creator row
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-                      decoration: BoxDecoration(color: primary.withOpacity(0.06), borderRadius: BorderRadius.circular(12)),
+                      decoration: BoxDecoration(color: primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(12)),
                       child: Row(children: [
                         Container(width: 30, height: 30,
-                          decoration: BoxDecoration(color: primary.withOpacity(0.16), shape: BoxShape.circle),
+                          decoration: BoxDecoration(color: primary.withValues(alpha: 0.16), shape: BoxShape.circle),
                           child: Center(child: Text(
                             creatorName.trim().split(RegExp(r'\s+')).take(2).map((w) => w.isEmpty ? '' : w[0].toUpperCase()).join().isNotEmpty
                                 ? creatorName.trim().split(RegExp(r'\s+')).take(2).map((w) => w.isEmpty ? '' : w[0].toUpperCase()).join()
@@ -658,7 +659,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                       decoration: BoxDecoration(
                         color: adaptiveSurface2(context),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: primary.withOpacity(0.18)),
+                        border: Border.all(color: primary.withValues(alpha: 0.18)),
                       ),
                       child: Row(children: [
                         SizedBox(
@@ -728,7 +729,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               // Header
               Padding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 14), child: Row(children: [
                 ClipRRect(borderRadius: BorderRadius.circular(12),
-                  child: SizedBox(width: 52, height: 52, child: _classCover(coverImg, colorIdx))),
+                  child: SizedBox(width: 52, height: 52, child: _classCover(coverImg, colorIdx, classId: classId))),
                 const SizedBox(width: 12),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(className, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800), maxLines: 2, overflow: TextOverflow.ellipsis),
@@ -752,7 +753,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                 ),
               ])),
 
-              Divider(height: 1, color: C.border.withOpacity(0.5)),
+              Divider(height: 1, color: C.border.withValues(alpha: 0.5)),
 
               // List
               Expanded(child: members.isEmpty
@@ -806,7 +807,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                           child: Row(children: [
                             Container(width: 44, height: 44,
                               decoration: BoxDecoration(
-                                gradient: RadialGradient(colors: [roleColor.withOpacity(0.24), roleColor.withOpacity(0.07)]),
+                                gradient: RadialGradient(colors: [roleColor.withValues(alpha: 0.24), roleColor.withValues(alpha: 0.07)]),
                                 shape: BoxShape.circle),
                               child: Center(child: Text(initials,
                                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: roleColor)))),
@@ -819,7 +820,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                             Column(crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(color: roleColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                                decoration: BoxDecoration(color: roleColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
                                 child: Text(roleLabel, style: TextStyle(fontSize: 11, color: roleColor, fontWeight: FontWeight.w700))),
                               if (sGroup.isNotEmpty) ...[
                                 const SizedBox(height: 4),
@@ -841,17 +842,19 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _classCover(dynamic coverImg, int index) {
+  Widget _classCover(dynamic coverImg, int index, {int? classId}) {
     const grads = [[Color(0xFF006475), Color(0xFF009AAF)], [Color(0xFF0C4A6E), Color(0xFF0369A1)],
                    [Color(0xFF134E4A), Color(0xFF0D9488)], [Color(0xFF312E81), Color(0xFF4338CA)],
                    [Color(0xFF1E3A5F), Color(0xFF2563EB)]];
     final colors = grads[index % grads.length];
     if (coverImg == null) return Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight)));
     if (coverImg.toString().startsWith('data:')) {
-      try { return Image.memory(base64Decode(coverImg.toString().split(',').last), fit: BoxFit.cover, width: double.infinity); }
-      catch (_) { return Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))); }
+      final bytes = decodeBase64Image(coverImg.toString());
+      return bytes != null
+          ? Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, gaplessPlayback: true, cacheWidth: 640)
+          : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors)));
     }
-    return CachedNetworkImage(imageUrl: coverImg.toString(), fit: BoxFit.cover, width: double.infinity,
+    return CachedNetworkImage(imageUrl: coverImg.toString(), cacheKey: classId != null ? 'class_cover_$classId' : null, fit: BoxFit.cover, width: double.infinity,
       fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero,
       placeholder: (_, __) => const SizedBox.shrink(),
       errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))));
@@ -926,7 +929,7 @@ class _StatCard extends StatelessWidget {
       boxShadow: softShadow(isDark),
     ),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Container(width: 34, height: 34, decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
+      Container(width: 34, height: 34, decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
         child: Icon(icon, size: 17, color: color)),
       const SizedBox(height: 8),
       Text(value, style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: adaptiveText1(context), height: 1)),
@@ -947,7 +950,7 @@ class _RoleBadge extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(right: 4),
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-      decoration: BoxDecoration(color: color.withOpacity(0.10), borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(20)),
       child: Text(role, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: color)),
     );
   }

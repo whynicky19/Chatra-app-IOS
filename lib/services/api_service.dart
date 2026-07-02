@@ -7,6 +7,9 @@ class ApiService {
   Dio get dio => _dio;
   String? _token;
   VoidCallback? onUnauthorized;
+  // Shared in-flight refresh: while non-null, concurrent 401s await this instead
+  // of each firing their own /auth/refresh (which would race and invalidate tokens).
+  Future<String?>? _refreshing;
 
   static const String defaultBaseUrl = 'http://localhost:8000';
   static const _tokenKey = '_tk';
@@ -35,12 +38,19 @@ class ApiService {
   onRequest: (options, handler) {
     if (kDebugMode) {
       print('>>> REQUEST: ${options.method} ${options.baseUrl}${options.path}');
-      print('>>> DATA: ${options.data}');
+      // Never log credentials: mask the body for auth endpoints (login/register
+      // carry the plaintext password) and never print the Authorization header.
+      final isAuth = options.path.startsWith('/auth/');
+      print('>>> DATA: ${isAuth ? '<redacted>' : options.data}');
     }
     return handler.next(options);
   },
   onResponse: (response, handler) {
-    if (kDebugMode) print('>>> RESPONSE: ${response.statusCode} ${response.data}');
+    if (kDebugMode) {
+      // Auth responses carry access/refresh tokens — keep them out of the log.
+      final isAuth = response.requestOptions.path.startsWith('/auth/');
+      print('>>> RESPONSE: ${response.statusCode} ${isAuth ? '<redacted>' : response.data}');
+    }
     return handler.next(response);
   },
   onError: (error, handler) {
@@ -63,21 +73,18 @@ class ApiService {
         final status = error.response?.statusCode ?? 0;
 
         if (status == 401 && error.requestOptions.path != '/auth/refresh') {
-          final rt = await loadRefreshToken();
-          if (rt != null) {
+          // Deduplicate concurrent refreshes: the first 401 kicks off the
+          // /auth/refresh call, every other in-flight 401 awaits the same Future.
+          final newAccess = await _refreshAccessToken();
+          if (newAccess != null) {
+            final opts = error.requestOptions;
+            opts.headers['Authorization'] = 'Bearer $newAccess';
             try {
-              final resp = await _dio.post('/auth/refresh',
-                  data: {'refresh_token': rt},
-                  options: Options(extra: {'_skipAuth': true}));
-              final newAccess = resp.data['access_token'] as String;
-              final newRefresh = resp.data['refresh_token'] as String?;
-              await saveToken(newAccess);
-              if (newRefresh != null) await saveRefreshToken(newRefresh);
-              final opts = error.requestOptions;
-              opts.headers['Authorization'] = 'Bearer $newAccess';
               final response = await _dio.fetch(opts);
               return handler.resolve(response);
-            } catch (_) {}
+            } on DioException catch (e) {
+              return handler.next(e);
+            }
           }
           await clearToken();
           onUnauthorized?.call();
@@ -107,6 +114,30 @@ class ApiService {
 
   void setToken(String? token) => _token = token;
   String? get token => _token;
+
+  /// Returns a fresh access token, refreshing at most once even when many
+  /// requests hit 401 at the same time. Returns null if refresh is impossible
+  /// (no refresh token) or fails.
+  Future<String?> _refreshAccessToken() {
+    return _refreshing ??= _performRefresh().whenComplete(() => _refreshing = null);
+  }
+
+  Future<String?> _performRefresh() async {
+    final rt = await loadRefreshToken();
+    if (rt == null) return null;
+    try {
+      final resp = await _dio.post('/auth/refresh',
+          data: {'refresh_token': rt},
+          options: Options(extra: {'_skipAuth': true}));
+      final newAccess = resp.data['access_token'] as String;
+      final newRefresh = resp.data['refresh_token'] as String?;
+      await saveToken(newAccess);
+      if (newRefresh != null) await saveRefreshToken(newRefresh);
+      return newAccess;
+    } catch (_) {
+      return null;
+    }
+  }
 
   Future<void> loadToken() async {
     try {

@@ -59,7 +59,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         // ── Gradient background ──────────────────────────────
         Container(decoration: BoxDecoration(gradient: LinearGradient(
           colors: isDark
-              ? [org.primaryColor.withOpacity(0.12), org.primaryColor.withOpacity(0.22)]
+              ? [org.primaryColor.withValues(alpha: 0.12), org.primaryColor.withValues(alpha: 0.22)]
               : org.gradientColors,
           begin: Alignment.topLeft, end: Alignment.bottomRight,
         ))),
@@ -85,7 +85,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                 color: surface,
                 borderRadius: BorderRadius.circular(28),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.18), blurRadius: 40, offset: const Offset(0, 16)),
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 40, offset: const Offset(0, 16)),
                 ],
               ),
               child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -190,6 +190,6 @@ class _Blob extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     width: size, height: size,
-    decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(opacity)),
+    decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: opacity)),
   );
 }

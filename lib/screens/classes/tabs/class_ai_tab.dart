@@ -170,7 +170,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
                 shape: BoxShape.circle,
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.25 : 0.10), blurRadius: 8, offset: const Offset(0, 2))],
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.10), blurRadius: 8, offset: const Offset(0, 2))],
               ),
               child: const Icon(CupertinoIcons.trash, size: 16, color: C.text4),
             ),
@@ -182,14 +182,14 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
         padding: EdgeInsets.fromLTRB(12, 9, 12, MediaQuery.of(context).padding.bottom + 9),
         decoration: BoxDecoration(
           color: surface,
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.18 : 0.05), blurRadius: 12, offset: const Offset(0, -2))],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.05), blurRadius: 12, offset: const Offset(0, -2))],
         ),
         child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
           Expanded(child: Container(
             decoration: BoxDecoration(
               color: adaptiveSurface2(context),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: hasText ? Theme.of(context).colorScheme.primary.withOpacity(0.28) : Colors.transparent, width: 1.5),
+              border: Border.all(color: hasText ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.28) : Colors.transparent, width: 1.5),
             ),
             child: TextField(
               controller: _ctrl,
@@ -218,10 +218,10 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
                       ? [surface, surface]
                       : hasText
                           ? [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary]
-                          : [Theme.of(context).colorScheme.primary.withOpacity(0.55), Theme.of(context).colorScheme.secondary.withOpacity(0.45)],
+                          : [Theme.of(context).colorScheme.primary.withValues(alpha: 0.55), Theme.of(context).colorScheme.secondary.withValues(alpha: 0.45)],
                   begin: Alignment.topLeft, end: Alignment.bottomRight,
                 ),
-                boxShadow: hasText && !_loading ? [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.38), blurRadius: 14, offset: const Offset(0, 4))] : null,
+                boxShadow: hasText && !_loading ? [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.38), blurRadius: 14, offset: const Offset(0, 4))] : null,
               ),
               child: _loading
                   ? Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Theme.of(context).colorScheme.primary)))
@@ -246,12 +246,12 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
               AnimatedBuilder(animation: _pulseCtrl, builder: (_, __) {
                 final v = _pulseCtrl.value;
                 return Stack(alignment: Alignment.center, children: [
-                  Container(width: 106, height: 106, decoration: BoxDecoration(shape: BoxShape.circle, color: Theme.of(context).colorScheme.primary.withOpacity(0.04 + v * 0.04))),
-                  Container(width: 80, height: 80, decoration: BoxDecoration(shape: BoxShape.circle, color: Theme.of(context).colorScheme.primary.withOpacity(0.07 + v * 0.04),
-                    boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.10 + v * 0.06), blurRadius: 20)])),
+                  Container(width: 106, height: 106, decoration: BoxDecoration(shape: BoxShape.circle, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.04 + v * 0.04))),
+                  Container(width: 80, height: 80, decoration: BoxDecoration(shape: BoxShape.circle, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.07 + v * 0.04),
+                    boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10 + v * 0.06), blurRadius: 20)])),
                   Container(width: 60, height: 60,
                     decoration: BoxDecoration(color: isDark ? C.darkSurface : Colors.white, borderRadius: BorderRadius.circular(18),
-                      boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.18), blurRadius: 20, offset: const Offset(0, 5))]),
+                      boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.18), blurRadius: 20, offset: const Offset(0, 5))]),
                     padding: const EdgeInsets.all(12),
                     child: Image.asset('assets/logo.png', fit: BoxFit.contain)),
                 ]);
@@ -261,7 +261,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
               const SizedBox(height: 6),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.10), borderRadius: BorderRadius.circular(16)),
+                decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(16)),
                 child: Text(shortName, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w700)),
               ),
               const SizedBox(height: 20),
@@ -298,7 +298,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Container(
             width: 40, height: 40,
-            decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.10), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(12)),
             child: Icon(tip['icon'] as IconData, size: 20, color: Theme.of(context).colorScheme.primary),
           ),
           const SizedBox(height: 14),
@@ -345,7 +345,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
               topLeft: Radius.circular(22), topRight: Radius.circular(22),
               bottomLeft: Radius.circular(22), bottomRight: Radius.circular(6),
             ),
-            boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.28), blurRadius: 16, offset: const Offset(0, 5))],
+            boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.28), blurRadius: 16, offset: const Offset(0, 5))],
           ),
           child: Text(text, style: const TextStyle(fontSize: 15, color: Colors.white, height: 1.5)),
         ),
@@ -368,8 +368,8 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
         decoration: BoxDecoration(
           color: isDark ? C.darkSurface : Colors.white,
           borderRadius: BorderRadius.circular(13),
-          border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.2), width: 1.5),
-          boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.10), blurRadius: 10, offset: const Offset(0, 2))],
+          border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2), width: 1.5),
+          boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10), blurRadius: 10, offset: const Offset(0, 2))],
         ),
         padding: const EdgeInsets.all(8),
         child: Image.asset('assets/logo.png', fit: BoxFit.contain),
@@ -385,8 +385,8 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
               topLeft: Radius.circular(6), topRight: Radius.circular(20),
               bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20),
             ),
-            border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(isDark ? 0.12 : 0.08)),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.15 : 0.05), blurRadius: 12, offset: const Offset(0, 3))],
+            border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: isDark ? 0.12 : 0.08)),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.05), blurRadius: 12, offset: const Offset(0, 3))],
           ),
           child: SelectableText(text, style: const TextStyle(fontSize: 15, height: 1.7, letterSpacing: 0.1)),
         ),
@@ -403,8 +403,8 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
         decoration: BoxDecoration(
           color: isDark ? C.darkSurface : Colors.white,
           borderRadius: BorderRadius.circular(13),
-          border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.2), width: 1.5),
-          boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.10), blurRadius: 10)],
+          border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2), width: 1.5),
+          boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10), blurRadius: 10)],
         ),
         padding: const EdgeInsets.all(8),
         child: Image.asset('assets/logo.png', fit: BoxFit.contain),
@@ -420,8 +420,8 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
               topLeft: Radius.circular(6), topRight: Radius.circular(20),
               bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20),
             ),
-            border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(isDark ? 0.12 : 0.08)),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.15 : 0.04), blurRadius: 10)],
+            border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: isDark ? 0.12 : 0.08)),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04), blurRadius: 10)],
           ),
           child: Row(mainAxisSize: MainAxisSize.min, children: List.generate(3, (i) => _ClassAiDot(delay: i * 180))),
         ),
@@ -449,7 +449,7 @@ class _ClassAiDotState extends State<_ClassAiDot> with SingleTickerProviderState
   @override
   Widget build(BuildContext context) => AnimatedBuilder(animation: _a, builder: (_, __) => Container(
     width: 7, height: 7, margin: EdgeInsets.symmetric(horizontal: 3),
-    decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.3 + _a.value * 0.7), shape: BoxShape.circle),
+    decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3 + _a.value * 0.7), shape: BoxShape.circle),
     transform: Matrix4.translationValues(0, -4 * _a.value, 0),
   ));
 }

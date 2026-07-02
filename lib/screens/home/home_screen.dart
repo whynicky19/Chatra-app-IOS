@@ -13,6 +13,7 @@ import '../../providers/classes_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/class_utils.dart';
+import '../../utils/image_cache.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/toast.dart';
 import '../notifications/notifications_screen.dart';
@@ -312,7 +313,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     leaveLabel: l.t('leave_class'),
                     leaveSub: l.t('leave_class_sub'),
                     leaveBtnLabel: l.t('leave_btn'),
-                    onTap: () => Navigator.pushNamed(context, '/class', arguments: id),
+                    onTap: () { HapticFeedback.lightImpact(); Navigator.pushNamed(context, '/class', arguments: id); },
                     onLongPress: () { HapticFeedback.heavyImpact(); _showContextMenu(cls); },
                     onDelete: () async {
                       await context.read<ClassesProvider>().deleteClass(id);
@@ -351,14 +352,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     decoration: BoxDecoration(
                       color: surface,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: primary.withOpacity(0.35), width: 1.5),
+                      border: Border.all(color: primary.withValues(alpha: 0.35), width: 1.5),
                       boxShadow: softShadow(isDark),
                     ),
                     child: Column(mainAxisSize: MainAxisSize.min, children: [
                       Container(width: 52, height: 52,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: primary.withOpacity(0.5), width: 1.5),
+                          border: Border.all(color: primary.withValues(alpha: 0.5), width: 1.5),
                         ),
                         child: Icon(CupertinoIcons.add, color: primary, size: 26)),
                       const SizedBox(height: 12),
@@ -390,7 +391,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       context: context,
       barrierDismissible: true,
       barrierLabel: '',
-      barrierColor: Colors.black.withOpacity(0.5),
+      barrierColor: Colors.black.withValues(alpha: 0.5),
       transitionDuration: const Duration(milliseconds: 250),
       pageBuilder: (_, __, ___) => const SizedBox(),
       transitionBuilder: (ctx, anim, __, ___) {
@@ -559,14 +560,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               final teacherName = cls['teacher_name'] ?? '';
               return Padding(padding: const EdgeInsets.only(top: 16),
                 child: Container(
-                  decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.2))),
+                  decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2))),
                   clipBehavior: Clip.antiAlias,
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     SizedBox(height: 80, width: double.infinity,
                       child: coverImg != null && coverImg.toString().startsWith('data:')
-                          ? Builder(builder: (_) { try { return Image.memory(base64Decode(coverImg.toString().split(',').last), fit: BoxFit.cover, width: double.infinity); } catch (_) { return Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))); } })
+                          ? Builder(builder: (_) { final bytes = decodeBase64Image(coverImg.toString()); return bytes != null ? Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, gaplessPlayback: true, cacheWidth: 640) : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))); })
                           : coverImg != null
-                              ? CachedNetworkImage(imageUrl: context.read<ApiService>().fixUrl(coverImg.toString()), fit: BoxFit.cover, width: double.infinity, fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero, placeholder: (_, __) => const SizedBox.shrink(), errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))))
+                              ? CachedNetworkImage(imageUrl: context.read<ApiService>().fixUrl(coverImg.toString()), cacheKey: 'class_cover_${cls['id']}', fit: BoxFit.cover, width: double.infinity, fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero, placeholder: (_, __) => const SizedBox.shrink(), errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))))
                               : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary])))),
                     Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text(cls['title'] ?? '', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -637,10 +638,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 final img = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 800, imageQuality: 80);
                 if (img != null) { final bytes = await img.readAsBytes(); setS(() => coverB64 = 'data:image/jpeg;base64,${base64Encode(bytes)}'); }
               }, child: Container(height: 160, width: double.infinity,
-                decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3), width: 1.5), color: coverB64 != null ? null : adaptivePrimaryLt(context).withOpacity(0.3)),
+                decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3), width: 1.5), color: coverB64 != null ? null : adaptivePrimaryLt(context).withValues(alpha: 0.3)),
                 child: coverB64 != null
                     ? ClipRRect(borderRadius: BorderRadius.circular(16), child: Image.memory(base64Decode(coverB64!.split(',').last), fit: BoxFit.cover, width: double.infinity))
-                    : Column(mainAxisAlignment: MainAxisAlignment.center, children: [Container(width: 50, height: 50, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.15), borderRadius: BorderRadius.circular(14)), child: Icon(CupertinoIcons.photo, size: 26, color: Theme.of(context).colorScheme.primary)), const SizedBox(height: 10), Text(l.t('click_to_upload'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)), const Text('JPG, PNG', style: TextStyle(fontSize: 12, color: C.text4))]))),
+                    : Column(mainAxisAlignment: MainAxisAlignment.center, children: [Container(width: 50, height: 50, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(14)), child: Icon(CupertinoIcons.photo, size: 26, color: Theme.of(context).colorScheme.primary)), const SizedBox(height: 10), Text(l.t('click_to_upload'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)), const Text('JPG, PNG', style: TextStyle(fontSize: 12, color: C.text4))]))),
               const SizedBox(height: 20),
               _fl3(l.t('class_name_required')), TextField(controller: nameC, decoration: InputDecoration(hintText: l.t('class_name_hint'))),
               const SizedBox(height: 16), _fl3(l.t('class_desc')), TextField(controller: descC, decoration: InputDecoration(hintText: l.t('class_desc_hint')), maxLines: 3),
@@ -739,19 +740,19 @@ class _ClassContextMenu extends StatelessWidget {
             SizedBox(height: 110, width: double.infinity,
               child: Stack(fit: StackFit.expand, children: [
                 coverImg != null && coverImg.toString().startsWith('data:')
-                    ? Builder(builder: (_) { try { return Image.memory(base64Decode(coverImg.toString().split(',').last), fit: BoxFit.cover); } catch (_) { return Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))); } })
+                    ? Builder(builder: (_) { final bytes = decodeBase64Image(coverImg.toString()); return bytes != null ? Image.memory(bytes, fit: BoxFit.cover, gaplessPlayback: true, cacheWidth: 640) : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))); })
                     : coverImg != null
-                        ? CachedNetworkImage(imageUrl: context.read<ApiService>().fixUrl(coverImg.toString()), fit: BoxFit.cover, fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero, placeholder: (_, __) => const SizedBox.shrink(), errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))))
+                        ? CachedNetworkImage(imageUrl: context.read<ApiService>().fixUrl(coverImg.toString()), cacheKey: 'class_cover_${cls['id']}', fit: BoxFit.cover, fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero, placeholder: (_, __) => const SizedBox.shrink(), errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))))
                         : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight))),
                 Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                   begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.black.withOpacity(0.55)],
+                  colors: [Colors.transparent, Colors.black.withValues(alpha: 0.55)],
                 )))),
                 Positioned(bottom: 10, left: 12,
                   child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis)),
                 if (teacherName.isNotEmpty)
                   Positioned(bottom: 10, right: 12,
-                    child: Text(teacherName, style: TextStyle(color: Colors.white.withOpacity(0.75), fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                    child: Text(teacherName, style: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis)),
               ]),
             ),
 
@@ -762,9 +763,9 @@ class _ClassContextMenu extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: primary.withOpacity(0.1),
+                    color: primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: primary.withOpacity(0.2)),
+                    border: Border.all(color: primary.withValues(alpha: 0.2)),
                   ),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Icon(CupertinoIcons.tag, size: 12, color: primary),
@@ -773,7 +774,7 @@ class _ClassContextMenu extends StatelessWidget {
                   ]),
                 ),
                 const Spacer(),
-                _SmallAction(icon: CupertinoIcons.doc_on_doc, bg: primary.withOpacity(0.1), iconColor: primary, onTap: onCopyCode),
+                _SmallAction(icon: CupertinoIcons.doc_on_doc, bg: primary.withValues(alpha: 0.1), iconColor: primary, onTap: onCopyCode),
               ]),
             ),
 
@@ -783,7 +784,7 @@ class _ClassContextMenu extends StatelessWidget {
               child: Column(children: [
                 _ActionRow(
                   icon: isPinned ? CupertinoIcons.pin : CupertinoIcons.pin_fill,
-                  iconBg: primary.withOpacity(0.12),
+                  iconBg: primary.withValues(alpha: 0.12),
                   iconColor: primary,
                   label: isPinned ? l.t('unpin_class') : l.t('pin_class'),
                   bg: bg2,
@@ -793,7 +794,7 @@ class _ClassContextMenu extends StatelessWidget {
                   const SizedBox(height: 6),
                   _ActionRow(
                     icon: CupertinoIcons.person_2_fill,
-                    iconBg: C.green.withOpacity(0.12),
+                    iconBg: C.green.withValues(alpha: 0.12),
                     iconColor: C.green,
                     label: l.t('class_members'),
                     bg: bg2,
@@ -808,10 +809,10 @@ class _ClassContextMenu extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
               child: _ActionRow(
                 icon: isTeacher ? CupertinoIcons.trash : CupertinoIcons.arrow_right_square,
-                iconBg: C.red.withOpacity(0.12),
+                iconBg: C.red.withValues(alpha: 0.12),
                 iconColor: C.red,
                 label: isTeacher ? l.t('delete_class') : l.t('leave_class'),
-                bg: C.red.withOpacity(isDark ? 0.08 : 0.05),
+                bg: C.red.withValues(alpha: isDark ? 0.08 : 0.05),
                 textColor: C.red,
                 onTap: isTeacher ? onDelete : onLeave,
               ),
@@ -881,7 +882,7 @@ class _ActionRow extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(child: Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: labelColor))),
-              Icon(CupertinoIcons.chevron_right, size: 16, color: labelColor.withOpacity(0.35)),
+              Icon(CupertinoIcons.chevron_right, size: 16, color: labelColor.withValues(alpha: 0.35)),
             ]),
           ),
         ),
@@ -967,23 +968,30 @@ class _ClassCard extends StatelessWidget {
                 child: Stack(fit: StackFit.expand, children: [
                   // Always-visible gradient — prevents grey flash when image remounts
                   Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight))),
-                  if (coverImg != null && coverImg.toString().startsWith('data:'))
-                    Builder(builder: (_) {
-                      try { return Image.memory(base64Decode(coverImg.toString().split(',').last), fit: BoxFit.cover); }
-                      catch (_) { return const SizedBox.shrink(); }
-                    })
-                  else if (coverImg != null)
-                    CachedNetworkImage(
-                      imageUrl: context.read<ApiService>().fixUrl(coverImg.toString()),
-                      fit: BoxFit.cover,
-                      fadeInDuration: Duration.zero,
-                      fadeOutDuration: Duration.zero,
+                  if (coverImg != null)
+                    Hero(
+                      tag: 'class_cover_$id',
+                      child: coverImg.toString().startsWith('data:')
+                        ? Builder(builder: (_) {
+                            final bytes = decodeBase64Image(coverImg.toString());
+                            return bytes != null
+                                ? Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, gaplessPlayback: true, cacheWidth: 640)
+                                : const SizedBox.shrink();
+                          })
+                        : CachedNetworkImage(
+                            imageUrl: context.read<ApiService>().fixUrl(coverImg.toString()),
+                            cacheKey: 'class_cover_$id',
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            fadeInDuration: Duration.zero,
+                            fadeOutDuration: Duration.zero,
+                          ),
                     ),
                   // Bottom gradient
                   Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                     begin: Alignment.topCenter, end: Alignment.bottomCenter,
                     stops: const [0.5, 1.0],
-                    colors: [Colors.transparent, Colors.black.withOpacity(0.45)],
+                    colors: [Colors.transparent, Colors.black.withValues(alpha: 0.45)],
                   )))),
                   // Teacher code chip
                   if (isTeacher)
@@ -991,7 +999,7 @@ class _ClassCard extends StatelessWidget {
                       onTap: onCopyCode,
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(color: Colors.black.withOpacity(0.55), borderRadius: BorderRadius.circular(8)),
+                        decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.55), borderRadius: BorderRadius.circular(8)),
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
                           const Icon(CupertinoIcons.doc_on_doc, size: 11, color: Colors.white60),
                           const SizedBox(width: 4),
@@ -1006,13 +1014,13 @@ class _ClassCard extends StatelessWidget {
                     child: ReorderableDragStartListener(
                       index: index,
                       child: SizedBox(width: 44, height: 44,
-                        child: Center(child: Icon(CupertinoIcons.line_horizontal_3, size: 20, color: Colors.white.withOpacity(0.5)))),
+                        child: Center(child: Icon(CupertinoIcons.line_horizontal_3, size: 20, color: Colors.white.withValues(alpha: 0.5)))),
                     )),
                   // Lesson count badge
                   Positioned(bottom: 10, left: 12,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                      decoration: BoxDecoration(color: Colors.black.withOpacity(0.48), borderRadius: BorderRadius.circular(8)),
+                      decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.48), borderRadius: BorderRadius.circular(8)),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
                         const Icon(CupertinoIcons.play_circle, size: 13, color: Colors.white70),
                         const SizedBox(width: 4),
@@ -1114,7 +1122,7 @@ class _MetaChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
-        color: c.withOpacity(0.08),
+        color: c.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -1138,7 +1146,7 @@ class _ActionBtn extends StatelessWidget {
     onTap: onTap,
     child: Container(width: 34, height: 34,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Icon(icon, size: 17, color: color)),
@@ -1158,7 +1166,7 @@ class _EmptyState extends StatelessWidget {
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Container(width: 88, height: 88,
           decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primary.withOpacity(0.18), Theme.of(context).colorScheme.primary.withOpacity(0.06)]),
+            gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primary.withValues(alpha: 0.18), Theme.of(context).colorScheme.primary.withValues(alpha: 0.06)]),
             shape: BoxShape.circle,
           ),
           child: Icon(CupertinoIcons.book, color: Theme.of(context).colorScheme.primary, size: 40)),

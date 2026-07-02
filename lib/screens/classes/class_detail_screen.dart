@@ -9,14 +9,16 @@ import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:dio/dio.dart' show Options;
+import 'package:dio/dio.dart' show Options, CancelToken;
 import '../../providers/auth_provider.dart';
 import '../../providers/classes_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/class_utils.dart';
+import '../../utils/image_cache.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../widgets/skeleton.dart';
 import '../../widgets/toast.dart';
 import 'tabs/class_posts_tab.dart';
 import 'tabs/class_assignments_tab.dart';
@@ -45,6 +47,9 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   List<dynamic> _materials = [];
   bool _loading = true, _loadingAsg = false, _aiTabActive = false;
   bool _coverPrecached = false;
+  // Cached cover header widget — see build() for why it is memoized.
+  Widget? _headerCache;
+  String _headerSig = '';
 
   @override
   void initState() {
@@ -53,7 +58,9 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     _aiTabActive = widget.initialTab == 3;
     _tabCtrl.addListener(() {
       if (_tabCtrl.index == 2 && _assignments.isEmpty) _loadAssignments();
-      if (!_tabCtrl.indexIsChanging) {
+      if (_tabCtrl.indexIsChanging) {
+        HapticFeedback.selectionClick();
+      } else {
         final isAi = _tabCtrl.index == 3;
         if (_aiTabActive != isAi) setState(() => _aiTabActive = isAi);
       }
@@ -72,7 +79,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       final rawUrl = clsData['cover_image'];
       if (rawUrl != null && rawUrl.toString().isNotEmpty && !rawUrl.toString().startsWith('data:')) {
         final url = context.read<ApiService>().fixUrl(rawUrl.toString());
-        precacheImage(CachedNetworkImageProvider(url), context);
+        precacheImage(CachedNetworkImageProvider(url, cacheKey: 'class_cover_${widget.classId}'), context);
       }
     }
   }
@@ -181,16 +188,22 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       }
     }
 
-    await Future.wait(filePairs.map((pair) async {
-      try {
-        final resp = await api.dio.get<Map<String, dynamic>>(
-          '/upload/utils/file-text',
-          queryParameters: {'url': pair.cleanUrl},
-        );
-        final text = (resp.data?['text'] as String?) ?? '';
-        if (text.isNotEmpty) result[pair.url] = text;
-      } catch (_) {}
-    }));
+    // Fetch file texts with a bounded concurrency of 3 so we don't fire a
+    // request for every attached file at once (can be dozens).
+    const maxConcurrent = 3;
+    for (var i = 0; i < filePairs.length; i += maxConcurrent) {
+      final chunk = filePairs.skip(i).take(maxConcurrent);
+      await Future.wait(chunk.map((pair) async {
+        try {
+          final resp = await api.dio.get<Map<String, dynamic>>(
+            '/upload/utils/file-text',
+            queryParameters: {'url': pair.cleanUrl},
+          );
+          final text = (resp.data?['text'] as String?) ?? '';
+          if (text.isNotEmpty) result[pair.url] = text;
+        } catch (_) {}
+      }));
+    }
 
     if (mounted) setState(() {
       _fileTexts = result;
@@ -211,7 +224,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   }
 
   String _clean(String t) => t.replaceFirst(RegExp(r'^\[(LECTURE|HW)\]\[\d+\]\s*'), '').trim();
-  String _fmtDate(String? d) { if (d == null) return ''; try { final dt = DateTime.parse(d); return '${dt.day}.${dt.month.toString().padLeft(2, '0')}.${dt.year}'; } catch (_) { return d; } }
+  String _fmtDate(String? d) { if (d == null) return ''; try { final dt = DateTime.parse(d); return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}.${dt.year}'; } catch (_) { return d; } }
 
   // Downloads the file and opens it with the native viewer (PDF, Word, Excel, images, etc.)
   Future<void> _openFileViewer(BuildContext ctx, String url, String name) async {
@@ -228,10 +241,16 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     // Show download progress dialog
     var progress = 0.0;
     var cancelled = false;
+    var dialogClosed = false;
+    final cancelToken = CancelToken();
+    // Captured from the dialog's StatefulBuilder so onReceiveProgress can
+    // actually repaint the progress bar.
+    StateSetter? setDialog;
     showCupertinoDialog(
       context: ctx,
       barrierDismissible: false,
       builder: (_) => StatefulBuilder(builder: (dCtx, setD) {
+        setDialog = setD;
         return CupertinoAlertDialog(
           title: const Text('Открытие файла'),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -240,14 +259,19 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             const SizedBox(height: 12),
             ClipRRect(
               borderRadius: BorderRadius.circular(4),
-              child: StatefulBuilder(builder: (_, sp) => LinearProgressIndicator(value: progress > 0 ? progress : null, color: Theme.of(context).colorScheme.primary, backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.12), minHeight: 5)),
+              child: LinearProgressIndicator(value: progress > 0 ? progress : null, color: Theme.of(context).colorScheme.primary, backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12), minHeight: 5),
             ),
             const SizedBox(height: 6),
             Text(progress > 0 ? '${(progress * 100).toInt()}%' : 'Загрузка...', style: const TextStyle(fontSize: 12, color: C.text4)),
           ]),
           actions: [
             CupertinoDialogAction(
-              onPressed: () { cancelled = true; Navigator.pop(dCtx); },
+              onPressed: () {
+                cancelled = true;
+                dialogClosed = true;
+                cancelToken.cancel('user_cancelled');
+                Navigator.pop(dCtx);
+              },
               child: const Text('Отмена'),
             ),
           ],
@@ -267,14 +291,20 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
         await api.dio.download(
           cleanUrl,
           filePath,
+          cancelToken: cancelToken,
           onReceiveProgress: (received, total) {
-            if (total > 0) progress = received / total;
+            if (total > 0) {
+              progress = received / total;
+              // Repaint the dialog's progress bar (guard against updates after close).
+              if (!dialogClosed) setDialog?.call(() {});
+            }
           },
           options: Options(receiveTimeout: const Duration(minutes: 5)),
         );
       }
 
       if (!mounted || cancelled) return;
+      dialogClosed = true;
       Navigator.pop(context);
 
       final result = await OpenFile.open(filePath);
@@ -284,6 +314,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       }
     } catch (_) {
       if (!mounted || cancelled) return;
+      dialogClosed = true;
       Navigator.pop(context);
       try { await launchUrl(Uri.parse(cleanUrl), mode: LaunchMode.externalApplication); } catch (_) {}
     }
@@ -357,97 +388,41 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     final coverImg = (_rawCoverImg != null && !_rawCoverImg.toString().startsWith('data:'))
         ? context.read<ApiService>().fixUrl(_rawCoverImg.toString())
         : _rawCoverImg;
-    final displayTitle = _title.isNotEmpty ? _title : (clsData['title'] ?? '');
+    final displayTitle = (_title.isNotEmpty ? _title : (clsData['title'] ?? '')).toString();
     final displayDesc = (meta['description'] ?? clsData['description'] ?? '').toString();
+
+    // Memoize the cover header so that setState from tab switching (_aiTabActive)
+    // and from _load()/_loadFileTexts() does not rebuild the SliverAppBar (which
+    // would remount the cover image and cause a flicker). Only rebuild it when one
+    // of its actual inputs changes.
+    final headerSig = '$displayTitle|$displayDesc|${coverImg?.toString() ?? ''}|'
+        '${auth.isTeacher}|${l.t('class_code')}|${l.t('code_copied')}';
+    if (headerSig != _headerSig || _headerCache == null) {
+      _headerSig = headerSig;
+      _headerCache = _ClassCoverSliver(
+        classId: widget.classId,
+        title: displayTitle,
+        desc: displayDesc,
+        coverImg: coverImg,
+        isTeacher: auth.isTeacher,
+        codeLabel: l.t('class_code'),
+        codeCopiedLabel: l.t('code_copied'),
+        onBack: () => Navigator.pop(context),
+        onEdit: _editClass,
+      );
+    }
 
     return Scaffold(
       body: NestedScrollView(
         headerSliverBuilder: (ctx, _) => [
-          SliverAppBar(
-            expandedHeight: 220,
-            pinned: true,
-            automaticallyImplyLeading: false,
-            backgroundColor: Colors.transparent,
-            surfaceTintColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            elevation: 0,
-            scrolledUnderElevation: 0,
-            forceMaterialTransparency: true,
-            leading: IconButton(
-              padding: EdgeInsets.zero,
-              icon: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(10)), child: const Icon(CupertinoIcons.chevron_left, color: Colors.white, size: 20)),
-              onPressed: () => Navigator.pop(context),
-            ),
-            actions: [
-              if (auth.isTeacher) IconButton(
-                padding: EdgeInsets.zero,
-                icon: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(10)), child: const Icon(CupertinoIcons.pencil, color: Colors.white70, size: 18)),
-                onPressed: () => _editClass(),
-              ),
-              const SizedBox(width: 8),
-            ],
-            flexibleSpace: FlexibleSpaceBar(
-              collapseMode: CollapseMode.pin,
-              titlePadding: EdgeInsets.zero,
-              background: Stack(fit: StackFit.expand, children: [
-                Container(decoration: BoxDecoration(gradient: LinearGradient(
-                  colors: [Color(0xFF006475), Theme.of(context).colorScheme.primary],
-                  begin: Alignment.topLeft, end: Alignment.bottomRight,
-                ))),
-                if (coverImg != null && !coverImg.toString().startsWith('data:'))
-                  RepaintBoundary(child: CachedNetworkImage(
-                    imageUrl: coverImg.toString(),
-                    cacheKey: 'class_cover_${widget.classId}',
-                    fit: BoxFit.cover,
-                    alignment: Alignment.topCenter,
-                    fadeInDuration: Duration.zero,
-                    fadeOutDuration: Duration.zero,
-                    placeholder: (_, __) => const SizedBox.shrink(),
-                    errorWidget: (_, __, ___) => const SizedBox.shrink(),
-                  )),
-                if (coverImg != null && coverImg.toString().startsWith('data:'))
-                  Builder(builder: (_) {
-                    try { return Image.memory(base64Decode(coverImg.toString().split(',').last), fit: BoxFit.cover, alignment: Alignment.topCenter); }
-                    catch (_) { return const SizedBox.shrink(); }
-                  }),
-                Container(decoration: const BoxDecoration(gradient: LinearGradient(
-                  begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                  stops: [0.0, 0.4, 1.0],
-                  colors: [Colors.black38, Colors.transparent, Colors.black54],
-                ))),
-                Positioned(bottom: 16, left: 16, right: 16, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(displayTitle, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white, shadows: [Shadow(color: Colors.black54, blurRadius: 6)]), maxLines: 2, overflow: TextOverflow.ellipsis),
-                  if (displayDesc.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(displayDesc, style: const TextStyle(color: Colors.white70, fontSize: 13)),
-                  ],
-                  if (auth.isTeacher) ...[
-                    const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: () { Clipboard.setData(ClipboardData(text: classCode(widget.classId))); showToast(context, '${l.t('code_copied')}: ${classCode(widget.classId)}'); },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(color: adaptivePrimaryLt(context).withOpacity(0.9), borderRadius: BorderRadius.circular(8)),
-                        child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(CupertinoIcons.doc_on_doc, size: 14, color: Theme.of(context).colorScheme.primary),
-                          const SizedBox(width: 6),
-                          Text('${l.t('class_code')}: ', style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary)),
-                          Text(classCode(widget.classId), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary, letterSpacing: 2)),
-                        ]),
-                      ),
-                    ),
-                  ],
-                ])),
-              ]),
-            ),
-          ),
+          _headerCache!,
         ],
         body: Column(children: [
           // ── TabBar + teacher action buttons ────────────────────────────────
           Container(
             decoration: BoxDecoration(
               color: surfaceColor,
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.18 : 0.05), blurRadius: 8, offset: const Offset(0, 2))],
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.05), blurRadius: 8, offset: const Offset(0, 2))],
             ),
             child: Column(children: [
               TabBar(
@@ -477,7 +452,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                       onTap: () => _createAssignment(),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 11),
-                        decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(13), border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.28))),
+                        decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(13), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.28))),
                         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                           Icon(CupertinoIcons.doc, size: 15, color: Theme.of(context).colorScheme.primary),
                           const SizedBox(width: 6),
@@ -505,10 +480,19 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           ),
           // ── Tab content ─────────────────────────────────────────────────────
           Expanded(child: _loading
-            ? CustomScrollView(physics: const AlwaysScrollableScrollPhysics(), slivers: [
-                SliverFillRemaining(hasScrollBody: false,
-                  child: Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))),
-              ])
+            ? ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                children: const [
+                  SkeletonBox(width: 160, height: 18, borderRadius: 8),
+                  SizedBox(height: 16),
+                  SkeletonBox(width: double.infinity, height: 92, borderRadius: 16),
+                  SizedBox(height: 12),
+                  SkeletonBox(width: double.infinity, height: 92, borderRadius: 16),
+                  SizedBox(height: 12),
+                  SkeletonBox(width: double.infinity, height: 92, borderRadius: 16),
+                ],
+              )
             : TabBarView(controller: _tabCtrl, children: [
                 ClassPostsTab(
                   posts: _lectures, type: 'lecture', isTeacher: auth.isTeacher, fileTexts: _fileTexts,
@@ -562,7 +546,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 return Container(
                   margin: EdgeInsets.only(bottom: 6),
                   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.06), borderRadius: BorderRadius.circular(10)),
+                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(10)),
                   child: Row(children: [
                     Icon(CupertinoIcons.doc, size: 14, color: Theme.of(context).colorScheme.primary),
                     SizedBox(width: 6),
@@ -589,7 +573,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   }
                 }
               },
-              child: Container(padding: EdgeInsets.symmetric(vertical: 10), decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3))),
+              child: Container(padding: EdgeInsets.symmetric(vertical: 10), decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3))),
                 child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(CupertinoIcons.paperclip, size: 16, color: Theme.of(context).colorScheme.primary), SizedBox(width: 6), Text('Прикрепить файлы', style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600))])),
             ),
             SizedBox(height: 20),
@@ -603,8 +587,9 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     'content': cc.text,
                     if (editFiles.isNotEmpty) 'files': editFiles,
                   }));
+                  if (!ctx.mounted) return;
                   Navigator.pop(ctx); _load(); showToast(context, 'Сохранено');
-                } catch (_) { showToast(context, 'Ошибка', error: true); }
+                } catch (_) { if (ctx.mounted) showToast(context, 'Ошибка', error: true); }
               }, child: Text('Сохранить'))),
             ]),
           ])));
@@ -682,13 +667,13 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 Row(children: [
                   Expanded(child: Center(child: Container(
                     width: 36, height: 4,
-                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.35), borderRadius: BorderRadius.circular(2)),
+                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.35), borderRadius: BorderRadius.circular(2)),
                   ))),
                   GestureDetector(
                     onTap: () => Navigator.pop(ctx),
                     child: Container(
                       width: 30, height: 30,
-                      decoration: BoxDecoration(color: Colors.black.withOpacity(0.18), shape: BoxShape.circle),
+                      decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.18), shape: BoxShape.circle),
                       child: const Icon(CupertinoIcons.xmark, color: Colors.white, size: 16),
                     ),
                   ),
@@ -697,7 +682,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 // Type badge
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.22), borderRadius: BorderRadius.circular(8)),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.22), borderRadius: BorderRadius.circular(8)),
                   child: Text(
                     '${isLecture ? 'ЛЕКЦИЯ' : 'МАТЕРИАЛ'} $num',
                     style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 1.0),
@@ -746,7 +731,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     decoration: BoxDecoration(
                       color: isDark ? C.darkSurface2 : C.bg,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: accent.withOpacity(0.1)),
+                      border: Border.all(color: accent.withValues(alpha: 0.1)),
                     ),
                     child: Text(cleanText, style: const TextStyle(fontSize: 15, height: 1.75, letterSpacing: 0.1)),
                   ),
@@ -785,8 +770,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                           decoration: BoxDecoration(
                             color: isDark ? C.darkSurface2 : Colors.white,
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: fileColor.withOpacity(0.18)),
-                            boxShadow: [BoxShadow(color: fileColor.withOpacity(isDark ? 0.04 : 0.07), blurRadius: 10, offset: const Offset(0, 3))],
+                            border: Border.all(color: fileColor.withValues(alpha: 0.18)),
+                            boxShadow: [BoxShadow(color: fileColor.withValues(alpha: isDark ? 0.04 : 0.07), blurRadius: 10, offset: const Offset(0, 3))],
                           ),
                           child: Row(children: [
                             // File type badge
@@ -807,7 +792,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                             ])),
                             Container(
                               width: 34, height: 34,
-                              decoration: BoxDecoration(color: fileColor.withOpacity(0.10), borderRadius: BorderRadius.circular(10)),
+                              decoration: BoxDecoration(color: fileColor.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(10)),
                               child: Icon(CupertinoIcons.arrow_up_right_square, size: 16, color: fileColor),
                             ),
                           ]),
@@ -823,7 +808,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     padding: const EdgeInsets.symmetric(vertical: 40),
                     child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
                       Container(width: 64, height: 64,
-                        decoration: BoxDecoration(color: accent.withOpacity(0.08), shape: BoxShape.circle),
+                        decoration: BoxDecoration(color: accent.withValues(alpha: 0.08), shape: BoxShape.circle),
                         child: Icon(isLecture ? CupertinoIcons.book : CupertinoIcons.tray, size: 30, color: accent)),
                       const SizedBox(height: 14),
                       const Text('Содержимое ещё не добавлено', style: TextStyle(fontSize: 14, color: C.text4, fontWeight: FontWeight.w500)),
@@ -872,7 +857,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           SizedBox(height: 16),
           // Header
           Row(children: [
-            Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.12), borderRadius: BorderRadius.circular(14)),
+            Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(14)),
               child: Icon(CupertinoIcons.book, color: Theme.of(context).colorScheme.primary, size: 22)),
             SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -904,7 +889,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           GestureDetector(onTap: () async {
             final result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
             if (result != null) setS(() => lectureFiles.addAll(result.files));
-          }, child: Container(padding: EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3))),
+          }, child: Container(padding: EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3))),
             child: Column(children: [
               Icon(CupertinoIcons.arrow_up_doc, size: 24, color: Theme.of(context).colorScheme.primary), SizedBox(height: 6),
               RichText(text: TextSpan(style: TextStyle(fontSize: 13, color: C.text4), children: [TextSpan(text: 'Нажмите или '), TextSpan(text: 'выберите файлы', style: TextStyle(fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary))])),
@@ -912,7 +897,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             ]))),
           if (lectureFiles.isNotEmpty) ...[SizedBox(height: 8),
             ...lectureFiles.map((f) => Container(margin: EdgeInsets.only(bottom: 4), padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.06), borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(10)),
               child: Row(children: [Icon(CupertinoIcons.doc_text, size: 14, color: Theme.of(context).colorScheme.primary), SizedBox(width: 6), Expanded(child: Text(f.name, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary), overflow: TextOverflow.ellipsis)), GestureDetector(onTap: () => setS(() => lectureFiles.remove(f)), child: Icon(CupertinoIcons.xmark, size: 14, color: C.text4))])))],
           SizedBox(height: 20),
           Row(children: [
@@ -939,8 +924,9 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     'content': cc.text,
                     if (fileUrls.isNotEmpty) 'files': fileUrls,
                   }));
+                  if (!ctx.mounted) return;
                   Navigator.pop(ctx); _load(); showToast(context, 'Опубликовано');
-                } catch (_) { showToast(context, 'Ошибка', error: true); }
+                } catch (_) { if (ctx.mounted) showToast(context, 'Ошибка', error: true); }
               })),
           ]),
         ])))).then((_) { tc.dispose(); cc.dispose(); });
@@ -958,7 +944,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => DraggableScrollableSheet(expand: false, initialChildSize: 0.9, maxChildSize: 0.95,
         builder: (ctx, scroll) => ListView(controller: scroll, padding: EdgeInsets.all(24), children: [
           Row(children: [
-            Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.15), borderRadius: BorderRadius.circular(14)),
+            Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(14)),
               child: Icon(CupertinoIcons.pencil, color: Theme.of(context).colorScheme.primary, size: 22)),
             SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1009,7 +995,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               child: Row(children: [Icon(CupertinoIcons.paperclip, size: 16, color: C.text4), SizedBox(width: 8), Text('Нет прикреплённых файлов', style: TextStyle(fontSize: 13, color: C.text4))]))
           else
             ...attachedFiles.map((f) => Container(margin: EdgeInsets.only(bottom: 6), padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(12)),
               child: Row(children: [
                 Icon(CupertinoIcons.doc, size: 16, color: Theme.of(context).colorScheme.primary),
                 SizedBox(width: 8),
@@ -1019,14 +1005,14 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               ]))),
           SizedBox(height: 20),
           // Reference solution
-          Container(padding: EdgeInsets.all(16), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.04), borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.15))),
+          Container(padding: EdgeInsets.all(16), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.04), borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15))),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                Container(width: 36, height: 36, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
+                Container(width: 36, height: 36, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
                   child: Icon(CupertinoIcons.checkmark_circle, size: 18, color: Theme.of(context).colorScheme.primary)),
                 SizedBox(width: 10),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [Text('Эталонные решения', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)), Spacer(), Container(padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: Text('ИИ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)))]),
+                  Row(children: [Text('Эталонные решения', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)), Spacer(), Container(padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)), child: Text('ИИ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)))]),
                   Text('ИИ сравнит работы учеников с эталоном', style: TextStyle(fontSize: 11, color: C.text4)),
                 ])),
               ]),
@@ -1035,7 +1021,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 final result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
                 if (result != null) setS(() => referenceFiles.addAll(result.files));
               },
-              child: Container(padding: EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3))),
+              child: Container(padding: EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3))),
                 child: Column(children: [
                   Icon(CupertinoIcons.arrow_up_doc, size: 28, color: Theme.of(context).colorScheme.primary),
                   SizedBox(height: 6),
@@ -1045,7 +1031,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               if (referenceFiles.isNotEmpty) ...[
                 SizedBox(height: 8),
                 ...referenceFiles.map((f) => Container(margin: EdgeInsets.only(bottom: 4), padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.06), borderRadius: BorderRadius.circular(10)),
+                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(10)),
                   child: Row(children: [Icon(CupertinoIcons.doc_text, size: 14, color: Theme.of(context).colorScheme.primary), SizedBox(width: 6), Expanded(child: Text(f.name, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary), overflow: TextOverflow.ellipsis)), GestureDetector(onTap: () => setS(() => referenceFiles.remove(f)), child: Icon(CupertinoIcons.xmark, size: 14, color: C.text4))]))),
               ],
             ])),
@@ -1133,13 +1119,14 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     if (deadline != null) 'deadline': deadline!.toIso8601String(),
                   });
 
+                  if (!ctx.mounted) return;
                   Navigator.pop(ctx);
                   _loadAssignments();
                   showToast(context, fileUrls.isNotEmpty
                       ? 'Задание создано (${fileUrls.length} файл)'
                       : 'Задание создано');
                 } catch (e) {
-                  showToast(context, 'Ошибка: $e', error: true);
+                  if (ctx.mounted) showToast(context, 'Ошибка: $e', error: true);
                 }
               })),
           ]),
@@ -1179,7 +1166,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
         expand: false, initialChildSize: 0.9, maxChildSize: 0.95,
         builder: (ctx, scroll) => ListView(controller: scroll, padding: EdgeInsets.all(24), children: [
           Row(children: [
-            Container(width: 44, height: 44, decoration: BoxDecoration(color: Color(0xFFF59E0B).withOpacity(0.15), borderRadius: BorderRadius.circular(14)),
+            Container(width: 44, height: 44, decoration: BoxDecoration(color: Color(0xFFF59E0B).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(14)),
               child: Icon(CupertinoIcons.pencil, color: Color(0xFFF59E0B), size: 22)),
             SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1223,7 +1210,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             ...keepUrls.map((url) {
               final name = _fileDisplayName(url);
               return Container(margin: EdgeInsets.only(bottom: 6), padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.06), borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(12)),
                 child: Row(children: [
                   Icon(CupertinoIcons.doc, size: 15, color: Theme.of(context).colorScheme.primary), SizedBox(width: 8),
                   Expanded(child: Text(name, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary), overflow: TextOverflow.ellipsis)),
@@ -1246,7 +1233,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           ]),
           SizedBox(height: 8),
           if (newFiles.isNotEmpty) ...newFiles.map((f) => Container(margin: EdgeInsets.only(bottom: 6), padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(12)),
             child: Row(children: [
               Icon(CupertinoIcons.doc, size: 15, color: Theme.of(context).colorScheme.primary), SizedBox(width: 8),
               Expanded(child: Text(f.name, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary), overflow: TextOverflow.ellipsis)),
@@ -1328,8 +1315,9 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     'criteria': finalCriteria,
                     if (deadline != null) 'deadline': deadline!.toIso8601String(),
                   });
+                  if (!ctx.mounted) return;
                   Navigator.pop(ctx); _loadAssignments(); showToast(context, 'Задание обновлено');
-                } catch (e) { showToast(context, 'Ошибка: $e', error: true); }
+                } catch (e) { if (ctx.mounted) showToast(context, 'Ошибка: $e', error: true); }
               },
             )),
           ]),
@@ -1351,7 +1339,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
         builder: (ctx, scroll) => ListView(controller: scroll, padding: EdgeInsets.all(24), children: [
           // Header
           Row(children: [
-            Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.12), borderRadius: BorderRadius.circular(14)),
+            Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(14)),
               child: Icon(CupertinoIcons.pencil, color: Theme.of(context).colorScheme.primary, size: 22)),
             SizedBox(width: 12),
             Expanded(child: Text('Редактировать класс', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800))),
@@ -1369,17 +1357,17 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               final b64 = 'data:image/jpeg;base64,${base64Encode(bytes)}';
               setS(() { newCoverBase64 = b64; });
             },
-            child: Container(height: 150, decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3), width: 1.5)),
+            child: Container(height: 150, decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3), width: 1.5)),
               clipBehavior: Clip.antiAlias,
               child: Stack(fit: StackFit.expand, children: [
                 if (newCoverBase64 != null && newCoverBase64!.startsWith('data:'))
-                  Builder(builder: (_) { try { return Image.memory(base64Decode(newCoverBase64!.split(',').last), fit: BoxFit.cover); } catch (_) { return Container(color: Theme.of(context).colorScheme.primary.withOpacity(0.1)); } })
+                  Builder(builder: (_) { try { return Image.memory(base64Decode(newCoverBase64!.split(',').last), fit: BoxFit.cover); } catch (_) { return Container(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)); } })
                 else if (newCoverBase64 != null)
                   CachedNetworkImage(imageUrl: newCoverBase64!, fit: BoxFit.cover, fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero, placeholder: (_, __) => const SizedBox.shrink(), errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF006475), Theme.of(context).colorScheme.primary]))))
                 else
                   Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF006475), Theme.of(context).colorScheme.primary], begin: Alignment.topLeft, end: Alignment.bottomRight))),
                 // Overlay
-                Container(color: Colors.black.withOpacity(0.3),
+                Container(color: Colors.black.withValues(alpha: 0.3),
                   child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                     Icon(CupertinoIcons.photo, color: Colors.white, size: 32),
                     SizedBox(height: 6),
@@ -1418,8 +1406,9 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   if (newCoverBase64 != null) body['cover_image'] = newCoverBase64;
                   else body.remove('cover_image');
                   await context.read<ApiService>().updatePost(widget.classId, tc.text.trim(), jsonEncode(body));
+                  if (!ctx.mounted) return;
                   Navigator.pop(ctx); _load(); showToast(context, 'Класс обновлён');
-                } catch (_) { showToast(context, 'Ошибка', error: true); }
+                } catch (_) { if (ctx.mounted) showToast(context, 'Ошибка', error: true); }
               },
               child: Text('Сохранить'),
             )),
@@ -1431,6 +1420,127 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   @override void dispose() {
     _tabCtrl.dispose();
     super.dispose();
+  }
+}
+
+// ── Cover header ────────────────────────────────────────────────────────────
+// Extracted from ClassDetailScreen so it can be memoized by the parent: tab
+// switches and data reloads trigger setState on the screen but must NOT remount
+// the cover image (which would flicker). The parent only rebuilds this widget
+// when one of its inputs actually changes.
+class _ClassCoverSliver extends StatelessWidget {
+  final int classId;
+  final String title;
+  final String desc;
+  final dynamic coverImg; // fixed http(s) URL, a data: URI, or null
+  final bool isTeacher;
+  final String codeLabel;
+  final String codeCopiedLabel;
+  final VoidCallback onBack;
+  final VoidCallback onEdit;
+
+  const _ClassCoverSliver({
+    required this.classId,
+    required this.title,
+    required this.desc,
+    required this.coverImg,
+    required this.isTeacher,
+    required this.codeLabel,
+    required this.codeCopiedLabel,
+    required this.onBack,
+    required this.onEdit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final isData = coverImg != null && coverImg.toString().startsWith('data:');
+    final isNetwork = coverImg != null && !isData;
+
+    Widget cover;
+    if (isNetwork) {
+      cover = RepaintBoundary(child: CachedNetworkImage(
+        imageUrl: coverImg.toString(),
+        cacheKey: 'class_cover_$classId',
+        fit: BoxFit.cover,
+        alignment: Alignment.topCenter,
+        fadeInDuration: Duration.zero,
+        fadeOutDuration: Duration.zero,
+        placeholder: (_, __) => const SizedBox.shrink(),
+        errorWidget: (_, __, ___) => const SizedBox.shrink(),
+      ));
+    } else if (isData) {
+      final bytes = decodeBase64Image(coverImg.toString());
+      cover = bytes != null
+          ? Image.memory(bytes, fit: BoxFit.cover, alignment: Alignment.topCenter, gaplessPlayback: true, cacheWidth: 1080)
+          : const SizedBox.shrink();
+    } else {
+      cover = const SizedBox.shrink();
+    }
+
+    return SliverAppBar(
+      expandedHeight: 220,
+      pinned: true,
+      automaticallyImplyLeading: false,
+      backgroundColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      shadowColor: Colors.transparent,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      forceMaterialTransparency: true,
+      leading: IconButton(
+        padding: EdgeInsets.zero,
+        icon: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(10)), child: const Icon(CupertinoIcons.chevron_left, color: Colors.white, size: 20)),
+        onPressed: onBack,
+      ),
+      actions: [
+        if (isTeacher) IconButton(
+          padding: EdgeInsets.zero,
+          icon: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(10)), child: const Icon(CupertinoIcons.pencil, color: Colors.white70, size: 18)),
+          onPressed: onEdit,
+        ),
+        const SizedBox(width: 8),
+      ],
+      flexibleSpace: FlexibleSpaceBar(
+        collapseMode: CollapseMode.pin,
+        titlePadding: EdgeInsets.zero,
+        background: Stack(fit: StackFit.expand, children: [
+          Container(decoration: BoxDecoration(gradient: LinearGradient(
+            colors: [const Color(0xFF006475), primary],
+            begin: Alignment.topLeft, end: Alignment.bottomRight,
+          ))),
+          Hero(tag: 'class_cover_$classId', child: cover),
+          Container(decoration: const BoxDecoration(gradient: LinearGradient(
+            begin: Alignment.topCenter, end: Alignment.bottomCenter,
+            stops: [0.0, 0.4, 1.0],
+            colors: [Colors.black38, Colors.transparent, Colors.black54],
+          ))),
+          Positioned(bottom: 16, left: 16, right: 16, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white, shadows: [Shadow(color: Colors.black54, blurRadius: 6)]), maxLines: 2, overflow: TextOverflow.ellipsis),
+            if (desc.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(desc, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+            ],
+            if (isTeacher) ...[
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: () { Clipboard.setData(ClipboardData(text: classCode(classId))); showToast(context, '$codeCopiedLabel: ${classCode(classId)}'); },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(color: adaptivePrimaryLt(context).withValues(alpha: 0.9), borderRadius: BorderRadius.circular(8)),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(CupertinoIcons.doc_on_doc, size: 14, color: primary),
+                    const SizedBox(width: 6),
+                    Text('$codeLabel: ', style: TextStyle(fontSize: 13, color: primary)),
+                    Text(classCode(classId), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: primary, letterSpacing: 2)),
+                  ]),
+                ),
+              ),
+            ],
+          ])),
+        ]),
+      ),
+    );
   }
 }
 

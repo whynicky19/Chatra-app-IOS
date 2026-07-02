@@ -43,20 +43,20 @@ class C {
 
 // ── Shadow helpers ─────────────────────────────────────────
 List<BoxShadow> cardShadow(bool isDark) => [
-  BoxShadow(color: Colors.black.withOpacity(isDark ? 0.28 : 0.07), blurRadius: 20, offset: const Offset(0, 6)),
-  BoxShadow(color: Colors.black.withOpacity(isDark ? 0.12 : 0.03), blurRadius: 4,  offset: const Offset(0, 1)),
+  BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.28 : 0.07), blurRadius: 20, offset: const Offset(0, 6)),
+  BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.12 : 0.03), blurRadius: 4,  offset: const Offset(0, 1)),
 ];
 
 List<BoxShadow> tealGlow({double opacity = 0.38}) => [
-  BoxShadow(color: C.teal.withOpacity(opacity), blurRadius: 22, offset: const Offset(0, 7), spreadRadius: -4),
+  BoxShadow(color: C.teal.withValues(alpha: opacity), blurRadius: 22, offset: const Offset(0, 7), spreadRadius: -4),
 ];
 
 List<BoxShadow> primaryGlow(Color color, {double opacity = 0.38}) => [
-  BoxShadow(color: color.withOpacity(opacity), blurRadius: 22, offset: const Offset(0, 7), spreadRadius: -4),
+  BoxShadow(color: color.withValues(alpha: opacity), blurRadius: 22, offset: const Offset(0, 7), spreadRadius: -4),
 ];
 
 List<BoxShadow> softShadow(bool isDark) => [
-  BoxShadow(color: Colors.black.withOpacity(isDark ? 0.18 : 0.04), blurRadius: 12, offset: const Offset(0, 3)),
+  BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.04), blurRadius: 12, offset: const Offset(0, 3)),
 ];
 
 // ── Adaptive helpers ───────────────────────────────────────
@@ -232,7 +232,7 @@ class AppTheme {
       ),
       textTheme: _textTheme,
       pageTransitionsTheme: _pageTransitions,
-      dividerColor: C.darkBorder.withOpacity(0.5),
+      dividerColor: C.darkBorder.withValues(alpha: 0.5),
     );
   }
 

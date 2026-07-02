@@ -98,7 +98,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFFBEB),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFFBBF24).withOpacity(0.4)),
+                    border: Border.all(color: const Color(0xFFFBBF24).withValues(alpha: 0.4)),
                   ),
                   child: const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Icon(CupertinoIcons.exclamationmark_triangle_fill, size: 15, color: Color(0xFFD97706)),

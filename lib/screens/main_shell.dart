@@ -148,14 +148,14 @@ class _LiquidGlassNavBar extends StatelessWidget {
         boxShadow: [
           // Main depth shadow
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.45 : 0.18),
+            color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.18),
             blurRadius: 36,
             spreadRadius: -6,
             offset: const Offset(0, 14),
           ),
           // Primary ambient glow
           BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withOpacity(isDark ? 0.14 : 0.10),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: isDark ? 0.14 : 0.10),
             blurRadius: 28,
             spreadRadius: -8,
             offset: const Offset(0, 6),
@@ -174,20 +174,20 @@ class _LiquidGlassNavBar extends StatelessWidget {
                 end: Alignment.bottomCenter,
                 colors: isDark
                     ? [
-                        Colors.white.withOpacity(0.07),
-                        Colors.white.withOpacity(0.03),
+                        Colors.white.withValues(alpha: 0.07),
+                        Colors.white.withValues(alpha: 0.03),
                       ]
                     : [
-                        Colors.white.withOpacity(0.58),
-                        Colors.white.withOpacity(0.38),
+                        Colors.white.withValues(alpha: 0.58),
+                        Colors.white.withValues(alpha: 0.38),
                       ],
               ),
               borderRadius: BorderRadius.circular(32),
               // Glass rim
               border: Border.all(
                 color: isDark
-                    ? Colors.white.withOpacity(0.16)
-                    : Colors.white.withOpacity(0.88),
+                    ? Colors.white.withValues(alpha: 0.16)
+                    : Colors.white.withValues(alpha: 0.88),
                 width: 0.8,
               ),
             ),
@@ -200,7 +200,7 @@ class _LiquidGlassNavBar extends StatelessWidget {
                     gradient: LinearGradient(
                       colors: [
                         Colors.transparent,
-                        Colors.white.withOpacity(isDark ? 0.30 : 0.95),
+                        Colors.white.withValues(alpha: isDark ? 0.30 : 0.95),
                         Colors.transparent,
                       ],
                     ),
@@ -275,8 +275,8 @@ class _GlassTabPill extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Theme.of(context).colorScheme.primary.withOpacity(0.82 * progress),
-                  Theme.of(context).colorScheme.secondary.withOpacity(0.68 * progress),
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.82 * progress),
+                  Theme.of(context).colorScheme.secondary.withValues(alpha: 0.68 * progress),
                 ],
               )
             : null,
@@ -284,20 +284,20 @@ class _GlassTabPill extends StatelessWidget {
         // Rim highlight on active pill
         border: progress > 0.01
             ? Border.all(
-                color: Colors.white.withOpacity(0.32 * progress),
+                color: Colors.white.withValues(alpha: 0.32 * progress),
                 width: 0.8,
               )
             : null,
         boxShadow: progress > 0.3
             ? [
                 BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.42 * progress),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.42 * progress),
                   blurRadius: 18,
                   spreadRadius: -3,
                   offset: const Offset(0, 4),
                 ),
                 BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.20 * progress),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.20 * progress),
                   blurRadius: 8,
                   spreadRadius: -1,
                   offset: const Offset(0, 1),
@@ -311,11 +311,11 @@ class _GlassTabPill extends StatelessWidget {
           size: 22,
           color: progress > 0.01
               ? Color.lerp(
-                  isDark ? Colors.white.withOpacity(0.45) : C.text4,
+                  isDark ? Colors.white.withValues(alpha: 0.45) : C.text4,
                   Colors.white,
                   progress,
                 )
-              : (isDark ? Colors.white.withOpacity(0.45) : C.text4),
+              : (isDark ? Colors.white.withValues(alpha: 0.45) : C.text4),
         ),
         if (progress > 0.5) ...[
           SizedBox(width: 6 * progress),

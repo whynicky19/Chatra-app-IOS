@@ -8,7 +8,7 @@ void showToast(BuildContext context, String msg, {bool error = false}) {
     content: Row(children: [
       Container(
         width: 30, height: 30,
-        decoration: BoxDecoration(color: Colors.white.withOpacity(0.18), shape: BoxShape.circle),
+        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), shape: BoxShape.circle),
         child: Icon(
           error ? CupertinoIcons.exclamationmark_circle : CupertinoIcons.checkmark_circle_fill,
           color: Colors.white, size: 17,

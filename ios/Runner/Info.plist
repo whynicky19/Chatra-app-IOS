@@ -76,6 +76,6 @@
     <key>NSCameraUsageDescription</key>
     <string>Доступ к камере нужен, чтобы делать снимки для чата</string>
     <key>NSMicrophoneUsageDescription</key>
-    <string>Доступ к микрофону для голосовых сообщений</string>
+    <string>Доступ к микрофону для голосовых сообщений и записи образца голоса для AI-аватара</string>
 </dict>
 </plist>

@@ -477,6 +477,117 @@ class ApiService {
   Future<void> adminSetAiUnlimited(int userId, bool unlimited) async =>
       _dio.put('/admin/users/$userId/ai_unlimited', data: {'unlimited': unlimited});
 
+  // ── Teacher AI Avatar ────────────────────────────────────────────────────────
+
+  /// Returns the teacher's avatar, or null if none exists yet (backend may
+  /// respond with either a null body or a 404 — both mean "no avatar").
+  Future<Map<String, dynamic>?> getMyAvatar() async {
+    try {
+      final response = await _dio.get('/avatars/me');
+      return response.data is Map<String, dynamic> ? response.data as Map<String, dynamic> : null;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> createMyAvatar({
+    String? displayName,
+    required String photoUrl,
+    required String voiceSampleUrl,
+  }) async {
+    final response = await _dio.post('/avatars/me', data: {
+      if (displayName != null && displayName.isNotEmpty) 'display_name': displayName,
+      'photo_url': photoUrl,
+      'voice_sample_url': voiceSampleUrl,
+    });
+    return response.data;
+  }
+
+  // ── Avatar lectures ──────────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> createAvatarLecture({
+    required int classId,
+    required String title,
+    required String sourceFileUrl,
+    String? sourceFilename,
+    required int durationMinutes,
+    required String style,
+    required bool autoSummary,
+  }) async {
+    final response = await _dio.post('/avatars/lectures', data: {
+      'class_id': classId,
+      'title': title,
+      'source_file_url': sourceFileUrl,
+      if (sourceFilename != null) 'source_filename': sourceFilename,
+      'duration_minutes': durationMinutes,
+      'style': style,
+      'auto_summary': autoSummary,
+    });
+    return response.data;
+  }
+
+  Future<List<dynamic>> getMyAvatarLectures() async {
+    final response = await _dio.get('/avatars/lectures/mine');
+    final data = response.data;
+    if (data is List) return data;
+    if (data is Map && data['items'] is List) return data['items'] as List;
+    return [];
+  }
+
+  Future<List<dynamic>> getClassAvatarLectures(int classId) async {
+    final response = await _dio.get('/avatars/lectures/class/$classId');
+    final data = response.data;
+    if (data is List) return data;
+    if (data is Map && data['items'] is List) return data['items'] as List;
+    return [];
+  }
+
+  Future<Map<String, dynamic>> getAvatarLectureFull(int id) async {
+    final response = await _dio.get('/avatars/lectures/$id/full');
+    return response.data;
+  }
+
+  Future<void> deleteAvatarLecture(int id) async => _dio.delete('/avatars/lectures/$id');
+
+  // ── Admin: avatar moderation ─────────────────────────────────────────────────
+
+  Future<List<dynamic>> adminAvatars({String? status}) async {
+    final params = <String, dynamic>{};
+    if (status != null) params['status'] = status;
+    final response = await _dio.get('/admin/avatars', queryParameters: params);
+    final data = response.data;
+    if (data is List) return data;
+    if (data is Map && data['items'] is List) return data['items'] as List;
+    return [];
+  }
+
+  Future<void> adminReviewAvatar(int id, {required bool approve, String? rejectionReason}) async {
+    await _dio.post('/admin/avatars/$id/review', data: {
+      'approve': approve,
+      if (rejectionReason != null) 'rejection_reason': rejectionReason,
+    });
+  }
+
+  Future<void> adminDeleteAvatar(int id) async => _dio.delete('/admin/avatars/$id');
+
+  Future<List<dynamic>> adminAvatarLectures({String? status}) async {
+    final params = <String, dynamic>{};
+    if (status != null) params['status'] = status;
+    final response = await _dio.get('/admin/avatar-lectures', queryParameters: params);
+    final data = response.data;
+    if (data is List) return data;
+    if (data is Map && data['items'] is List) return data['items'] as List;
+    return [];
+  }
+
+  Future<void> adminReviewAvatarLecture(int id, {required bool approve, String? rejectionReason}) async {
+    await _dio.post('/admin/avatar-lectures/$id/review', data: {
+      'approve': approve,
+      if (rejectionReason != null) 'rejection_reason': rejectionReason,
+    });
+  }
+
   // ── Reactions ─────────────────────────────────────────────────────────────────
 
   Future<void> addReaction(int msgId, String emoji) async =>

@@ -23,6 +23,7 @@ import '../../widgets/toast.dart';
 import 'tabs/class_posts_tab.dart';
 import 'tabs/class_assignments_tab.dart';
 import 'tabs/class_ai_tab.dart';
+import 'tabs/class_avatar_tab.dart';
 
 class ClassDetailScreen extends StatefulWidget {
   final int classId;
@@ -45,24 +46,30 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   String _title = '';
   List<dynamic> _lectures = [];
   List<dynamic> _materials = [];
-  bool _loading = true, _loadingAsg = false, _aiTabActive = false;
+  bool _loading = true, _loadingAsg = false, _aiTabActive = false, _avatarTabActive = false;
   bool _coverPrecached = false;
   // Cached cover header widget — see build() for why it is memoized.
   Widget? _headerCache;
   String _headerSig = '';
+  // Populated lazily by ClassAvatarTab once it first loads — null means "not known yet".
+  int? _avatarLectureCount;
 
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 4, vsync: this, initialIndex: widget.initialTab);
+    _tabCtrl = TabController(length: 5, vsync: this, initialIndex: widget.initialTab);
     _aiTabActive = widget.initialTab == 3;
+    _avatarTabActive = widget.initialTab == 4;
     _tabCtrl.addListener(() {
       if (_tabCtrl.index == 2 && _assignments.isEmpty) _loadAssignments();
       if (_tabCtrl.indexIsChanging) {
         HapticFeedback.selectionClick();
       } else {
         final isAi = _tabCtrl.index == 3;
-        if (_aiTabActive != isAi) setState(() => _aiTabActive = isAi);
+        final isAvatar = _tabCtrl.index == 4;
+        if (_aiTabActive != isAi || _avatarTabActive != isAvatar) {
+          setState(() { _aiTabActive = isAi; _avatarTabActive = isAvatar; });
+        }
       }
     });
     _load();
@@ -443,10 +450,12 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   Tab(icon: const Icon(CupertinoIcons.square_stack_3d_down_right, size: 19), iconMargin: const EdgeInsets.only(bottom: 3), text: l.t('materials'), height: 58),
                   Tab(icon: const Icon(CupertinoIcons.list_bullet, size: 19), iconMargin: const EdgeInsets.only(bottom: 3), text: l.t('assignments'), height: 58),
                   Tab(icon: const Icon(CupertinoIcons.sparkles, size: 19), iconMargin: const EdgeInsets.only(bottom: 3), text: l.t('ai_chat'), height: 58),
+                  Tab(icon: const Icon(CupertinoIcons.person_crop_rectangle, size: 19), iconMargin: const EdgeInsets.only(bottom: 3),
+                    text: _avatarLectureCount != null ? '${l.t('avatar')} ($_avatarLectureCount)' : l.t('avatar'), height: 58),
                 ],
               ),
               if (auth.isTeacher) AnimatedBuilder(animation: _tabCtrl, builder: (ctx, _) {
-                if (_tabCtrl.index == 3) return const SizedBox.shrink();
+                if (_tabCtrl.index == 3 || _tabCtrl.index == 4) return const SizedBox.shrink();
                 return Padding(
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
                   child: Row(children: [
@@ -513,6 +522,14 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   onOpenFile: (url, name) => _openFileViewer(context, url, name),
                 ),
                 _aiTab(),
+                ClassAvatarTab(
+                  classId: widget.classId,
+                  isTeacher: auth.isTeacher,
+                  isActive: _avatarTabActive,
+                  onLecturesChanged: (count) {
+                    if (mounted && _avatarLectureCount != count) setState(() => _avatarLectureCount = count);
+                  },
+                ),
               ]),
           ),
         ]),

@@ -303,7 +303,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     try {
       final dir = await getTemporaryDirectory();
       final safeFileName = name.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
-      final filePath = '${dir.path}/$safeFileName';
+      final filePath = '${dir.path}/${cleanUrl.hashCode.toRadixString(16)}_$safeFileName';
       final file = File(filePath);
 
       // Use cached version if it exists

@@ -49,13 +49,20 @@ class ClassesProvider extends ChangeNotifier {
   Future<void> loadJoined() async {
     final uid = _auth.userId ?? 0;
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final list = prefs.getStringList('joined_classes_$uid') ?? [];
-      joinedClassIds = list.map(int.parse).toSet();
+      final list = await _api.getClasses();
+      joinedClassIds = list.map((c) => (c['id'] as num).toInt()).toSet();
       notifyListeners();
+      await _saveJoined();
     } catch (e) {
-      errorMessage = 'Ошибка загрузки сохранённых классов: $e';
-      notifyListeners();
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final list = prefs.getStringList('joined_classes_$uid') ?? [];
+        joinedClassIds = list.map(int.parse).toSet();
+        notifyListeners();
+      } catch (e2) {
+        errorMessage = 'Ошибка загрузки сохранённых классов: $e2';
+        notifyListeners();
+      }
     }
   }
 
@@ -76,10 +83,12 @@ class ClassesProvider extends ChangeNotifier {
   Future<void> joinClass(int id) async {
     joinedClassIds.add(id);
     notifyListeners();
-    await _saveJoined();
     try {
-      await _api.enrollPostClass(id);
+      await _api.joinClass(id);
+      try { await _api.enrollPostClass(id); } catch (_) {}
+      await _saveJoined();
     } catch (e) {
+      joinedClassIds.remove(id);
       errorMessage = 'Ошибка при вступлении в класс: $e';
       notifyListeners();
     }
@@ -88,10 +97,12 @@ class ClassesProvider extends ChangeNotifier {
   Future<void> leaveClass(int id) async {
     joinedClassIds.remove(id);
     notifyListeners();
-    await _saveJoined();
     try {
-      await _api.leavePostClass(id);
+      await _api.leaveClass(id);
+      try { await _api.leavePostClass(id); } catch (_) {}
+      await _saveJoined();
     } catch (e) {
+      joinedClassIds.add(id);
       errorMessage = 'Ошибка при выходе из класса: $e';
       notifyListeners();
     }

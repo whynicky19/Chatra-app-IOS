@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../providers/auth_provider.dart';
+import '../providers/chats_provider.dart';
 import '../providers/l10n_provider.dart';
 import '../theme/app_theme.dart';
 import 'home/home_screen.dart';
@@ -20,6 +21,8 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
+  static const _chatsTabIndex = 1;
+
   int _idx = 0;
   late AnimationController _navAnim;
 
@@ -31,6 +34,7 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
     super.initState();
     _navAnim = AnimationController(vsync: this, duration: const Duration(milliseconds: 950));
     _navAnim.forward();
+    context.read<ChatsProvider>().isScreenVisible = _idx == _chatsTabIndex;
 
     Connectivity().checkConnectivity().then((results) {
       if (mounted) setState(() => _isOnline = _online(results));
@@ -53,6 +57,7 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
   void _onTap(int i) {
     if (_idx == i) return;
     HapticFeedback.lightImpact();
+    context.read<ChatsProvider>().isScreenVisible = i == _chatsTabIndex;
     setState(() => _idx = i);
   }
 

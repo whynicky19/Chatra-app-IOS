@@ -92,7 +92,10 @@ class ApiService {
         }
 
         // Retry on network errors (no response) and 5xx server errors.
-        final isRetryable = error.type != DioExceptionType.badResponse || status >= 500;
+        // Only for GET: retrying POST/PUT/DELETE risks duplicating non-idempotent
+        // requests (sendMessage, createPost, submitAssignment, etc.).
+        final isRetryable = (error.type != DioExceptionType.badResponse || status >= 500) &&
+            error.requestOptions.method == 'GET';
         final attempt = (error.requestOptions.extra['_retry'] ?? 0) as int;
 
         if (isRetryable && attempt < 3) {
@@ -344,7 +347,8 @@ class ApiService {
 
   Future<Map<String, dynamic>> aiGrade(int submissionId) async {
     try {
-      final response = await _dio.post('/submissions/$submissionId/ai-grade');
+      final response = await _dio.post('/submissions/$submissionId/ai-grade',
+          options: Options(receiveTimeout: const Duration(minutes: 2)));
       return response.data;
     } on DioException catch (e) {
       final detail = (e.response?.data is Map) ? e.response!.data['detail']?.toString() : null;
@@ -415,7 +419,8 @@ class ApiService {
     };
     if (classId != null) data['class_id'] = classId;
     if (lectureContext != null) data['lecture_context'] = lectureContext;
-    final response = await _dio.post('/ai/chat', data: data);
+    final response = await _dio.post('/ai/chat', data: data,
+        options: Options(receiveTimeout: const Duration(minutes: 2), sendTimeout: const Duration(seconds: 30)));
     return response.data;
   }
 

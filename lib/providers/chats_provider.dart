@@ -12,7 +12,7 @@ import 'auth_provider.dart';
 // Calls [onFallbackNeeded] after 3 failed connection attempts without ever
 // succeeding — meaning the server doesn't speak WS on that endpoint.
 class _ChatWsManager {
-  final String wsUrl;
+  final String? Function() urlBuilder;
   final void Function(Map<String, dynamic>) onMessage;
   final VoidCallback onFallbackNeeded;
 
@@ -30,7 +30,7 @@ class _ChatWsManager {
   bool get isConnected => _isConnected;
 
   _ChatWsManager({
-    required this.wsUrl,
+    required this.urlBuilder,
     required this.onMessage,
     required this.onFallbackNeeded,
   });
@@ -41,6 +41,13 @@ class _ChatWsManager {
     _reconnectTimer?.cancel();
     _sub?.cancel();
     try { _channel?.sink.close(); } catch (_) {}
+
+    final wsUrl = urlBuilder();
+    if (wsUrl == null) {
+      // No token yet (e.g. between refreshes) — retry shortly instead of failing out.
+      _reconnectTimer = Timer(const Duration(seconds: 3), connect);
+      return;
+    }
 
     try {
       _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
@@ -119,6 +126,9 @@ class ChatsProvider extends ChangeNotifier {
   Map<int, List<dynamic>> chatUsers = {};
   int? activeChatId;
   bool loading = true;
+  // Set by the host screen: true while the chats tab is on-screen and the app
+  // is foregrounded — background polling is skipped otherwise.
+  bool isScreenVisible = true;
   List<dynamic> searchResults = [];
   final Map<int, int> lastSeenMsgId = {};
   String? errorMessage;
@@ -189,7 +199,7 @@ class ChatsProvider extends ChangeNotifier {
       chats = await _api.getChats();
       // Load users + messages for all chats in parallel instead of sequentially.
       await Future.wait(chats.map((c) async {
-        final id = c['id'] as int;
+        final id = (c['id'] as num).toInt();
         await Future.wait([
           () async {
             try {
@@ -217,23 +227,20 @@ class ChatsProvider extends ChangeNotifier {
   // Used by the screen's background timer for unread-badge updates.
   // Skips the active chat when WS is handling it live.
   Future<void> pollMessages() async {
+    if (!isScreenVisible) return;
+    // Background polling errors (e.g. offline) are swallowed — surfacing them
+    // as toasts would spam the user for a poll they didn't trigger.
     try {
       for (final c in chats) {
-        final id = c['id'] as int;
+        final id = (c['id'] as num).toInt();
         // Skip the chat that WS is already streaming.
         if (id == activeChatId && (_wsManager?.isConnected ?? false)) continue;
         try {
           messages[id] = await _api.getMessages(id);
           notifyListeners();
-        } catch (e) {
-          errorMessage = 'Ошибка опроса сообщений: $e';
-          notifyListeners();
-        }
+        } catch (_) {}
       }
-    } catch (e) {
-      errorMessage = 'Ошибка обновления чатов: $e';
-      notifyListeners();
-    }
+    } catch (_) {}
   }
 
   // ── Messaging ─────────────────────────────────────────────────────────────────
@@ -313,7 +320,7 @@ class ChatsProvider extends ChangeNotifier {
           users.any((u) => u['id'] == _auth.userId)) {
         searchResults = [];
         activeChatId = c['id'];
-        _connectWs(c['id'] as int);
+        _connectWs((c['id'] as num).toInt());
         notifyListeners();
         return true;
       }
@@ -324,7 +331,7 @@ class ChatsProvider extends ChangeNotifier {
       searchResults = [];
       await loadChats();
       activeChatId = chat['id'];
-      _connectWs(chat['id'] as int);
+      _connectWs((chat['id'] as num).toInt());
       notifyListeners();
       return true;
     } catch (e) {
@@ -366,7 +373,8 @@ class ChatsProvider extends ChangeNotifier {
   void markSeen(int chatId) {
     final msgs = messages[chatId] ?? [];
     if (msgs.isNotEmpty) {
-      lastSeenMsgId[chatId] = msgs.last['id'] as int;
+      final id = (msgs.last['id'] as num?)?.toInt();
+      if (id != null) lastSeenMsgId[chatId] = id;
     }
     notifyListeners();
     saveSeenMsgIds();
@@ -379,11 +387,12 @@ class ChatsProvider extends ChangeNotifier {
     _stopFallbackPoller();
     _typingTimestamps.clear();
 
-    final token = _api.token;
-    if (token == null) return;
-
     _wsManager = _ChatWsManager(
-      wsUrl: '${_api.wsBaseUrl}/ws/chat/$chatId?token=$token',
+      urlBuilder: () {
+        final token = _api.token;
+        if (token == null) return null;
+        return '${_api.wsBaseUrl}/ws/chat/$chatId?token=$token';
+      },
       onMessage: (data) => _handleWsMessage(chatId, data),
       onFallbackNeeded: () => _startFallbackPoller(chatId),
     );
@@ -455,8 +464,8 @@ class ChatsProvider extends ChangeNotifier {
   List<dynamic> get sortedChats {
     final sorted = List<dynamic>.from(chats);
     sorted.sort((a, b) {
-      final aMsgs = messages[a['id'] as int] ?? [];
-      final bMsgs = messages[b['id'] as int] ?? [];
+      final aMsgs = messages[(a['id'] as num).toInt()] ?? [];
+      final bMsgs = messages[(b['id'] as num).toInt()] ?? [];
       if (aMsgs.isEmpty && bMsgs.isEmpty) return 0;
       if (aMsgs.isEmpty) return 1;
       if (bMsgs.isEmpty) return -1;
@@ -506,6 +515,6 @@ class ChatsProvider extends ChangeNotifier {
     if (last['user_id'] == _auth.userId) return false;
     final lastSeenId = lastSeenMsgId[id];
     if (lastSeenId == null) return true;
-    return (last['id'] as int) > lastSeenId;
+    return ((last['id'] as num?)?.toInt() ?? 0) > lastSeenId;
   }
 }

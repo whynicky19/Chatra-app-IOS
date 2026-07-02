@@ -19,7 +19,7 @@ class ChatsScreen extends StatefulWidget {
   @override State<ChatsScreen> createState() => _ChatsScreenState();
 }
 
-class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin {
+class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin, WidgetsBindingObserver {
   final _searchCtrl = TextEditingController();
   final _msgCtrl = TextEditingController();
   // Background timer: refreshes unread badges for the chat list.
@@ -45,23 +45,42 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
     Color(0xFF64748B),
   ];
 
+  late final ChatsProvider _chatsProvider = context.read<ChatsProvider>();
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _listAnim = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
     _replyAnim = AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
-    final provider = context.read<ChatsProvider>();
+    final provider = _chatsProvider;
     provider.addListener(_onProviderError);
     provider.loadSeenMsgIds().then((_) => provider.loadChats());
-    // Background poll for unread counts while browsing the chat list.
-    // Skips the WS-active chat automatically inside pollMessages().
+    _startBgPoller();
+  }
+
+  // Background poll for unread counts while browsing the chat list.
+  // Skips the WS-active chat automatically inside pollMessages().
+  void _startBgPoller() {
+    _bgPoller?.cancel();
     _bgPoller = Timer.periodic(const Duration(seconds: 10), (_) {
-      context.read<ChatsProvider>().pollMessages();
+      _chatsProvider.pollMessages();
     });
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _bgPoller?.cancel();
+      _bgPoller = null;
+    } else if (state == AppLifecycleState.resumed) {
+      _startBgPoller();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _bgPoller?.cancel();
     _searchDebounce?.cancel();
     _listAnim.dispose();
@@ -69,7 +88,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
     _chatScrollCtrl.dispose();
     _msgCtrl.dispose();
     _searchCtrl.dispose();
-    context.read<ChatsProvider>().removeListener(_onProviderError);
+    _chatsProvider.removeListener(_onProviderError);
     super.dispose();
   }
 

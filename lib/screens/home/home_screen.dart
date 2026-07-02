@@ -32,6 +32,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   bool _showDragHint = false;
   late AnimationController _headerCtrl;
   late Animation<double> _headerAnim;
+  late final ClassesProvider _classesProvider = context.read<ClassesProvider>();
 
   @override
   void initState() {
@@ -39,7 +40,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     _headerCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
     _headerAnim = CurvedAnimation(parent: _headerCtrl, curve: Curves.easeOutCubic);
     _headerCtrl.forward();
-    final provider = context.read<ClassesProvider>();
+    final provider = _classesProvider;
     provider.addListener(_onProviderError);
     // loadJoined (reads SharedPreferences) and load (fetches posts) are independent — run in parallel.
     provider.loadJoined();
@@ -51,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   void dispose() {
     _headerCtrl.dispose();
-    context.read<ClassesProvider>().removeListener(_onProviderError);
+    _classesProvider.removeListener(_onProviderError);
     super.dispose();
   }
 
@@ -611,7 +612,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           ])),
         );
       }),
-    );
+    ).then((_) {
+      for (final c in controllers) { c.dispose(); }
+      for (final f in focusNodes) { f.dispose(); }
+    });
   }
 
   // ── Create class dialog ──────────────────────────────────────────────────────
@@ -688,7 +692,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ])),
           ]),
         ),
-      )));
+      ))).then((_) {
+      nameC.dispose();
+      descC.dispose();
+      teacherC.dispose();
+      groupC.dispose();
+      periodC.dispose();
+    });
   }
 
   Widget _fl3(String s) => Padding(padding: const EdgeInsets.only(bottom: 8),

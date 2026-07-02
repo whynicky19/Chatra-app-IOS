@@ -713,13 +713,15 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               setS(() => busy = true);
               try {
                 await context.read<ApiService>().retractSubmission(sub['id']);
-                Navigator.pop(ctx);
-                showToast(context, 'Сдача отозвана — можно отправить заново');
-                widget.onRefresh();
+                if (mounted && ctx.mounted) {
+                  Navigator.pop(ctx);
+                  showToast(context, 'Сдача отозвана — можно отправить заново');
+                  widget.onRefresh();
+                }
               } catch (_) {
-                showToast(context, 'Ошибка', error: true);
+                if (mounted && ctx.mounted) showToast(context, 'Ошибка', error: true);
               }
-              setS(() => busy = false);
+              if (ctx.mounted) setS(() => busy = false);
             },
             child: Container(padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
@@ -788,13 +790,15 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                   if (tc.text.trim().isNotEmpty) 'text_content': tc.text.trim(),
                   if (fileUrls.isNotEmpty) 'file_urls': fileUrls,
                 });
-                Navigator.pop(ctx);
-                showToast(context, 'Работа отправлена!');
-                widget.onRefresh();
+                if (mounted && ctx.mounted) {
+                  Navigator.pop(ctx);
+                  showToast(context, 'Работа отправлена!');
+                  widget.onRefresh();
+                }
               } catch (_) {
-                showToast(context, 'Ошибка отправки', error: true);
+                if (mounted && ctx.mounted) showToast(context, 'Ошибка отправки', error: true);
               }
-              setS(() => busy = false);
+              if (ctx.mounted) setS(() => busy = false);
             },
             child: busy ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : Text('Отправить'),
           )),
@@ -822,9 +826,13 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     CupertinoDialogAction(isDestructiveAction: true, onPressed: () => Navigator.pop(d, true), child: const Text('Удалить')),
                   ],
                 ));
-                if (ok == true) {
-                  try { await context.read<ApiService>().deleteAssignment(a['id']); widget.onRefresh(); showToast(context, 'Задание удалено'); }
-                  catch (_) { showToast(context, 'Ошибка', error: true); }
+                if (ok == true && mounted) {
+                  try {
+                    await context.read<ApiService>().deleteAssignment(a['id']);
+                    if (mounted) { widget.onRefresh(); showToast(context, 'Задание удалено'); }
+                  } catch (_) {
+                    if (mounted) showToast(context, 'Ошибка', error: true);
+                  }
                 }
               },
               style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12), side: BorderSide(color: C.red.withValues(alpha: 0.5))),
@@ -960,10 +968,13 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                       setS(() => grading = true);
                       try {
                         await context.read<ApiService>().aiGrade(selectedSub['id']);
+                        if (!mounted || !ctx.mounted) return;
                         final updated = await context.read<ApiService>().getSubmission(selectedSub['id']);
+                        if (!mounted || !ctx.mounted) return;
                         setS(() { selectedSub = updated; grading = false; });
                         showToast(context, 'Переоценено!');
                       } catch (e) {
+                        if (!mounted || !ctx.mounted) return;
                         setS(() => grading = false);
                         final msg = e.toString().contains('criteria') ? 'Нет критериев оценивания' : 'Ошибка оценки';
                         showToast(context, msg, error: true);
@@ -989,10 +1000,13 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                       setS(() => grading = true);
                       try {
                         await context.read<ApiService>().aiGrade(selectedSub['id']);
+                        if (!mounted || !ctx.mounted) return;
                         final updated = await context.read<ApiService>().getSubmission(selectedSub['id']);
+                        if (!mounted || !ctx.mounted) return;
                         setS(() { selectedSub = updated; grading = false; });
                         showToast(context, 'Оценено!');
                       } catch (e) {
+                        if (!mounted || !ctx.mounted) return;
                         setS(() => grading = false);
                         final msg = e.toString().contains('criteria') ? 'Нет критериев оценивания' : 'Ошибка оценки';
                         showToast(context, msg, error: true);
@@ -1035,15 +1049,17 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                       for (final s in ungraded) {
                         try {
                           await context.read<ApiService>().aiGrade(s['id']);
+                          if (!mounted || !ctx.mounted) return;
                           setS(() => gradingDone++);
                         } catch (_) {}
                       }
+                      if (!mounted || !ctx.mounted) return;
                       try {
                         final updated = await context.read<ApiService>().getSubmissions(aId);
                         subs.clear();
                         subs.addAll(updated);
                       } catch (_) {}
-                      setS(() { gradingAll = false; });
+                      if (mounted && ctx.mounted) setS(() { gradingAll = false; });
                       if (mounted) showToast(context, 'Проверено $gradingDone из $gradingTotal');
                     },
                     style: ElevatedButton.styleFrom(

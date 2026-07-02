@@ -901,8 +901,8 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           onPressed: () async {
             try {
               await context.read<ApiService>().adminCreateUser(emailCtrl.text.trim(), pwCtrl.text, role);
-              if (mounted) { Navigator.pop(ctx); showToast(context, l.t('created')); _load(); }
-            } catch (_) { if (mounted) showToast(context, l.t('error'), error: true); }
+              if (mounted && ctx.mounted) { Navigator.pop(ctx); showToast(context, l.t('created')); _load(); }
+            } catch (_) { if (mounted && ctx.mounted) showToast(context, l.t('error'), error: true); }
           },
           child: const Text('Создать'),
         ),

@@ -83,6 +83,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       () async { try { mySubs = await api.getMySubmissions(); } catch (_) {} }(),
       () async { try { posts = await api.getPosts(); } catch (_) {} }(),
     ]);
+    if (!mounted) return;
 
     // Build class name map from posts and collect existing class IDs
     final classNames = <int, String>{};

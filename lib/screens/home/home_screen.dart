@@ -205,7 +205,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 GestureDetector(
                   onTap: () async {
                     await Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()));
-                    if (!mounted) return;
+                    if (!context.mounted) return;
                     context.read<ClassesProvider>().loadNotifBadge();
                   },
                   child: Stack(children: [
@@ -317,11 +317,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     onLongPress: () { HapticFeedback.heavyImpact(); _showContextMenu(cls); },
                     onDelete: () async {
                       await context.read<ClassesProvider>().deleteClass(id);
-                      if (mounted) showToast(context, context.read<L10n>().t('class_deleted'));
+                      if (context.mounted) showToast(context, context.read<L10n>().t('class_deleted'));
                     },
                     onLeave: () async {
                       await context.read<ClassesProvider>().leaveClass(id);
-                      if (mounted) showToast(context, context.read<L10n>().t('left_class'));
+                      if (context.mounted) showToast(context, context.read<L10n>().t('left_class'));
                     },
                     onCopyCode: () {
                       Clipboard.setData(ClipboardData(text: classCode(id)));
@@ -663,12 +663,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       'group': groupC.text.trim(), 'period': periodC.text.trim(),
                       if (coverB64 != null) 'cover_image': coverB64,
                     }));
-                    if (!mounted) return;
+                    if (!mounted || !ctx.mounted) return;
                     Navigator.pop(ctx);
                     showToast(context, l.t('class_created'));
                   } catch (_) {
-                    if (!mounted) return;
-                    showToast(context, l.t('error'), error: true);
+                    if (mounted) showToast(context, l.t('error'), error: true);
                   }
                 },
                 child: Text(l.t('create')))),
@@ -969,9 +968,7 @@ class _ClassCard extends StatelessWidget {
                   // Always-visible gradient — prevents grey flash when image remounts
                   Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight))),
                   if (coverImg != null)
-                    Hero(
-                      tag: 'class_cover_$id',
-                      child: coverImg.toString().startsWith('data:')
+                    coverImg.toString().startsWith('data:')
                         ? Builder(builder: (_) {
                             final bytes = decodeBase64Image(coverImg.toString());
                             return bytes != null
@@ -986,7 +983,6 @@ class _ClassCard extends StatelessWidget {
                             fadeInDuration: Duration.zero,
                             fadeOutDuration: Duration.zero,
                           ),
-                    ),
                   // Bottom gradient
                   Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                     begin: Alignment.topCenter, end: Alignment.bottomCenter,

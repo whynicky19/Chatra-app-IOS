@@ -26,8 +26,21 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.1
+  flutter_launcher_icons: ^0.14.1
 flutter:
   uses-material-design: true
   assets:
     - assets/logo-icon.png
     - assets/logo.png
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo.png"
+  # iOS forbids alpha in the app icon — flatten onto a white background.
+  image_path_ios: "assets/logo.png"
+  remove_alpha_ios: true
+  background_color_ios: "#FFFFFF"
+  min_sdk_android: 21
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/logo.png"

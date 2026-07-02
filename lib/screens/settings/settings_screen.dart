@@ -146,7 +146,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 child: ElevatedButton(
                   onPressed: () async {
                     await auth.updateProfile(_nameCtrl.text.trim());
-                    if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+                    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text(l.t('saved')), backgroundColor: primary));
                   },
                   child: Text(l.t('save_changes')),

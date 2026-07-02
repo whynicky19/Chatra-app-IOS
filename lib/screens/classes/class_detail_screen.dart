@@ -216,6 +216,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     final api = context.read<ApiService>();
     try {
       _assignments = await api.getAssignments(classId: widget.classId);
+      if (!mounted) return;
       if (!context.read<AuthProvider>().isTeacher) {
         try { _mySubs = await api.getMySubmissions(); } catch (_) {}
       }
@@ -287,6 +288,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
 
       // Use cached version if it exists
       if (!await file.exists()) {
+        if (!mounted || cancelled) return;
         final api = context.read<ApiService>();
         await api.dio.download(
           cleanUrl,
@@ -560,7 +562,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             GestureDetector(
               onTap: () async {
                 final result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
-                if (result != null) {
+                if (result != null && mounted) {
                   final api = context.read<ApiService>();
                   for (final pf in result.files) {
                     if (pf.path != null) {
@@ -587,9 +589,9 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     'content': cc.text,
                     if (editFiles.isNotEmpty) 'files': editFiles,
                   }));
-                  if (!ctx.mounted) return;
+                  if (!mounted || !ctx.mounted) return;
                   Navigator.pop(ctx); _load(); showToast(context, 'Сохранено');
-                } catch (_) { if (ctx.mounted) showToast(context, 'Ошибка', error: true); }
+                } catch (_) { if (mounted && ctx.mounted) showToast(context, 'Ошибка', error: true); }
               }, child: Text('Сохранить'))),
             ]),
           ])));
@@ -924,9 +926,9 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     'content': cc.text,
                     if (fileUrls.isNotEmpty) 'files': fileUrls,
                   }));
-                  if (!ctx.mounted) return;
+                  if (!mounted || !ctx.mounted) return;
                   Navigator.pop(ctx); _load(); showToast(context, 'Опубликовано');
-                } catch (_) { if (ctx.mounted) showToast(context, 'Ошибка', error: true); }
+                } catch (_) { if (mounted && ctx.mounted) showToast(context, 'Ошибка', error: true); }
               })),
           ]),
         ])))).then((_) { tc.dispose(); cc.dispose(); });
@@ -966,7 +968,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           _fieldLabel2('ДЕДЛАЙН'),
           GestureDetector(onTap: () async {
             final d = await showDatePicker(context: ctx, initialDate: DateTime.now().add(Duration(days: 7)), firstDate: DateTime.now(), lastDate: DateTime.now().add(Duration(days: 365)));
-            if (d != null) {
+            if (d != null && ctx.mounted) {
               final t = await showTimePicker(context: ctx, initialTime: TimeOfDay(hour: 23, minute: 59));
               setS(() => deadline = DateTime(d.year, d.month, d.day, t?.hour ?? 23, t?.minute ?? 59));
             }
@@ -1093,6 +1095,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     }
                   }
 
+                  if (!mounted) return;
                   // Нормализуем URL: localhost → реальный сервер
                   final fixedUrls = fileUrls.map(context.read<ApiService>().fixUrl).toList();
 
@@ -1119,14 +1122,14 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     if (deadline != null) 'deadline': deadline!.toIso8601String(),
                   });
 
-                  if (!ctx.mounted) return;
+                  if (!mounted || !ctx.mounted) return;
                   Navigator.pop(ctx);
                   _loadAssignments();
                   showToast(context, fileUrls.isNotEmpty
                       ? 'Задание создано (${fileUrls.length} файл)'
                       : 'Задание создано');
                 } catch (e) {
-                  if (ctx.mounted) showToast(context, 'Ошибка: $e', error: true);
+                  if (mounted && ctx.mounted) showToast(context, 'Ошибка: $e', error: true);
                 }
               })),
           ]),
@@ -1188,7 +1191,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           _fieldLabel2('ДЕДЛАЙН'),
           GestureDetector(onTap: () async {
             final d = await showDatePicker(context: ctx, initialDate: deadline ?? DateTime.now().add(Duration(days: 7)), firstDate: DateTime.now().subtract(Duration(days: 1)), lastDate: DateTime.now().add(Duration(days: 365)));
-            if (d != null) {
+            if (d != null && ctx.mounted) {
               final t = await showTimePicker(context: ctx, initialTime: TimeOfDay(hour: deadline?.hour ?? 23, minute: deadline?.minute ?? 59));
               setS(() => deadline = DateTime(d.year, d.month, d.day, t?.hour ?? 23, t?.minute ?? 59));
             }
@@ -1291,6 +1294,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                       } catch (_) {}
                     }
                   }
+                  if (!mounted) return;
                   // Фиксируем URL (localhost → реальный сервер) и объединяем
                   final fixedNewUrls = uploadedUrls.map(context.read<ApiService>().fixUrl).toList();
                   final fixedKeepUrls = keepUrls.map(context.read<ApiService>().fixUrl).toList();
@@ -1315,9 +1319,9 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     'criteria': finalCriteria,
                     if (deadline != null) 'deadline': deadline!.toIso8601String(),
                   });
-                  if (!ctx.mounted) return;
+                  if (!mounted || !ctx.mounted) return;
                   Navigator.pop(ctx); _loadAssignments(); showToast(context, 'Задание обновлено');
-                } catch (e) { if (ctx.mounted) showToast(context, 'Ошибка: $e', error: true); }
+                } catch (e) { if (mounted && ctx.mounted) showToast(context, 'Ошибка: $e', error: true); }
               },
             )),
           ]),
@@ -1406,9 +1410,9 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   if (newCoverBase64 != null) body['cover_image'] = newCoverBase64;
                   else body.remove('cover_image');
                   await context.read<ApiService>().updatePost(widget.classId, tc.text.trim(), jsonEncode(body));
-                  if (!ctx.mounted) return;
+                  if (!mounted || !ctx.mounted) return;
                   Navigator.pop(ctx); _load(); showToast(context, 'Класс обновлён');
-                } catch (_) { if (ctx.mounted) showToast(context, 'Ошибка', error: true); }
+                } catch (_) { if (mounted && ctx.mounted) showToast(context, 'Ошибка', error: true); }
               },
               child: Text('Сохранить'),
             )),
@@ -1509,7 +1513,7 @@ class _ClassCoverSliver extends StatelessWidget {
             colors: [const Color(0xFF006475), primary],
             begin: Alignment.topLeft, end: Alignment.bottomRight,
           ))),
-          Hero(tag: 'class_cover_$classId', child: cover),
+          cover,
           Container(decoration: const BoxDecoration(gradient: LinearGradient(
             begin: Alignment.topCenter, end: Alignment.bottomCenter,
             stops: [0.0, 0.4, 1.0],

@@ -71,12 +71,14 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
         ..._msgs.map((m) => {'role': m['role']!, 'content': m['text']!}),
       ];
       final data = await api.aiChat(apiMsgs);
+      if (!mounted) return;
       setState(() => _msgs.add({'role': 'assistant', 'text': data['content'] ?? context.read<L10n>().t('no_answer')}));
     } catch (e) {
+      if (!mounted) return;
       final l = context.read<L10n>();
       setState(() => _msgs.add({'role': 'assistant', 'text': e.toString().contains('503') ? l.t('ai_not_configured') : l.t('connection_error')}));
     }
-    setState(() => _loading = false);
+    if (mounted) setState(() => _loading = false);
     _scrollDown();
   }
 

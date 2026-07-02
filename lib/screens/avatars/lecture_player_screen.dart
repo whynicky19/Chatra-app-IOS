@@ -37,6 +37,17 @@ class _LecturePlayerScreenState extends State<LecturePlayerScreen> {
   Duration _duration = Duration.zero;
   final Map<int, double> _slideProgress = {}; // 0..1 per slide index, 1 = fully watched
 
+  // Guards against the classic "skips a slide" race: if the natural
+  // completion handler and a manual prev/next tap both try to advance at
+  // once, the delayed auto-advance re-reads a `_slideIndex` that a manual
+  // tap already moved on, and ends up jumping one slide further than
+  // intended. Every navigation bumps `_navGen`; a stale in-flight call
+  // (whether the delayed auto-advance or a superseded manual tap) detects
+  // the mismatch and quietly bails instead of racing. Unlike a persistent
+  // "is navigating" boolean, this can never get stuck and permanently
+  // disable the controls — each call is independent.
+  int _navGen = 0;
+
   @override
   void initState() {
     super.initState();
@@ -97,12 +108,16 @@ class _LecturePlayerScreenState extends State<LecturePlayerScreen> {
 
   Future<void> _onSlideAudioComplete() async {
     if (!mounted) return;
-    setState(() => _slideProgress[_slideIndex] = 1.0);
+    final startIndex = _slideIndex;
+    final startGen = _navGen;
+    setState(() => _slideProgress[startIndex] = 1.0);
     await Future.delayed(const Duration(milliseconds: 600));
-    if (!mounted) return;
+    // Bail if a manual tap (or another auto-advance) already moved us on
+    // while we were waiting — advancing now would skip past it.
+    if (!mounted || _navGen != startGen || _slideIndex != startIndex) return;
     final slides = _full?.slides ?? [];
-    if (_slideIndex < slides.length - 1) {
-      await _goToSlide(_slideIndex + 1, autoplay: true);
+    if (startIndex < slides.length - 1) {
+      await _goToSlide(startIndex + 1, autoplay: true);
     }
   }
 
@@ -123,8 +138,13 @@ class _LecturePlayerScreenState extends State<LecturePlayerScreen> {
   Future<void> _goToSlide(int index, {bool autoplay = false}) async {
     final slides = _full?.slides ?? [];
     if (index < 0 || index >= slides.length) return;
+    // Bumping the generation immediately invalidates any in-flight call
+    // (a stale auto-advance or a superseded double-tap) without needing a
+    // persistent "is navigating" flag that could get stuck and disable the
+    // controls forever — the latest call always wins, older ones just bail.
+    final myGen = ++_navGen;
     await _audio.stop();
-    if (!mounted) return;
+    if (!mounted || myGen != _navGen) return;
     setState(() {
       _slideIndex = index;
       _duration = Duration.zero;
@@ -133,19 +153,25 @@ class _LecturePlayerScreenState extends State<LecturePlayerScreen> {
     _introVideo?.pause();
     if (index == 0) _introVideo?.play();
     await Future.delayed(const Duration(milliseconds: 150));
-    if (!mounted) return;
+    if (!mounted || myGen != _navGen) return;
     await _playCurrentSlide(autoplay: autoplay);
   }
 
   Future<void> _togglePlayPause() async {
     if (_audio.playing) {
       await _audio.pause();
+      return;
+    }
+    // A track that reached the end reports ProcessingState.completed, not
+    // idle — calling play() on it is a no-op (just_audio resumes "from that
+    // position", i.e. the very end), which made the play button look dead
+    // right after a slide finished. Reload/replay the slide from the start
+    // in that case instead of blindly calling play().
+    final state = _audio.processingState;
+    if (state == ProcessingState.idle || state == ProcessingState.completed) {
+      await _playCurrentSlide(autoplay: true);
     } else {
-      if (_audio.processingState == ProcessingState.idle) {
-        await _playCurrentSlide(autoplay: true);
-      } else {
-        await _audio.play();
-      }
+      await _audio.play();
     }
   }
 

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -172,8 +173,18 @@ class _ClassAvatarTabState extends State<ClassAvatarTab> {
         children: [
           if (widget.isTeacher) ..._buildTeacherAvatarSection(l, primary),
           if (_lectures.isNotEmpty) ...[
-            Text(l.t('avatar_lectures'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-            const SizedBox(height: 12),
+            Row(children: [
+              Container(width: 3, height: 18, decoration: BoxDecoration(color: primary, borderRadius: BorderRadius.circular(2))),
+              const SizedBox(width: 9),
+              Text(l.t('avatar_lectures'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(8)),
+                child: Text('${_lectures.length}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: C.text4)),
+              ),
+            ]),
+            const SizedBox(height: 14),
             ..._lectures.map((lec) => _LectureCard(
                   lecture: lec,
                   isTeacher: widget.isTeacher,
@@ -192,30 +203,7 @@ class _ClassAvatarTabState extends State<ClassAvatarTab> {
     final widgets = <Widget>[];
 
     if (avatar == null) {
-      widgets.add(GestureDetector(
-        onTap: _openCreateAvatar,
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          margin: const EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [const Color(0xFF006475), primary], begin: Alignment.topLeft, end: Alignment.bottomRight),
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: primaryGlow(primary, opacity: 0.3),
-          ),
-          child: Row(children: [
-            Container(width: 48, height: 48,
-              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(14)),
-              child: const Icon(CupertinoIcons.person_crop_circle_badge_plus, color: Colors.white, size: 24)),
-            const SizedBox(width: 14),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(l.t('create_avatar'), style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 2),
-              Text(l.t('no_avatar_lectures_teacher'), style: const TextStyle(color: Colors.white70, fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
-            ])),
-            const Icon(CupertinoIcons.chevron_right, color: Colors.white70, size: 18),
-          ]),
-        ),
-      ));
+      widgets.add(_CreateAvatarBanner(onTap: _openCreateAvatar));
     } else if (avatar.isPending) {
       widgets.add(_statusCard(
         icon: CupertinoIcons.clock_fill,
@@ -232,11 +220,7 @@ class _ClassAvatarTabState extends State<ClassAvatarTab> {
         action: OutlinedButton(onPressed: _openCreateAvatar, child: Text(l.t('avatar_create_again'))),
       ));
     } else if (avatar.isApproved) {
-      widgets.add(SizedBox(width: double.infinity, child: ElevatedButton.icon(
-        onPressed: _openCreateLecture,
-        icon: const Icon(CupertinoIcons.add_circled, size: 18, color: Colors.white),
-        label: Text(l.t('create_lecture')),
-      )));
+      widgets.add(_ApprovedAvatarCard(avatar: avatar, primary: primary, onCreateLecture: _openCreateLecture));
       if (avatar.voiceCloneWarning != null && avatar.voiceCloneWarning!.isNotEmpty) {
         widgets.add(const SizedBox(height: 12));
         widgets.add(_statusCard(
@@ -246,26 +230,33 @@ class _ClassAvatarTabState extends State<ClassAvatarTab> {
           sub: avatar.voiceCloneWarning,
         ));
       }
-      widgets.add(const SizedBox(height: 16));
+      widgets.add(const SizedBox(height: 8));
     }
-    if (widgets.isNotEmpty) widgets.add(const SizedBox(height: 4));
+    if (widgets.isNotEmpty) widgets.add(const SizedBox(height: 8));
     return widgets;
   }
 
   Widget _statusCard({required IconData icon, required Color color, required String title, String? sub, Widget? action}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(16), border: Border.all(color: color.withValues(alpha: 0.25))),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: cardShadow(isDark),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
+      ),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Container(width: 40, height: 40, decoration: BoxDecoration(color: color.withValues(alpha: 0.15), shape: BoxShape.circle),
-          child: Icon(icon, color: color, size: 20)),
-        const SizedBox(width: 12),
+        Container(width: 44, height: 44,
+          decoration: BoxDecoration(gradient: RadialGradient(colors: [color.withValues(alpha: 0.22), color.withValues(alpha: 0.1)]), shape: BoxShape.circle),
+          child: Icon(icon, color: color, size: 21)),
+        const SizedBox(width: 13),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: color)),
-          if (sub != null && sub.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4),
-            child: Text(sub, style: const TextStyle(fontSize: 12, color: C.text4, height: 1.4))),
-          if (action != null) Padding(padding: const EdgeInsets.only(top: 10), child: action),
+          Text(title, style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800, color: color, height: 1.3)),
+          if (sub != null && sub.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 5),
+            child: Text(sub, style: const TextStyle(fontSize: 12.5, color: C.text4, height: 1.45))),
+          if (action != null) Padding(padding: const EdgeInsets.only(top: 12), child: action),
         ])),
       ]),
     );
@@ -273,18 +264,126 @@ class _ClassAvatarTabState extends State<ClassAvatarTab> {
 
   Widget _buildEmptyState(L10n l, Color primary) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 52),
+      padding: const EdgeInsets.symmetric(vertical: 44),
       child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Container(width: 80, height: 80,
-          decoration: BoxDecoration(gradient: RadialGradient(colors: [primary.withValues(alpha: 0.16), primary.withValues(alpha: 0.04)]), shape: BoxShape.circle),
-          child: Icon(CupertinoIcons.person_crop_rectangle, size: 36, color: primary)),
+        Container(width: 84, height: 84,
+          decoration: BoxDecoration(gradient: RadialGradient(colors: [primary.withValues(alpha: 0.18), primary.withValues(alpha: 0.03)]), shape: BoxShape.circle),
+          child: Icon(CupertinoIcons.person_crop_rectangle, size: 38, color: primary)),
         const SizedBox(height: 18),
-        Text(l.t('avatar_lectures'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: adaptiveText1(context))),
+        Text(l.t('avatar_lectures'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
         const SizedBox(height: 6),
-        Padding(padding: const EdgeInsets.symmetric(horizontal: 24), child: Text(
+        Padding(padding: const EdgeInsets.symmetric(horizontal: 28), child: Text(
           widget.isTeacher ? l.t('no_avatar_lectures_teacher') : l.t('no_avatar_lectures_student'),
-          style: const TextStyle(fontSize: 13, color: C.text4), textAlign: TextAlign.center)),
+          style: const TextStyle(fontSize: 13, color: C.text4, height: 1.5), textAlign: TextAlign.center)),
       ])),
+    );
+  }
+}
+
+/// Teacher-only banner shown when no avatar has been created yet.
+class _CreateAvatarBanner extends StatelessWidget {
+  final VoidCallback onTap;
+  const _CreateAvatarBanner({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.watch<L10n>();
+    final primary = Theme.of(context).colorScheme.primary;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: [const Color(0xFF006475), primary], begin: Alignment.topLeft, end: Alignment.bottomRight),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: primaryGlow(primary, opacity: 0.32),
+        ),
+        child: Stack(children: [
+          Positioned(top: -18, right: -18, child: Icon(CupertinoIcons.sparkles, size: 90, color: Colors.white.withValues(alpha: 0.08))),
+          Row(children: [
+            Container(width: 52, height: 52,
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(16)),
+              child: const Icon(CupertinoIcons.person_crop_circle_badge_plus, color: Colors.white, size: 26)),
+            const SizedBox(width: 14),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(l.t('create_avatar'), style: const TextStyle(color: Colors.white, fontSize: 16.5, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 3),
+              Text(l.t('no_avatar_lectures_teacher'), style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis),
+            ])),
+            const SizedBox(width: 6),
+            Container(width: 30, height: 30,
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.16), shape: BoxShape.circle),
+              child: const Icon(CupertinoIcons.chevron_right, color: Colors.white, size: 15)),
+          ]),
+        ]),
+      ),
+    );
+  }
+}
+
+/// Compact "avatar profile" card for teachers whose avatar was approved:
+/// photo, display name and an "active" pill, plus the primary CTA to create
+/// a new lecture. Gives the tab a face instead of a bare button.
+class _ApprovedAvatarCard extends StatelessWidget {
+  final TeacherAvatar avatar;
+  final Color primary;
+  final VoidCallback onCreateLecture;
+  const _ApprovedAvatarCard({required this.avatar, required this.primary, required this.onCreateLecture});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.watch<L10n>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final name = avatar.displayName?.isNotEmpty == true ? avatar.displayName! : l.t('avatar');
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: cardShadow(isDark),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(
+            width: 56, height: 56,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(colors: [const Color(0xFF006475), primary], begin: Alignment.topLeft, end: Alignment.bottomRight),
+              boxShadow: primaryGlow(primary, opacity: 0.28),
+            ),
+            padding: const EdgeInsets.all(2),
+            child: ClipOval(
+              child: avatar.photoUrl != null
+                  ? CachedNetworkImage(imageUrl: avatar.photoUrl!, fit: BoxFit.cover,
+                      errorWidget: (_, __, ___) => const Icon(CupertinoIcons.person_fill, color: Colors.white))
+                  : Container(color: Colors.white.withValues(alpha: 0.15), child: const Icon(CupertinoIcons.person_fill, color: Colors.white)),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(name, style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis),
+            const SizedBox(height: 5),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(color: C.green.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Container(width: 6, height: 6, decoration: const BoxDecoration(color: C.green, shape: BoxShape.circle)),
+                const SizedBox(width: 5),
+                Text(l.t('ready'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.green)),
+              ]),
+            ),
+          ])),
+        ]),
+        const SizedBox(height: 14),
+        SizedBox(width: double.infinity, child: ElevatedButton.icon(
+          onPressed: onCreateLecture,
+          icon: const Icon(CupertinoIcons.add_circled, size: 18, color: Colors.white),
+          label: Text(l.t('create_lecture')),
+        )),
+      ]),
     );
   }
 }
@@ -313,45 +412,60 @@ class _LectureCard extends StatelessWidget {
       _ => (C.text4, lecture.status, CupertinoIcons.question_circle),
     };
 
-    return Opacity(
-      opacity: dimmed ? 0.65 : 1.0,
-      child: GestureDetector(
-        onTap: lecture.isReady ? onTap : null,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: cardShadow(isDark),
-          ),
+    return GestureDetector(
+      onTap: lecture.isReady ? onTap : null,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: dimmed ? softShadow(isDark) : cardShadow(isDark),
+          border: lecture.isReady ? Border.all(color: statusColor.withValues(alpha: 0.18)) : null,
+        ),
+        child: Opacity(
+          opacity: dimmed ? 0.62 : 1.0,
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Container(width: 44, height: 44,
-                decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(13)),
-                child: Icon(lecture.isReady ? CupertinoIcons.play_fill : statusIcon, color: statusColor, size: 20)),
+              Container(width: 46, height: 46,
+                decoration: BoxDecoration(
+                  gradient: lecture.isReady
+                      ? LinearGradient(colors: [statusColor, statusColor.withValues(alpha: 0.75)], begin: Alignment.topLeft, end: Alignment.bottomRight)
+                      : null,
+                  color: lecture.isReady ? null : statusColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: lecture.isReady ? [BoxShadow(color: statusColor.withValues(alpha: 0.32), blurRadius: 10, offset: const Offset(0, 3))] : null,
+                ),
+                child: Icon(lecture.isReady ? CupertinoIcons.play_fill : statusIcon, color: lecture.isReady ? Colors.white : statusColor, size: 20)),
               const SizedBox(width: 12),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(lecture.title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800), maxLines: 2, overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 6),
-                Wrap(spacing: 10, runSpacing: 4, children: [
+                Text(lecture.title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, height: 1.25), maxLines: 2, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 7),
+                Wrap(spacing: 12, runSpacing: 4, children: [
                   Row(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(CupertinoIcons.clock, size: 12, color: C.text4), const SizedBox(width: 3),
+                    const Icon(CupertinoIcons.clock, size: 12, color: C.text4), const SizedBox(width: 4),
                     Text('${lecture.durationMinutes} ${l.t('minutes_suffix')}', style: const TextStyle(fontSize: 12, color: C.text4)),
                   ]),
                   Row(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(CupertinoIcons.calendar, size: 12, color: C.text4), const SizedBox(width: 3),
+                    const Icon(CupertinoIcons.calendar, size: 12, color: C.text4), const SizedBox(width: 4),
                     Text(_fmtDate(lecture.createdAt), style: const TextStyle(fontSize: 12, color: C.text4)),
                   ]),
                 ]),
               ])),
-              if (isTeacher && onDelete != null) GestureDetector(
-                onTap: onDelete,
-                child: const Padding(padding: EdgeInsets.only(left: 6),
-                  child: Icon(CupertinoIcons.trash, size: 18, color: C.text4)),
-              ),
+              if (isTeacher && onDelete != null)
+                GestureDetector(
+                  onTap: onDelete,
+                  child: Container(
+                    margin: const EdgeInsets.only(left: 6),
+                    padding: const EdgeInsets.all(7),
+                    decoration: BoxDecoration(color: C.red.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(10)),
+                    child: const Icon(CupertinoIcons.trash, size: 15, color: C.red),
+                  ),
+                )
+              else if (lecture.isReady)
+                Icon(CupertinoIcons.chevron_right, size: 16, color: C.text4.withValues(alpha: 0.6)),
             ]),
-            const SizedBox(height: 10),
+            const SizedBox(height: 11),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(8)),

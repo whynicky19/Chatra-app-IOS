@@ -234,6 +234,19 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   String _clean(String t) => t.replaceFirst(RegExp(r'^\[(LECTURE|HW)\]\[\d+\]\s*'), '').trim();
   String _fmtDate(String? d) { if (d == null) return ''; try { final dt = DateTime.parse(d); return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}.${dt.year}'; } catch (_) { return d; } }
 
+  // Fixed (non-scrollable) tab with a FittedBox around the label so with 5
+  // tabs on a narrow screen the text shrinks to fit instead of being cut off.
+  Widget _tabItem(IconData icon, String label) {
+    return Tab(
+      height: 58,
+      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Icon(icon, size: 19),
+        const SizedBox(height: 3),
+        FittedBox(fit: BoxFit.scaleDown, child: Text(label, maxLines: 1, softWrap: false)),
+      ]),
+    );
+  }
+
   // Downloads the file and opens it with the native viewer (PDF, Word, Excel, images, etc.)
   Future<void> _openFileViewer(BuildContext ctx, String url, String name) async {
     final cleanUrl = _cleanFileUrl(url);
@@ -442,16 +455,16 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 indicatorWeight: 2,
                 indicatorSize: TabBarIndicatorSize.label,
                 dividerColor: Colors.transparent,
-                labelPadding: const EdgeInsets.symmetric(horizontal: 8),
+                labelPadding: const EdgeInsets.symmetric(horizontal: 4),
                 labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.1),
                 unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                 tabs: [
-                  Tab(icon: const Icon(CupertinoIcons.book, size: 19), iconMargin: const EdgeInsets.only(bottom: 3), text: '${l.t('lectures')} (${_lectures.length})', height: 58),
-                  Tab(icon: const Icon(CupertinoIcons.square_stack_3d_down_right, size: 19), iconMargin: const EdgeInsets.only(bottom: 3), text: l.t('materials'), height: 58),
-                  Tab(icon: const Icon(CupertinoIcons.list_bullet, size: 19), iconMargin: const EdgeInsets.only(bottom: 3), text: l.t('assignments'), height: 58),
-                  Tab(icon: const Icon(CupertinoIcons.sparkles, size: 19), iconMargin: const EdgeInsets.only(bottom: 3), text: l.t('ai_chat'), height: 58),
-                  Tab(icon: const Icon(CupertinoIcons.person_crop_rectangle, size: 19), iconMargin: const EdgeInsets.only(bottom: 3),
-                    text: _avatarLectureCount != null ? '${l.t('avatar')} ($_avatarLectureCount)' : l.t('avatar'), height: 58),
+                  _tabItem(CupertinoIcons.book, '${l.t('lectures')} (${_lectures.length})'),
+                  _tabItem(CupertinoIcons.square_stack_3d_down_right, l.t('materials')),
+                  _tabItem(CupertinoIcons.list_bullet, l.t('assignments')),
+                  _tabItem(CupertinoIcons.sparkles, l.t('ai_chat')),
+                  _tabItem(CupertinoIcons.person_crop_rectangle,
+                    _avatarLectureCount != null ? '${l.t('avatar')} ($_avatarLectureCount)' : l.t('avatar')),
                 ],
               ),
               if (auth.isTeacher) AnimatedBuilder(animation: _tabCtrl, builder: (ctx, _) {

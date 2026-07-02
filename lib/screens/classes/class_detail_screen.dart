@@ -656,7 +656,11 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
 
 
   // ── AI Chat tab ──
-  Widget _aiTab() => ClassAiTab(classId: widget.classId, className: _title, lectureContext: _cachedLectureContext, lectureImageUrls: _cachedLectureImageUrls, isActive: _aiTabActive);
+  Widget _aiTab() => ClassAiTab(
+    classId: widget.classId, className: _title, lectureContext: _cachedLectureContext,
+    lectureImageUrls: _cachedLectureImageUrls, isActive: _aiTabActive,
+    isTeacher: context.read<AuthProvider>().isTeacher,
+  );
 
   // ── Show post detail ──
   void _showPost(dynamic p, String type, int num) {
@@ -1302,6 +1306,20 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 TextField(controller: descC, decoration: InputDecoration(hintText: 'Описание критерия', contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10)), onChanged: (v) => criteria[i]['desc'] = v),
               ]));
           }),
+          SizedBox(height: 20),
+          GestureDetector(
+            onTap: () => _showVariantsSheet((a['id'] as num).toInt()),
+            child: Container(
+              padding: EdgeInsets.all(14),
+              decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(14)),
+              child: Row(children: [
+                Icon(CupertinoIcons.square_stack, size: 18, color: Theme.of(context).colorScheme.primary),
+                SizedBox(width: 10),
+                Expanded(child: Text(context.read<L10n>().t('assignment_variants'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700))),
+                Icon(CupertinoIcons.chevron_right, size: 16, color: C.text4),
+              ]),
+            ),
+          ),
           SizedBox(height: 24),
           Row(children: [
             Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: Text('Отмена'), style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)))),
@@ -1361,11 +1379,122 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     ).then((_) { tc.dispose(); dc.dispose(); sc.dispose(); });
   }
 
+  // ── Assignment variants (site parity) ──────────────────────────────────────
+  void _showVariantsSheet(int assignmentId) {
+    final l = context.read<L10n>();
+    // Declared OUTSIDE the StatefulBuilder callback so they survive setS()
+    // rebuilds — locals declared inside the callback get reset on every call.
+    List<dynamic>? variants;
+    bool adding = false;
+    final variantTitleC = TextEditingController();
+    final variantContentC = TextEditingController();
+    bool loadTriggered = false;
+
+    showModalBottomSheet(
+      context: context, isScrollControlled: true, backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setS) {
+        Future<void> load() async {
+          try {
+            final v = await context.read<ApiService>().getAssignmentVariants(assignmentId);
+            if (ctx.mounted) setS(() { variants = v; });
+          } catch (_) {
+            if (ctx.mounted) setS(() { variants = []; });
+          }
+        }
+        if (!loadTriggered) { loadTriggered = true; load(); }
+
+        return DraggableScrollableSheet(expand: false, initialChildSize: 0.75, maxChildSize: 0.95, minChildSize: 0.4,
+          builder: (ctx, scroll) => Column(children: [
+            Container(width: 40, height: 4, margin: EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2))),
+            Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Row(children: [
+              Expanded(child: Text(l.t('assignment_variants'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800))),
+              IconButton(icon: Icon(CupertinoIcons.xmark), onPressed: () => Navigator.pop(ctx)),
+            ])),
+            Expanded(child: variants == null
+                ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))
+                : ListView(controller: scroll, padding: EdgeInsets.fromLTRB(20, 8, 20, 24), children: [
+                    TextField(controller: variantTitleC, decoration: InputDecoration(hintText: l.t('variant_title_hint'))),
+                    SizedBox(height: 8),
+                    TextField(controller: variantContentC, decoration: InputDecoration(hintText: l.t('variant_content_hint')), maxLines: 3),
+                    SizedBox(height: 10),
+                    SizedBox(width: double.infinity, child: ElevatedButton.icon(
+                      onPressed: adding ? null : () async {
+                        if (variantTitleC.text.trim().isEmpty) return;
+                        setS(() => adding = true);
+                        try {
+                          await context.read<ApiService>().createAssignmentVariant(assignmentId, {
+                            'title': variantTitleC.text.trim(),
+                            'content': variantContentC.text.trim(),
+                          });
+                          if (!ctx.mounted) return;
+                          variantTitleC.clear(); variantContentC.clear();
+                          setS(() => adding = false);
+                          await load();
+                        } catch (_) {
+                          if (ctx.mounted) setS(() => adding = false);
+                          if (mounted && ctx.mounted) showToast(context, l.t('error'), error: true);
+                        }
+                      },
+                      icon: adding
+                          ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : Icon(CupertinoIcons.add, size: 16, color: Colors.white),
+                      label: Text(l.t('assignment_variants_add')),
+                    )),
+                    SizedBox(height: 20),
+                    if (variants!.isEmpty)
+                      Padding(padding: EdgeInsets.symmetric(vertical: 24),
+                        child: Center(child: Text(l.t('assignment_variants_empty'), style: TextStyle(color: C.text4))))
+                    else
+                      ...variants!.map((v) {
+                        final vid = (v['id'] as num?)?.toInt();
+                        return Container(margin: EdgeInsets.only(bottom: 8), padding: EdgeInsets.all(14),
+                          decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(14)),
+                          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              Text((v['title'] ?? '').toString(), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                              if ((v['content'] ?? '').toString().isNotEmpty) Padding(padding: EdgeInsets.only(top: 4),
+                                child: Text((v['content'] ?? '').toString(), style: TextStyle(fontSize: 12, color: C.text4), maxLines: 3, overflow: TextOverflow.ellipsis)),
+                            ])),
+                            GestureDetector(
+                              onTap: () async {
+                                if (vid == null) return;
+                                final ok = await showCupertinoDialog<bool>(context: context, builder: (c) => CupertinoAlertDialog(
+                                  title: Text(l.t('variant_delete_confirm')),
+                                  actions: [
+                                    CupertinoDialogAction(onPressed: () => Navigator.pop(c, false), child: Text(l.t('cancel'))),
+                                    CupertinoDialogAction(isDestructiveAction: true, onPressed: () => Navigator.pop(c, true), child: Text(l.t('delete'))),
+                                  ],
+                                ));
+                                if (ok != true || !mounted || !ctx.mounted) return;
+                                try {
+                                  await context.read<ApiService>().deleteAssignmentVariant(assignmentId, vid);
+                                  if (ctx.mounted) await load();
+                                } catch (_) {
+                                  if (mounted && ctx.mounted) showToast(context, l.t('error'), error: true);
+                                }
+                              },
+                              child: Padding(padding: EdgeInsets.all(4), child: Icon(CupertinoIcons.trash, size: 16, color: C.red)),
+                            ),
+                          ]));
+                      }),
+                  ])),
+          ]));
+      }),
+    ).then((_) { variantTitleC.dispose(); variantContentC.dispose(); });
+  }
+
   void _editClass() {
     final meta = _meta;
     final tc = TextEditingController(text: _title), dc = TextEditingController(text: meta['description'] ?? ''), tn = TextEditingController(text: meta['teacher_name'] ?? '');
-    String? newCoverBase64 = meta['cover_image'];
-
+    // Existing cover may be either a legacy base64 data: URI or (new format,
+    // matching the site) a plain upload URL — keep reading both, but any
+    // NEWLY picked photo is uploaded as a file and stored as a URL only.
+    final String? existingCover = meta['cover_image'];
+    XFile? newCoverFile;
+    bool coverRemoved = false;
+    bool saving = false;
 
     showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
@@ -1385,19 +1514,22 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           GestureDetector(
             onTap: () async {
               final picker = ImagePicker();
-              final img = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80, maxWidth: 1200);
+              final img = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85, maxWidth: 1200);
               if (img == null) return;
-              final bytes = await img.readAsBytes();
-              final b64 = 'data:image/jpeg;base64,${base64Encode(bytes)}';
-              setS(() { newCoverBase64 = b64; });
+              setS(() { newCoverFile = img; coverRemoved = false; });
             },
             child: Container(height: 150, decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3), width: 1.5)),
               clipBehavior: Clip.antiAlias,
               child: Stack(fit: StackFit.expand, children: [
-                if (newCoverBase64 != null && newCoverBase64!.startsWith('data:'))
-                  Builder(builder: (_) { try { return Image.memory(base64Decode(newCoverBase64!.split(',').last), fit: BoxFit.cover); } catch (_) { return Container(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)); } })
-                else if (newCoverBase64 != null)
-                  CachedNetworkImage(imageUrl: newCoverBase64!, fit: BoxFit.cover, fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero, placeholder: (_, __) => const SizedBox.shrink(), errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF006475), Theme.of(context).colorScheme.primary]))))
+                if (newCoverFile != null)
+                  Image.file(File(newCoverFile!.path), fit: BoxFit.cover)
+                else if (!coverRemoved && existingCover != null && existingCover.startsWith('data:'))
+                  Builder(builder: (_) {
+                    final bytes = decodeBase64Image(existingCover);
+                    return bytes != null ? Image.memory(bytes, fit: BoxFit.cover, gaplessPlayback: true) : Container(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1));
+                  })
+                else if (!coverRemoved && existingCover != null)
+                  CachedNetworkImage(imageUrl: context.read<ApiService>().fixUrl(existingCover), fit: BoxFit.cover, fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero, placeholder: (_, __) => const SizedBox.shrink(), errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF006475), Theme.of(context).colorScheme.primary]))))
                 else
                   Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF006475), Theme.of(context).colorScheme.primary], begin: Alignment.topLeft, end: Alignment.bottomRight))),
                 // Overlay
@@ -1405,13 +1537,13 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                     Icon(CupertinoIcons.photo, color: Colors.white, size: 32),
                     SizedBox(height: 6),
-                    Text(newCoverBase64 != null ? 'Нажмите для замены' : 'Выбрать обложку', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                    Text((newCoverFile != null || (!coverRemoved && existingCover != null)) ? 'Нажмите для замены' : 'Выбрать обложку', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
                   ])),
               ])),
           ),
-          if (newCoverBase64 != null) ...[
+          if (newCoverFile != null || (!coverRemoved && existingCover != null)) ...[
             SizedBox(height: 8),
-            GestureDetector(onTap: () => setS(() => newCoverBase64 = null),
+            GestureDetector(onTap: () => setS(() { newCoverFile = null; coverRemoved = true; }),
               child: Row(children: [Icon(CupertinoIcons.xmark, size: 14, color: C.red), SizedBox(width: 4), Text('Убрать обложку', style: TextStyle(fontSize: 12, color: C.red))])),
           ],
           SizedBox(height: 20),
@@ -1425,26 +1557,39 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           TextField(controller: tn, decoration: InputDecoration(hintText: 'Отображаемое имя учителя')),
           SizedBox(height: 28),
           Row(children: [
-            Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: Text('Отмена'), style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)))),
+            Expanded(child: OutlinedButton(onPressed: saving ? null : () => Navigator.pop(ctx), child: Text('Отмена'), style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)))),
             SizedBox(width: 12),
             Expanded(child: ElevatedButton(
               style: ElevatedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)),
-              onPressed: () async {
+              onPressed: saving ? null : () async {
+                setS(() => saving = true);
                 try {
                   final post = _posts.firstWhere((p) => p['id'] == widget.classId, orElse: () => null);
                   if (post == null) return;
+                  final api = context.read<ApiService>();
                   var body = <String, dynamic>{}; try { body = jsonDecode(post['body']); } catch (_) {}
                   body['type'] = 'class';
                   body['description'] = dc.text.trim();
                   body['teacher_name'] = tn.text.trim();
-                  if (newCoverBase64 != null) body['cover_image'] = newCoverBase64;
-                  else body.remove('cover_image');
-                  await context.read<ApiService>().updatePost(widget.classId, tc.text.trim(), jsonEncode(body));
+                  if (newCoverFile != null) {
+                    final res = await api.uploadFile(newCoverFile!.path, newCoverFile!.name);
+                    final url = (res['url'] ?? res['file_url'] ?? res['path'])?.toString();
+                    if (url != null) body['cover_image'] = url; else body.remove('cover_image');
+                  } else if (coverRemoved) {
+                    body.remove('cover_image');
+                  } else if (existingCover != null) {
+                    body['cover_image'] = existingCover;
+                  }
+                  await api.updatePost(widget.classId, tc.text.trim(), jsonEncode(body));
                   if (!mounted || !ctx.mounted) return;
                   Navigator.pop(ctx); _load(); showToast(context, 'Класс обновлён');
-                } catch (_) { if (mounted && ctx.mounted) showToast(context, 'Ошибка', error: true); }
+                } catch (_) {
+                  if (mounted && ctx.mounted) { showToast(context, 'Ошибка', error: true); setS(() => saving = false); }
+                }
               },
-              child: Text('Сохранить'),
+              child: saving
+                  ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : Text('Сохранить'),
             )),
           ]),
           SizedBox(height: 24),

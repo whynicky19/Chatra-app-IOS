@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -619,7 +620,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final l = context.read<L10n>();
     final nameC = TextEditingController(), descC = TextEditingController(),
           teacherC = TextEditingController(), groupC = TextEditingController(), periodC = TextEditingController();
-    String? coverB64;
+    // Local preview only (XFile path) — the actual upload happens on submit,
+    // same as the site: the class stores a file URL, not a base64 blob.
+    XFile? coverFile;
+    bool submitting = false;
     showDialog(context: context, barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -635,12 +639,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             Expanded(child: SingleChildScrollView(padding: const EdgeInsets.fromLTRB(24, 16, 24, 0), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               _fl3(l.t('class_cover')),
               GestureDetector(onTap: () async {
-                final img = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 800, imageQuality: 80);
-                if (img != null) { final bytes = await img.readAsBytes(); setS(() => coverB64 = 'data:image/jpeg;base64,${base64Encode(bytes)}'); }
+                final img = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1200, imageQuality: 85);
+                if (img != null) setS(() => coverFile = img);
               }, child: Container(height: 160, width: double.infinity,
-                decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3), width: 1.5), color: coverB64 != null ? null : adaptivePrimaryLt(context).withValues(alpha: 0.3)),
-                child: coverB64 != null
-                    ? ClipRRect(borderRadius: BorderRadius.circular(16), child: Image.memory(base64Decode(coverB64!.split(',').last), fit: BoxFit.cover, width: double.infinity))
+                decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3), width: 1.5), color: coverFile != null ? null : adaptivePrimaryLt(context).withValues(alpha: 0.3)),
+                child: coverFile != null
+                    ? ClipRRect(borderRadius: BorderRadius.circular(16), child: Image.file(File(coverFile!.path), fit: BoxFit.cover, width: double.infinity))
                     : Column(mainAxisAlignment: MainAxisAlignment.center, children: [Container(width: 50, height: 50, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(14)), child: Icon(CupertinoIcons.photo, size: 26, color: Theme.of(context).colorScheme.primary)), const SizedBox(height: 10), Text(l.t('click_to_upload'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)), const Text('JPG, PNG', style: TextStyle(fontSize: 12, color: C.text4))]))),
               const SizedBox(height: 20),
               _fl3(l.t('class_name_required')), TextField(controller: nameC, decoration: InputDecoration(hintText: l.t('class_name_hint'))),
@@ -651,26 +655,36 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               const SizedBox(height: 24),
             ]))),
             Padding(padding: const EdgeInsets.fromLTRB(24, 8, 24, 20), child: Row(children: [
-              Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: Text(l.t('cancel')), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)))),
+              Expanded(child: OutlinedButton(onPressed: submitting ? null : () => Navigator.pop(ctx), child: Text(l.t('cancel')), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)))),
               const SizedBox(width: 12),
               Expanded(child: ElevatedButton(
                 style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-                onPressed: () async {
+                onPressed: submitting ? null : () async {
                   if (nameC.text.trim().isEmpty) return;
+                  setS(() => submitting = true);
                   try {
+                    final api = context.read<ApiService>();
+                    String? coverUrl;
+                    if (coverFile != null) {
+                      final res = await api.uploadFile(coverFile!.path, coverFile!.name);
+                      coverUrl = (res['url'] ?? res['file_url'] ?? res['path'])?.toString();
+                    }
                     await provider.createClass(nameC.text.trim(), jsonEncode({
                       'type': 'class', 'description': descC.text.trim(), 'teacher_name': teacherC.text.trim(),
                       'group': groupC.text.trim(), 'period': periodC.text.trim(),
-                      if (coverB64 != null) 'cover_image': coverB64,
+                      if (coverUrl != null) 'cover_image': coverUrl,
                     }));
                     if (!mounted || !ctx.mounted) return;
                     Navigator.pop(ctx);
                     showToast(context, l.t('class_created'));
                   } catch (_) {
                     if (mounted) showToast(context, l.t('error'), error: true);
+                    if (ctx.mounted) setS(() => submitting = false);
                   }
                 },
-                child: Text(l.t('create')))),
+                child: submitting
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : Text(l.t('create')))),
             ])),
           ]),
         ),

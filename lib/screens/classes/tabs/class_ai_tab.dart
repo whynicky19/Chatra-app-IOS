@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../services/api_service.dart';
 import '../../../theme/app_theme.dart';
+import '../rag_documents_sheet.dart';
 
 class ClassAiTab extends StatefulWidget {
   final int classId;
@@ -13,6 +14,7 @@ class ClassAiTab extends StatefulWidget {
   final String lectureContext;
   final List<String> lectureImageUrls;
   final bool isActive;
+  final bool isTeacher;
   const ClassAiTab({
     super.key,
     required this.classId,
@@ -20,6 +22,7 @@ class ClassAiTab extends StatefulWidget {
     this.lectureContext = '',
     this.lectureImageUrls = const [],
     this.isActive = true,
+    this.isTeacher = false,
   });
   @override State<ClassAiTab> createState() => _ClassAiTabState();
 }
@@ -161,6 +164,21 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
       child: Column(children: [
       Expanded(child: Stack(children: [
         _msgs.isEmpty ? _emptyState(isDark) : _messageList(isDark),
+        if (widget.isTeacher) Positioned(
+          top: 8, right: _msgs.isNotEmpty ? 54 : 12,
+          child: GestureDetector(
+            onTap: () => showRagDocumentsSheet(context, classId: widget.classId),
+            child: Container(
+              width: 34, height: 34,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                shape: BoxShape.circle,
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.10), blurRadius: 8, offset: const Offset(0, 2))],
+              ),
+              child: Icon(CupertinoIcons.doc_text_search, size: 16, color: Theme.of(context).colorScheme.primary),
+            ),
+          ),
+        ),
         if (_msgs.isNotEmpty) Positioned(
           top: 8, right: 12,
           child: GestureDetector(

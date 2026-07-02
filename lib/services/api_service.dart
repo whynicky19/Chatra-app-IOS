@@ -271,7 +271,13 @@ class ApiService {
     return response.data;
   }
 
+  /// Mirrors the site: try the teacher-facing endpoint first (works without
+  /// admin rights), fall back to the admin one only if that fails.
   Future<List<dynamic>> getClassMembers(int classId) async {
+    try {
+      final response = await _dio.get('/classes/$classId/members');
+      if (response.data is List) return response.data;
+    } catch (_) {}
     final response = await _dio.get('/admin/classes/$classId/members');
     return response.data is List ? response.data : [];
   }
@@ -460,6 +466,18 @@ class ApiService {
   Future<void> adminUnblock(int userId) async => _dio.put('/admin/users/$userId/unblock');
   Future<void> adminDelete(int userId) async => _dio.delete('/admin/users/$userId');
 
+  /// Returns the raw paginated envelope ({total, page, page_size, items}) so
+  /// callers can drive "load more" pagination like the site does.
+  Future<Map<String, dynamic>> adminAiUsagePage({int? classId, int page = 1, int pageSize = 50}) async {
+    final params = <String, dynamic>{'page': page, 'page_size': pageSize};
+    if (classId != null) params['class_id'] = classId;
+    final response = await _dio.get('/admin/ai-usage', queryParameters: params);
+    final data = response.data;
+    if (data is Map<String, dynamic>) return data;
+    if (data is List) return {'total': data.length, 'page': 1, 'page_size': data.length, 'items': data};
+    return {'total': 0, 'page': 1, 'page_size': pageSize, 'items': []};
+  }
+
   Future<List<dynamic>> adminAiUsage({int? classId}) async {
     final params = <String, dynamic>{'page_size': 200};
     if (classId != null) params['class_id'] = classId;
@@ -588,12 +606,90 @@ class ApiService {
     });
   }
 
+  // ── RAG documents (AI knowledge base) ────────────────────────────────────────
+
+  Future<Map<String, dynamic>> ragIngest(String filePath, String fileName, {int? classId}) async {
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(filePath, filename: fileName),
+      if (classId != null) 'class_id': classId,
+    });
+    final response = await _dio.post('/rag/ingest', data: formData);
+    return response.data;
+  }
+
+  /// Returns an empty list on error, matching the site's behavior.
+  Future<List<dynamic>> ragDocuments({int? classId}) async {
+    try {
+      final params = <String, dynamic>{};
+      if (classId != null) params['class_id'] = classId;
+      final response = await _dio.get('/rag/documents', queryParameters: params);
+      final data = response.data;
+      if (data is List) return data;
+      if (data is Map && data['items'] is List) return data['items'] as List;
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> deleteRagDocument(int docId) async => _dio.delete('/rag/documents/$docId');
+
+  // ── Assignment variants ──────────────────────────────────────────────────────
+
+  Future<List<dynamic>> getAssignmentVariants(int assignmentId) async {
+    final response = await _dio.get('/assignments/$assignmentId/variants');
+    final data = response.data;
+    if (data is List) return data;
+    if (data is Map && data['items'] is List) return data['items'] as List;
+    return [];
+  }
+
+  Future<Map<String, dynamic>> createAssignmentVariant(int assignmentId, Map<String, dynamic> body) async {
+    final response = await _dio.post('/assignments/$assignmentId/variants', data: body);
+    return response.data;
+  }
+
+  Future<void> deleteAssignmentVariant(int assignmentId, int variantId) async =>
+      _dio.delete('/assignments/$assignmentId/variants/$variantId');
+
+  // ── Submissions (grading) ────────────────────────────────────────────────────
+
+  Future<void> deleteSubmission(int submissionId) async => _dio.delete('/submissions/$submissionId');
+
+  Future<Map<String, dynamic>> gradeSubmission(int submissionId, {
+    required num score,
+    String? feedback,
+    List<dynamic>? criteriaScores,
+  }) async {
+    final response = await _dio.post('/submissions/$submissionId/grade', data: {
+      'score': score,
+      if (feedback != null) 'feedback': feedback,
+      if (criteriaScores != null) 'criteria_scores': criteriaScores,
+    });
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> getSubmissionGrade(int submissionId) async {
+    final response = await _dio.get('/submissions/$submissionId/grade');
+    return response.data;
+  }
+
   // ── Reactions ─────────────────────────────────────────────────────────────────
 
   Future<void> addReaction(int msgId, String emoji) async =>
       _dio.post('/reactions/$msgId', queryParameters: {'emoji': emoji});
 
   Future<void> removeReaction(int msgId) async => _dio.delete('/reactions/$msgId');
+
+  /// List of reactions on a message. Not currently used in the UI (reactions
+  /// are read from the message payload), kept for future use/parity with site.
+  Future<List<dynamic>> getReactions(int msgId) async {
+    final response = await _dio.get('/reactions/$msgId');
+    final data = response.data;
+    if (data is List) return data;
+    if (data is Map && data['items'] is List) return data['items'] as List;
+    return [];
+  }
 
   // ── Files ─────────────────────────────────────────────────────────────────────
 

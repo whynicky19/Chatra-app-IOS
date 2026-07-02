@@ -992,6 +992,12 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                           Text('Перепроверить ИИ', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                         ]),
                   )),
+                  SizedBox(height: 10),
+                  _manualGradeAndDeleteRow(ctx, selectedSub, (updated) => setS(() => selectedSub = updated), () {
+                    subs.removeWhere((s) => s['id'] == selectedSub['id']);
+                    setS(() => selectedSub = null);
+                    widget.onRefresh();
+                  }),
                 ] else ...[
                   SizedBox(height: 20),
                   SizedBox(width: double.infinity, height: 50, child: ElevatedButton(
@@ -1024,6 +1030,12 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                           Text('Оценить ИИ', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                         ]),
                   )),
+                  SizedBox(height: 10),
+                  _manualGradeAndDeleteRow(ctx, selectedSub, (updated) => setS(() => selectedSub = updated), () {
+                    subs.removeWhere((s) => s['id'] == selectedSub['id']);
+                    setS(() => selectedSub = null);
+                    widget.onRefresh();
+                  }),
                 ],
                 SizedBox(height: 24),
               ]);
@@ -1110,5 +1122,105 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
           }));
         });
     } catch (_) { showToast(context, 'Ошибка загрузки', error: true); }
+  }
+
+  // ── Manual grading + submission delete (site parity) ────────────────────────
+  Widget _manualGradeAndDeleteRow(BuildContext ctx, dynamic sub, void Function(dynamic updated) onGraded, VoidCallback onDeleted) {
+    final l = context.read<L10n>();
+    return Row(children: [
+      Expanded(child: OutlinedButton.icon(
+        onPressed: () => _showManualGradeDialog(ctx, sub, onGraded),
+        icon: Icon(CupertinoIcons.pencil, size: 16),
+        label: Text(l.t('grade_manually'), style: TextStyle(fontSize: 13)),
+        style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 12)),
+      )),
+      SizedBox(width: 10),
+      GestureDetector(
+        onTap: () => _confirmDeleteSubmission(ctx, sub, onDeleted),
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: C.red.withValues(alpha: 0.5))),
+          child: Icon(CupertinoIcons.trash, size: 18, color: C.red),
+        ),
+      ),
+    ]);
+  }
+
+  Future<void> _showManualGradeDialog(BuildContext ctx, dynamic sub, void Function(dynamic updated) onGraded) async {
+    final l = context.read<L10n>();
+    final existingScore = sub['grade']?['score'];
+    final scoreC = TextEditingController(text: existingScore != null ? '$existingScore' : '');
+    final feedbackC = TextEditingController(text: sub['grade']?['feedback']?.toString() ?? '');
+    bool saving = false;
+
+    await showCupertinoDialog<void>(
+      context: ctx,
+      builder: (c) => StatefulBuilder(builder: (c, setD) => CupertinoAlertDialog(
+        title: Text(l.t('grade_manual_title')),
+        content: Padding(
+          padding: EdgeInsets.only(top: 12),
+          child: Column(children: [
+            CupertinoTextField(controller: scoreC, placeholder: l.t('grade_score_hint'), keyboardType: TextInputType.number),
+            SizedBox(height: 8),
+            CupertinoTextField(controller: feedbackC, placeholder: l.t('grade_feedback_hint'), maxLines: 3),
+          ]),
+        ),
+        actions: [
+          CupertinoDialogAction(onPressed: () => Navigator.pop(c), child: Text(l.t('cancel'))),
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: saving ? null : () async {
+              final score = num.tryParse(scoreC.text.trim());
+              if (score == null) return;
+              setD(() => saving = true);
+              try {
+                await context.read<ApiService>().gradeSubmission(
+                  (sub['id'] as num).toInt(),
+                  score: score,
+                  feedback: feedbackC.text.trim().isEmpty ? null : feedbackC.text.trim(),
+                );
+                if (!mounted || !c.mounted) return;
+                final updated = await context.read<ApiService>().getSubmission((sub['id'] as num).toInt());
+                if (!mounted || !c.mounted) return;
+                onGraded(updated);
+                Navigator.pop(c);
+                showToast(context, l.t('grade_saved'));
+              } catch (_) {
+                if (mounted && c.mounted) { setD(() => saving = false); showToast(context, l.t('error'), error: true); }
+              }
+            },
+            child: saving
+                ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                : Text(l.t('grade_save')),
+          ),
+        ],
+      )),
+    );
+    scoreC.dispose();
+    feedbackC.dispose();
+  }
+
+  Future<void> _confirmDeleteSubmission(BuildContext ctx, dynamic sub, VoidCallback onDeleted) async {
+    final l = context.read<L10n>();
+    final ok = await showCupertinoDialog<bool>(
+      context: ctx,
+      builder: (c) => CupertinoAlertDialog(
+        title: Text(l.t('delete_submission')),
+        content: Text(l.t('delete_submission_confirm')),
+        actions: [
+          CupertinoDialogAction(onPressed: () => Navigator.pop(c, false), child: Text(l.t('cancel'))),
+          CupertinoDialogAction(isDestructiveAction: true, onPressed: () => Navigator.pop(c, true), child: Text(l.t('delete'))),
+        ],
+      ),
+    );
+    if (ok != true || !mounted || !ctx.mounted) return;
+    try {
+      await context.read<ApiService>().deleteSubmission((sub['id'] as num).toInt());
+      if (!mounted) return;
+      showToast(context, l.t('class_deleted'));
+      onDeleted();
+    } catch (_) {
+      if (mounted) showToast(context, l.t('error'), error: true);
+    }
   }
 }

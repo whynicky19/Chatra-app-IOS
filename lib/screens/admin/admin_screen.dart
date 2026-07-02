@@ -30,6 +30,12 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
   int _totalTokens    = 0;
   bool _avatarsTabActive = false;
   int _avatarsPendingCount = 0;
+  // AI usage filter/pagination — mirrors the site's aiFilterClass + page/page_size.
+  int? _aiFilterClassId;
+  int _aiLogPage      = 1;
+  int _aiLogTotal     = 0;
+  bool _aiLogLoadingMore = false;
+  static const _aiLogPageSize = 30;
 
   @override
   void initState() {
@@ -90,11 +96,46 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     try {
       final api = context.read<ApiService>();
       _aiSummary = await api.adminAiSummary();
-      _aiLogs    = await api.adminAiUsage();
-      _totalTokens = 0;
-      for (final s in _aiSummary) _totalTokens += (s['total_tokens'] as num? ?? 0).toInt();
+      final page = await api.adminAiUsagePage(classId: _aiFilterClassId, page: 1, pageSize: _aiLogPageSize);
+      _aiLogs    = List<dynamic>.from(page['items'] as List? ?? const []);
+      _aiLogTotal = (page['total'] as num?)?.toInt() ?? _aiLogs.length;
+      _aiLogPage = 1;
+      _recomputeTotalTokens();
     } catch (_) {}
     if (mounted) setState(() => _aiLoading = false);
+  }
+
+  // Total tokens matches the site's aiFilterClass behavior: unfiltered sums
+  // the per-class summary; filtered shows just that class's total.
+  void _recomputeTotalTokens() {
+    if (_aiFilterClassId == null) {
+      _totalTokens = 0;
+      for (final s in _aiSummary) _totalTokens += (s['total_tokens'] as num? ?? 0).toInt();
+    } else {
+      final match = _aiSummary.firstWhere(
+        (s) => (s['class_id'] as num?)?.toInt() == _aiFilterClassId,
+        orElse: () => const <String, dynamic>{},
+      );
+      _totalTokens = (match['total_tokens'] as num? ?? 0).toInt();
+    }
+  }
+
+  void _setAiFilterClass(int? classId) {
+    if (_aiFilterClassId == classId) return;
+    setState(() => _aiFilterClassId = classId);
+    _loadAi();
+  }
+
+  Future<void> _loadMoreAiLogs() async {
+    if (_aiLogLoadingMore || _aiLogs.length >= _aiLogTotal) return;
+    setState(() => _aiLogLoadingMore = true);
+    try {
+      final api = context.read<ApiService>();
+      final page = await api.adminAiUsagePage(classId: _aiFilterClassId, page: _aiLogPage + 1, pageSize: _aiLogPageSize);
+      final items = List<dynamic>.from(page['items'] as List? ?? const []);
+      if (mounted) setState(() { _aiLogs.addAll(items); _aiLogPage++; });
+    } catch (_) {}
+    if (mounted) setState(() => _aiLogLoadingMore = false);
   }
 
   List<dynamic> get _filtered => _users.where((u) {
@@ -297,6 +338,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                 final name = u['full_name'] ?? u['email']?.split('@').first ?? '';
                 final role = u['role'] ?? 'student';
                 final isBlocked = u['is_active'] == false;
+                final aiUnlimited = u['ai_unlimited'] == true;
 
                 return TweenAnimationBuilder<double>(
                   key: ValueKey(u['id']),
@@ -349,6 +391,12 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                           PopupMenuItem(value: 'student', child: Text(l.t('set_student'))),
                           PopupMenuItem(value: 'teacher', child: Text(l.t('set_teacher'))),
                           PopupMenuItem(value: 'admin',   child: Text(l.t('set_admin'))),
+                          const PopupMenuDivider(),
+                          PopupMenuItem(value: 'toggle_ai_unlimited', child: Row(children: [
+                            Icon(aiUnlimited ? CupertinoIcons.bolt_fill : CupertinoIcons.bolt, size: 16, color: aiUnlimited ? C.amber : C.text4),
+                            const SizedBox(width: 8),
+                            Text(aiUnlimited ? l.t('ai_unlimited_on') : l.t('ai_unlimited_off')),
+                          ])),
                           const PopupMenuDivider(),
                           PopupMenuItem(value: isBlocked ? 'unblock' : 'block',
                             child: Text(isBlocked ? l.t('unblock') : l.t('block'))),
@@ -417,10 +465,33 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             ),
           ]),
         ),
+        const SizedBox(height: 16),
+
+        // Class filter — like aiFilterClass on the site: filters both the
+        // total-tokens card (via _recomputeTotalTokens) and the log below.
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(children: [
+            _AiFilterChip(label: l.t('filter_all'), selected: _aiFilterClassId == null, onTap: () => _setAiFilterClass(null)),
+            const SizedBox(width: 8),
+            ...classes.map((c) {
+              final cid = (c['id'] as num?)?.toInt();
+              if (cid == null) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: _AiFilterChip(
+                  label: classNames[cid] ?? 'Класс #$cid',
+                  selected: _aiFilterClassId == cid,
+                  onTap: () => _setAiFilterClass(cid),
+                ),
+              );
+            }),
+          ]),
+        ),
         const SizedBox(height: 20),
 
         // By class
-        if (_aiSummary.isNotEmpty) ...[
+        if (_aiFilterClassId == null && _aiSummary.isNotEmpty) ...[
           _SectionLabel(l.t('by_classes')),
           const SizedBox(height: 8),
           ..._aiSummary.asMap().entries.map((entry) {
@@ -508,7 +579,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
 
         // Log table
         if (_aiLogs.isNotEmpty) ...[
-          _SectionLabel('${l.t('detail_log')} (${_aiLogs.length})'),
+          _SectionLabel('${l.t('detail_log')} (${_aiLogs.length}/$_aiLogTotal)'),
           const SizedBox(height: 8),
           Container(
             decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(16), boxShadow: softShadow(isDark)),
@@ -520,7 +591,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                   const SizedBox(width: 22, child: Text('#', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4))),
                   const Expanded(flex: 3, child: Text('ПОЛЬЗОВАТЕЛЬ', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 0.5))),
                   const Expanded(flex: 2, child: Text('КЛАСС', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 0.5))),
-                  SizedBox(width: 60, child: const Text('ТОКЕНЫ', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 0.5), textAlign: TextAlign.right)),
+                  SizedBox(width: 74, child: const Text('ТОКЕНЫ', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 0.5), textAlign: TextAlign.right)),
                 ]),
               ),
               Divider(height: 1, color: C.border.withValues(alpha: 0.5)),
@@ -531,6 +602,9 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                 final userName  = uid != null ? (userNames[uid] ?? 'Пользователь #$uid') : '—';
                 final className = cid != null ? (classNames[cid] ?? 'Класс #$cid') : '—';
                 final isGrade   = (entry['endpoint'] ?? '').toString().contains('grade');
+                final promptTokens     = (entry['prompt_tokens'] as num?)?.toInt() ?? 0;
+                final completionTokens = (entry['completion_tokens'] as num?)?.toInt() ?? 0;
+                final totalTokens      = (entry['total_tokens'] as num?)?.toInt() ?? (promptTokens + completionTokens);
                 final date = entry['created_at'] != null ? (() {
                   try { final d = DateTime.parse(entry['created_at']); return '${d.day.toString().padLeft(2,'0')}.${d.month.toString().padLeft(2,'0')} ${d.hour.toString().padLeft(2,'0')}:${d.minute.toString().padLeft(2,'0')}'; }
                   catch (_) { return ''; }
@@ -559,10 +633,28 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                         child: Text(isGrade ? 'Проверка' : 'Чат', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: isGrade ? primary : C.green)),
                       ),
                     ])),
-                    SizedBox(width: 60, child: Text('${entry['total_tokens'] ?? 0}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: primary), textAlign: TextAlign.right)),
+                    SizedBox(width: 74, child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                      Text('$totalTokens', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: primary)),
+                      Text('$promptTokens+$completionTokens', style: const TextStyle(fontSize: 9, color: C.text4)),
+                    ])),
                   ]),
                 );
               }),
+              if (_aiLogs.length < _aiLogTotal)
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: GestureDetector(
+                    onTap: _aiLogLoadingMore ? null : _loadMoreAiLogs,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
+                      child: Center(child: _aiLogLoadingMore
+                          ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: primary))
+                          : Text('Показать ещё', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: primary))),
+                    ),
+                  ),
+                ),
             ]),
           ),
         ],
@@ -899,6 +991,9 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
         case 'block':   await api.adminBlock(u['id']); break;
         case 'unblock': await api.adminUnblock(u['id']); break;
         case 'delete':  await api.adminDelete(u['id']); break;
+        case 'toggle_ai_unlimited':
+          await api.adminSetAiUnlimited(u['id'], u['ai_unlimited'] != true);
+          break;
       }
       if (mounted) { showToast(context, context.read<L10n>().t('done')); _load(); }
     } catch (_) { if (mounted) showToast(context, context.read<L10n>().t('error'), error: true); }
@@ -992,4 +1087,27 @@ class _SectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(text,
     style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: C.text4, letterSpacing: 1.0));
+}
+
+class _AiFilterChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _AiFilterChip({required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        decoration: BoxDecoration(
+          color: selected ? primary : adaptiveSurface2(context),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(label, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: selected ? Colors.white : C.text3)),
+      ),
+    );
+  }
 }

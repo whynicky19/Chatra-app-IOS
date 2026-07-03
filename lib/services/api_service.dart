@@ -198,12 +198,13 @@ class ApiService {
     return response.data;
   }
 
+  // role больше не отправляется: бэкенд всегда регистрирует student.
+  // Параметр оставлен, чтобы не менять сигнатуру у вызывающих.
   Future<Map<String, dynamic>> register(String email, String password, String role,
       {String? fullName, String orgType = 'university'}) async {
     final response = await _dio.post('/auth/register', data: {
       'email': email,
       'password': password,
-      'role': role,
       if (fullName != null) 'full_name': fullName,
       'org_type': orgType,
     });

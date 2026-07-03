@@ -45,7 +45,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
     return parts.length >= 2 &&
         _nameIsCyrillic &&
         RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(_email.text.trim()) &&
-        _pw.text.length >= 6 &&
+        _pw.text.length >= 8 &&
         _pwScore > 40;
   }
 

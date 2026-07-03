@@ -391,7 +391,8 @@ class ChatsProvider extends ChangeNotifier {
       urlBuilder: () {
         final token = _api.token;
         if (token == null) return null;
-        return '${_api.wsBaseUrl}/ws/chat/$chatId?token=$token';
+        // Роут бэкенда — /ws/{chat_id} (см. websocket.py), не /ws/chat/{id}
+        return '${_api.wsBaseUrl}/ws/$chatId?token=$token';
       },
       onMessage: (data) => _handleWsMessage(chatId, data),
       onFallbackNeeded: () => _startFallbackPoller(chatId),

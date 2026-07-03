@@ -443,7 +443,11 @@ List<Widget> renderSimpleMarkdown(String text, BuildContext context) {
   return widgets;
 }
 
-/// Renders a line with **bold** spans as RichText; plain text otherwise.
+/// Renders a line with **bold** spans as rich text; plain text otherwise.
+/// Uses Text.rich (not a bare RichText) so it inherits the ambient
+/// DefaultTextStyle color — a bare RichText defaults to black and was
+/// rendering invisible on the player's dark background whenever a line
+/// contained "**".
 Widget _boldRichText(String line, TextStyle base) {
   final parts = line.split('**');
   if (parts.length == 1) return Text(line, style: base);
@@ -452,5 +456,5 @@ Widget _boldRichText(String line, TextStyle base) {
     if (parts[i].isEmpty) continue;
     spans.add(TextSpan(text: parts[i], style: i.isOdd ? base.copyWith(fontWeight: FontWeight.w800) : base));
   }
-  return RichText(text: TextSpan(style: base, children: spans));
+  return Text.rich(TextSpan(style: base, children: spans));
 }

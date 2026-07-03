@@ -545,7 +545,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             for (int j = 0; j < 6 && j < clean.length; j++) controllers[j].text = clean[j];
             focusNodes[5].requestFocus(); setS(() { scheduleLookup(get6Code()); }); return;
           }
-          if (val.isNotEmpty && i < 5) focusNodes[i + 1].requestFocus();
+          if (val.isNotEmpty && i < 5) {
+            focusNodes[i + 1].requestFocus();
+          } else if (val.isEmpty && i > 0) {
+            focusNodes[i - 1].requestFocus();
+            controllers[i - 1].selection = TextSelection(baseOffset: 0, extentOffset: controllers[i - 1].text.length);
+          }
           setS(() { scheduleLookup(get6Code()); });
         }
 
@@ -567,20 +572,33 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, color: C.text4, height: 1.5)),
             const SizedBox(height: 24),
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: List.generate(6, (i) =>
-              SizedBox(width: 44, height: 52, child: TextField(
-                controller: controllers[i], focusNode: focusNodes[i],
-                textAlign: TextAlign.center, maxLength: i == 0 ? 6 : 1,
-                textCapitalization: TextCapitalization.characters,
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary),
-                decoration: InputDecoration(
-                  counterText: '',
-                  filled: true, fillColor: adaptiveSurface2(context),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2)),
-                  contentPadding: EdgeInsets.zero,
+              SizedBox(width: 44, height: 52, child: Focus(
+                onKeyEvent: (node, event) {
+                  if (event is KeyDownEvent &&
+                      event.logicalKey == LogicalKeyboardKey.backspace &&
+                      controllers[i].text.isEmpty && i > 0) {
+                    controllers[i - 1].clear();
+                    focusNodes[i - 1].requestFocus();
+                    setS(() { scheduleLookup(get6Code()); });
+                    return KeyEventResult.handled;
+                  }
+                  return KeyEventResult.ignored;
+                },
+                child: TextField(
+                  controller: controllers[i], focusNode: focusNodes[i],
+                  textAlign: TextAlign.center, maxLength: i == 0 ? 6 : 1,
+                  textCapitalization: TextCapitalization.characters,
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary),
+                  decoration: InputDecoration(
+                    counterText: '',
+                    filled: true, fillColor: adaptiveSurface2(context),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2)),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  onChanged: (val) => onKey(i, val),
+                  onTap: () => controllers[i].selection = TextSelection(baseOffset: 0, extentOffset: controllers[i].text.length),
                 ),
-                onChanged: (val) => onKey(i, val),
-                onTap: () => controllers[i].selection = TextSelection(baseOffset: 0, extentOffset: controllers[i].text.length),
               )))),
             if (lookingUp) Padding(padding: const EdgeInsets.only(top: 16),
               child: Row(mainAxisSize: MainAxisSize.min, children: [

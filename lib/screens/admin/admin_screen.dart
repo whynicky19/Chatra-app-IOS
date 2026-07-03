@@ -270,7 +270,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                 const Tab(text: 'AI'),
                 Tab(text: l.t('class_tab')),
                 Tab(child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Text(l.t('admin_avatars_tab')),
+                  Flexible(child: Text(l.t('admin_avatars_tab'), overflow: TextOverflow.ellipsis, maxLines: 1)),
                   if (_avatarsPendingCount > 0) Padding(
                     padding: const EdgeInsets.only(left: 6),
                     child: Container(

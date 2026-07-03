@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/cupertino.dart';
@@ -13,7 +14,6 @@ import '../../providers/l10n_provider.dart';
 import '../../providers/classes_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
-import '../../utils/class_utils.dart';
 import '../../utils/image_cache.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/toast.dart';
@@ -326,8 +326,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       if (context.mounted) showToast(context, context.read<L10n>().t('left_class'));
                     },
                     onCopyCode: () {
-                      Clipboard.setData(ClipboardData(text: classCode(id)));
-                      showToast(context, '${l.t('code_copied')}: ${classCode(id)}');
+                      final code = (cls['invite_code'] ?? '').toString();
+                      if (code.isEmpty) return;
+                      Clipboard.setData(ClipboardData(text: code));
+                      showToast(context, '${l.t('code_copied')}: $code');
                     },
                   );
                   return card;
@@ -385,6 +387,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final l = context.read<L10n>();
     final id = cls['id'] as int;
     final title = cls['title'] ?? '';
+    final code = (cls['invite_code'] ?? '').toString();
     final isPinned = _pinnedIds.contains(id);
     final colors = _grads[id % _grads.length];
     final coverImg = cls['cover_image'];
@@ -415,12 +418,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 title: title,
                 onCopyCode: () {
                   Navigator.pop(ctx);
-                  Clipboard.setData(ClipboardData(text: classCode(id)));
-                  showToast(context, '${l.t('code_copied')}: ${classCode(id)}');
+                  if (code.isEmpty) return;
+                  Clipboard.setData(ClipboardData(text: code));
+                  showToast(context, '${l.t('code_copied')}: $code');
                 },
                 onShare: () {
                   Navigator.pop(ctx);
-                  launchUrl(Uri.parse('chatra://class/${classCode(id)}'));
+                  if (code.isEmpty) return;
+                  launchUrl(Uri.parse('chatra://class/$code'));
                 },
                 onTogglePin: () {
                   Navigator.pop(ctx);
@@ -498,23 +503,50 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   // ── Join dialog ──────────────────────────────────────────────────────────────
   void _showJoinDialog() {
     final provider = context.read<ClassesProvider>();
+    final api = context.read<ApiService>();
     final l = context.read<L10n>();
     final controllers = List.generate(6, (_) => TextEditingController());
     final focusNodes  = List.generate(6, (_) => FocusNode());
     bool busy = false;
+    // Live "does this code exist" preview, backed by a real (non-joining) lookup.
+    Timer? lookupDebounce;
+    bool lookingUp = false;
+    Map<String, dynamic>? foundClass;
+    bool notFoundForCode = false;
 
     showDialog(context: context, barrierDismissible: true,
       builder: (ctx) => StatefulBuilder(builder: (ctx, setS) {
         String get6Code() => controllers.map((c) => c.text.toUpperCase()).join();
 
+        void scheduleLookup(String code) {
+          lookupDebounce?.cancel();
+          if (code.length < 6) {
+            foundClass = null; notFoundForCode = false; lookingUp = false;
+            return;
+          }
+          lookingUp = true; foundClass = null; notFoundForCode = false;
+          lookupDebounce = Timer(const Duration(milliseconds: 400), () async {
+            try {
+              final cls = await api.lookupClassByCode(code);
+              if (!ctx.mounted || get6Code() != code) return;
+              setS(() { lookingUp = false; foundClass = {
+                ...cls, 'title': cls['name'], 'teacher_name': cls['teacher'],
+              }; });
+            } catch (_) {
+              if (!ctx.mounted || get6Code() != code) return;
+              setS(() { lookingUp = false; notFoundForCode = true; });
+            }
+          });
+        }
+
         void onKey(int i, String val) {
           if (val.length > 1) {
             final clean = val.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
             for (int j = 0; j < 6 && j < clean.length; j++) controllers[j].text = clean[j];
-            focusNodes[5].requestFocus(); setS(() {}); return;
+            focusNodes[5].requestFocus(); setS(() { scheduleLookup(get6Code()); }); return;
           }
           if (val.isNotEmpty && i < 5) focusNodes[i + 1].requestFocus();
-          setS(() {});
+          setS(() { scheduleLookup(get6Code()); });
         }
 
         return Dialog(
@@ -550,34 +582,39 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 onChanged: (val) => onKey(i, val),
                 onTap: () => controllers[i].selection = TextSelection(baseOffset: 0, extentOffset: controllers[i].text.length),
               )))),
-            Builder(builder: (_) {
-              final code = get6Code();
-              if (code.length < 6) return const SizedBox.shrink();
-              final found = provider.allClasses.where((c) => classCode(c['id']) == code).toList();
-              if (found.isEmpty) return Padding(padding: const EdgeInsets.only(top: 16),
-                child: Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: C.redLt, borderRadius: BorderRadius.circular(12)),
-                  child: Row(children: [const Icon(CupertinoIcons.exclamationmark_circle, size: 16, color: C.red), const SizedBox(width: 8), Text(l.t('not_found'), style: const TextStyle(fontSize: 13, color: C.red, fontWeight: FontWeight.w500))])));
-              final cls = found.first;
-              final coverImg = cls['cover_image'];
-              final teacherName = cls['teacher_name'] ?? '';
-              return Padding(padding: const EdgeInsets.only(top: 16),
-                child: Container(
-                  decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2))),
-                  clipBehavior: Clip.antiAlias,
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    SizedBox(height: 80, width: double.infinity,
+            if (lookingUp) Padding(padding: const EdgeInsets.only(top: 16),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
+                const SizedBox(width: 10),
+                Text(l.t('checking_code'), style: const TextStyle(fontSize: 13, color: C.text4)),
+              ])),
+            if (!lookingUp && notFoundForCode) Padding(padding: const EdgeInsets.only(top: 16),
+              child: Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: C.redLt, borderRadius: BorderRadius.circular(12)),
+                child: Row(children: [const Icon(CupertinoIcons.exclamationmark_circle, size: 16, color: C.red), const SizedBox(width: 8), Expanded(child: Text(l.t('not_found'), style: const TextStyle(fontSize: 13, color: C.red, fontWeight: FontWeight.w500)))]))),
+            if (!lookingUp && foundClass != null) Padding(padding: const EdgeInsets.only(top: 16),
+              child: Container(
+                decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2))),
+                clipBehavior: Clip.antiAlias,
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Builder(builder: (_) {
+                    final coverImg = foundClass!['cover_image'];
+                    return SizedBox(height: 80, width: double.infinity,
                       child: coverImg != null && coverImg.toString().startsWith('data:')
                           ? Builder(builder: (_) { final bytes = decodeBase64Image(coverImg.toString()); return bytes != null ? Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, gaplessPlayback: true, cacheWidth: 640) : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))); })
                           : coverImg != null
-                              ? CachedNetworkImage(imageUrl: context.read<ApiService>().fixUrl(coverImg.toString()), cacheKey: 'class_cover_${cls['id']}', fit: BoxFit.cover, width: double.infinity, fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero, placeholder: (_, __) => const SizedBox.shrink(), errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))))
-                              : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary])))),
-                    Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(cls['title'] ?? '', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis),
-                      if (teacherName.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 2),
-                        child: Text(teacherName, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary))),
-                    ])),
-                  ])));
-            }),
+                              ? CachedNetworkImage(imageUrl: context.read<ApiService>().fixUrl(coverImg.toString()), fit: BoxFit.cover, width: double.infinity, fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero, placeholder: (_, __) => const SizedBox.shrink(), errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))))
+                              : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))));
+                  }),
+                  Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Row(children: [
+                      const Icon(CupertinoIcons.checkmark_circle_fill, size: 15, color: C.green),
+                      const SizedBox(width: 6),
+                      Expanded(child: Text(foundClass!['title'] ?? '', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                    ]),
+                    if ((foundClass!['teacher_name'] ?? '').toString().isNotEmpty) Padding(padding: const EdgeInsets.only(top: 2, left: 21),
+                      child: Text(foundClass!['teacher_name'], style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary))),
+                  ])),
+                ]))),
             const SizedBox(height: 24),
             const Divider(height: 1),
             const SizedBox(height: 20),
@@ -589,21 +626,23 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               const SizedBox(width: 12),
               Expanded(child: ElevatedButton(
                 style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-                onPressed: busy ? null : () async {
+                onPressed: busy || notFoundForCode ? null : () async {
                   final code = get6Code();
                   if (code.length < 6) { showToast(context, l.t('enter_6_chars'), error: true); return; }
                   setS(() => busy = true);
-                  final found = provider.allClasses.where((c) => classCode(c['id']) == code).toList();
-                  if (found.isNotEmpty) {
-                    final cls = found.first;
+                  try {
+                    final cls = await provider.joinByCode(code);
                     final id = cls['id'] as int;
                     final title = cls['title'] ?? '';
+                    if (!ctx.mounted) return;
                     Navigator.pop(ctx);
-                    await provider.joinClass(id);
                     if (!mounted) return;
                     showToast(context, '${l.t('joined_class')} $title');
                     Navigator.pushNamed(context, '/class', arguments: id);
-                  } else { setS(() => busy = false); showToast(context, l.t('not_found'), error: true); }
+                  } catch (_) {
+                    setS(() => busy = false);
+                    showToast(context, l.t('not_found'), error: true);
+                  }
                 },
                 child: busy
                     ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
@@ -613,6 +652,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         );
       }),
     ).then((_) {
+      lookupDebounce?.cancel();
       for (final c in controllers) { c.dispose(); }
       for (final f in focusNodes) { f.dispose(); }
     });
@@ -623,7 +663,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final provider = context.read<ClassesProvider>();
     final l = context.read<L10n>();
     final nameC = TextEditingController(), descC = TextEditingController(),
-          teacherC = TextEditingController(), groupC = TextEditingController(), periodC = TextEditingController();
+          teacherC = TextEditingController(), periodC = TextEditingController();
     // Local preview only (XFile path) — the actual upload happens on submit,
     // same as the site: the class stores a file URL, not a base64 blob.
     XFile? coverFile;
@@ -655,7 +695,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               const SizedBox(height: 16), _fl3(l.t('class_desc')), TextField(controller: descC, decoration: InputDecoration(hintText: l.t('class_desc_hint')), maxLines: 3),
               const SizedBox(height: 16), _fl3(l.t('period_label')), TextField(controller: periodC, decoration: InputDecoration(hintText: l.t('period_hint'))),
               const SizedBox(height: 16), _fl3(l.t('teacher_label')), TextField(controller: teacherC, decoration: InputDecoration(hintText: l.t('your_name_hint'))),
-              const SizedBox(height: 16), _fl3(l.t('group')), TextField(controller: groupC, decoration: InputDecoration(hintText: l.t('group_hint'))),
               const SizedBox(height: 24),
             ]))),
             Padding(padding: const EdgeInsets.fromLTRB(24, 8, 24, 20), child: Row(children: [
@@ -673,11 +712,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       final res = await api.uploadFile(coverFile!.path, coverFile!.name);
                       coverUrl = (res['url'] ?? res['file_url'] ?? res['path'])?.toString();
                     }
-                    await provider.createClass(nameC.text.trim(), jsonEncode({
-                      'type': 'class', 'description': descC.text.trim(), 'teacher_name': teacherC.text.trim(),
-                      'group': groupC.text.trim(), 'period': periodC.text.trim(),
-                      if (coverUrl != null) 'cover_image': coverUrl,
-                    }));
+                    await provider.createClass(nameC.text.trim(),
+                        description: descC.text.trim(),
+                        teacher: teacherC.text.trim(),
+                        period: periodC.text.trim(),
+                        coverImage: coverUrl);
                     if (!mounted || !ctx.mounted) return;
                     Navigator.pop(ctx);
                     showToast(context, l.t('class_created'));
@@ -696,7 +735,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       nameC.dispose();
       descC.dispose();
       teacherC.dispose();
-      groupC.dispose();
       periodC.dispose();
     });
   }
@@ -743,7 +781,7 @@ class _ClassContextMenu extends StatelessWidget {
     final surface = Theme.of(context).colorScheme.surface;
     final bg2 = adaptiveSurface2(context);
     final primary = Theme.of(context).colorScheme.primary;
-    final code = classCode(cls['id'] as int);
+    final code = (cls['invite_code'] as String?) ?? '';
     final teacherName = cls['teacher_name'] as String? ?? '';
 
     return Material(
@@ -780,7 +818,7 @@ class _ClassContextMenu extends StatelessWidget {
             ),
 
             // ── Code chip ──
-            Padding(
+            if (code.isNotEmpty) Padding(
               padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
               child: Row(children: [
                 Container(
@@ -968,7 +1006,6 @@ class _ClassCard extends StatelessWidget {
     final isDark   = Theme.of(context).brightness == Brightness.dark;
     final surface  = Theme.of(context).colorScheme.surface;
     final coverImg = cls['cover_image'];
-    final group    = cls['group'] ?? '';
     final teacherName = cls['teacher_name'] ?? '';
     final id = cls['id'] as int;
 
@@ -1014,7 +1051,7 @@ class _ClassCard extends StatelessWidget {
                     colors: [Colors.transparent, Colors.black.withValues(alpha: 0.45)],
                   )))),
                   // Teacher code chip
-                  if (isTeacher)
+                  if (isTeacher && (cls['invite_code'] as String? ?? '').isNotEmpty)
                     Positioned(top: 10, left: 10, child: GestureDetector(
                       onTap: onCopyCode,
                       child: Container(
@@ -1023,7 +1060,7 @@ class _ClassCard extends StatelessWidget {
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
                           const Icon(CupertinoIcons.doc_on_doc, size: 11, color: Colors.white60),
                           const SizedBox(width: 4),
-                          Text(classCode(id), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 2)),
+                          Text(cls['invite_code'] as String, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 2)),
                         ]),
                       ))),
                   // Pin icon
@@ -1055,7 +1092,6 @@ class _ClassCard extends StatelessWidget {
               Text(cls['title'] ?? '', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: adaptiveText1(context), height: 1.2), maxLines: 2, overflow: TextOverflow.ellipsis),
               const SizedBox(height: 8),
               Wrap(spacing: 6, runSpacing: 6, children: [
-                if (group.isNotEmpty) _MetaChip(label: group, icon: CupertinoIcons.person_2, isDark: isDark),
                 if (teacherName.isNotEmpty) _MetaChip(label: teacherName, icon: CupertinoIcons.person, isDark: isDark, color: Theme.of(context).colorScheme.primary),
               ]),
               const SizedBox(height: 12),

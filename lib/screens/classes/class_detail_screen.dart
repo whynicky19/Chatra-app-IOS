@@ -15,7 +15,6 @@ import '../../providers/classes_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
-import '../../utils/class_utils.dart';
 import '../../utils/image_cache.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../widgets/skeleton.dart';
@@ -42,6 +41,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   String _cachedLectureContext = '';
   List<String> _cachedLectureImageUrls = [];
   // Cached derived data — computed once in _load() instead of jsonDecode on every getter access.
+  Map<String, dynamic> _classData = {};
   Map<String, dynamic> _meta = {};
   String _title = '';
   List<dynamic> _lectures = [];
@@ -95,15 +95,17 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     if (!mounted) return;
     final api = context.read<ApiService>();
     final isTeacher = context.read<AuthProvider>().isTeacher;
-    // Posts and rating are independent — fetch them in parallel.
+    // Class metadata, posts (lectures/materials) and rating are independent — fetch in parallel.
     final results = await Future.wait([
+      api.getClass(widget.classId).catchError((_) => _classData),
       api.getPosts().catchError((_) => _posts),
       isTeacher
           ? Future<Map<String, dynamic>>.value(_rating)
           : api.getMyRating(classId: widget.classId).catchError((_) => _rating),
     ]);
-    _posts = results[0] as List<dynamic>;
-    if (!isTeacher) _rating = results[1] as Map<String, dynamic>;
+    _classData = results[0] as Map<String, dynamic>;
+    _posts = results[1] as List<dynamic>;
+    if (!isTeacher) _rating = results[2] as Map<String, dynamic>;
     _recomputeDerived();
     if (mounted) setState(() => _loading = false);
     _loadFileTexts();
@@ -114,14 +116,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   void _recomputeDerived() {
     _lectures = _posts.where((p) => (p['title'] ?? '').startsWith('[LECTURE][${widget.classId}]')).toList();
     _materials = _posts.where((p) => (p['title'] ?? '').startsWith('[HW][${widget.classId}]')).toList();
-    final metaPost = _posts.firstWhere(
-      (p) => p['id'] == widget.classId && (() { try { return jsonDecode(p['body'])['type'] == 'class'; } catch (_) { return false; } })(),
-      orElse: () => null,
-    );
-    _meta = metaPost != null
-        ? (() { try { return jsonDecode(metaPost['body']) as Map<String, dynamic>; } catch (_) { return <String, dynamic>{}; } })()
-        : <String, dynamic>{};
-    _title = (_posts.firstWhere((p) => p['id'] == widget.classId, orElse: () => {'title': 'Класс #${widget.classId}'})['title'] ?? '') as String;
+    _meta = _classData;
+    _title = (_classData['name'] ?? 'Класс #${widget.classId}').toString();
     _recomputeAiContext();
   }
 
@@ -417,8 +413,9 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     // and from _load()/_loadFileTexts() does not rebuild the SliverAppBar (which
     // would remount the cover image and cause a flicker). Only rebuild it when one
     // of its actual inputs changes.
+    final inviteCode = (meta['invite_code'] as String?) ?? '';
     final headerSig = '$displayTitle|$displayDesc|${coverImg?.toString() ?? ''}|'
-        '${auth.isTeacher}|${l.t('class_code')}|${l.t('code_copied')}';
+        '${auth.isTeacher}|$inviteCode|${l.t('class_code')}|${l.t('code_copied')}';
     if (headerSig != _headerSig || _headerCache == null) {
       _headerSig = headerSig;
       _headerCache = _ClassCoverSliver(
@@ -427,6 +424,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
         desc: displayDesc,
         coverImg: coverImg,
         isTeacher: auth.isTeacher,
+        inviteCode: inviteCode,
         codeLabel: l.t('class_code'),
         codeCopiedLabel: l.t('code_copied'),
         onBack: () => Navigator.pop(context),
@@ -1487,7 +1485,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
 
   void _editClass() {
     final meta = _meta;
-    final tc = TextEditingController(text: _title), dc = TextEditingController(text: meta['description'] ?? ''), tn = TextEditingController(text: meta['teacher_name'] ?? '');
+    final tc = TextEditingController(text: _title), dc = TextEditingController(text: meta['description'] ?? ''), tn = TextEditingController(text: meta['teacher'] ?? '');
     // Existing cover may be either a legacy base64 data: URI or (new format,
     // matching the site) a plain upload URL — keep reading both, but any
     // NEWLY picked photo is uploaded as a file and stored as a URL only.
@@ -1564,23 +1562,21 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               onPressed: saving ? null : () async {
                 setS(() => saving = true);
                 try {
-                  final post = _posts.firstWhere((p) => p['id'] == widget.classId, orElse: () => null);
-                  if (post == null) return;
                   final api = context.read<ApiService>();
-                  var body = <String, dynamic>{}; try { body = jsonDecode(post['body']); } catch (_) {}
-                  body['type'] = 'class';
-                  body['description'] = dc.text.trim();
-                  body['teacher_name'] = tn.text.trim();
+                  String? coverImage;
                   if (newCoverFile != null) {
                     final res = await api.uploadFile(newCoverFile!.path, newCoverFile!.name);
-                    final url = (res['url'] ?? res['file_url'] ?? res['path'])?.toString();
-                    if (url != null) body['cover_image'] = url; else body.remove('cover_image');
+                    coverImage = (res['url'] ?? res['file_url'] ?? res['path'])?.toString();
                   } else if (coverRemoved) {
-                    body.remove('cover_image');
+                    coverImage = '';
                   } else if (existingCover != null) {
-                    body['cover_image'] = existingCover;
+                    coverImage = existingCover;
                   }
-                  await api.updatePost(widget.classId, tc.text.trim(), jsonEncode(body));
+                  await api.updateClass(widget.classId,
+                      name: tc.text.trim(),
+                      description: dc.text.trim(),
+                      teacher: tn.text.trim(),
+                      coverImage: coverImage);
                   if (!mounted || !ctx.mounted) return;
                   Navigator.pop(ctx); _load(); showToast(context, 'Класс обновлён');
                 } catch (_) {
@@ -1613,6 +1609,7 @@ class _ClassCoverSliver extends StatelessWidget {
   final String desc;
   final dynamic coverImg; // fixed http(s) URL, a data: URI, or null
   final bool isTeacher;
+  final String inviteCode;
   final String codeLabel;
   final String codeCopiedLabel;
   final VoidCallback onBack;
@@ -1624,6 +1621,7 @@ class _ClassCoverSliver extends StatelessWidget {
     required this.desc,
     required this.coverImg,
     required this.isTeacher,
+    required this.inviteCode,
     required this.codeLabel,
     required this.codeCopiedLabel,
     required this.onBack,
@@ -1700,10 +1698,10 @@ class _ClassCoverSliver extends StatelessWidget {
               const SizedBox(height: 4),
               Text(desc, style: const TextStyle(color: Colors.white70, fontSize: 13)),
             ],
-            if (isTeacher) ...[
+            if (isTeacher && inviteCode.isNotEmpty) ...[
               const SizedBox(height: 8),
               GestureDetector(
-                onTap: () { Clipboard.setData(ClipboardData(text: classCode(classId))); showToast(context, '$codeCopiedLabel: ${classCode(classId)}'); },
+                onTap: () { Clipboard.setData(ClipboardData(text: inviteCode)); showToast(context, '$codeCopiedLabel: $inviteCode'); },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(color: adaptivePrimaryLt(context).withValues(alpha: 0.9), borderRadius: BorderRadius.circular(8)),
@@ -1711,7 +1709,7 @@ class _ClassCoverSliver extends StatelessWidget {
                     Icon(CupertinoIcons.doc_on_doc, size: 14, color: primary),
                     const SizedBox(width: 6),
                     Text('$codeLabel: ', style: TextStyle(fontSize: 13, color: primary)),
-                    Text(classCode(classId), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: primary, letterSpacing: 2)),
+                    Text(inviteCode, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: primary, letterSpacing: 2)),
                   ]),
                 ),
               ),

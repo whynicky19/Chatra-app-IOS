@@ -1,11 +1,9 @@
-import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../providers/org_provider.dart';
-import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/toast.dart';
 
@@ -19,11 +17,6 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   final _name   = TextEditingController();
   final _email  = TextEditingController();
   final _pw     = TextEditingController();
-  final _groupQ = TextEditingController();
-  String _group = '';
-  Timer? _groupDebounce;
-  List<String> _suggestions = [];
-  bool _showSugg = false;
   bool _submitted = false;
   late final AnimationController _anim;
   late final Animation<double> _fade;
@@ -39,7 +32,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
     _anim.forward();
   }
 
-  @override void dispose() { _groupDebounce?.cancel(); _anim.dispose(); super.dispose(); }
+  @override void dispose() { _anim.dispose(); super.dispose(); }
 
   bool get _nameIsCyrillic {
     final n = _name.text.trim();
@@ -47,14 +40,13 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
     return RegExp(r'^[а-яА-ЯёЁәӘғҒқҚңҢөӨұҰүҮһҺіІ\s\-]+$').hasMatch(n);
   }
 
-  bool _isValid({required bool isSchool}) {
+  bool get _isValid {
     final parts = _name.text.trim().split(' ').where((s) => s.isNotEmpty).toList();
     return parts.length >= 2 &&
         _nameIsCyrillic &&
         RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(_email.text.trim()) &&
         _pw.text.length >= 6 &&
-        _pwScore > 40 &&
-        (isSchool || _group.isNotEmpty);
+        _pwScore > 40;
   }
 
   int get _pwScore {
@@ -67,23 +59,14 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
     return s;
   }
 
-  void _searchGroups(String q) async {
-    if (q.trim().isEmpty) { setState(() { _suggestions = []; _showSugg = false; }); return; }
-    try {
-      final r = await context.read<ApiService>().searchGroups(q);
-      if (mounted) setState(() { _suggestions = r; _showSugg = r.isNotEmpty; });
-    } catch (_) {}
-  }
-
   Future<void> _submit() async {
     final org = context.read<OrgProvider>();
-    if (!_isValid(isSchool: org.isSchool) || _submitted) return;
+    if (!_isValid || _submitted) return;
     setState(() => _submitted = true);
     final auth = context.read<AuthProvider>();
     final goLogin = widget.onGoLogin;
     final ok = await auth.register(_email.text.trim(), _pw.text, 'student',
         fullName: _name.text.trim(),
-        group: org.isSchool ? null : (_group.isEmpty ? null : _group),
         orgType: org.orgTypeString);
     if (!mounted) {
       if (ok) goLogin?.call();
@@ -104,7 +87,6 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
     final l        = context.watch<L10n>();
     final auth     = context.watch<AuthProvider>();
     final org      = context.watch<OrgProvider>();
-    final isSchool = org.isSchool;
     final sc       = _pwScore;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = Theme.of(context).colorScheme.surface;
@@ -214,42 +196,6 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                 ),
                 const SizedBox(height: 14),
 
-                // Group — только для университета
-                if (!isSchool) ...[
-                  _fieldLabel(l.t('group_label')),
-                  TextField(
-                    controller: _groupQ,
-                    decoration: InputDecoration(
-                      hintText: 'ISU-25',
-                      prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
-                        child: Icon(CupertinoIcons.person_2, size: 18, color: C.text4)),
-                      suffixIcon: _group.isNotEmpty
-                          ? const Icon(CupertinoIcons.checkmark_circle_fill, color: C.green, size: 20)
-                          : null,
-                    ),
-                    onChanged: (v) {
-                      _group = '';
-                      _groupDebounce?.cancel();
-                      _groupDebounce = Timer(const Duration(milliseconds: 350), () => _searchGroups(v));
-                      setState(() {});
-                    },
-                  ),
-                  if (_showSugg) Container(
-                    margin: const EdgeInsets.only(top: 4),
-                    constraints: const BoxConstraints(maxHeight: 150),
-                    decoration: BoxDecoration(
-                      color: surface,
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: softShadow(isDark),
-                    ),
-                    child: ListView(shrinkWrap: true, children: _suggestions.map((g) => ListTile(
-                      dense: true,
-                      title: Text(g, style: const TextStyle(fontWeight: FontWeight.w600)),
-                      onTap: () => setState(() { _group = g; _groupQ.text = g; _showSugg = false; }),
-                    )).toList())),
-                  const SizedBox(height: 14),
-                ],
-
                 // Password
                 _fieldLabel(l.t('password_label')),
                 TextField(
@@ -309,7 +255,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
 
                 SizedBox(width: double.infinity, height: 52,
                   child: ElevatedButton(
-                    onPressed: auth.isLoading || !_isValid(isSchool: isSchool) || _submitted ? null : _submit,
+                    onPressed: auth.isLoading || !_isValid || _submitted ? null : _submit,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: org.primaryColor,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

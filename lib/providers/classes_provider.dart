@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
@@ -21,29 +21,31 @@ class ClassesProvider extends ChangeNotifier {
     errorMessage = null;
   }
 
+  // The real Class API uses `name`/`teacher`/`created_by`; the rest of the UI
+  // still reads the legacy Post-shaped keys (`title`/`teacher_name`/`user_id`).
+  // Normalize once here instead of touching every call site.
+  Map<String, dynamic> _normalizeClass(Map<String, dynamic> c) => {
+        ...c,
+        'title': c['name'],
+        'teacher_name': c['teacher'],
+        'user_id': c['created_by'],
+      };
+
   Future<void> load() async {
     loading = true;
     errorMessage = null;
     notifyListeners();
     try {
-      posts = await _api.getPosts();
+      final results = await Future.wait([_api.getAllClasses(), _api.getPosts()]);
+      _cachedAllClasses = results[0]
+          .map((c) => _normalizeClass(c as Map<String, dynamic>))
+          .toList();
+      posts = results[1];
     } catch (e) {
       errorMessage = 'Не удалось загрузить данные: $e';
     }
-    _recomputeAllClasses();
     loading = false;
     notifyListeners();
-  }
-
-  void _recomputeAllClasses() {
-    _cachedAllClasses = posts.where((p) {
-      try { return jsonDecode(p['body'])['type'] == 'class'; } catch (_) { return false; }
-    }).map((p) {
-      try {
-        final b = jsonDecode(p['body']);
-        return {...p as Map<String, dynamic>, ...b as Map<String, dynamic>, 'title': p['title']};
-      } catch (_) { return p as Map<String, dynamic>; }
-    }).toList();
   }
 
   Future<void> loadJoined() async {
@@ -85,7 +87,6 @@ class ClassesProvider extends ChangeNotifier {
     notifyListeners();
     try {
       await _api.joinClass(id);
-      try { await _api.enrollPostClass(id); } catch (_) {}
       await _saveJoined();
     } catch (e) {
       joinedClassIds.remove(id);
@@ -99,7 +100,6 @@ class ClassesProvider extends ChangeNotifier {
     notifyListeners();
     try {
       await _api.leaveClass(id);
-      try { await _api.leavePostClass(id); } catch (_) {}
       await _saveJoined();
     } catch (e) {
       joinedClassIds.add(id);
@@ -108,9 +108,22 @@ class ClassesProvider extends ChangeNotifier {
     }
   }
 
+  /// Joins a class by its invite code via the real backend lookup (no more
+  /// local guessing of a class's code from its id). Returns the joined class
+  /// (normalized) on success.
+  Future<Map<String, dynamic>> joinByCode(String code) async {
+    final cls = await _api.joinByCode(code);
+    final id = (cls['id'] as num).toInt();
+    joinedClassIds.add(id);
+    await _saveJoined();
+    notifyListeners();
+    unawaited(load());
+    return _normalizeClass(cls);
+  }
+
   Future<void> deleteClass(int id) async {
     try {
-      await _api.deletePost(id);
+      await _api.deleteClass(id);
     } catch (e) {
       errorMessage = 'Ошибка при удалении класса: $e';
       notifyListeners();
@@ -119,9 +132,11 @@ class ClassesProvider extends ChangeNotifier {
     await load();
   }
 
-  Future<void> createClass(String title, String body) async {
+  Future<void> createClass(String name,
+      {String? description, String? teacher, String? period, String? coverImage}) async {
     try {
-      await _api.createPost(title, body);
+      await _api.createClass(name,
+          description: description, teacher: teacher, period: period, coverImage: coverImage);
     } catch (e) {
       errorMessage = 'Ошибка при создании класса: $e';
       notifyListeners();

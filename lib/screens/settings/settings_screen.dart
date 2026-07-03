@@ -133,14 +133,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 hintText: auth.email,
                 prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
                   child: Icon(CupertinoIcons.mail, size: 18, color: C.text4)))),
-              if (auth.group.isNotEmpty) ...[
-                const SizedBox(height: 14),
-                _fieldLabel(l.t('group')),
-                TextField(enabled: false, decoration: InputDecoration(
-                  hintText: auth.group,
-                  prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
-                    child: Icon(CupertinoIcons.person_2, size: 18, color: C.text4)))),
-              ],
               const SizedBox(height: 20),
               SizedBox(width: double.infinity, height: 50,
                 child: ElevatedButton(

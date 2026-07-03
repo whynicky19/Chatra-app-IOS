@@ -199,13 +199,12 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> register(String email, String password, String role,
-      {String? fullName, String? group, String orgType = 'university'}) async {
+      {String? fullName, String orgType = 'university'}) async {
     final response = await _dio.post('/auth/register', data: {
       'email': email,
       'password': password,
       'role': role,
       if (fullName != null) 'full_name': fullName,
-      if (group != null) 'group': group,
       'org_type': orgType,
     });
     return response.data;
@@ -216,17 +215,11 @@ class ApiService {
     return response.data;
   }
 
-  Future<Map<String, dynamic>> updateMe(String fullName, {String? group}) async {
+  Future<Map<String, dynamic>> updateMe(String fullName) async {
     final response = await _dio.patch('/auth/me', data: {
       'full_name': fullName,
-      if (group != null) 'group': group,
     });
     return response.data;
-  }
-
-  Future<List<String>> searchGroups(String q) async {
-    final response = await _dio.get('/auth/groups/search', queryParameters: {'q': q});
-    return List<String>.from(response.data);
   }
 
   // ── Posts (class storage) ────────────────────────────────────────────────────
@@ -274,6 +267,13 @@ class ApiService {
     return response.data;
   }
 
+  /// Read-only existence check for a join code — does NOT join. Throws (404)
+  /// if no class in the user's org has this code.
+  Future<Map<String, dynamic>> lookupClassByCode(String code) async {
+    final response = await _dio.get('/classes/lookup-by-code', queryParameters: {'code': code});
+    return response.data;
+  }
+
   /// Mirrors the site: try the teacher-facing endpoint first (works without
   /// admin rights), fall back to the admin one only if that fails.
   Future<List<dynamic>> getClassMembers(int classId) async {
@@ -285,16 +285,33 @@ class ApiService {
     return response.data is List ? response.data : [];
   }
 
-  Future<void> enrollPostClass(int postId) async => _dio.post('/posts/$postId/join');
-  Future<void> leavePostClass(int postId) async => _dio.delete('/posts/$postId/leave');
-
   Future<void> joinClass(int classId) async => _dio.post('/classes/$classId/join', data: {});
   Future<void> leaveClass(int classId) async => _dio.delete('/classes/$classId/leave');
 
-  Future<Map<String, dynamic>> createClass(String name, {String? description}) async {
+  Future<Map<String, dynamic>> joinByCode(String code) async {
+    final response = await _dio.post('/classes/join-by-code', data: {'code': code});
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> createClass(String name,
+      {String? description, String? teacher, String? period, String? coverImage}) async {
     final response = await _dio.post('/classes/', data: {
       'name': name,
       if (description != null) 'description': description,
+      if (teacher != null) 'teacher': teacher,
+      if (period != null) 'period': period,
+      if (coverImage != null) 'cover_image': coverImage,
+    });
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> updateClass(int classId,
+      {String? name, String? description, String? teacher, String? coverImage}) async {
+    final response = await _dio.put('/classes/$classId', data: {
+      if (name != null) 'name': name,
+      if (description != null) 'description': description,
+      if (teacher != null) 'teacher': teacher,
+      if (coverImage != null) 'cover_image': coverImage,
     });
     return response.data;
   }

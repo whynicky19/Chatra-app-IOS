@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -19,7 +18,7 @@ class AdminScreen extends StatefulWidget {
 class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin {
   late TabController _tabCtrl;
   List<dynamic> _users   = [];
-  List<dynamic> _posts   = [];
+  List<Map<String, dynamic>> _allClassPosts = [];
   List<dynamic> _aiLogs  = [];
   List<dynamic> _aiSummary = [];
   Map<int, List<dynamic>> _classMembers = {};
@@ -64,10 +63,13 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     if (!mounted) return;
     setState(() => _classesLoading = true);
     final api = context.read<ApiService>();
-    try { _posts = await api.getPosts(); } catch (_) {}
+    var classes = <dynamic>[];
+    try { classes = await api.getAllClasses(); } catch (_) {}
+    _allClassPosts = classes
+        .map((c) => {...c as Map<String, dynamic>, 'title': c['name'], 'teacher_name': c['teacher'], 'user_id': c['created_by']})
+        .toList();
     // Fetch real members for each class in parallel
-    final classes = _allClassPosts;
-    final results = await Future.wait(classes.map((c) async {
+    final results = await Future.wait(_allClassPosts.map((c) async {
       final id = (c['id'] as num?)?.toInt();
       if (id == null) return MapEntry(0, <dynamic>[]);
       try {
@@ -79,15 +81,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     }));
     _classMembers = Map.fromEntries(results.where((e) => e.key != 0));
     if (mounted) setState(() => _classesLoading = false);
-  }
-
-  List<Map<String, dynamic>> get _allClassPosts {
-    return _posts.where((p) {
-      try { return jsonDecode(p['body'])['type'] == 'class'; } catch (_) { return false; }
-    }).map((p) {
-      try { final b = jsonDecode(p['body']) as Map<String, dynamic>; return {...p as Map<String, dynamic>, ...b, 'title': p['title']}; }
-      catch (_) { return p as Map<String, dynamic>; }
-    }).toList();
   }
 
   Future<void> _loadAi() async {
@@ -699,7 +692,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           final uid         = (cls['user_id'] as num?)?.toInt();
           final creatorName = uid != null ? (userNames[uid] ?? 'Пользователь #$uid') : '—';
           final description = (cls['description'] ?? '').toString();
-          final group       = (cls['group'] ?? '').toString();
           final teacherName = (cls['teacher_name'] ?? '').toString();
           final members     = _membersForClass(classId);
           final students    = members.where((m) => (m['role'] ?? '') == 'student').toList();
@@ -762,10 +754,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                           Text(l.t('created_by'), style: const TextStyle(fontSize: 10, color: C.text4, fontWeight: FontWeight.w500)),
                           Text(creatorName, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: primary), overflow: TextOverflow.ellipsis),
                         ])),
-                        if (group.isNotEmpty) Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(8)),
-                          child: Text(group, style: const TextStyle(fontSize: 11, color: C.text4, fontWeight: FontWeight.w700))),
                       ]),
                     ),
                     if (teacherName.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8),
@@ -911,7 +899,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                         final name     = (s['full_name'] ?? '').toString().trim();
                         final email    = (s['email'] ?? '').toString();
                         final role     = (s['role'] ?? '').toString();
-                        final sGroup   = (s['group'] ?? '').toString();
                         final display  = name.isNotEmpty ? name : email.split('@').first;
                         final initials = display.trim().isEmpty ? '?' : display.trim()
                             .split(RegExp(r'\s+')).take(2)
@@ -944,13 +931,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                 decoration: BoxDecoration(color: roleColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
                                 child: Text(roleLabel, style: TextStyle(fontSize: 11, color: roleColor, fontWeight: FontWeight.w700))),
-                              if (sGroup.isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(8)),
-                                  child: Text(sGroup, style: const TextStyle(fontSize: 11, color: C.text4, fontWeight: FontWeight.w700))),
-                              ],
                             ]),
                           ]),
                         );

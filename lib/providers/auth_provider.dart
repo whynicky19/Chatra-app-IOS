@@ -20,7 +20,6 @@ class AuthProvider extends ChangeNotifier {
   int? get userId => _user?['id'];
   String get email => _user?['email'] ?? '';
   String get fullName => _user?['full_name'] ?? '';
-  String get group => _user?['group'] ?? '';
   bool get initialized => _initialized;
 
   String get displayName {
@@ -73,12 +72,12 @@ class AuthProvider extends ChangeNotifier {
 
   String? lastError;
 
-  Future<bool> register(String email, String password, String role, {String? fullName, String? group, String orgType = 'university'}) async {
+  Future<bool> register(String email, String password, String role, {String? fullName, String orgType = 'university'}) async {
     _isLoading = true;
     lastError = null;
     notifyListeners();
     try {
-      await api.register(email, password, role, fullName: fullName, group: group, orgType: orgType);
+      await api.register(email, password, role, fullName: fullName, orgType: orgType);
       _isLoading = false;
       notifyListeners();
       return true;
@@ -87,8 +86,6 @@ class AuthProvider extends ChangeNotifier {
       final statusCode = (e is DioException) ? e.response?.statusCode : null;
       if (statusCode == 409) {
         lastError = 'Этот email уже зарегистрирован';
-      } else if (statusCode == 400) {
-        lastError = 'Такой группы не существует';
       } else {
         lastError = 'Ошибка регистрации. Попробуйте снова';
       }

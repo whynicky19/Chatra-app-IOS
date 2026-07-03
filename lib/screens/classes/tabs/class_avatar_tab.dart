@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../models/avatar_models.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../providers/l10n_provider.dart';
 import '../../../services/api_service.dart';
 import '../../../theme/app_theme.dart';
@@ -121,12 +122,19 @@ class _ClassAvatarTabState extends State<ClassAvatarTab> {
     if (ok == true && mounted) _loadAll();
   }
 
+  // Удалять может владелец лекции или админ (это же правило на бэке).
+  bool _canDeleteLecture(AvatarLecture lec) {
+    final auth = context.read<AuthProvider>();
+    return auth.isAdmin || (widget.isTeacher && lec.createdBy == auth.userId);
+  }
+
   Future<void> _deleteLecture(AvatarLecture lecture) async {
     final l = context.read<L10n>();
     final ok = await showCupertinoDialog<bool>(
       context: context,
       builder: (c) => CupertinoAlertDialog(
         title: Text(l.t('lecture_delete_confirm')),
+        content: Text('«${lecture.title}»'),
         actions: [
           CupertinoDialogAction(onPressed: () => Navigator.pop(c, false), child: Text(l.t('cancel'))),
           CupertinoDialogAction(isDestructiveAction: true, onPressed: () => Navigator.pop(c, true), child: Text(l.t('delete'))),
@@ -189,7 +197,7 @@ class _ClassAvatarTabState extends State<ClassAvatarTab> {
                   lecture: lec,
                   isTeacher: widget.isTeacher,
                   onTap: () => _openPlayer(lec),
-                  onDelete: lec.canDelete ? () => _deleteLecture(lec) : null,
+                  onDelete: _canDeleteLecture(lec) ? () => _deleteLecture(lec) : null,
                 )),
           ] else
             _buildEmptyState(l, primary),

@@ -94,7 +94,6 @@ class AvatarLecture {
   bool get isGenerating => status == 'approved' || status == 'generating';
   bool get isRejected => status == 'rejected';
   bool get isFailed => status == 'failed';
-  bool get canDelete => isPendingApproval || isRejected || isFailed;
 
   factory AvatarLecture.fromJson(Map<String, dynamic> json, ApiService api) {
     return AvatarLecture(

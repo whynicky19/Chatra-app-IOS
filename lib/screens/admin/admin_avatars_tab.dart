@@ -7,6 +7,7 @@ import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/dates.dart';
+import '../../utils/file_opener.dart';
 import '../../widgets/toast.dart';
 
 class AdminAvatarsTab extends StatefulWidget {
@@ -374,6 +375,38 @@ class _AdminLectureCard extends StatelessWidget {
         const SizedBox(height: 6),
         Text('${l.t('estimated_cost')}: ~\$${lecture.estimatedCostUsd.toStringAsFixed(2)} (${lecture.estimatedChars} ${l.t('characters_label')})',
           style: const TextStyle(fontSize: 12, color: C.text4)),
+        // The attached presentation — the admin reviews it before approving.
+        if (lecture.sourceFileUrl != null) ...[
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: () => openRemoteFile(context, context.read<ApiService>(),
+                lecture.sourceFileUrl!, lecture.sourceFilename ?? 'presentation'),
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: primary.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: primary.withValues(alpha: 0.18)),
+              ),
+              child: Row(children: [
+                Container(width: 36, height: 36,
+                  decoration: BoxDecoration(color: primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                  child: Icon(
+                    (lecture.sourceFilename ?? '').toLowerCase().endsWith('.pdf')
+                        ? CupertinoIcons.doc_text_fill : CupertinoIcons.film_fill,
+                    size: 17, color: primary)),
+                const SizedBox(width: 10),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(lecture.sourceFilename ?? l.t('open_presentation'),
+                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 2),
+                  Text(l.t('open_presentation'), style: TextStyle(fontSize: 11, color: primary, fontWeight: FontWeight.w600)),
+                ])),
+                Icon(CupertinoIcons.arrow_up_right_square, size: 16, color: primary),
+              ]),
+            ),
+          ),
+        ],
         if (lecture.isRejected && lecture.rejectionReason != null && lecture.rejectionReason!.isNotEmpty)
           Padding(padding: const EdgeInsets.only(top: 8), child: Text(lecture.rejectionReason!, style: const TextStyle(fontSize: 12, color: C.red, height: 1.4))),
         if (lecture.isFailed && lecture.errorMessage != null && lecture.errorMessage!.isNotEmpty)

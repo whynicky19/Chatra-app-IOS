@@ -473,16 +473,35 @@ class _LectureCard extends StatelessWidget {
               else if (lecture.isReady)
                 Icon(CupertinoIcons.chevron_right, size: 16, color: C.text4.withValues(alpha: 0.6)),
             ]),
-            const SizedBox(height: 11),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(8)),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(statusIcon, size: 12, color: statusColor),
-                const SizedBox(width: 4),
-                Text(statusText, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: statusColor)),
+            // Ready cards already read as playable (play tile + chevron) — a
+            // status chip would just repeat that. Non-ready states keep the
+            // chip, and generation shows a live progress strip so the teacher
+            // can see the pipeline is actually working.
+            if (!lecture.isReady) ...[
+              const SizedBox(height: 11),
+              Row(children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(8)),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(statusIcon, size: 12, color: statusColor),
+                    const SizedBox(width: 4),
+                    Text(statusText, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: statusColor)),
+                  ]),
+                ),
+                if (lecture.isGenerating) ...[
+                  const SizedBox(width: 10),
+                  Expanded(child: ClipRRect(
+                    borderRadius: BorderRadius.circular(2),
+                    child: LinearProgressIndicator(
+                      minHeight: 3,
+                      color: statusColor,
+                      backgroundColor: statusColor.withValues(alpha: 0.15),
+                    ),
+                  )),
+                ],
               ]),
-            ),
+            ],
             if (lecture.isRejected && lecture.rejectionReason != null && lecture.rejectionReason!.isNotEmpty)
               Padding(padding: const EdgeInsets.only(top: 8),
                 child: Text(lecture.rejectionReason!, style: const TextStyle(fontSize: 12, color: C.red, height: 1.4))),

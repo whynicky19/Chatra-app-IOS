@@ -56,6 +56,7 @@ class AvatarLecture {
   final int createdBy;
   final String title;
   final String? sourceFilename;
+  final String? sourceFileUrl;
   final int durationMinutes;
   final String style; // school | university | professional
   final bool autoSummary;
@@ -77,6 +78,7 @@ class AvatarLecture {
     required this.createdBy,
     required this.title,
     this.sourceFilename,
+    this.sourceFileUrl,
     required this.durationMinutes,
     required this.style,
     required this.autoSummary,
@@ -106,6 +108,9 @@ class AvatarLecture {
       createdBy: (json['created_by'] as num?)?.toInt() ?? 0,
       title: json['title'] as String? ?? '',
       sourceFilename: json['source_filename'] as String?,
+      sourceFileUrl: (json['source_file_url'] == null || json['source_file_url'].toString().isEmpty)
+          ? null
+          : api.fixUrl(json['source_file_url'].toString()),
       durationMinutes: (json['duration_minutes'] as num?)?.toInt() ?? 0,
       style: json['style'] as String? ?? 'university',
       autoSummary: json['auto_summary'] as bool? ?? true,

@@ -52,6 +52,7 @@ class AvatarLecture {
   final int id;
   final int avatarId;
   final int classId;
+  final String? className;
   final int createdBy;
   final String title;
   final String? sourceFilename;
@@ -72,6 +73,7 @@ class AvatarLecture {
     required this.id,
     required this.avatarId,
     required this.classId,
+    this.className,
     required this.createdBy,
     required this.title,
     this.sourceFilename,
@@ -100,6 +102,7 @@ class AvatarLecture {
       id: (json['id'] as num).toInt(),
       avatarId: (json['avatar_id'] as num?)?.toInt() ?? 0,
       classId: (json['class_id'] as num?)?.toInt() ?? 0,
+      className: json['class_name'] as String?,
       createdBy: (json['created_by'] as num?)?.toInt() ?? 0,
       title: json['title'] as String? ?? '',
       sourceFilename: json['source_filename'] as String?,

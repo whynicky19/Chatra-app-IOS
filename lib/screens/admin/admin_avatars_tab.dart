@@ -6,6 +6,7 @@ import '../../models/avatar_models.dart';
 import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/dates.dart';
 import '../../widgets/toast.dart';
 
 class AdminAvatarsTab extends StatefulWidget {
@@ -327,9 +328,7 @@ class _AvatarRequestCard extends StatelessWidget {
     );
   }
 
-  String _fmtDate(String d) {
-    try { final dt = DateTime.parse(d); return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}.${dt.year}'; } catch (_) { return d; }
-  }
+  String _fmtDate(String d) => fmtDateTimeLocal(d);
 }
 
 class _AdminLectureCard extends StatelessWidget {
@@ -366,7 +365,8 @@ class _AdminLectureCard extends StatelessWidget {
         ]),
         const SizedBox(height: 8),
         Wrap(spacing: 12, runSpacing: 6, children: [
-          _metaItem(CupertinoIcons.tag, '${l.t('class_label')} ${lecture.classId}'),
+          _metaItem(CupertinoIcons.tag,
+            lecture.className?.isNotEmpty == true ? lecture.className! : '${l.t('class_label')} ${lecture.classId}'),
           _metaItem(CupertinoIcons.clock, '${lecture.durationMinutes} ${l.t('minutes_suffix')}'),
           _metaItem(CupertinoIcons.text_bubble, lecture.style),
           _metaItem(CupertinoIcons.calendar, _fmtDate(lecture.createdAt)),
@@ -399,9 +399,7 @@ class _AdminLectureCard extends StatelessWidget {
         Text(text, style: const TextStyle(fontSize: 11, color: C.text4)),
       ]);
 
-  String _fmtDate(String d) {
-    try { final dt = DateTime.parse(d); return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}.${dt.year}'; } catch (_) { return d; }
-  }
+  String _fmtDate(String d) => fmtDateTimeLocal(d);
 }
 
 class _MiniAudioPlayer extends StatefulWidget {

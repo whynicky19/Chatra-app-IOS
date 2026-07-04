@@ -262,42 +262,41 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
           constraints: BoxConstraints(minHeight: constraints.maxHeight),
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
             Container(
-              width: 106, height: 106,
+              width: 92, height: 92,
               decoration: BoxDecoration(shape: BoxShape.circle, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)),
               child: Center(
                 child: Container(
-                  width: 78, height: 78,
+                  width: 68, height: 68,
                   decoration: BoxDecoration(
                     color: isDark ? C.darkSurface : Colors.white,
-                    borderRadius: BorderRadius.circular(22),
+                    borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.18), blurRadius: 20, offset: const Offset(0, 5)),
                       BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, 2)),
                     ],
                   ),
-                  padding: const EdgeInsets.all(14),
+                  padding: const EdgeInsets.all(12),
                   child: const AppLogo(fit: BoxFit.contain),
                 ),
               ),
             ),
-            const SizedBox(height: 14),
-            Text('Chatra AI', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: adaptiveText1(context), letterSpacing: -0.5)),
-            const SizedBox(height: 6),
-            Text(subtitle, style: const TextStyle(fontSize: 13, color: C.text4, height: 1.4), textAlign: TextAlign.center),
-            const SizedBox(height: 20),
-            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Expanded(child: Column(children: [
-                _tipCard(tips[0], isDark, 0),
-                const SizedBox(height: 12),
-                _tipCard(tips[2], isDark, 2),
-              ])),
-              const SizedBox(width: 12),
-              Expanded(child: Column(children: [
-                _tipCard(tips[1], isDark, 1),
-                const SizedBox(height: 12),
-                _tipCard(tips[3], isDark, 3),
-              ])),
-            ]),
+            const SizedBox(height: 12),
+            Text('Chatra AI', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w700, color: adaptiveText1(context), letterSpacing: -0.5)),
+            const SizedBox(height: 5),
+            Text(subtitle, style: const TextStyle(fontSize: 12.5, color: C.text4, height: 1.35), textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            // Сетка с фиксированной пропорцией — все карточки одного размера
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              childAspectRatio: 1.3,
+              children: List.generate(4, (i) => _tipCard(tips[i], isDark, i)),
+            ),
+            // Приподнимаем блок чуть выше оптического центра
+            const SizedBox(height: 36),
           ]),
         ),
       );
@@ -319,7 +318,7 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
           _send(tip['prompt'] as String);
         },
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: isDark ? C.darkSurface : Colors.white,
             borderRadius: BorderRadius.circular(20),
@@ -327,14 +326,18 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Container(
-              width: 40, height: 40,
-              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(12)),
-              child: Icon(tip['icon'] as IconData, size: 20, color: Theme.of(context).colorScheme.primary),
+              width: 36, height: 36,
+              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(11)),
+              child: Icon(tip['icon'] as IconData, size: 18, color: Theme.of(context).colorScheme.primary),
             ),
-            const SizedBox(height: 14),
-            Text(tip['title'] as String, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: adaptiveText1(context), height: 1.2)),
-            const SizedBox(height: 6),
-            Text(tip['desc'] as String, style: const TextStyle(fontSize: 12, color: C.text4, height: 1.4)),
+            const Spacer(),
+            Text(tip['title'] as String,
+              style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: adaptiveText1(context), height: 1.15),
+              maxLines: 1, overflow: TextOverflow.ellipsis),
+            const SizedBox(height: 4),
+            Text(tip['desc'] as String,
+              style: const TextStyle(fontSize: 11.5, color: C.text4, height: 1.3),
+              maxLines: 2, overflow: TextOverflow.ellipsis),
           ]),
         ),
       ),

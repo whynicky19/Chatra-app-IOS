@@ -146,10 +146,6 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
             Text(l.t('messages_title'), style: TextStyle(fontSize: 30, fontWeight: FontWeight.w700, color: adaptiveText1(context), letterSpacing: -0.8)),
             Text(l.t('your_conversations'), style: const TextStyle(fontSize: 13, color: C.text4)),
           ])),
-          GestureDetector(
-            onTap: () { FocusScope.of(context).requestFocus(FocusNode()); showToast(context, l.t('find_user_hint')); },
-            child: Container(width: 40, height: 40, decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
-              child: Icon(CupertinoIcons.pencil, color: Theme.of(context).colorScheme.primary, size: 18))),
         ])),
         const SizedBox(height: 14),
         // Search bar — iOS style pill
@@ -321,14 +317,17 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
 
   Widget _emptyState() {
     final l = context.read<L10n>();
-    return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+    // Scrollable so it can't overflow when the keyboard plus the search
+    // results panel squeeze the remaining space (was: "bottom overflowed by
+    // 61 pixels" while searching people with no chats yet).
+    return Center(child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
       Container(width: 80, height: 80, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
         child: Icon(CupertinoIcons.bubble_left, size: 36, color: Theme.of(context).colorScheme.primary)),
       const SizedBox(height: 16),
       Text(l.t('no_chats'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
       const SizedBox(height: 6),
       Text(l.t('search_above'), style: const TextStyle(fontSize: 14, color: C.text4)),
-    ]));
+    ])));
   }
 
   // ── Chat view ─────────────────────────────────────────────────────────────────

@@ -8,6 +8,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/l10n_provider.dart';
 import '../../../services/api_service.dart';
 import '../../../theme/app_theme.dart';
+import '../../../widgets/app_dialog.dart';
 import '../../../widgets/skeleton.dart';
 import '../../../widgets/toast.dart';
 import '../../avatars/create_avatar_sheet.dart';
@@ -130,17 +131,13 @@ class _ClassAvatarTabState extends State<ClassAvatarTab> {
 
   Future<void> _deleteLecture(AvatarLecture lecture) async {
     final l = context.read<L10n>();
-    final ok = await showCupertinoDialog<bool>(
-      context: context,
-      builder: (c) => CupertinoAlertDialog(
-        title: Text(l.t('lecture_delete_confirm')),
-        content: Text('«${lecture.title}»'),
-        actions: [
-          CupertinoDialogAction(onPressed: () => Navigator.pop(c, false), child: Text(l.t('cancel'))),
-          CupertinoDialogAction(isDestructiveAction: true, onPressed: () => Navigator.pop(c, true), child: Text(l.t('delete'))),
-        ],
-      ),
-    );
+    final ok = await showConfirmDialog(context,
+      title: l.t('lecture_delete_confirm'),
+      message: '«${lecture.title}»',
+      icon: CupertinoIcons.trash,
+      danger: true,
+      confirmText: l.t('delete'),
+      cancelText: l.t('cancel'));
     if (ok != true || !mounted) return;
     try {
       await context.read<ApiService>().deleteAvatarLecture(lecture.id);

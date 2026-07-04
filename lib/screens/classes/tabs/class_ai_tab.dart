@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../services/api_service.dart';
 import '../../../theme/app_theme.dart';
+import '../../../widgets/app_dialog.dart';
 import '../rag_documents_sheet.dart';
 
 class ClassAiTab extends StatefulWidget {
@@ -88,17 +89,13 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
   }
 
   Future<void> _clearHistory() async {
-    final ok = await showCupertinoDialog<bool>(
-      context: context,
-      builder: (d) => CupertinoAlertDialog(
-        title: const Text('Очистить историю?'),
-        content: const Text('Все сообщения этого чата будут удалены.'),
-        actions: [
-          CupertinoDialogAction(onPressed: () => Navigator.pop(d, false), child: const Text('Отмена')),
-          CupertinoDialogAction(isDestructiveAction: true, onPressed: () => Navigator.pop(d, true), child: const Text('Очистить')),
-        ],
-      ),
-    );
+    final ok = await showConfirmDialog(context,
+      title: 'Очистить историю?',
+      message: 'Все сообщения этого чата будут удалены.',
+      icon: CupertinoIcons.trash,
+      danger: true,
+      confirmText: 'Очистить',
+      cancelText: 'Отмена');
     if (ok == true && mounted) {
       setState(() => _msgs.clear());
       try {

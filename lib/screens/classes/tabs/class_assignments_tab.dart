@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../../providers/l10n_provider.dart';
 import '../../../services/api_service.dart';
 import '../../../theme/app_theme.dart';
+import '../../../widgets/app_dialog.dart';
 import '../../../widgets/toast.dart';
 
 class ClassAssignmentsTab extends StatefulWidget {
@@ -818,14 +819,13 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             OutlinedButton(
               onPressed: () async {
                 Navigator.pop(ctx);
-                final ok = await showCupertinoDialog<bool>(context: context, builder: (d) => CupertinoAlertDialog(
-                  title: const Text('Удалить задание?'),
-                  content: const Text('Это действие нельзя отменить'),
-                  actions: [
-                    CupertinoDialogAction(onPressed: () => Navigator.pop(d, false), child: const Text('Отмена')),
-                    CupertinoDialogAction(isDestructiveAction: true, onPressed: () => Navigator.pop(d, true), child: const Text('Удалить')),
-                  ],
-                ));
+                final ok = await showConfirmDialog(context,
+                  title: 'Удалить задание?',
+                  message: 'Это действие нельзя отменить',
+                  icon: CupertinoIcons.trash,
+                  danger: true,
+                  confirmText: 'Удалить',
+                  cancelText: 'Отмена');
                 if (ok == true && mounted) {
                   try {
                     await context.read<ApiService>().deleteAssignment(a['id']);
@@ -1202,17 +1202,13 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
 
   Future<void> _confirmDeleteSubmission(BuildContext ctx, dynamic sub, VoidCallback onDeleted) async {
     final l = context.read<L10n>();
-    final ok = await showCupertinoDialog<bool>(
-      context: ctx,
-      builder: (c) => CupertinoAlertDialog(
-        title: Text(l.t('delete_submission')),
-        content: Text(l.t('delete_submission_confirm')),
-        actions: [
-          CupertinoDialogAction(onPressed: () => Navigator.pop(c, false), child: Text(l.t('cancel'))),
-          CupertinoDialogAction(isDestructiveAction: true, onPressed: () => Navigator.pop(c, true), child: Text(l.t('delete'))),
-        ],
-      ),
-    );
+    final ok = await showConfirmDialog(ctx,
+      title: l.t('delete_submission'),
+      message: l.t('delete_submission_confirm'),
+      icon: CupertinoIcons.trash,
+      danger: true,
+      confirmText: l.t('delete'),
+      cancelText: l.t('cancel'));
     if (ok != true || !mounted || !ctx.mounted) return;
     try {
       await context.read<ApiService>().deleteSubmission((sub['id'] as num).toInt());

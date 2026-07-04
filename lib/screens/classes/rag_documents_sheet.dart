@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_dialog.dart';
 import '../../widgets/toast.dart';
 
 /// Teacher-only "AI documents" bottom sheet — upload/list/delete files the
@@ -68,16 +69,12 @@ class _RagDocumentsSheetState extends State<_RagDocumentsSheet> {
 
   Future<void> _delete(dynamic doc) async {
     final l = context.read<L10n>();
-    final ok = await showCupertinoDialog<bool>(
-      context: context,
-      builder: (c) => CupertinoAlertDialog(
-        title: Text(l.t('ai_documents_delete_confirm')),
-        actions: [
-          CupertinoDialogAction(onPressed: () => Navigator.pop(c, false), child: Text(l.t('cancel'))),
-          CupertinoDialogAction(isDestructiveAction: true, onPressed: () => Navigator.pop(c, true), child: Text(l.t('delete'))),
-        ],
-      ),
-    );
+    final ok = await showConfirmDialog(context,
+      title: l.t('ai_documents_delete_confirm'),
+      icon: CupertinoIcons.trash,
+      danger: true,
+      confirmText: l.t('delete'),
+      cancelText: l.t('cancel'));
     if (ok != true || !mounted) return;
     final id = (doc['id'] as num?)?.toInt();
     if (id == null) return;

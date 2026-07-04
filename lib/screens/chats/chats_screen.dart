@@ -11,6 +11,7 @@ import '../../providers/l10n_provider.dart';
 import '../../providers/chats_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_dialog.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/toast.dart';
 
@@ -254,17 +255,13 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
                       ),
                       confirmDismiss: (_) async {
                         HapticFeedback.mediumImpact();
-                        return await showCupertinoDialog<bool>(
-                          context: context,
-                          builder: (d) => CupertinoAlertDialog(
-                            title: const Text('Удалить чат?'),
-                            content: Text('Чат с $title будет удалён навсегда.'),
-                            actions: [
-                              CupertinoDialogAction(onPressed: () => Navigator.pop(d, false), child: const Text('Отмена')),
-                              CupertinoDialogAction(isDestructiveAction: true, onPressed: () => Navigator.pop(d, true), child: const Text('Удалить')),
-                            ],
-                          ),
-                        ) ?? false;
+                        return await showConfirmDialog(context,
+                          title: 'Удалить чат?',
+                          message: 'Чат с $title будет удалён навсегда.',
+                          icon: CupertinoIcons.trash,
+                          danger: true,
+                          confirmText: 'Удалить',
+                          cancelText: 'Отмена') ?? false;
                       },
                       onDismissed: (_) async {
                         final ok = await context.read<ChatsProvider>().deleteChat(id);

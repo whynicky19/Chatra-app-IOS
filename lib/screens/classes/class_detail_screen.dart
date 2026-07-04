@@ -15,6 +15,7 @@ import '../../providers/classes_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_dialog.dart';
 import '../../utils/image_cache.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../widgets/skeleton.dart';
@@ -1471,13 +1472,12 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                             GestureDetector(
                               onTap: () async {
                                 if (vid == null) return;
-                                final ok = await showCupertinoDialog<bool>(context: context, builder: (c) => CupertinoAlertDialog(
-                                  title: Text(l.t('variant_delete_confirm')),
-                                  actions: [
-                                    CupertinoDialogAction(onPressed: () => Navigator.pop(c, false), child: Text(l.t('cancel'))),
-                                    CupertinoDialogAction(isDestructiveAction: true, onPressed: () => Navigator.pop(c, true), child: Text(l.t('delete'))),
-                                  ],
-                                ));
+                                final ok = await showConfirmDialog(context,
+                                  title: l.t('variant_delete_confirm'),
+                                  icon: CupertinoIcons.trash,
+                                  danger: true,
+                                  confirmText: l.t('delete'),
+                                  cancelText: l.t('cancel'));
                                 if (ok != true || !mounted || !ctx.mounted) return;
                                 try {
                                   await context.read<ApiService>().deleteAssignmentVariant(assignmentId, vid);

@@ -6,6 +6,7 @@ import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/image_cache.dart';
+import '../../widgets/app_dialog.dart';
 import '../../widgets/toast.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'admin_avatars_tab.dart';
@@ -331,7 +332,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                 final name = u['full_name'] ?? u['email']?.split('@').first ?? '';
                 final role = u['role'] ?? 'student';
                 final isBlocked = u['is_active'] == false;
-                final aiUnlimited = u['ai_unlimited'] == true;
 
                 return TweenAnimationBuilder<double>(
                   key: ValueKey(u['id']),
@@ -376,26 +376,14 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                       ])),
                       const SizedBox(width: 8),
                       _RoleBadge(role: role),
-                      PopupMenuButton<String>(
-                        icon: const Icon(CupertinoIcons.ellipsis, size: 20, color: C.text4),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        onSelected: (v) => _action(u, v),
-                        itemBuilder: (_) => [
-                          PopupMenuItem(value: 'student', child: Text(l.t('set_student'))),
-                          PopupMenuItem(value: 'teacher', child: Text(l.t('set_teacher'))),
-                          PopupMenuItem(value: 'admin',   child: Text(l.t('set_admin'))),
-                          const PopupMenuDivider(),
-                          PopupMenuItem(value: 'toggle_ai_unlimited', child: Row(children: [
-                            Icon(aiUnlimited ? CupertinoIcons.bolt_fill : CupertinoIcons.bolt, size: 16, color: aiUnlimited ? C.amber : C.text4),
-                            const SizedBox(width: 8),
-                            Text(aiUnlimited ? l.t('ai_unlimited_on') : l.t('ai_unlimited_off')),
-                          ])),
-                          const PopupMenuDivider(),
-                          PopupMenuItem(value: isBlocked ? 'unblock' : 'block',
-                            child: Text(isBlocked ? l.t('unblock') : l.t('block'))),
-                          PopupMenuItem(value: 'delete',
-                            child: Text(l.t('delete'), style: const TextStyle(color: C.red))),
-                        ],
+                      GestureDetector(
+                        onTap: () => _showUserActionsSheet(u),
+                        child: Container(
+                          width: 34, height: 34,
+                          margin: const EdgeInsets.only(left: 4),
+                          decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(10)),
+                          child: const Icon(CupertinoIcons.ellipsis, size: 17, color: C.text4),
+                        ),
                       ),
                     ]),
                   )),
@@ -962,9 +950,9 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
       errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))));
   }
 
-  void _action(dynamic u, String action) async {
+  Future<bool> _action(dynamic u, String action) async {
     final api = context.read<ApiService>();
-    if (u['id'] == context.read<AuthProvider>().userId && ['block', 'delete'].contains(action)) return;
+    if (u['id'] == context.read<AuthProvider>().userId && ['block', 'delete'].contains(action)) return false;
     try {
       switch (action) {
         case 'student': case 'teacher': case 'admin': await api.adminSetRole(u['id'], action); break;
@@ -976,43 +964,296 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           break;
       }
       if (mounted) { showToast(context, context.read<L10n>().t('done')); _load(); }
-    } catch (_) { if (mounted) showToast(context, context.read<L10n>().t('error'), error: true); }
+      return true;
+    } catch (_) {
+      if (mounted) showToast(context, context.read<L10n>().t('error'), error: true);
+      return false;
+    }
   }
 
+  // ── User actions sheet (roles, block, delete) ─────────────
+  void _showUserActionsSheet(dynamic u) {
+    final l       = context.read<L10n>();
+    final isSelf  = u['id'] == context.read<AuthProvider>().userId;
+    final name    = (u['full_name'] ?? u['email']?.split('@').first ?? '').toString();
+    final email   = (u['email'] ?? '').toString();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setS) {
+        final primary     = Theme.of(ctx).colorScheme.primary;
+        final role        = (u['role'] ?? 'student').toString();
+        final isBlocked   = u['is_active'] == false;
+        final aiUnlimited = u['ai_unlimited'] == true;
+
+        Widget roleTile(String value, String label, IconData icon, Color color) {
+          final selected = role == value;
+          return Expanded(child: GestureDetector(
+            onTap: selected ? null : () async {
+              final ok = await _action(u, value);
+              if (ok && ctx.mounted) setS(() => u['role'] = value);
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: selected ? color.withValues(alpha: 0.12) : adaptiveSurface2(ctx),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: selected ? color : Colors.transparent, width: 1.5),
+              ),
+              child: Column(children: [
+                Icon(icon, size: 20, color: selected ? color : C.text4),
+                const SizedBox(height: 5),
+                Text(label, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: selected ? color : C.text4)),
+              ]),
+            ),
+          ));
+        }
+
+        Widget actionTile({required IconData icon, required Color color, required String title, String? subtitle, Widget? trailing, VoidCallback? onTap}) {
+          return GestureDetector(
+            onTap: onTap,
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(color: adaptiveSurface2(ctx).withValues(alpha: 0.6), borderRadius: BorderRadius.circular(14)),
+              child: Row(children: [
+                Container(width: 36, height: 36,
+                  decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                  child: Icon(icon, size: 18, color: color)),
+                const SizedBox(width: 12),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: adaptiveText1(ctx))),
+                  if (subtitle != null) Padding(padding: const EdgeInsets.only(top: 1),
+                    child: Text(subtitle, style: const TextStyle(fontSize: 11.5, color: C.text4))),
+                ])),
+                trailing ?? const Icon(CupertinoIcons.chevron_right, size: 14, color: C.text4),
+              ]),
+            ),
+          );
+        }
+
+        return SafeArea(child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Center(child: Container(width: 36, height: 4, margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(color: adaptiveBorder(ctx), borderRadius: BorderRadius.circular(2)))),
+
+            // Header: avatar + name + email
+            Row(children: [
+              Container(width: 50, height: 50,
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(colors: [primary.withValues(alpha: 0.22), primary.withValues(alpha: 0.07)]),
+                  shape: BoxShape.circle),
+                child: Center(child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?',
+                  style: TextStyle(color: primary, fontWeight: FontWeight.w900, fontSize: 19)))),
+              const SizedBox(width: 12),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  Flexible(child: Text(name, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: adaptiveText1(ctx)), overflow: TextOverflow.ellipsis)),
+                  if (isBlocked) Container(
+                    margin: const EdgeInsets.only(left: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(color: C.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+                    child: const Text('блок', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.red)),
+                  ),
+                ]),
+                const SizedBox(height: 2),
+                Text(email, style: const TextStyle(fontSize: 12.5, color: C.text4), overflow: TextOverflow.ellipsis),
+              ])),
+              _RoleBadge(role: role),
+            ]),
+            const SizedBox(height: 18),
+
+            // Role selector
+            const _SectionLabel('РОЛЬ'),
+            const SizedBox(height: 8),
+            Row(children: [
+              roleTile('student', 'Ученик',  CupertinoIcons.person,      const Color(0xFF059669)),
+              const SizedBox(width: 8),
+              roleTile('teacher', 'Учитель', CupertinoIcons.book,        const Color(0xFF6366F1)),
+              const SizedBox(width: 8),
+              roleTile('admin',   'Админ',   CupertinoIcons.shield_fill, primary),
+            ]),
+            const SizedBox(height: 18),
+
+            // Actions
+            const _SectionLabel('ДЕЙСТВИЯ'),
+            const SizedBox(height: 8),
+            actionTile(
+              icon: aiUnlimited ? CupertinoIcons.bolt_fill : CupertinoIcons.bolt,
+              color: C.amber,
+              title: 'Безлимитный ИИ',
+              subtitle: aiUnlimited ? 'Включён — лимиты не действуют' : 'Выключен — обычные лимиты',
+              trailing: IgnorePointer(child: Switch(value: aiUnlimited, onChanged: (_) {})),
+              onTap: () async {
+                final ok = await _action(u, 'toggle_ai_unlimited');
+                if (ok && ctx.mounted) setS(() => u['ai_unlimited'] = !aiUnlimited);
+              },
+            ),
+            if (!isSelf) actionTile(
+              icon: isBlocked ? CupertinoIcons.lock_open : CupertinoIcons.nosign,
+              color: isBlocked ? C.green : C.red,
+              title: isBlocked ? l.t('unblock') : l.t('block'),
+              subtitle: isBlocked ? 'Вернуть доступ к аккаунту' : 'Пользователь не сможет войти',
+              onTap: () async {
+                final action = isBlocked ? 'unblock' : 'block';
+                if (!isBlocked) {
+                  final sure = await showConfirmDialog(context,
+                    title: '${l.t('block')}?',
+                    message: '$name больше не сможет войти в приложение.',
+                    icon: CupertinoIcons.nosign, danger: true,
+                    confirmText: l.t('block'), cancelText: l.t('cancel'));
+                  if (sure != true) return;
+                }
+                final ok = await _action(u, action);
+                if (ok && ctx.mounted) setS(() => u['is_active'] = isBlocked);
+              },
+            ),
+            if (!isSelf) actionTile(
+              icon: CupertinoIcons.trash,
+              color: C.red,
+              title: l.t('delete'),
+              subtitle: 'Аккаунт будет удалён навсегда',
+              onTap: () async {
+                final sure = await showConfirmDialog(context,
+                  title: 'Удалить пользователя?',
+                  message: 'Аккаунт «$name» и все его данные будут удалены навсегда.',
+                  icon: CupertinoIcons.trash, danger: true,
+                  confirmText: l.t('delete'), cancelText: l.t('cancel'));
+                if (sure != true) return;
+                final ok = await _action(u, 'delete');
+                if (ok && ctx.mounted) Navigator.pop(ctx);
+              },
+            ),
+          ]),
+        ));
+      }),
+    );
+  }
+
+  // ── Create user dialog ────────────────────────────────────
   void _showCreateDialog() {
     final emailCtrl = TextEditingController(), pwCtrl = TextEditingController();
     String role = 'student';
+    String? error;
+    bool busy = false, obscure = true;
     final l = context.read<L10n>();
-    showCupertinoDialog(context: context, builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => CupertinoAlertDialog(
-      title: Text(l.t('create_user')),
-      content: Padding(padding: const EdgeInsets.only(top: 8), child: Column(mainAxisSize: MainAxisSize.min, children: [
-        CupertinoTextField(controller: emailCtrl, keyboardType: TextInputType.emailAddress, placeholder: 'Email',
-          prefix: const Padding(padding: EdgeInsets.only(left: 8), child: Icon(CupertinoIcons.mail, size: 18, color: C.text4))),
-        const SizedBox(height: 8),
-        CupertinoTextField(controller: pwCtrl, obscureText: true, placeholder: 'Пароль',
-          prefix: const Padding(padding: EdgeInsets.only(left: 8), child: Icon(CupertinoIcons.lock, size: 18, color: C.text4))),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          value: role,
-          decoration: const InputDecoration(prefixIcon: Padding(padding: EdgeInsets.only(left: 4), child: Icon(CupertinoIcons.tag, size: 18, color: C.text4))),
-          items: ['student', 'teacher', 'admin'].map((r) => DropdownMenuItem(value: r, child: Text(r, style: const TextStyle(fontWeight: FontWeight.w600)))).toList(),
-          onChanged: (v) => setS(() => role = v!),
+
+    showAppDialog(context, builder: (ctx) => StatefulBuilder(builder: (ctx, setS) {
+      final primary = Theme.of(ctx).colorScheme.primary;
+
+      Future<void> submit() async {
+        final email = emailCtrl.text.trim();
+        if (email.isEmpty || !email.contains('@') || !email.contains('.')) {
+          setS(() => error = 'Введите корректный email');
+          return;
+        }
+        if (pwCtrl.text.length < 6) {
+          setS(() => error = 'Пароль — минимум 6 символов');
+          return;
+        }
+        setS(() { busy = true; error = null; });
+        try {
+          await context.read<ApiService>().adminCreateUser(email, pwCtrl.text, role);
+          if (mounted && ctx.mounted) { Navigator.pop(ctx); showToast(context, l.t('created')); _load(); }
+        } catch (_) {
+          if (ctx.mounted) setS(() { busy = false; error = 'Не удалось создать пользователя'; });
+        }
+      }
+
+      Widget roleChip(String value, String label, IconData icon, Color color) {
+        final selected = role == value;
+        return Expanded(child: GestureDetector(
+          onTap: busy ? null : () => setS(() => role = value),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              color: selected ? color.withValues(alpha: 0.12) : adaptiveSurface2(ctx),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: selected ? color : Colors.transparent, width: 1.5),
+            ),
+            child: Column(children: [
+              Icon(icon, size: 18, color: selected ? color : C.text4),
+              const SizedBox(height: 4),
+              Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: selected ? color : C.text4)),
+            ]),
+          ),
+        ));
+      }
+
+      return AppDialogCard(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Center(child: AppDialogIcon(icon: CupertinoIcons.person_badge_plus, color: primary)),
+        const SizedBox(height: 14),
+        Text(l.t('create_user'),
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: adaptiveText1(ctx), letterSpacing: -0.3)),
+        const SizedBox(height: 18),
+        TextField(
+          controller: emailCtrl,
+          enabled: !busy,
+          keyboardType: TextInputType.emailAddress,
+          autocorrect: false,
+          style: const TextStyle(fontSize: 14),
+          decoration: const InputDecoration(
+            hintText: 'Email',
+            prefixIcon: Icon(CupertinoIcons.mail, size: 18, color: C.text4),
+          ),
+          onChanged: (_) { if (error != null) setS(() => error = null); },
         ),
-      ])),
-      actions: [
-        CupertinoDialogAction(onPressed: () => Navigator.pop(ctx), child: Text(l.t('cancel'))),
-        CupertinoDialogAction(
-          isDefaultAction: true,
-          onPressed: () async {
-            try {
-              await context.read<ApiService>().adminCreateUser(emailCtrl.text.trim(), pwCtrl.text, role);
-              if (mounted && ctx.mounted) { Navigator.pop(ctx); showToast(context, l.t('created')); _load(); }
-            } catch (_) { if (mounted && ctx.mounted) showToast(context, l.t('error'), error: true); }
-          },
-          child: const Text('Создать'),
+        const SizedBox(height: 10),
+        TextField(
+          controller: pwCtrl,
+          enabled: !busy,
+          obscureText: obscure,
+          style: const TextStyle(fontSize: 14),
+          decoration: InputDecoration(
+            hintText: 'Пароль',
+            prefixIcon: const Icon(CupertinoIcons.lock, size: 18, color: C.text4),
+            suffixIcon: GestureDetector(
+              onTap: () => setS(() => obscure = !obscure),
+              child: Icon(obscure ? CupertinoIcons.eye : CupertinoIcons.eye_slash, size: 18, color: C.text4),
+            ),
+          ),
+          onChanged: (_) { if (error != null) setS(() => error = null); },
+          onSubmitted: (_) => submit(),
         ),
-      ],
-    )));
+        const SizedBox(height: 14),
+        Row(children: [
+          roleChip('student', 'Ученик',  CupertinoIcons.person,      const Color(0xFF059669)),
+          const SizedBox(width: 8),
+          roleChip('teacher', 'Учитель', CupertinoIcons.book,        const Color(0xFF6366F1)),
+          const SizedBox(width: 8),
+          roleChip('admin',   'Админ',   CupertinoIcons.shield_fill, primary),
+        ]),
+        if (error != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            decoration: BoxDecoration(color: C.red.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(10)),
+            child: Row(children: [
+              const Icon(CupertinoIcons.exclamationmark_circle, size: 15, color: C.red),
+              const SizedBox(width: 7),
+              Expanded(child: Text(error!, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: C.red))),
+            ]),
+          ),
+        ],
+        const SizedBox(height: 18),
+        AppDialogActions(
+          cancelText: l.t('cancel'),
+          confirmText: 'Создать',
+          busy: busy,
+          onCancel: () => Navigator.pop(ctx),
+          onConfirm: submit,
+        ),
+      ]));
+    })).whenComplete(() {
+      Future.delayed(const Duration(seconds: 1), () { emailCtrl.dispose(); pwCtrl.dispose(); });
+    });
   }
 }
 

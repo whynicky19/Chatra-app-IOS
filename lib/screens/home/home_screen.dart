@@ -15,6 +15,7 @@ import '../../providers/classes_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/image_cache.dart';
+import '../../widgets/app_dialog.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/toast.dart';
 import '../notifications/notifications_screen.dart';
@@ -436,14 +437,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 },
                 onLeave: () async {
                   Navigator.pop(ctx);
-                  final ok = await showCupertinoDialog<bool>(context: context, builder: (c) => CupertinoAlertDialog(
-                    title: Text(l.t('leave_class')),
-                    content: Text(l.t('leave_class_sub')),
-                    actions: [
-                      CupertinoDialogAction(onPressed: () => Navigator.pop(c, false), child: Text(l.t('no'))),
-                      CupertinoDialogAction(isDestructiveAction: true, onPressed: () => Navigator.pop(c, true), child: Text(l.t('leave_btn'))),
-                    ],
-                  ));
+                  final ok = await showConfirmDialog(context,
+                    title: l.t('leave_class'),
+                    message: l.t('leave_class_sub'),
+                    icon: CupertinoIcons.arrow_right_square,
+                    danger: true,
+                    confirmText: l.t('leave_btn'),
+                    cancelText: l.t('no'));
                   if (!mounted) return;
                   if (ok == true) {
                     await context.read<ClassesProvider>().leaveClass(id);
@@ -460,27 +460,36 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 onDelete: () async {
                   Navigator.pop(ctx);
                   final nameCtrl = TextEditingController();
-                  final ok = await showCupertinoDialog<bool>(context: context, builder: (c) => StatefulBuilder(builder: (c, setS) => CupertinoAlertDialog(
-                    title: Text(l.t('delete_class')),
-                    content: Column(mainAxisSize: MainAxisSize.min, children: [
+                  final ok = await showAppDialog<bool>(context, builder: (c) => StatefulBuilder(builder: (c, setS) {
+                    final match = nameCtrl.text.trim() == title;
+                    return AppDialogCard(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      const AppDialogIcon(icon: CupertinoIcons.trash, color: C.red),
+                      const SizedBox(height: 14),
+                      Text(l.t('delete_class'),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: adaptiveText1(c), letterSpacing: -0.3)),
                       const SizedBox(height: 6),
-                      Text(l.t('confirm_delete_hint'), style: const TextStyle(fontSize: 13, color: C.text4)),
-                      const SizedBox(height: 10),
-                      CupertinoTextField(
+                      Text(l.t('confirm_delete_hint'),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 13.5, color: C.text4, height: 1.45)),
+                      const SizedBox(height: 16),
+                      TextField(
                         controller: nameCtrl,
-                        placeholder: title,
+                        autofocus: true,
+                        style: const TextStyle(fontSize: 14),
+                        decoration: InputDecoration(hintText: title),
                         onChanged: (_) => setS(() {}),
                       ),
-                    ]),
-                    actions: [
-                      CupertinoDialogAction(onPressed: () => Navigator.pop(c, false), child: Text(l.t('cancel'))),
-                      CupertinoDialogAction(
-                        isDestructiveAction: true,
-                        onPressed: () => Navigator.pop(c, nameCtrl.text.trim() == title),
-                        child: Text(l.t('delete')),
+                      const SizedBox(height: 16),
+                      AppDialogActions(
+                        cancelText: l.t('cancel'),
+                        confirmText: l.t('delete'),
+                        danger: true,
+                        onCancel: () => Navigator.pop(c, false),
+                        onConfirm: match ? () => Navigator.pop(c, true) : null,
                       ),
-                    ],
-                  )));
+                    ]));
+                  }));
                   if (!mounted) return;
                   if (ok == true) {
                     await context.read<ClassesProvider>().deleteClass(id);
@@ -1127,27 +1136,25 @@ class _ClassCard extends StatelessWidget {
                 if (isTeacher) _ActionBtn(
                   icon: CupertinoIcons.trash, color: C.text4, isDark: isDark,
                   onTap: () async {
-                    final ok = await showCupertinoDialog<bool>(context: context, builder: (ctx) => CupertinoAlertDialog(
-                      title: Text(deleteLabel),
-                      actions: [
-                        CupertinoDialogAction(onPressed: () => Navigator.pop(ctx, false), child: Text(noLabel)),
-                        CupertinoDialogAction(isDestructiveAction: true, onPressed: () => Navigator.pop(ctx, true), child: Text(deleteConfirmLabel)),
-                      ],
-                    ));
+                    final ok = await showConfirmDialog(context,
+                      title: deleteLabel,
+                      icon: CupertinoIcons.trash,
+                      danger: true,
+                      confirmText: deleteConfirmLabel,
+                      cancelText: noLabel);
                     if (ok == true) await onDelete();
                   },
                 ),
                 if (!isTeacher) _ActionBtn(
                   icon: CupertinoIcons.arrow_right_square, color: C.text4, isDark: isDark,
                   onTap: () async {
-                    final ok = await showCupertinoDialog<bool>(context: context, builder: (ctx) => CupertinoAlertDialog(
-                      title: Text(leaveLabel),
-                      content: Text(leaveSub),
-                      actions: [
-                        CupertinoDialogAction(onPressed: () => Navigator.pop(ctx, false), child: Text(noLabel)),
-                        CupertinoDialogAction(isDestructiveAction: true, onPressed: () => Navigator.pop(ctx, true), child: Text(leaveBtnLabel)),
-                      ],
-                    ));
+                    final ok = await showConfirmDialog(context,
+                      title: leaveLabel,
+                      message: leaveSub,
+                      icon: CupertinoIcons.arrow_right_square,
+                      danger: true,
+                      confirmText: leaveBtnLabel,
+                      cancelText: noLabel);
                     if (ok == true) await onLeave();
                   },
                 ),

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_dialog.dart';
 
 class AiScreen extends StatefulWidget {
   const AiScreen({super.key});
@@ -160,14 +161,15 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
                   key: const ValueKey('clear_btn'),
                   onTap: () {
                     HapticFeedback.lightImpact();
-                    showCupertinoDialog(context: context, builder: (ctx) => CupertinoAlertDialog(
-                      title: const Text('Очистить чат?'),
-                      content: const Text('История переписки будет удалена'),
-                      actions: [
-                        CupertinoDialogAction(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
-                        CupertinoDialogAction(isDestructiveAction: true, onPressed: () { Navigator.pop(ctx); setState(() => _msgs.clear()); }, child: const Text('Удалить')),
-                      ],
-                    ));
+                    showConfirmDialog(context,
+                      title: 'Очистить чат?',
+                      message: 'История переписки будет удалена',
+                      icon: CupertinoIcons.trash,
+                      danger: true,
+                      confirmText: 'Удалить',
+                      cancelText: 'Отмена').then((ok) {
+                        if (ok == true && mounted) setState(() => _msgs.clear());
+                      });
                   },
                   child: Container(
                     width: 38, height: 38,

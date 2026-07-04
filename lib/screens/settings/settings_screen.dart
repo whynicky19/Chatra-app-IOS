@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_dialog.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -225,24 +226,13 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         _animated(
           GestureDetector(
             onTap: () async {
-              final ok = await showCupertinoDialog<bool>(
-                context: context,
-                builder: (d) => CupertinoAlertDialog(
-                  title: const Text('Выйти из аккаунта?'),
-                  content: const Text('Вы будете перенаправлены на экран входа.'),
-                  actions: [
-                    CupertinoDialogAction(
-                      onPressed: () => Navigator.pop(d, false),
-                      child: const Text('Отмена'),
-                    ),
-                    CupertinoDialogAction(
-                      isDestructiveAction: true,
-                      onPressed: () => Navigator.pop(d, true),
-                      child: const Text('Выйти'),
-                    ),
-                  ],
-                ),
-              );
+              final ok = await showConfirmDialog(context,
+                title: 'Выйти из аккаунта?',
+                message: 'Вы будете перенаправлены на экран входа.',
+                icon: CupertinoIcons.arrow_right_square,
+                danger: true,
+                confirmText: 'Выйти',
+                cancelText: 'Отмена');
               if (ok == true && mounted) auth.logout();
             },
             child: Container(

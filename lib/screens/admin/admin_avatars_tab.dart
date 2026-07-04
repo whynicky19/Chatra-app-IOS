@@ -6,6 +6,7 @@ import '../../models/avatar_models.dart';
 import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_dialog.dart';
 import '../../utils/dates.dart';
 import '../../utils/file_opener.dart';
 import '../../widgets/toast.dart';
@@ -134,34 +135,23 @@ class _AdminAvatarsTabState extends State<AdminAvatarsTab> with SingleTickerProv
   }
 
   Future<bool?> _confirmDelete(L10n l) {
-    return showCupertinoDialog<bool>(
-      context: context,
-      builder: (c) => CupertinoAlertDialog(
-        title: Text(l.t('admin_delete_confirm_title')),
-        actions: [
-          CupertinoDialogAction(onPressed: () => Navigator.pop(c, false), child: Text(l.t('cancel'))),
-          CupertinoDialogAction(isDestructiveAction: true, onPressed: () => Navigator.pop(c, true), child: Text(l.t('delete'))),
-        ],
-      ),
-    );
+    return showConfirmDialog(context,
+      title: l.t('admin_delete_confirm_title'),
+      icon: CupertinoIcons.trash,
+      danger: true,
+      confirmText: l.t('delete'),
+      cancelText: l.t('cancel'));
   }
 
   Future<String?> _promptRejectionReason(L10n l) {
-    final ctrl = TextEditingController();
-    return showCupertinoDialog<String>(
-      context: context,
-      builder: (c) => CupertinoAlertDialog(
-        title: Text(l.t('reject_reason_title')),
-        content: Padding(
-          padding: const EdgeInsets.only(top: 10),
-          child: CupertinoTextField(controller: ctrl, placeholder: l.t('reject_reason_hint'), maxLines: 3),
-        ),
-        actions: [
-          CupertinoDialogAction(onPressed: () => Navigator.pop(c), child: Text(l.t('cancel'))),
-          CupertinoDialogAction(isDestructiveAction: true, onPressed: () => Navigator.pop(c, ctrl.text.trim()), child: Text(l.t('reject'))),
-        ],
-      ),
-    );
+    return showInputDialog(context,
+      title: l.t('reject_reason_title'),
+      hint: l.t('reject_reason_hint'),
+      icon: CupertinoIcons.xmark_circle,
+      danger: true,
+      maxLines: 3,
+      confirmText: l.t('reject'),
+      cancelText: l.t('cancel'));
   }
 
   @override

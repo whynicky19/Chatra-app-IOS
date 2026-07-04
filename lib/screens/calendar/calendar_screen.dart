@@ -56,7 +56,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
       if (!mounted) return;
 
-      final allAssignments = results[0] as List;
+      final allAssignments = results[0];
       final submissions = (isStudent && results.length > 1) ? results[1] : <dynamic>[];
 
       // Keep only assignments that belong to currently active classes
@@ -126,24 +126,33 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   ),
                   // ── Header ──
                   SliverToBoxAdapter(child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 22, 8),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 22, 12),
                     child: Row(children: [
                       GestureDetector(
                         onTap: () => Navigator.pop(context),
                         child: Container(
-                          width: 40, height: 40,
+                          width: 38, height: 38,
                           decoration: BoxDecoration(
-                            color: adaptiveSurface2(context),
-                            borderRadius: BorderRadius.circular(12),
+                            color: Theme.of(context).colorScheme.surface,
+                            shape: BoxShape.circle,
+                            boxShadow: softShadow(isDark),
                           ),
-                          child: Icon(CupertinoIcons.chevron_left, size: 16, color: adaptiveText1(context)),
+                          child: Icon(CupertinoIcons.chevron_left, size: 17, color: adaptiveText1(context)),
                         ),
                       ),
                       const SizedBox(width: 14),
-                      Text(l.t('deadlines'), style: TextStyle(
-                        fontSize: 28, fontWeight: FontWeight.w700,
-                        color: adaptiveText1(context), letterSpacing: -0.6,
-                      )),
+                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(l.t('deadlines'), style: TextStyle(
+                          fontSize: 28, fontWeight: FontWeight.w700,
+                          color: adaptiveText1(context), letterSpacing: -0.6, height: 1.1,
+                        )),
+                        Text(
+                          _deadlineMap.isEmpty
+                              ? 'Нет предстоящих дедлайнов'
+                              : 'Предстоящих заданий: ${_deadlineMap.values.fold<int>(0, (n, list) => n + list.length)}',
+                          style: const TextStyle(fontSize: 13, color: C.text4),
+                        ),
+                      ])),
                     ]),
                   )),
 
@@ -222,17 +231,20 @@ class _CalendarScreenState extends State<CalendarScreen> {
               return GestureDetector(
                 onTap: () => setState(() => _selectedDay = day),
                 child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Container(
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
                     width: 34, height: 34,
                     decoration: BoxDecoration(
-                      color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
-                      borderRadius: BorderRadius.circular(10),
-                      border: isToday && !isSelected
-                          ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5)
-                          : null,
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.primary
+                          : isToday
+                              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.12)
+                              : Colors.transparent,
+                      shape: BoxShape.circle,
+                      boxShadow: isSelected ? primaryGlow(Theme.of(context).colorScheme.primary, opacity: 0.28) : null,
                     ),
                     child: Center(child: Text('${i + 1}', style: TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.w600,
+                      fontSize: 13, fontWeight: isSelected || isToday ? FontWeight.w800 : FontWeight.w600,
                       color: isSelected ? Colors.white
                           : (isToday ? Theme.of(context).colorScheme.primary : adaptiveText1(context)),
                     ))),
@@ -250,9 +262,25 @@ class _CalendarScreenState extends State<CalendarScreen> {
             }),
           ],
         ),
+        const SizedBox(height: 6),
+        Divider(height: 1, color: adaptiveBorder(context).withValues(alpha: 0.5)),
+        const SizedBox(height: 10),
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          _legendDot(Theme.of(context).colorScheme.primary, 'дедлайн'),
+          const SizedBox(width: 14),
+          _legendDot(C.red, 'несколько'),
+          const SizedBox(width: 14),
+          _legendDot(C.green, 'сдано'),
+        ]),
       ]),
     );
   }
+
+  Widget _legendDot(Color color, String label) => Row(mainAxisSize: MainAxisSize.min, children: [
+    Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+    const SizedBox(width: 5),
+    Text(label, style: const TextStyle(fontSize: 11, color: C.text4, fontWeight: FontWeight.w500)),
+  ]);
 
   Widget _navBtn(IconData icon, VoidCallback onTap) => GestureDetector(
     onTap: onTap,
@@ -341,6 +369,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final l = context.watch<L10n>();
     final items = _getForDay(_selectedDay);
     final tomorrow = today.add(const Duration(days: 1));
+    final classNames = <int, String>{
+      for (final c in context.read<ClassesProvider>().classes)
+        if (c['id'] != null) (c['id'] as num).toInt(): (c['title'] ?? '').toString(),
+    };
+    final monthGen = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+    final dayLabel = _selectedDay == today
+        ? 'Сегодня'
+        : _selectedDay == tomorrow
+            ? 'Завтра'
+            : '${_selectedDay.day} ${monthGen[_selectedDay.month - 1]}';
 
     if (items.isEmpty) {
       return Padding(
@@ -355,8 +393,25 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-      child: Column(
-        children: items.map((a) {
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8, top: 4),
+          child: Row(children: [
+            Text(dayLabel.toUpperCase(), style: const TextStyle(
+              fontSize: 11, fontWeight: FontWeight.w800, color: C.text4, letterSpacing: 1.0)),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(10)),
+              child: Text('${items.length}', style: TextStyle(
+                fontSize: 10, fontWeight: FontWeight.w800,
+                color: Theme.of(context).colorScheme.primary)),
+            ),
+          ]),
+        ),
+        ...items.map((a) {
           final dueStr = a['deadline'] as String?;
           final due = dueStr != null ? DateTime.tryParse(dueStr) : null;
           final status = _submissionStatus(a);
@@ -402,12 +457,24 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   Text(a['title'] ?? '', style: TextStyle(
                     fontSize: 15, fontWeight: FontWeight.w700,
                     color: adaptiveText1(context),
-                  )),
-                  if (due != null)
-                    Text(
-                      '${due.day.toString().padLeft(2,'0')}.${due.month.toString().padLeft(2,'0')}.${due.year}  ${due.hour.toString().padLeft(2,'0')}:${due.minute.toString().padLeft(2,'0')}',
-                      style: TextStyle(fontSize: 12, color: isSubmitted ? C.green : C.text3),
-                    ),
+                  ), maxLines: 2, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 3),
+                  Row(children: [
+                    if (due != null) ...[
+                      Icon(CupertinoIcons.clock, size: 12, color: isSubmitted ? C.green : C.text4),
+                      const SizedBox(width: 3),
+                      Text(
+                        '${due.hour.toString().padLeft(2,'0')}:${due.minute.toString().padLeft(2,'0')}',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isSubmitted ? C.green : C.text3),
+                      ),
+                    ],
+                    if (classId != null && (classNames[classId] ?? '').isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      Flexible(child: Text(classNames[classId]!,
+                        style: const TextStyle(fontSize: 12, color: C.text4),
+                        maxLines: 1, overflow: TextOverflow.ellipsis)),
+                    ],
+                  ]),
                 ])),
                 if (isSubmitted)
                   const Icon(CupertinoIcons.checkmark_circle_fill, size: 20, color: C.green)
@@ -416,8 +483,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
               ]),
             ),
           );
-        }).toList(),
-      ),
+        }),
+      ]),
     );
   }
 }

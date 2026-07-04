@@ -36,6 +36,7 @@ flutter:
   assets:
     - assets/logo-icon.png
     - assets/logo.png
+    - assets/uni-logo.png
 
 flutter_launcher_icons:
   android: true

@@ -5,6 +5,8 @@ import '../../providers/auth_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../providers/org_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/ambient_glow.dart';
+import '../../widgets/app_logo.dart';
 import '../../widgets/toast.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -13,26 +15,15 @@ class RegisterScreen extends StatefulWidget {
   @override State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProviderStateMixin {
+class _RegisterScreenState extends State<RegisterScreen> {
   final _name   = TextEditingController();
   final _email  = TextEditingController();
   final _pw     = TextEditingController();
+  bool _showPw = false;
   bool _submitted = false;
-  late final AnimationController _anim;
-  late final Animation<double> _fade;
-  late final Animation<Offset> _slide;
 
   @override
-  void initState() {
-    super.initState();
-    _anim  = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
-    _fade  = CurvedAnimation(parent: _anim, curve: Curves.easeOut);
-    _slide = Tween(begin: const Offset(0, 0.06), end: Offset.zero)
-        .animate(CurvedAnimation(parent: _anim, curve: Curves.easeOutCubic));
-    _anim.forward();
-  }
-
-  @override void dispose() { _anim.dispose(); super.dispose(); }
+  void dispose() { _name.dispose(); _email.dispose(); _pw.dispose(); super.dispose(); }
 
   bool get _nameIsCyrillic {
     final n = _name.text.trim();
@@ -82,219 +73,233 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
     }
   }
 
+  // Ступенчатое появление — как на экране выбора организации.
+  Widget _reveal(int step, Widget child) {
+    if (MediaQuery.of(context).disableAnimations) return child;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: Duration(milliseconds: 420 + step * 110),
+      curve: Curves.easeOutCubic,
+      builder: (_, t, c) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 18 * (1 - t)), child: c)),
+      child: child,
+    );
+  }
+
+  // Мягкая плашка-подсказка под полем (жёлтая — совет, красная — ошибка).
+  Widget _hint(String text, {bool error = false}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color  = error ? C.red : C.amberDk;
+    return Padding(
+      padding: const EdgeInsets.only(top: 7),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: (error ? C.red : C.amber).withValues(alpha: isDark ? 0.16 : 0.09),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(children: [
+          Icon(error ? CupertinoIcons.exclamationmark_circle : CupertinoIcons.info_circle, size: 14, color: color),
+          const SizedBox(width: 7),
+          Expanded(child: Text(text, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w600))),
+        ]),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final l        = context.watch<L10n>();
-    final auth     = context.watch<AuthProvider>();
-    final org      = context.watch<OrgProvider>();
-    final sc       = _pwScore;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface = Theme.of(context).colorScheme.surface;
+    final l       = context.watch<L10n>();
+    final auth    = context.watch<AuthProvider>();
+    final org     = context.watch<OrgProvider>();
+    final sc      = _pwScore;
+    final isDark  = Theme.of(context).brightness == Brightness.dark;
+    final primary = org.primaryColor;
+    final canSubmit = !auth.isLoading && _isValid && !_submitted;
+
+    final nameWords = _name.text.trim().split(' ').where((s) => s.isNotEmpty).length;
 
     return Scaffold(
+      backgroundColor: isDark ? C.darkBg : C.bg,
       body: Stack(children: [
-        Container(decoration: BoxDecoration(gradient: LinearGradient(
-          colors: isDark
-              ? [org.primaryColor.withValues(alpha: 0.12), org.primaryColor.withValues(alpha: 0.22)]
-              : org.gradientColors,
-          begin: Alignment.topRight, end: Alignment.bottomLeft,
-        ))),
-        // Кнопка назад → выбор организации
-        Positioned(
-          top: 8, left: 8,
-          child: SafeArea(
-            child: IconButton(
-              icon: const Icon(CupertinoIcons.chevron_left, color: Colors.white, size: 20),
-              onPressed: () => context.read<OrgProvider>().clear(),
-            ),
-          ),
-        ),
+        AmbientGlow(alignment: Alignment.topRight,   color: primary, opacity: isDark ? 0.14 : 0.09),
+        AmbientGlow(alignment: Alignment.bottomLeft, color: primary, opacity: isDark ? 0.08 : 0.05),
 
-        SafeArea(child: Center(child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-          child: FadeTransition(opacity: _fade, child: SlideTransition(position: _slide,
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 420),
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: surface,
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 40, offset: const Offset(0, 16)),
-                ],
-              ),
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                // Icon
-                Container(width: 64, height: 64,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: org.gradientColors),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: primaryGlow(org.primaryColor, opacity: 0.28),
-                  ),
-                  child: const Icon(CupertinoIcons.person_badge_plus, color: Colors.white, size: 30)),
-                const SizedBox(height: 16),
-                Text(l.t('register'), style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: adaptiveText1(context), letterSpacing: -0.4)),
-                const SizedBox(height: 4),
-                Text(l.t('register_sub'), style: const TextStyle(fontSize: 14, color: C.text4)),
+        SafeArea(child: Stack(children: [
+          Positioned(top: 8, left: 16, child: _BackButton(onTap: () => context.read<OrgProvider>().clear())),
+
+          Center(child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 56),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 380),
+              child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                _reveal(0, Center(child: SizedBox(
+                  width: 84, height: 84,
+                  child: Stack(alignment: Alignment.center, children: [
+                    Container(width: 52, height: 52, decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [BoxShadow(color: primary.withValues(alpha: 0.26), blurRadius: 40, spreadRadius: 8)],
+                    )),
+                    const AppLogo(iconOnly: true, width: 84, height: 84),
+                  ]),
+                ))),
+                const SizedBox(height: 20),
+
+                _reveal(1, Column(children: [
+                  Text(l.t('register'),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -0.6, height: 1.15, color: adaptiveText1(context))),
+                  const SizedBox(height: 8),
+                  Text(l.t('register_sub'),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 15, color: C.text4, height: 1.4)),
+                ])),
                 const SizedBox(height: 28),
 
-                // Full name
-                _fieldLabel(l.t('full_name_label')),
-                TextField(
-                  controller: _name,
-                  decoration: InputDecoration(
-                    hintText: 'Иванов Иван Иванович',
-                    prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
-                      child: Icon(CupertinoIcons.person, size: 18, color: C.text4)),
-                  ),
-                  onChanged: (_) => setState(() {}),
-                ),
-                // Подсказка: нужно минимум 2 слова
-                if (_name.text.isNotEmpty &&
-                    _name.text.trim().split(' ').where((s) => s.isNotEmpty).length < 2)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 7),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(color: const Color(0xFFFFF8E1), borderRadius: BorderRadius.circular(10)),
-                      child: const Row(children: [
-                        Icon(CupertinoIcons.info_circle, size: 14, color: Color(0xFFF59E0B)),
-                        SizedBox(width: 7),
-                        Expanded(child: Text('Введите фамилию и имя полностью', style: TextStyle(fontSize: 12, color: Color(0xFFB45309), fontWeight: FontWeight.w500))),
-                      ]),
+                _reveal(2, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  // ФИО
+                  _fieldLabel(l.t('full_name_label')),
+                  TextField(
+                    controller: _name,
+                    decoration: InputDecoration(
+                      hintText: 'Иванов Иван Иванович',
+                      prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
+                        child: Icon(CupertinoIcons.person, size: 18, color: C.text4)),
                     ),
+                    onChanged: (_) => setState(() {}),
                   ),
-                // Предупреждение если ФИО не на кириллице
-                if (_name.text.isNotEmpty &&
-                    _name.text.trim().split(' ').where((s) => s.isNotEmpty).length >= 2 &&
-                    !_nameIsCyrillic)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 7),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(color: C.redLt, borderRadius: BorderRadius.circular(10)),
-                      child: const Row(children: [
-                        Icon(CupertinoIcons.exclamationmark_circle, size: 14, color: C.red),
-                        SizedBox(width: 7),
-                        Expanded(child: Text('ФИО должно быть на кириллице (рус/каз)', style: TextStyle(fontSize: 12, color: C.red, fontWeight: FontWeight.w500))),
-                      ]),
+                  if (_name.text.isNotEmpty && nameWords < 2)
+                    _hint('Введите фамилию и имя полностью'),
+                  if (_name.text.isNotEmpty && nameWords >= 2 && !_nameIsCyrillic)
+                    _hint('ФИО должно быть на кириллице (рус/каз)', error: true),
+                  const SizedBox(height: 14),
+
+                  // Email
+                  _fieldLabel('Email'),
+                  TextField(
+                    controller: _email,
+                    keyboardType: TextInputType.emailAddress,
+                    autocorrect: false,
+                    decoration: InputDecoration(
+                      hintText: 'you@example.com',
+                      prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
+                        child: Icon(CupertinoIcons.mail, size: 18, color: C.text4)),
                     ),
+                    onChanged: (_) => setState(() {}),
                   ),
-                const SizedBox(height: 14),
+                  const SizedBox(height: 14),
 
-                // Email
-                _fieldLabel('Email'),
-                TextField(
-                  controller: _email,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
-                    hintText: 'you@example.com',
-                    prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
-                      child: Icon(CupertinoIcons.mail, size: 18, color: C.text4)),
-                  ),
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: 14),
-
-                // Password
-                _fieldLabel(l.t('password_label')),
-                TextField(
-                  controller: _pw,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    hintText: '••••••••',
-                    prefixIcon: Padding(padding: EdgeInsets.only(left: 4),
-                      child: Icon(CupertinoIcons.lock, size: 18, color: C.text4)),
-                  ),
-                  onChanged: (_) => setState(() {}),
-                ),
-                if (_pw.text.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Row(children: [
-                      Expanded(child: ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: sc / 100,
-                          backgroundColor: adaptiveSurface2(context),
-                          color: sc <= 40 ? C.red : sc <= 60 ? C.yellow : C.green,
-                          minHeight: 4,
-                        ),
-                      )),
-                      const SizedBox(width: 10),
-                      Text(
-                        sc <= 40 ? l.t('password_weak') : sc <= 60 ? l.t('password_medium') : l.t('password_strong'),
-                        style: TextStyle(
-                          fontSize: 11, fontWeight: FontWeight.w600,
-                          color: sc <= 40 ? C.red : sc <= 60 ? C.yellow : C.green,
-                        ),
+                  // Пароль
+                  _fieldLabel(l.t('password_label')),
+                  TextField(
+                    controller: _pw,
+                    obscureText: !_showPw,
+                    decoration: InputDecoration(
+                      hintText: '••••••••',
+                      prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
+                        child: Icon(CupertinoIcons.lock, size: 18, color: C.text4)),
+                      suffixIcon: IconButton(
+                        icon: Icon(_showPw ? CupertinoIcons.eye_slash : CupertinoIcons.eye,
+                            color: C.text4, size: 18),
+                        onPressed: () => setState(() => _showPw = !_showPw),
                       ),
-                    ]),
-                    if (sc <= 40 && _pw.text.length >= 6)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 7),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(color: C.redLt, borderRadius: BorderRadius.circular(10)),
-                          child: Row(children: [
-                            const Icon(CupertinoIcons.exclamationmark_circle, size: 14, color: C.red),
-                            const SizedBox(width: 7),
-                            Expanded(child: Text(
-                              l.lang == 'KZ'
-                                  ? 'Құпия сөз тым қарапайым. Бас әріп, сан немесе арнайы таңба қосыңыз'
-                                  : l.lang == 'EN'
-                                      ? 'Password is too weak. Add uppercase letters, numbers or symbols'
-                                      : 'Пароль слишком слабый. Добавьте заглавные буквы, цифры или символы',
-                              style: const TextStyle(fontSize: 12, color: C.red, fontWeight: FontWeight.w500),
-                            )),
-                          ]),
+                    ),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  if (_pw.text.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Row(children: [
+                        Expanded(child: ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: sc / 100,
+                            backgroundColor: adaptiveSurface2(context),
+                            color: sc <= 40 ? C.red : sc <= 60 ? C.yellow : C.green,
+                            minHeight: 4,
+                          ),
+                        )),
+                        const SizedBox(width: 10),
+                        Text(
+                          sc <= 40 ? l.t('password_weak') : sc <= 60 ? l.t('password_medium') : l.t('password_strong'),
+                          style: TextStyle(
+                            fontSize: 11, fontWeight: FontWeight.w700,
+                            color: sc <= 40 ? C.red : sc <= 60 ? C.yellow : C.green,
+                          ),
                         ),
-                      ),
-                  ])),
-
+                      ]),
+                      if (sc <= 40 && _pw.text.length >= 6)
+                        _hint(
+                          l.lang == 'KZ'
+                              ? 'Құпия сөз тым қарапайым. Бас әріп, сан немесе арнайы таңба қосыңыз'
+                              : l.lang == 'EN'
+                                  ? 'Password is too weak. Add uppercase letters, numbers or symbols'
+                                  : 'Пароль слишком слабый. Добавьте заглавные буквы, цифры или символы',
+                          error: true,
+                        ),
+                    ])),
+                ])),
                 const SizedBox(height: 26),
 
-                SizedBox(width: double.infinity, height: 52,
-                  child: ElevatedButton(
-                    onPressed: auth.isLoading || !_isValid || _submitted ? null : _submit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: org.primaryColor,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      elevation: 0,
-                    ),
-                    child: auth.isLoading
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : Text(l.t('register_btn'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                  )),
-
-                const SizedBox(height: 20),
-                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Text('${l.t('has_account')} ', style: const TextStyle(fontSize: 13, color: C.text4)),
+                _reveal(3, Column(children: [
                   GestureDetector(
-                    onTap: widget.onGoLogin,
-                    child: Text(l.t('login_link'), style: TextStyle(
-                        fontSize: 13, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w700))),
-                ]),
+                    onTap: canSubmit ? _submit : null,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOut,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: canSubmit || auth.isLoading ? primary : adaptiveSurface2(context),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: canSubmit ? primaryGlow(primary, opacity: 0.34) : null,
+                      ),
+                      child: Center(child: auth.isLoading
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
+                        : Text(l.t('register_btn'), style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.1,
+                            color: canSubmit ? Colors.white : C.text4))),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Text('${l.t('has_account')} ', style: const TextStyle(fontSize: 13.5, color: C.text4)),
+                    GestureDetector(
+                      onTap: widget.onGoLogin,
+                      child: Text(l.t('login_link'), style: TextStyle(
+                          fontSize: 13.5, color: primary, fontWeight: FontWeight.w700))),
+                  ]),
+                ])),
               ]),
             ),
           )),
-        ))),
+        ])),
       ]),
     );
   }
 
   Widget _fieldLabel(String s) => Padding(
-    padding: const EdgeInsets.only(bottom: 7),
-    child: Align(alignment: Alignment.centerLeft,
-      child: Text(s, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: C.text3))));
+    padding: const EdgeInsets.only(bottom: 7, left: 2),
+    child: Text(s, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: C.text3)));
 }
 
-class _Blob extends StatelessWidget {
-  final double size;
-  final double opacity;
-  const _Blob({required this.size, required this.opacity});
+// Круглая кнопка «назад» в стиле iOS.
+class _BackButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _BackButton({required this.onTap});
+
   @override
-  Widget build(BuildContext context) => Container(
-    width: size, height: size,
-    decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: opacity)),
-  );
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 38, height: 38,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          shape: BoxShape.circle,
+          boxShadow: softShadow(isDark),
+        ),
+        child: Icon(CupertinoIcons.chevron_left, size: 18, color: adaptiveText1(context)),
+      ),
+    );
+  }
 }

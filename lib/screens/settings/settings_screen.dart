@@ -6,6 +6,7 @@ import '../../providers/theme_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_dialog.dart';
+import '../../widgets/toast.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -15,6 +16,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProviderStateMixin {
   final _nameCtrl = TextEditingController();
   late AnimationController _entry;
+  bool _saving = false;
 
   @override
   void initState() {
@@ -86,27 +88,35 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             ]),
             const SizedBox(height: 44),
             Padding(padding: const EdgeInsets.fromLTRB(20, 0, 20, 20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(auth.fullName.isNotEmpty ? auth.fullName : auth.email,
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: adaptiveText1(context))),
+              Row(children: [
+                Flexible(child: Text(auth.fullName.isNotEmpty ? auth.fullName : auth.email,
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: adaptiveText1(context)),
+                  overflow: TextOverflow.ellipsis)),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                  decoration: BoxDecoration(color: primary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(20)),
+                  child: Text(_roleLabel(auth.role, l),
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: primary)),
+                ),
+              ]),
               const SizedBox(height: 2),
-              Text(_roleLabel(auth.role, l),
-                style: TextStyle(fontSize: 13, color: primary, fontWeight: FontWeight.w500)),
+              Text(auth.email, style: const TextStyle(fontSize: 13, color: C.text4)),
               // Cyrillic warning
               if (auth.fullName.isNotEmpty && !_isCyrillicName(auth.fullName)) ...[
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFFBEB),
+                    color: C.amber.withValues(alpha: isDark ? 0.16 : 0.10),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFFBBF24).withValues(alpha: 0.4)),
                   ),
                   child: const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Icon(CupertinoIcons.exclamationmark_triangle_fill, size: 15, color: Color(0xFFD97706)),
+                    Icon(CupertinoIcons.exclamationmark_triangle_fill, size: 15, color: C.amberDk),
                     SizedBox(width: 8),
                     Expanded(child: Text(
                       'Ваше ФИО указано не на кириллице. Пожалуйста, обновите его ниже.',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF92400E), fontWeight: FontWeight.w500, height: 1.4),
+                      style: TextStyle(fontSize: 12, color: C.amberDk, fontWeight: FontWeight.w600, height: 1.4),
                     )),
                   ]),
                 ),
@@ -120,12 +130,14 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 Padding(padding: const EdgeInsets.only(top: 7),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(color: C.redLt, borderRadius: BorderRadius.circular(10)),
+                    decoration: BoxDecoration(
+                      color: C.red.withValues(alpha: isDark ? 0.16 : 0.08),
+                      borderRadius: BorderRadius.circular(10)),
                     child: const Row(children: [
                       Icon(CupertinoIcons.xmark_circle, size: 14, color: C.red),
                       SizedBox(width: 7),
                       Expanded(child: Text('ФИО должно быть на кириллице (рус/каз)',
-                        style: TextStyle(fontSize: 12, color: C.red, fontWeight: FontWeight.w500))),
+                        style: TextStyle(fontSize: 12, color: C.red, fontWeight: FontWeight.w600))),
                     ]),
                   )),
               const SizedBox(height: 14),
@@ -135,15 +147,27 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
                   child: Icon(CupertinoIcons.mail, size: 18, color: C.text4)))),
               const SizedBox(height: 20),
-              SizedBox(width: double.infinity, height: 50,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    await auth.updateProfile(_nameCtrl.text.trim());
-                    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(l.t('saved')), backgroundColor: primary));
-                  },
-                  child: Text(l.t('save_changes')),
-                )),
+              GestureDetector(
+                onTap: _saving ? null : () async {
+                  setState(() => _saving = true);
+                  await auth.updateProfile(_nameCtrl.text.trim());
+                  if (!mounted) return;
+                  setState(() => _saving = false);
+                  showToast(context, l.t('saved'));
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: primary,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: _saving ? null : primaryGlow(primary, opacity: 0.30),
+                  ),
+                  child: Center(child: _saving
+                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
+                    : Text(l.t('save_changes'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white))),
+                ),
+              ),
             ])),
           ]),
         ), 0.1, 0.6),
@@ -312,6 +336,6 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(left: 4, bottom: 2),
     child: Text(text,
-      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: C.text4, letterSpacing: 1.2)),
+      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: C.text4, letterSpacing: 1.2)),
   );
 }

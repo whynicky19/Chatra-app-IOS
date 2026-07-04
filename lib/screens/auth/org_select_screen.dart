@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/org_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/ambient_glow.dart';
 
 class OrgSelectScreen extends StatefulWidget {
   const OrgSelectScreen({super.key});
@@ -53,12 +54,12 @@ class _OrgSelectScreenState extends State<OrgSelectScreen> {
       backgroundColor: isDark ? C.darkBg : C.bg,
       body: Stack(children: [
         // Едва заметное цветное «дыхание» по углам: выбранный цвет проступает сильнее.
-        _AmbientGlow(
+        AmbientGlow(
           alignment: Alignment.topLeft,
           color: C.teal,
           opacity: (_picked == OrgType.university ? 0.16 : 0.07) * (isDark ? 1.4 : 1.0),
         ),
-        _AmbientGlow(
+        AmbientGlow(
           alignment: Alignment.bottomRight,
           color: C.amber,
           opacity: (_picked == OrgType.school ? 0.16 : 0.07) * (isDark ? 1.4 : 1.0),
@@ -123,7 +124,7 @@ class _OrgSelectScreenState extends State<OrgSelectScreen> {
                 _reveal(2, _OrgCard(
                   title: 'Университет',
                   subtitle: 'Высшее образование',
-                  icon: CupertinoIcons.building_2_fill,
+                  asset: 'assets/uni-logo.png',
                   accent: C.teal,
                   gradient: _tealGrad,
                   selected: _picked == OrgType.university,
@@ -186,7 +187,8 @@ class _OrgSelectScreenState extends State<OrgSelectScreen> {
 class _OrgCard extends StatefulWidget {
   final String title;
   final String subtitle;
-  final IconData icon;
+  final IconData? icon;
+  final String? asset;
   final Color accent;
   final List<Color> gradient;
   final bool selected;
@@ -195,7 +197,8 @@ class _OrgCard extends StatefulWidget {
   const _OrgCard({
     required this.title,
     required this.subtitle,
-    required this.icon,
+    this.icon,
+    this.asset,
     required this.accent,
     required this.gradient,
     required this.selected,
@@ -244,7 +247,10 @@ class _OrgCardState extends State<_OrgCard> {
                 gradient: LinearGradient(colors: widget.gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Icon(widget.icon, color: Colors.white, size: 26),
+              child: widget.asset != null
+                  ? Padding(padding: const EdgeInsets.all(13),
+                      child: Image.asset(widget.asset!, color: Colors.white, fit: BoxFit.contain))
+                  : Icon(widget.icon, color: Colors.white, size: 26),
             ),
             const SizedBox(width: 14),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -271,30 +277,5 @@ class _OrgCardState extends State<_OrgCard> {
         ),
       ),
     );
-  }
-}
-
-// ── Мягкое цветное свечение в углу экрана ─────────────────────────────────────
-class _AmbientGlow extends StatelessWidget {
-  final Alignment alignment;
-  final Color color;
-  final double opacity;
-  const _AmbientGlow({required this.alignment, required this.color, required this.opacity});
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned.fill(child: IgnorePointer(child: AnimatedOpacity(
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeOut,
-      opacity: opacity.clamp(0.0, 1.0),
-      child: DecoratedBox(decoration: BoxDecoration(
-        gradient: RadialGradient(
-          center: alignment,
-          radius: 1.1,
-          colors: [color, color.withValues(alpha: 0.0)],
-          stops: const [0.0, 0.7],
-        ),
-      )),
-    )));
   }
 }

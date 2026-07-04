@@ -190,7 +190,7 @@ class _SplashState extends State<_Splash> with TickerProviderStateMixin {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? Color(0xFF0A1214) : Colors.white,
+      backgroundColor: isDark ? C.darkBg : C.bg,
       body: SafeArea(
         child: Center(
           child: Column(
@@ -245,7 +245,7 @@ class _SplashState extends State<_Splash> with TickerProviderStateMixin {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w400,
-                  color: const Color(0xFF7AABB5),
+                  color: C.text4,
                   letterSpacing: 0.5,
                 ),
               ),

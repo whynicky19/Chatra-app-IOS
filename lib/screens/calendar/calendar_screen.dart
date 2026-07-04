@@ -266,11 +266,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
         Divider(height: 1, color: adaptiveBorder(context).withValues(alpha: 0.5)),
         const SizedBox(height: 10),
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          _legendDot(Theme.of(context).colorScheme.primary, 'дедлайн'),
-          const SizedBox(width: 14),
-          _legendDot(C.red, 'несколько'),
-          const SizedBox(width: 14),
-          _legendDot(C.green, 'сдано'),
+          Flexible(child: _legendDot(Theme.of(context).colorScheme.primary, context.read<L10n>().t('cal_legend_due'))),
+          const SizedBox(width: 12),
+          Flexible(child: _legendDot(C.red, context.read<L10n>().t('cal_legend_multiple'))),
+          const SizedBox(width: 12),
+          Flexible(child: _legendDot(C.green, context.read<L10n>().t('cal_legend_done'))),
         ]),
       ]),
     );
@@ -279,7 +279,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
   Widget _legendDot(Color color, String label) => Row(mainAxisSize: MainAxisSize.min, children: [
     Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
     const SizedBox(width: 5),
-    Text(label, style: const TextStyle(fontSize: 11, color: C.text4, fontWeight: FontWeight.w500)),
+    Flexible(child: Text(label, style: const TextStyle(fontSize: 11, color: C.text4, fontWeight: FontWeight.w500),
+      maxLines: 1, overflow: TextOverflow.ellipsis)),
   ]);
 
   Widget _navBtn(IconData icon, VoidCallback onTap) => GestureDetector(

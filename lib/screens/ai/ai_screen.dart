@@ -7,6 +7,7 @@ import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_logo.dart';
+import '../../widgets/toast.dart';
 
 class AiScreen extends StatefulWidget {
   const AiScreen({super.key});
@@ -57,11 +58,16 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
     ];
   }
 
+  String _now() {
+    final n = DateTime.now();
+    return '${n.hour.toString().padLeft(2, '0')}:${n.minute.toString().padLeft(2, '0')}';
+  }
+
   void _send([String? override]) async {
     final text = override ?? _ctrl.text.trim();
     if (text.isEmpty || _loading) return;
     HapticFeedback.lightImpact();
-    setState(() { _msgs.add({'role': 'user', 'text': text}); _loading = true; });
+    setState(() { _msgs.add({'role': 'user', 'text': text, 'time': _now()}); _loading = true; });
     _ctrl.clear();
     _scrollDown();
     try {
@@ -74,11 +80,11 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
       ];
       final data = await api.aiChat(apiMsgs);
       if (!mounted) return;
-      setState(() => _msgs.add({'role': 'assistant', 'text': data['content'] ?? context.read<L10n>().t('no_answer')}));
+      setState(() => _msgs.add({'role': 'assistant', 'text': data['content'] ?? context.read<L10n>().t('no_answer'), 'time': _now()}));
     } catch (e) {
       if (!mounted) return;
       final l = context.read<L10n>();
-      setState(() => _msgs.add({'role': 'assistant', 'text': e.toString().contains('503') ? l.t('ai_not_configured') : l.t('connection_error')}));
+      setState(() => _msgs.add({'role': 'assistant', 'text': e.toString().contains('503') ? l.t('ai_not_configured') : l.t('connection_error'), 'time': _now()}));
     }
     if (mounted) setState(() => _loading = false);
     _scrollDown();
@@ -133,7 +139,7 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       decoration: BoxDecoration(
         color: surface,
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05), blurRadius: 12, offset: const Offset(0, 2))],
+        border: Border(bottom: BorderSide(color: adaptiveBorder(context).withValues(alpha: 0.5), width: 0.5)),
       ),
       child: Row(children: [
         Container(
@@ -301,16 +307,16 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
             child: Transform.translate(offset: Offset(isUser ? 18 * (1 - t) : -18 * (1 - t), 8 * (1 - t)), child: child),
           ),
           child: RepaintBoundary(
-            child: isUser ? _userMessage(m['text'] ?? '') : _aiMessage(m['text'] ?? '', isDark),
+            child: isUser ? _userMessage(m) : _aiMessage(m, isDark),
           ),
         );
       },
     );
   }
 
-  Widget _userMessage(String text) {
-    final now = DateTime.now();
-    final timeStr = '${now.hour.toString().padLeft(2,'0')}:${now.minute.toString().padLeft(2,'0')}';
+  Widget _userMessage(Map<String, String> m) {
+    final text = m['text'] ?? '';
+    final timeStr = m['time'] ?? '';
     return Padding(
       padding: const EdgeInsets.only(bottom: 16, left: 48),
       child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
@@ -327,16 +333,18 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
           child: Text(text, style: const TextStyle(fontSize: 15, color: Colors.white, height: 1.5)),
         ),
         const SizedBox(height: 4),
-        Row(mainAxisSize: MainAxisSize.min, children: [
-          Text(timeStr, style: const TextStyle(fontSize: 10, color: C.text4)),
-          const SizedBox(width: 4),
-          Icon(CupertinoIcons.checkmark_alt, size: 13, color: Theme.of(context).colorScheme.primary),
-        ]),
+        Padding(
+          padding: const EdgeInsets.only(right: 2),
+          child: Text(timeStr, style: const TextStyle(fontSize: 10, color: C.text4)),
+        ),
       ]),
     );
   }
 
-  Widget _aiMessage(String text, bool isDark) {
+  Widget _aiMessage(Map<String, String> m, bool isDark) {
+    final text = m['text'] ?? '';
+    final l = context.read<L10n>();
+    final copied = l.lang == 'KZ' ? 'Көшірілді' : l.lang == 'EN' ? 'Copied' : 'Скопировано';
     return Padding(
       padding: const EdgeInsets.only(bottom: 20, right: 24),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -355,19 +363,30 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Padding(padding: EdgeInsets.only(left: 2, bottom: 5),
             child: Text('Chatra AI', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 0.2))),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDark ? C.darkSurface : Colors.white,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(6), topRight: Radius.circular(20),
-                bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20),
+          GestureDetector(
+            onLongPress: () {
+              HapticFeedback.mediumImpact();
+              Clipboard.setData(ClipboardData(text: text));
+              showToast(context, copied);
+            },
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark ? C.darkSurface : Colors.white,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(6), topRight: Radius.circular(20),
+                  bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20),
+                ),
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.06), blurRadius: 14, offset: const Offset(0, 4))],
               ),
-              border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: isDark ? 0.12 : 0.08)),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.05), blurRadius: 12, offset: const Offset(0, 3))],
+              child: SelectableText(text, style: const TextStyle(fontSize: 15, height: 1.7, letterSpacing: 0.1)),
             ),
-            child: SelectableText(text, style: const TextStyle(fontSize: 15, height: 1.7, letterSpacing: 0.1)),
           ),
+          if ((m['time'] ?? '').isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(left: 4, top: 4),
+              child: Text(m['time']!, style: const TextStyle(fontSize: 10, color: C.text4)),
+            ),
         ])),
       ]),
     );
@@ -464,8 +483,8 @@ class _AiInputBarState extends State<_AiInputBar> {
       padding: EdgeInsets.fromLTRB(14, 10, 14,
         (MediaQuery.of(context).viewInsets.bottom + 8).clamp(90.0, double.infinity)),
       decoration: BoxDecoration(
-        color: surface,
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.06), blurRadius: 14, offset: const Offset(0, -2))],
+        color: Theme.of(context).scaffoldBackgroundColor,
+        border: Border(top: BorderSide(color: adaptiveBorder(context).withValues(alpha: 0.5), width: 0.5)),
       ),
       child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
         Expanded(
@@ -474,12 +493,9 @@ class _AiInputBarState extends State<_AiInputBar> {
             curve: Curves.easeOutCubic,
             constraints: const BoxConstraints(minHeight: 46),
             decoration: BoxDecoration(
-              color: adaptiveSurface2(context),
+              color: surface,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: hasText ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.35) : Colors.transparent,
-                width: 1.5,
-              ),
+              boxShadow: softShadow(isDark),
             ),
             child: TextField(
               controller: widget.ctrl,
@@ -504,21 +520,15 @@ class _AiInputBarState extends State<_AiInputBar> {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 220),
             curve: Curves.easeOutCubic,
-            width: 48, height: 48,
+            width: 46, height: 46,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: widget.loading
-                    ? [surface, surface]
-                    : hasText
-                        ? [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary]
-                        : [Theme.of(context).colorScheme.primary.withValues(alpha: 0.55), Theme.of(context).colorScheme.secondary.withValues(alpha: 0.45)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: hasText && !widget.loading
+                  ? Theme.of(context).colorScheme.primary
+                  : surface,
               boxShadow: hasText && !widget.loading
-                  ? [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.38), blurRadius: 14, offset: const Offset(0, 4))]
-                  : null,
+                  ? primaryGlow(Theme.of(context).colorScheme.primary, opacity: 0.32)
+                  : softShadow(isDark),
             ),
             child: widget.loading
                 ? Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Theme.of(context).colorScheme.primary)))
@@ -528,10 +538,10 @@ class _AiInputBarState extends State<_AiInputBar> {
                     switchOutCurve: Curves.easeIn,
                     transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
                     child: Icon(
-                      hasText ? CupertinoIcons.paperplane_fill : CupertinoIcons.paperplane_fill,
+                      CupertinoIcons.arrow_up,
                       key: ValueKey(hasText),
-                      color: Colors.white,
-                      size: 20,
+                      color: hasText ? Colors.white : C.text4,
+                      size: 21,
                     ),
                   ),
           ),

@@ -314,6 +314,9 @@ class L10n extends ChangeNotifier {
       // ── Calendar ──
       'deadlines': 'Дедлайны',
       'no_deadlines': 'Дедлайнов нет',
+      'cal_legend_due': 'есть задание',
+      'cal_legend_multiple': 'несколько заданий',
+      'cal_legend_done': 'всё сдано',
       'upcoming_7_days': 'Ближайшие 7 дней',
 
       // ── Search ──
@@ -796,6 +799,9 @@ class L10n extends ChangeNotifier {
       // ── Calendar ──
       'deadlines': 'Дедлайндар',
       'no_deadlines': 'Дедлайндар жоқ',
+      'cal_legend_due': 'тапсырма бар',
+      'cal_legend_multiple': 'бірнеше тапсырма',
+      'cal_legend_done': 'бәрі тапсырылды',
       'upcoming_7_days': 'Келесі 7 күн',
 
       // ── Search ──
@@ -1278,6 +1284,9 @@ class L10n extends ChangeNotifier {
       // ── Calendar ──
       'deadlines': 'Deadlines',
       'no_deadlines': 'No deadlines',
+      'cal_legend_due': 'assignment due',
+      'cal_legend_multiple': 'several due',
+      'cal_legend_done': 'all submitted',
       'upcoming_7_days': 'Next 7 days',
 
       // ── Search ──

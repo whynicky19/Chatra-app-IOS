@@ -557,6 +557,8 @@ class ApiService {
     String? sourceFilename,
     required int durationMinutes,
     required String style,
+    // Обучение в организации идёт строго на английском — язык не выбирается.
+    String language = 'en',
     required bool autoSummary,
   }) async {
     final response = await _dio.post('/avatars/lectures', data: {
@@ -566,6 +568,7 @@ class ApiService {
       if (sourceFilename != null) 'source_filename': sourceFilename,
       'duration_minutes': durationMinutes,
       'style': style,
+      'language': language,
       'auto_summary': autoSummary,
     });
     return response.data;

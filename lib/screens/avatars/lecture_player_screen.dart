@@ -27,6 +27,9 @@ class _LecturePlayerScreenState extends State<LecturePlayerScreen> {
 
   int _slideIndex = 0;
   bool _showingSummary = false;
+  // YouTube-style chrome toggle in landscape: tap on the slide hides the
+  // header/progress/controls, tap again brings them back.
+  bool _chromeVisible = true;
 
   final AudioPlayer _audio = AudioPlayer();
   VideoPlayerController? _introVideo;
@@ -226,25 +229,52 @@ class _LecturePlayerScreenState extends State<LecturePlayerScreen> {
         body: SafeArea(
           child: Stack(children: [
             Positioned.fill(
-              child: Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: _buildSlideView(l, slide)),
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => setState(() => _chromeVisible = !_chromeVisible),
+                child: Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: _buildSlideView(l, slide)),
+              ),
             ),
             // Scrims keep the white chrome readable over light slides.
-            Positioned(top: 0, left: 0, right: 0, child: Container(
-              decoration: const BoxDecoration(gradient: LinearGradient(
-                begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                colors: [Colors.black87, Colors.transparent])),
-              child: Column(children: [
-                _buildHeader(l, slides.length),
-                _buildProgressBar(slides.length),
-              ]),
+            // IgnorePointer while hidden so invisible buttons can't be tapped
+            // and taps fall through to the toggle above.
+            Positioned(top: 0, left: 0, right: 0, child: IgnorePointer(
+              ignoring: !_chromeVisible,
+              child: AnimatedOpacity(
+                opacity: _chromeVisible ? 1 : 0,
+                duration: const Duration(milliseconds: 200),
+                child: Container(
+                  decoration: const BoxDecoration(gradient: LinearGradient(
+                    begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                    colors: [Colors.black87, Colors.transparent])),
+                  child: Column(children: [
+                    _buildHeader(l, slides.length),
+                    _buildProgressBar(slides.length),
+                  ]),
+                ),
+              ),
             )),
-            Positioned(bottom: 0, left: 0, right: 0, child: Container(
-              decoration: const BoxDecoration(gradient: LinearGradient(
-                begin: Alignment.bottomCenter, end: Alignment.topCenter,
-                colors: [Colors.black87, Colors.transparent])),
-              child: _buildControls(l, slides.length, compact: true),
+            Positioned(bottom: 0, left: 0, right: 0, child: IgnorePointer(
+              ignoring: !_chromeVisible,
+              child: AnimatedOpacity(
+                opacity: _chromeVisible ? 1 : 0,
+                duration: const Duration(milliseconds: 200),
+                child: Container(
+                  decoration: const BoxDecoration(gradient: LinearGradient(
+                    begin: Alignment.bottomCenter, end: Alignment.topCenter,
+                    colors: [Colors.black87, Colors.transparent])),
+                  child: _buildControls(l, slides.length, compact: true),
+                ),
+              ),
             )),
-            Positioned(bottom: 12, right: 12, child: _buildAvatarCircle()),
+            Positioned(bottom: 12, right: 12, child: IgnorePointer(
+              ignoring: true,
+              child: AnimatedOpacity(
+                opacity: _chromeVisible ? 1 : 0,
+                duration: const Duration(milliseconds: 200),
+                child: _buildAvatarCircle(),
+              ),
+            )),
           ]),
         ),
       );
@@ -407,10 +437,15 @@ class _LecturePlayerScreenState extends State<LecturePlayerScreen> {
           onPressed: () => setState(() => _showingSummary = false),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-          children: renderSimpleMarkdown(cleanMathText(_full!.lecture.summaryText ?? ''), context)),
+      // SafeArea keeps the notch/rounded corners (especially in landscape)
+      // from covering the text; extra horizontal padding on top of that so
+      // lines don't hug the screen edges.
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(28, 20, 28, 32),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+            children: renderSimpleMarkdown(cleanMathText(_full!.lecture.summaryText ?? ''), context)),
+        ),
       ),
     );
   }

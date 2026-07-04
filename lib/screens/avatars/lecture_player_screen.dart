@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
@@ -9,6 +10,7 @@ import '../../models/avatar_models.dart';
 import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/math_text.dart';
 import '../../widgets/toast.dart';
 
 class LecturePlayerScreen extends StatefulWidget {
@@ -51,6 +53,9 @@ class _LecturePlayerScreenState extends State<LecturePlayerScreen> {
   @override
   void initState() {
     super.initState();
+    // The rest of the app is portrait-locked (main.dart); the player allows
+    // rotating to landscape so the presentation can use the full screen.
+    SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     _load();
     _playerStateSub = _audio.playerStateStream.listen(_onPlayerState);
     _positionSub = _audio.positionStream.listen((p) {
@@ -177,6 +182,8 @@ class _LecturePlayerScreenState extends State<LecturePlayerScreen> {
 
   @override
   void dispose() {
+    // Restore the app-wide portrait lock from main.dart.
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
     _playerStateSub?.cancel();
     _positionSub?.cancel();
     _durationSub?.cancel();
@@ -208,6 +215,40 @@ class _LecturePlayerScreenState extends State<LecturePlayerScreen> {
 
     final slides = _full!.slides;
     final slide = slides.isNotEmpty ? slides[_slideIndex] : null;
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+
+    if (isLandscape) {
+      // Landscape: the slide takes the whole screen, chrome floats on top of
+      // it and the narration panel is dropped — this mode exists to see the
+      // presentation, the text is available in portrait.
+      return Scaffold(
+        backgroundColor: Colors.black,
+        body: SafeArea(
+          child: Stack(children: [
+            Positioned.fill(
+              child: Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: _buildSlideView(l, slide)),
+            ),
+            // Scrims keep the white chrome readable over light slides.
+            Positioned(top: 0, left: 0, right: 0, child: Container(
+              decoration: const BoxDecoration(gradient: LinearGradient(
+                begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                colors: [Colors.black87, Colors.transparent])),
+              child: Column(children: [
+                _buildHeader(l, slides.length),
+                _buildProgressBar(slides.length),
+              ]),
+            )),
+            Positioned(bottom: 0, left: 0, right: 0, child: Container(
+              decoration: const BoxDecoration(gradient: LinearGradient(
+                begin: Alignment.bottomCenter, end: Alignment.topCenter,
+                colors: [Colors.black87, Colors.transparent])),
+              child: _buildControls(l, slides.length, compact: true),
+            )),
+            Positioned(bottom: 12, right: 12, child: _buildAvatarCircle()),
+          ]),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -216,14 +257,7 @@ class _LecturePlayerScreenState extends State<LecturePlayerScreen> {
           _buildHeader(l, slides.length),
           _buildProgressBar(slides.length),
           Expanded(child: Stack(children: [
-            Center(child: slide?.slideImageUrl != null
-                ? CachedNetworkImage(
-                    imageUrl: slide!.slideImageUrl!,
-                    fit: BoxFit.contain,
-                    placeholder: (_, __) => const CircularProgressIndicator(color: Colors.white38),
-                    errorWidget: (_, __, ___) => Text(l.t('slide_preparing'), style: const TextStyle(color: Colors.white38)),
-                  )
-                : Text(l.t('slide_preparing'), style: const TextStyle(color: Colors.white38))),
+            Positioned.fill(child: _buildSlideView(l, slide)),
             Positioned(bottom: 12, right: 12, child: _buildAvatarCircle()),
           ])),
           if (slide?.narrationText != null && slide!.narrationText!.isNotEmpty)
@@ -232,12 +266,23 @@ class _LecturePlayerScreenState extends State<LecturePlayerScreen> {
               margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(14)),
-              child: SingleChildScrollView(child: Text(slide.narrationText!, style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.5))),
+              child: SingleChildScrollView(child: Text(cleanMathText(slide.narrationText!), style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.5))),
             ),
           _buildControls(l, slides.length),
         ]),
       ),
     );
+  }
+
+  Widget _buildSlideView(L10n l, AvatarLectureSlide? slide) {
+    return Center(child: slide?.slideImageUrl != null
+        ? CachedNetworkImage(
+            imageUrl: slide!.slideImageUrl!,
+            fit: BoxFit.contain,
+            placeholder: (_, __) => const CircularProgressIndicator(color: Colors.white38),
+            errorWidget: (_, __, ___) => Text(l.t('slide_preparing'), style: const TextStyle(color: Colors.white38)),
+          )
+        : Text(l.t('slide_preparing'), style: const TextStyle(color: Colors.white38)));
   }
 
   Widget _buildHeader(L10n l, int total) {
@@ -317,19 +362,20 @@ class _LecturePlayerScreenState extends State<LecturePlayerScreen> {
     );
   }
 
-  Widget _buildControls(L10n l, int total) {
+  Widget _buildControls(L10n l, int total, {bool compact = false}) {
+    final playSize = compact ? 48.0 : 62.0;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 4, 24, 16),
+      padding: compact ? const EdgeInsets.fromLTRB(24, 4, 24, 8) : const EdgeInsets.fromLTRB(24, 4, 24, 16),
       child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
         _controlBtn(CupertinoIcons.backward_fill, _slideIndex > 0 ? () => _goToSlide(_slideIndex - 1, autoplay: true) : null),
         const SizedBox(width: 28),
         GestureDetector(
           onTap: _togglePlayPause,
           child: Container(
-            width: 62, height: 62,
+            width: playSize, height: playSize,
             decoration: BoxDecoration(shape: BoxShape.circle, color: Theme.of(context).colorScheme.primary,
               boxShadow: primaryGlow(Theme.of(context).colorScheme.primary, opacity: 0.4)),
-            child: Icon(_isPlaying ? CupertinoIcons.pause_fill : CupertinoIcons.play_fill, color: Colors.white, size: 26),
+            child: Icon(_isPlaying ? CupertinoIcons.pause_fill : CupertinoIcons.play_fill, color: Colors.white, size: compact ? 22 : 26),
           ),
         ),
         const SizedBox(width: 28),
@@ -364,7 +410,7 @@ class _LecturePlayerScreenState extends State<LecturePlayerScreen> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-          children: renderSimpleMarkdown(_full!.lecture.summaryText ?? '', context)),
+          children: renderSimpleMarkdown(cleanMathText(_full!.lecture.summaryText ?? ''), context)),
       ),
     );
   }

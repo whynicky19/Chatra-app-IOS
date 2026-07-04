@@ -9,7 +9,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:dio/dio.dart' show Options, CancelToken;
+import 'package:dio/dio.dart' show Options, CancelToken, DioException;
 import '../../providers/auth_provider.dart';
 import '../../providers/classes_provider.dart';
 import '../../providers/l10n_provider.dart';
@@ -331,6 +331,18 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
         // Fallback to browser if native open fails
         await launchUrl(Uri.parse(cleanUrl), mode: LaunchMode.externalApplication);
       }
+    } on DioException catch (e) {
+      if (!mounted || cancelled) return;
+      dialogClosed = true;
+      Navigator.pop(context);
+      // 404 means the file is gone from the server — the browser fallback
+      // would only show an error page (or the ngrok interstitial), so report
+      // it honestly instead.
+      if (e.response?.statusCode == 404) {
+        showToast(context, 'Файл не найден на сервере — возможно, он был удалён', error: true);
+        return;
+      }
+      try { await launchUrl(Uri.parse(cleanUrl), mode: LaunchMode.externalApplication); } catch (_) {}
     } catch (_) {
       if (!mounted || cancelled) return;
       dialogClosed = true;

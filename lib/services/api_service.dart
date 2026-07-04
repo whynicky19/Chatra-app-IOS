@@ -226,10 +226,13 @@ class ApiService {
   // ── Posts (class storage) ────────────────────────────────────────────────────
   // Pagination params are passed to the backend; ignored if it doesn't support them.
 
-  Future<List<dynamic>> getPosts({int page = 1, int pageSize = 100}) async {
+  Future<List<dynamic>> getPosts({int page = 1, int pageSize = 100, int? classId}) async {
     final response = await _dio.get('/posts/', queryParameters: {
       'page': page,
       'page_size': pageSize,
+      // Server-side filter: only this class's [LECTURE]/[HW] posts instead of
+      // every post in the organization.
+      if (classId != null) 'class_id': classId,
     });
     final data = response.data;
     if (data is List) return data;

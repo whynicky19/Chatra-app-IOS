@@ -98,7 +98,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     // Class metadata, posts (lectures/materials) and rating are independent — fetch in parallel.
     final results = await Future.wait([
       api.getClass(widget.classId).catchError((_) => _classData),
-      api.getPosts().catchError((_) => _posts),
+      // Server-side filtered: only this class's posts, not the whole org's.
+      api.getPosts(classId: widget.classId).catchError((_) => _posts),
       isTeacher
           ? Future<Map<String, dynamic>>.value(_rating)
           : api.getMyRating(classId: widget.classId).catchError((_) => _rating),
@@ -217,13 +218,13 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   Future<void> _loadAssignments() async {
     if (!mounted) return; setState(() => _loadingAsg = true);
     final api = context.read<ApiService>();
-    try {
-      _assignments = await api.getAssignments(classId: widget.classId);
-      if (!mounted) return;
-      if (!context.read<AuthProvider>().isTeacher) {
-        try { _mySubs = await api.getMySubmissions(); } catch (_) {}
-      }
-    } catch (_) {}
+    final isTeacher = context.read<AuthProvider>().isTeacher;
+    // Assignments and my submissions are independent — fetch in parallel
+    // instead of the old sequential two-step.
+    await Future.wait([
+      () async { try { _assignments = await api.getAssignments(classId: widget.classId); } catch (_) {} }(),
+      () async { if (!isTeacher) { try { _mySubs = await api.getMySubmissions(); } catch (_) {} } }(),
+    ]);
     if (mounted) setState(() => _loadingAsg = false);
   }
 

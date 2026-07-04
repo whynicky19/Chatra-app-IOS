@@ -1,5 +1,3 @@
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -17,19 +15,18 @@ import 'screens/auth/org_select_screen.dart';
 import 'screens/main_shell.dart';
 import 'screens/classes/class_detail_screen.dart';
 
-/// Выбираем правильный baseUrl в зависимости от платформы:
-/// - Android emulator: 10.0.2.2 — это alias хоста
-/// - iOS simulator / macOS / web: 127.0.0.1
-/// - Реальное устройство: подставь IP машины с бэком вручную ниже
+/// Единый бэкенд для всех платформ — тот же, что у сайта (общая база).
 String _resolveBaseUrl() {
   // Override via: flutter run --dart-define=API_URL=https://yourserver.com
   // (some build scripts use API_BASE_URL — both names are accepted)
+  // Для локального бэкенда: --dart-define=API_URL=http://10.0.2.2:8000 (Android-эмулятор)
+  // или http://localhost:8000 (web/десктоп).
   const overrideUrl = String.fromEnvironment('API_URL');
   if (overrideUrl.isNotEmpty) return overrideUrl;
   const overrideUrl2 = String.fromEnvironment('API_BASE_URL');
   if (overrideUrl2.isNotEmpty) return overrideUrl2;
-  if (kIsWeb) return 'http://127.0.0.1:8000';
-  if (Platform.isAndroid) return 'http://10.0.2.2:8000';
+  // Единый бэкенд на всех платформах — тот же, что у сайта,
+  // чтобы аккаунты и классы совпадали везде.
   return 'https://glacier-radiated-wipe.ngrok-free.dev';
 }
 

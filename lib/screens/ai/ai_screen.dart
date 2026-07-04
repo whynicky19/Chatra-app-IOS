@@ -1,7 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
@@ -19,6 +22,54 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
   final _scroll = ScrollController();
   final List<Map<String, String>> _msgs = [];
   bool _loading = false;
+
+  // История хранится отдельно для каждого аккаунта и переживает
+  // выход: ключ содержит id пользователя и при logout не удаляется.
+  static const _legacyHistoryKey = 'ai_chat_history_v1';
+  String _historyKey = _legacyHistoryKey;
+
+  @override
+  void initState() {
+    super.initState();
+    final uid = context.read<AuthProvider>().userId;
+    _historyKey = 'ai_chat_history_v1_${uid ?? 'anon'}';
+    _restoreHistory();
+  }
+
+  Future<void> _restoreHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      var raw = prefs.getString(_historyKey);
+      // Миграция: история, сохранённая до разделения по аккаунтам,
+      // достаётся текущему пользователю.
+      if ((raw == null || raw.isEmpty) && prefs.containsKey(_legacyHistoryKey)) {
+        raw = prefs.getString(_legacyHistoryKey);
+        if (raw != null && raw.isNotEmpty) await prefs.setString(_historyKey, raw);
+        await prefs.remove(_legacyHistoryKey);
+      }
+      if (raw == null || raw.isEmpty) return;
+      final list = (jsonDecode(raw) as List)
+          .whereType<Map>()
+          .map((e) => e.map((k, v) => MapEntry(k.toString(), v.toString())))
+          .toList();
+      if (!mounted || list.isEmpty) return;
+      setState(() => _msgs.addAll(list));
+      _scrollDown();
+    } catch (_) {}
+  }
+
+  void _saveHistory() {
+    SharedPreferences.getInstance().then((prefs) {
+      try { prefs.setString(_historyKey, jsonEncode(_msgs)); } catch (_) {}
+    }).catchError((_) {});
+  }
+
+  void _clearHistory() {
+    setState(() => _msgs.clear());
+    SharedPreferences.getInstance().then((prefs) {
+      try { prefs.remove(_historyKey); } catch (_) {}
+    }).catchError((_) {});
+  }
 
   @override
   void dispose() {
@@ -68,6 +119,7 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
     if (text.isEmpty || _loading) return;
     HapticFeedback.lightImpact();
     setState(() { _msgs.add({'role': 'user', 'text': text, 'time': _now()}); _loading = true; });
+    _saveHistory();
     _ctrl.clear();
     _scrollDown();
     try {
@@ -81,10 +133,12 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
       final data = await api.aiChat(apiMsgs);
       if (!mounted) return;
       setState(() => _msgs.add({'role': 'assistant', 'text': data['content'] ?? context.read<L10n>().t('no_answer'), 'time': _now()}));
+      _saveHistory();
     } catch (e) {
       if (!mounted) return;
       final l = context.read<L10n>();
       setState(() => _msgs.add({'role': 'assistant', 'text': e.toString().contains('503') ? l.t('ai_not_configured') : l.t('connection_error'), 'time': _now()}));
+      _saveHistory();
     }
     if (mounted) setState(() => _loading = false);
     _scrollDown();
@@ -175,7 +229,7 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
                       danger: true,
                       confirmText: 'Удалить',
                       cancelText: 'Отмена').then((ok) {
-                        if (ok == true && mounted) setState(() => _msgs.clear());
+                        if (ok == true && mounted) _clearHistory();
                       });
                   },
                   child: Container(

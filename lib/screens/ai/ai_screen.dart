@@ -6,6 +6,7 @@ import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_dialog.dart';
+import '../../widgets/app_logo.dart';
 
 class AiScreen extends StatefulWidget {
   const AiScreen({super.key});
@@ -143,7 +144,7 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
             border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15)),
           ),
           padding: const EdgeInsets.all(8),
-          child: Image.asset('assets/logo.png', fit: BoxFit.contain),
+          child: const AppLogo(fit: BoxFit.contain),
         ),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -215,7 +216,7 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
                     ],
                   ),
                   padding: const EdgeInsets.all(14),
-                  child: Image.asset('assets/logo.png', fit: BoxFit.contain),
+                  child: const AppLogo(fit: BoxFit.contain),
                 ),
               ),
             ),
@@ -349,7 +350,7 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
             boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, 2))],
           ),
           padding: const EdgeInsets.all(8),
-          child: Image.asset('assets/logo.png', fit: BoxFit.contain),
+          child: const AppLogo(fit: BoxFit.contain),
         ),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Padding(padding: EdgeInsets.only(left: 2, bottom: 5),
@@ -387,7 +388,7 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
             boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), blurRadius: 10)],
           ),
           padding: const EdgeInsets.all(8),
-          child: Image.asset('assets/logo.png', fit: BoxFit.contain),
+          child: const AppLogo(fit: BoxFit.contain),
         ),
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Padding(padding: EdgeInsets.only(left: 2, bottom: 5),

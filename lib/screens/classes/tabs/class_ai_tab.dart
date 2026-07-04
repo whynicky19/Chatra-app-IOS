@@ -7,6 +7,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../services/api_service.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/app_dialog.dart';
+import '../../../widgets/app_logo.dart';
 import '../rag_documents_sheet.dart';
 
 class ClassAiTab extends StatefulWidget {
@@ -268,7 +269,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
                     decoration: BoxDecoration(color: isDark ? C.darkSurface : Colors.white, borderRadius: BorderRadius.circular(18),
                       boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.18), blurRadius: 20, offset: const Offset(0, 5))]),
                     padding: const EdgeInsets.all(12),
-                    child: Image.asset('assets/logo.png', fit: BoxFit.contain)),
+                    child: const AppLogo(fit: BoxFit.contain)),
                 ]);
               }),
               const SizedBox(height: 14),
@@ -387,7 +388,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
           boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10), blurRadius: 10, offset: const Offset(0, 2))],
         ),
         padding: const EdgeInsets.all(8),
-        child: Image.asset('assets/logo.png', fit: BoxFit.contain),
+        child: const AppLogo(fit: BoxFit.contain),
       ),
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Padding(padding: EdgeInsets.only(left: 2, bottom: 5),
@@ -422,7 +423,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
           boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10), blurRadius: 10)],
         ),
         padding: const EdgeInsets.all(8),
-        child: Image.asset('assets/logo.png', fit: BoxFit.contain),
+        child: const AppLogo(fit: BoxFit.contain),
       ),
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Padding(padding: EdgeInsets.only(left: 2, bottom: 5),

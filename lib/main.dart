@@ -206,6 +206,7 @@ class _SplashState extends State<_Splash> with TickerProviderStateMixin {
                     width: 100,
                     height: 100,
                     fit: BoxFit.contain,
+                    color: context.select<OrgProvider, bool>((o) => o.isSchool) ? C.amber : null,
                     // Fallback на случай если ассет не подгрузился — рисуем
                     // простой кружок с буквой "C", чтобы не было пустоты
                     errorBuilder: (_, __, ___) => Container(

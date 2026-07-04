@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/org_provider.dart';
+import '../../theme/app_theme.dart';
 
 class OrgSelectScreen extends StatefulWidget {
   const OrgSelectScreen({super.key});
@@ -9,132 +11,290 @@ class OrgSelectScreen extends StatefulWidget {
   State<OrgSelectScreen> createState() => _OrgSelectScreenState();
 }
 
-class _OrgSelectScreenState extends State<OrgSelectScreen>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _anim;
-  late final Animation<double> _fade;
-  late final Animation<Offset> _slide;
+class _OrgSelectScreenState extends State<OrgSelectScreen> {
+  OrgType? _picked;
 
-  @override
-  void initState() {
-    super.initState();
-    _anim = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
-    _fade = CurvedAnimation(parent: _anim, curve: Curves.easeOut);
-    _slide = Tween(begin: const Offset(0, 0.06), end: Offset.zero)
-        .animate(CurvedAnimation(parent: _anim, curve: Curves.easeOutCubic));
-    _anim.forward();
+  static const _tealGrad  = [Color(0xFF006475), Color(0xFF009AAF)];
+  static const _amberGrad = [Color(0xFFB45309), Color(0xFFF59E0B)];
+
+  Color get _accent => _picked == OrgType.school ? C.amber : C.teal;
+
+  void _pick(OrgType type) {
+    if (_picked == type) return;
+    HapticFeedback.selectionClick();
+    setState(() => _picked = type);
   }
 
-  @override
-  void dispose() {
-    _anim.dispose();
-    super.dispose();
+  Future<void> _continue() async {
+    final picked = _picked;
+    if (picked == null) return;
+    HapticFeedback.mediumImpact();
+    await context.read<OrgProvider>().select(picked);
   }
 
-  Future<void> _select(OrgType type) async {
-    await context.read<OrgProvider>().select(type);
+  // Ступенчатое появление: каждый блок чуть позже предыдущего.
+  Widget _reveal(int step, Widget child) {
+    if (MediaQuery.of(context).disableAnimations) return child;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: Duration(milliseconds: 420 + step * 110),
+      curve: Curves.easeOutCubic,
+      builder: (_, t, c) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 18 * (1 - t)), child: c)),
+      child: child,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark  = Theme.of(context).brightness == Brightness.dark;
+    final hasPick = _picked != null;
 
     return Scaffold(
+      backgroundColor: isDark ? C.darkBg : C.bg,
       body: Stack(children: [
-        Container(decoration: BoxDecoration(gradient: LinearGradient(
-          colors: isDark
-              ? [const Color(0xFF0A0A0F), const Color(0xFF12121A)]
-              : [const Color(0xFF1E293B), const Color(0xFF334155)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ))),
+        // Едва заметное цветное «дыхание» по углам: выбранный цвет проступает сильнее.
+        _AmbientGlow(
+          alignment: Alignment.topLeft,
+          color: C.teal,
+          opacity: (_picked == OrgType.university ? 0.16 : 0.07) * (isDark ? 1.4 : 1.0),
+        ),
+        _AmbientGlow(
+          alignment: Alignment.bottomRight,
+          color: C.amber,
+          opacity: (_picked == OrgType.school ? 0.16 : 0.07) * (isDark ? 1.4 : 1.0),
+        ),
 
-        SafeArea(child: Center(child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-          child: FadeTransition(opacity: _fade, child: SlideTransition(position: _slide,
-            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              const Text('Добро пожаловать',
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -0.5)),
-              const SizedBox(height: 8),
-              Text('Выберите тип вашей организации',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w400, color: Colors.white.withValues(alpha: 0.6))),
-              const SizedBox(height: 48),
+        SafeArea(child: Column(children: [
+          Expanded(child: Center(child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                // Логотип, «примеряет» цвет выбранной организации
+                _reveal(0, SizedBox(
+                  width: 108, height: 108,
+                  child: Stack(alignment: Alignment.center, children: [
+                    // Мягкое свечение позади знака
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 450),
+                      curve: Curves.easeOutCubic,
+                      width: 64, height: 64,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [BoxShadow(
+                          color: _accent.withValues(alpha: hasPick ? 0.38 : 0.18),
+                          blurRadius: 44, spreadRadius: 10,
+                        )],
+                      ),
+                    ),
+                    TweenAnimationBuilder<Color?>(
+                      tween: ColorTween(begin: C.teal, end: _accent),
+                      duration: const Duration(milliseconds: 450),
+                      curve: Curves.easeOutCubic,
+                      builder: (_, color, __) => Image.asset(
+                        'assets/logo-icon.png',
+                        width: 108, height: 108,
+                        fit: BoxFit.contain,
+                        color: color,
+                      ),
+                    ),
+                  ]),
+                )),
+                const SizedBox(height: 28),
 
-              _OrgCard(
-                title: 'Университет',
-                subtitle: 'Высшее образование',
-                icon: CupertinoIcons.book_fill,
-                primaryColor: const Color(0xFF00B1C9),
-                gradientColors: const [Color(0xFF006475), Color(0xFF009AAF)],
-                onTap: () => _select(OrgType.university),
-              ),
-              const SizedBox(height: 16),
+                _reveal(1, Column(children: [
+                  Text('Добро пожаловать',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, letterSpacing: -0.6, height: 1.12, color: adaptiveText1(context))),
+                  AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 450),
+                    curve: Curves.easeOutCubic,
+                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, letterSpacing: -0.6, height: 1.12,
+                      color: hasPick ? _accent : adaptiveText1(context)),
+                    child: const Text('в Chatra', textAlign: TextAlign.center),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text('Выберите тип организации —\nоформление настроится под него.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 15, color: C.text4, height: 1.4)),
+                ])),
+                const SizedBox(height: 36),
 
-              _OrgCard(
-                title: 'Школа',
-                subtitle: 'Среднее образование',
-                icon: CupertinoIcons.book,
-                primaryColor: const Color(0xFFF59E0B),
-                gradientColors: const [Color(0xFFB45309), Color(0xFFF59E0B)],
-                onTap: () => _select(OrgType.school),
-              ),
-            ]),
+                _reveal(2, _OrgCard(
+                  title: 'Университет',
+                  subtitle: 'Высшее образование',
+                  icon: CupertinoIcons.building_2_fill,
+                  accent: C.teal,
+                  gradient: _tealGrad,
+                  selected: _picked == OrgType.university,
+                  onTap: () => _pick(OrgType.university),
+                )),
+                const SizedBox(height: 14),
+                _reveal(3, _OrgCard(
+                  title: 'Школа',
+                  subtitle: 'Среднее образование',
+                  icon: CupertinoIcons.book_fill,
+                  accent: C.amber,
+                  gradient: _amberGrad,
+                  selected: _picked == OrgType.school,
+                  onTap: () => _pick(OrgType.school),
+                )),
+              ]),
+            ),
+          ))),
+
+          // Кнопка «Продолжить» — прижата к низу, как в онбординге iOS
+          _reveal(4, Padding(
+            padding: const EdgeInsets.fromLTRB(24, 4, 24, 20),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                GestureDetector(
+                  onTap: hasPick ? _continue : null,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 350),
+                    curve: Curves.easeOutCubic,
+                    width: double.infinity,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: hasPick ? _accent : adaptiveSurface2(context),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: hasPick ? primaryGlow(_accent, opacity: 0.34) : null,
+                    ),
+                    child: Center(child: AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 350),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.1,
+                        color: hasPick ? Colors.white : C.text4),
+                      child: const Text('Продолжить'),
+                    )),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text('Тип организации можно изменить на экране входа',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: C.text4)),
+              ]),
+            ),
           )),
-        ))),
+        ])),
       ]),
     );
   }
 }
 
-class _OrgCard extends StatelessWidget {
+// ── Карточка выбора организации ──────────────────────────────────────────────
+class _OrgCard extends StatefulWidget {
   final String title;
   final String subtitle;
   final IconData icon;
-  final Color primaryColor;
-  final List<Color> gradientColors;
+  final Color accent;
+  final List<Color> gradient;
+  final bool selected;
   final VoidCallback onTap;
 
   const _OrgCard({
     required this.title,
     required this.subtitle,
     required this.icon,
-    required this.primaryColor,
-    required this.gradientColors,
+    required this.accent,
+    required this.gradient,
+    required this.selected,
     required this.onTap,
   });
 
   @override
+  State<_OrgCard> createState() => _OrgCardState();
+}
+
+class _OrgCardState extends State<_OrgCard> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
+    final isDark   = Theme.of(context).brightness == Brightness.dark;
+    final selected = widget.selected;
+    final accent   = widget.accent;
+
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        constraints: const BoxConstraints(maxWidth: 420),
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.18), width: 1),
-        ),
-        child: Row(children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: gradientColors),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(icon, color: Colors.white, size: 28),
+      onTap: widget.onTap,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.975 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeOutCubic,
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: selected
+                ? Color.alphaBlend(accent.withValues(alpha: isDark ? 0.10 : 0.05), Theme.of(context).colorScheme.surface)
+                : Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: selected ? accent : Colors.transparent, width: 2),
+            boxShadow: selected ? primaryGlow(accent, opacity: 0.22) : cardShadow(isDark),
           ),
-          const SizedBox(width: 16),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Colors.white)),
-            const SizedBox(height: 4),
-            Text(subtitle, style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.6))),
-          ])),
-          Icon(CupertinoIcons.chevron_right, color: primaryColor, size: 18),
-        ]),
+          child: Row(children: [
+            Container(
+              width: 54, height: 54,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: widget.gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(widget.icon, color: Colors.white, size: 26),
+            ),
+            const SizedBox(width: 14),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(widget.title,
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: adaptiveText1(context))),
+              const SizedBox(height: 2),
+              Text(widget.subtitle, style: const TextStyle(fontSize: 13, color: C.text4)),
+            ])),
+            // Радио-отметка в стиле списков iOS
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 240),
+              curve: Curves.easeOutCubic,
+              width: 26, height: 26,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: selected ? accent : Colors.transparent,
+                border: selected ? null : Border.all(color: adaptiveBorder(context), width: 1.6),
+              ),
+              child: selected
+                  ? const Icon(CupertinoIcons.checkmark_alt, size: 16, color: Colors.white)
+                  : null,
+            ),
+          ]),
+        ),
       ),
     );
+  }
+}
+
+// ── Мягкое цветное свечение в углу экрана ─────────────────────────────────────
+class _AmbientGlow extends StatelessWidget {
+  final Alignment alignment;
+  final Color color;
+  final double opacity;
+  const _AmbientGlow({required this.alignment, required this.color, required this.opacity});
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(child: IgnorePointer(child: AnimatedOpacity(
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOut,
+      opacity: opacity.clamp(0.0, 1.0),
+      child: DecoratedBox(decoration: BoxDecoration(
+        gradient: RadialGradient(
+          center: alignment,
+          radius: 1.1,
+          colors: [color, color.withValues(alpha: 0.0)],
+          stops: const [0.0, 0.7],
+        ),
+      )),
+    )));
   }
 }

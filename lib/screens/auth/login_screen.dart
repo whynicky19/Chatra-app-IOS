@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../providers/org_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_logo.dart';
 
 class LoginScreen extends StatefulWidget {
   final VoidCallback? onGoRegister;
@@ -90,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               ),
               child: Column(mainAxisSize: MainAxisSize.min, children: [
                 // Logo
-                Image.asset('assets/logo.png', width: 96, height: 96),
+                const AppLogo(width: 96, height: 96),
                 const SizedBox(height: 20),
                 Text(l.t('welcome'), style: TextStyle(
                   fontSize: 24, fontWeight: FontWeight.w900,

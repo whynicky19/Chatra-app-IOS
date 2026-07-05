@@ -41,16 +41,13 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  # Tightly-cropped versions of logo.png (source has ~35% transparent
-  # padding on each side, which made the launcher icon look tiny) — kept as
-  # separate assets so the in-app logo.png usages are untouched.
+  # Белый глиф на бирюзовом градиенте, full-bleed (ОС сама скругляет углы).
+  # Сгенерировано скриптом make_icon.py из logo-icon.png.
   image_path: "assets/icon_source.png"
-  # iOS forbids alpha in the app icon — flatten onto a white background.
   image_path_ios: "assets/icon_source.png"
   remove_alpha_ios: true
-  background_color_ios: "#FFFFFF"
   min_sdk_android: 21
-  adaptive_icon_background: "#FFFFFF"
-  # Adaptive icons get masked to a circle/squircle by the launcher, so the
-  # foreground needs extra padding to avoid the logo being clipped.
+  # Adaptive: фон — картинка с градиентом; в foreground только глиф в
+  # безопасной зоне (лаунчер маскирует иконку в круг/сквиркл).
+  adaptive_icon_background: "assets/icon_bg_adaptive.png"
   adaptive_icon_foreground: "assets/icon_source_adaptive.png"

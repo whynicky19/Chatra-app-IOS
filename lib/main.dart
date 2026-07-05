@@ -78,6 +78,9 @@ class ChatraApp extends StatelessWidget {
       theme:     isSchool ? AppTheme.lightSchool : AppTheme.light,
       darkTheme: isSchool ? AppTheme.darkSchool  : AppTheme.dark,
       themeMode: themeMode,
+      // Тема меняется мгновенно: дефолтный 200мс-лерп ThemeData перестраивал
+      // всё дерево ~12 кадров подряд и лагал.
+      themeAnimationDuration: Duration.zero,
       builder: (context, child) => GestureDetector(
         onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
         behavior: HitTestBehavior.translucent,
@@ -106,7 +109,9 @@ class _AuthGateState extends State<_AuthGate> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(Duration(milliseconds: 800), () {
+    // Короткая брендинг-пауза; дольше держать пользователя незачем —
+    // обычно auth/org инициализируются быстрее.
+    Future.delayed(Duration(milliseconds: 400), () {
       if (mounted) setState(() => _splashDone = true);
     });
   }

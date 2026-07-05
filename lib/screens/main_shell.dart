@@ -88,10 +88,12 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: Stack(children: [
-        // IndexedStack keeps all screens mounted (state preserved) but only
-        // paints the active one — hidden screens are offstage (no GPU cost).
+        // Ленивый IndexedStack: экран строится только при первом заходе на
+        // вкладку (быстрый старт — не инициализируем все 5 экранов разом),
+        // после этого остаётся смонтированным (state сохраняется), но
+        // скрытые экраны offstage — без GPU-затрат.
         Positioned.fill(
-          child: IndexedStack(
+          child: _LazyIndexedStack(
             index: _idx,
             children: screens,
           ),
@@ -345,6 +347,50 @@ class _NavItem {
   final IconData inactive, active;
   final String label;
   _NavItem(this.inactive, this.active, this.label);
+}
+
+// ─────────────────────────────────────────────────────────
+//  Lazy IndexedStack — строит вкладку при первом открытии
+// ─────────────────────────────────────────────────────────
+class _LazyIndexedStack extends StatefulWidget {
+  final int index;
+  final List<Widget> children;
+  const _LazyIndexedStack({required this.index, required this.children});
+
+  @override
+  State<_LazyIndexedStack> createState() => _LazyIndexedStackState();
+}
+
+class _LazyIndexedStackState extends State<_LazyIndexedStack> {
+  late List<bool> _built;
+
+  @override
+  void initState() {
+    super.initState();
+    _built = List.filled(widget.children.length, false);
+    _built[widget.index] = true;
+  }
+
+  @override
+  void didUpdateWidget(_LazyIndexedStack old) {
+    super.didUpdateWidget(old);
+    // Список вкладок может измениться (например, появилась вкладка админа)
+    if (widget.children.length != _built.length) {
+      _built = List.filled(widget.children.length, false);
+    }
+    _built[widget.index] = true;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IndexedStack(
+      index: widget.index,
+      children: [
+        for (var i = 0; i < widget.children.length; i++)
+          _built[i] ? widget.children[i] : const SizedBox.shrink(),
+      ],
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────

@@ -47,6 +47,12 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
     try { final dt = DateTime.parse(d); return '${dt.day}.${dt.month.toString().padLeft(2, '0')}.${dt.year}'; } catch (_) { return d; }
   }
 
+  // Bare uploaded-file URL, optionally with #OriginalName fragment appended by the clients.
+  // Trailing lookahead pins the match to the token end so ".docx" can't be eaten as ".doc"+junk.
+  static final _fileUrlRe = RegExp(r'https?://[^\s"<>]+\.(pdf|docx?|txt|md|png|jpe?g|gif|webp|pptx?|xlsx?)(#[^\s"<>]*)?(?![^\s"<>])', caseSensitive: false);
+  // Site-generated markdown attachment: "📎 [name](url)"
+  static final _mdFileRe = RegExp(r'📎\s*\[([^\]\n]+)\]\((https?://[^\s)]+)\)');
+
   String _fileDisplayName(String url) {
     try {
       final uri = Uri.parse(url);
@@ -57,14 +63,28 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
 
   String _cleanContent(String content) {
     return content
-        .replaceAll(RegExp(r'https?://[^\s"<>]+\.(pdf|doc|docx|txt|png|jpg|jpeg|pptx?|xlsx?)', caseSensitive: false), '')
+        .replaceAll(_mdFileRe, '')
+        .replaceAll(_fileUrlRe, '')
         .replaceAll(RegExp(r'\n{3,}'), '\n\n')
         .trim();
   }
 
   List<String> _extractFilesFromText(String text) {
-    final matches = RegExp(r'https?://[^\s"<>]+\.(pdf|doc|docx|txt|png|jpg|jpeg|pptx?|xlsx?)', caseSensitive: false).allMatches(text);
-    return matches.map((m) => context.read<ApiService>().fixUrl(m.group(0)!)).toList();
+    final api = context.read<ApiService>();
+    final result = <String>[];
+    final seen = <String>{};
+    // Markdown attachments carry the original name in the label — keep it as a #fragment
+    for (final m in _mdFileRe.allMatches(text)) {
+      var url = m.group(2)!;
+      if (!url.contains('#')) url = '$url#${Uri.encodeComponent(m.group(1)!)}';
+      url = api.fixUrl(url);
+      if (seen.add(url.split('#').first)) result.add(url);
+    }
+    for (final m in _fileUrlRe.allMatches(text.replaceAll(_mdFileRe, ''))) {
+      final url = api.fixUrl(m.group(0)!);
+      if (seen.add(url.split('#').first)) result.add(url);
+    }
+    return result;
   }
 
   List<String> _parseFileUrls(dynamic raw) {
@@ -281,9 +301,9 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                         decoration: BoxDecoration(color: statusBg, borderRadius: BorderRadius.circular(20)),
                         child: Text(statusText, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: statusColor))),
                     ]),
-                    if (a['description'] != null && a['description'].toString().isNotEmpty)
+                    if (a['description'] != null && _cleanContent(a['description'].toString()).isNotEmpty)
                       Padding(padding: EdgeInsets.only(top: 4),
-                        child: Text(a['description'], style: TextStyle(fontSize: 13, color: C.text4), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                        child: Text(_cleanContent(a['description'].toString()), style: TextStyle(fontSize: 13, color: C.text4), maxLines: 1, overflow: TextOverflow.ellipsis)),
                     SizedBox(height: 10),
                     Wrap(spacing: 12, children: [
                       if (deadline != null) Row(mainAxisSize: MainAxisSize.min, children: [

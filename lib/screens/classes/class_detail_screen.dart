@@ -652,18 +652,37 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     return matches.map((m) => context.read<ApiService>().fixUrl(m.group(0)!)).toList();
   }
 
+  // Bare uploaded-file URL, optionally with #OriginalName fragment appended by the clients.
+  // Trailing lookahead pins the match to the token end so ".docx" can't be eaten as ".doc"+junk.
+  static final _fileUrlRe = RegExp(r'https?://[^\s"<>]+\.(pdf|docx?|txt|md|png|jpe?g|gif|webp|pptx?|xlsx?)(#[^\s"<>]*)?(?![^\s"<>])', caseSensitive: false);
+  // Site-generated markdown attachment: "📎 [name](url)"
+  static final _mdFileRe = RegExp(r'📎\s*\[([^\]\n]+)\]\((https?://[^\s)]+)\)');
+
   /// Remove raw file URLs from content for cleaner display
   String _cleanContent(String content) {
     return content
-        .replaceAll(RegExp(r'https?://[^\s"<>]+\.(pdf|doc|docx|txt|png|jpg|jpeg|pptx?|xlsx?)', caseSensitive: false), '')
+        .replaceAll(_mdFileRe, '')
+        .replaceAll(_fileUrlRe, '')
         .replaceAll(RegExp(r'\n{3,}'), '\n\n')
         .trim();
   }
 
-  /// Extract file URLs from plain text
+  /// Extract file URLs from plain text (keeps the original name as a #fragment)
   List<String> _extractFilesFromText(String text) {
-    final matches = RegExp(r'https?://[^\s"<>]+\.(pdf|doc|docx|txt|png|jpg|jpeg|pptx?|xlsx?)', caseSensitive: false).allMatches(text);
-    return matches.map((m) => context.read<ApiService>().fixUrl(m.group(0)!)).toList();
+    final api = context.read<ApiService>();
+    final result = <String>[];
+    final seen = <String>{};
+    for (final m in _mdFileRe.allMatches(text)) {
+      var url = m.group(2)!;
+      if (!url.contains('#')) url = '$url#${Uri.encodeComponent(m.group(1)!)}';
+      url = api.fixUrl(url);
+      if (seen.add(url.split('#').first)) result.add(url);
+    }
+    for (final m in _fileUrlRe.allMatches(text.replaceAll(_mdFileRe, ''))) {
+      final url = api.fixUrl(m.group(0)!);
+      if (seen.add(url.split('#').first)) result.add(url);
+    }
+    return result;
   }
 
 

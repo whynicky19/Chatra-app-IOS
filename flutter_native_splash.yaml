@@ -1,12 +1,15 @@
 flutter_native_splash:
+  # Фон совпадает с внутренним splash (_Splash в main.dart): чистый белый /
+  # чёрный — переход от нативного splash к Flutter-экрану бесшовный, в стиле Apple.
+  # Иконка та же, что показывает _Splash (logo-icon), — визуально одно целое.
   color: "#FFFFFF"
-  color_dark: "#0A1214"
-  image: assets/logo.png
-  image_dark: assets/logo.png
+  color_dark: "#000000"
+  image: assets/logo-icon.png
+  image_dark: assets/logo-icon.png
   android_12:
     color: "#FFFFFF"
-    color_dark: "#0A1214"
-    image: assets/logo.png
-    image_dark: assets/logo.png
+    color_dark: "#000000"
+    image: assets/logo-icon.png
+    image_dark: assets/logo-icon.png
   ios: true
   android: true

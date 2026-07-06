@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -169,102 +170,153 @@ class _Splash extends StatefulWidget {
   State<_Splash> createState() => _SplashState();
 }
 
-class _SplashState extends State<_Splash> with TickerProviderStateMixin {
-  late AnimationController _logoCtrl;
-  late Animation<double> _logoScale;
+class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+  late final Animation<double> _logoFade;
+  late final Animation<double> _logoScale;
+  late final Animation<double> _textFade;
+  late final Animation<Offset> _textSlide;
 
   @override
   void initState() {
     super.initState();
-    _logoCtrl = AnimationController(vsync: this, duration: Duration(milliseconds: 700));
-    _logoScale = Tween<double>(begin: 0.85, end: 1.0).animate(
-      CurvedAnimation(parent: _logoCtrl, curve: Curves.easeOutCubic),
+    _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1150));
+    // Логотип: мягкое появление с лёгким overshoot (премиальный iOS-feel).
+    _logoFade = CurvedAnimation(parent: _c, curve: const Interval(0.0, 0.5, curve: Curves.easeOut));
+    _logoScale = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(parent: _c, curve: const Interval(0.0, 0.7, curve: Curves.easeOutBack)),
     );
-    _logoCtrl.forward();
+    // Вордмарк — следом, чуть выезжает снизу.
+    _textFade = CurvedAnimation(parent: _c, curve: const Interval(0.35, 0.85, curve: Curves.easeOut));
+    _textSlide = Tween<Offset>(begin: const Offset(0, 0.4), end: Offset.zero).animate(
+      CurvedAnimation(parent: _c, curve: const Interval(0.35, 1.0, curve: Curves.easeOutCubic)),
+    );
+    _c.forward();
   }
 
   @override
   void dispose() {
-    _logoCtrl.dispose();
+    _c.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isSchool = context.select<OrgProvider, bool>((o) => o.isSchool);
+    final primary = isSchool ? C.amber : C.teal;
+    final bg = isDark ? Colors.black : Colors.white;
+    final wordColor = isDark ? Colors.white : C.text1;
 
     return Scaffold(
-      backgroundColor: isDark ? C.darkBg : C.bg,
-      body: SafeArea(
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ScaleTransition(
-                scale: _logoScale,
-                child: SizedBox(
-                  width: 100,
-                  height: 100,
-                  child: Image.asset(
-                    'assets/logo-icon.png',
-                    width: 100,
-                    height: 100,
-                    fit: BoxFit.contain,
-                    color: context.select<OrgProvider, bool>((o) => o.isSchool) ? C.amber : null,
-                    // Fallback на случай если ассет не подгрузился — рисуем
-                    // простой кружок с буквой "C", чтобы не было пустоты
-                    errorBuilder: (_, __, ___) => Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,
-                        shape: BoxShape.circle,
-                      ),
-                      alignment: Alignment.center,
-                      child: const Text('C',
-                        style: TextStyle(
-                          fontSize: 56,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
+      backgroundColor: bg,
+      body: Stack(
+        children: [
+          // Едва заметный брендовый градиент по фону — глубина без пестроты.
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  primary.withValues(alpha: isDark ? 0.06 : 0.045),
+                  bg,
+                ],
+                stops: const [0.0, 0.55],
+              ),
+            ),
+            child: const SizedBox.expand(),
+          ),
+          SafeArea(
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Логотип с мягким брендовым свечением за ним.
+                  FadeTransition(
+                    opacity: _logoFade,
+                    child: ScaleTransition(
+                      scale: _logoScale,
+                      child: SizedBox(
+                        width: 168, height: 168,
+                        child: Stack(alignment: Alignment.center, children: [
+                          // Radial glow
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  primary.withValues(alpha: isDark ? 0.24 : 0.16),
+                                  primary.withValues(alpha: 0.0),
+                                ],
+                                stops: const [0.0, 1.0],
+                              ),
+                            ),
+                            child: const SizedBox.expand(),
+                          ),
+                          Image.asset(
+                            'assets/logo-icon.png',
+                            width: 96, height: 96,
+                            fit: BoxFit.contain,
+                            color: isSchool ? C.amber : null,
+                            errorBuilder: (_, __, ___) => Container(
+                              width: 96, height: 96,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [primary, isSchool ? C.amberDk : C.tealDk],
+                                  begin: Alignment.topLeft, end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              alignment: Alignment.center,
+                              child: const Text('C',
+                                style: TextStyle(fontSize: 52, fontWeight: FontWeight.w800, color: Colors.white)),
+                            ),
+                          ),
+                        ]),
                       ),
                     ),
                   ),
-                ),
+                  const SizedBox(height: 20),
+                  // Вордмарк — монохромный (Apple-style), плотный трекинг.
+                  FadeTransition(
+                    opacity: _textFade,
+                    child: SlideTransition(
+                      position: _textSlide,
+                      child: Column(children: [
+                        Text('Chatra',
+                            style: TextStyle(
+                              fontSize: 32, fontWeight: FontWeight.w800,
+                              color: wordColor, letterSpacing: -0.5,
+                            )),
+                        const SizedBox(height: 5),
+                        Text('EDUCATION PLATFORM',
+                            style: TextStyle(
+                              fontSize: 11, fontWeight: FontWeight.w600,
+                              color: (isDark ? Colors.white : C.text4).withValues(alpha: 0.55),
+                              letterSpacing: 2.4,
+                            )),
+                      ]),
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(height: 24),
-              // Текст показываем сразу, без fade-in, чтобы не было пустого экрана
-              Text(
-                'Chatra',
-                style: TextStyle(
-                  fontSize: 34,
-                  fontWeight: FontWeight.w700,
-                  color: Theme.of(context).colorScheme.primary,
-                  letterSpacing: 1.5,
-                ),
-              ),
-              SizedBox(height: 6),
-              Text(
-                'Education Platform',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  color: C.text4,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              SizedBox(height: 40),
-              SizedBox(
-                width: 28,
-                height: 28,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+          // Индикатор загрузки — внизу, деликатный (Cupertino).
+          Positioned(
+            left: 0, right: 0, bottom: 54,
+            child: FadeTransition(
+              opacity: _textFade,
+              child: Center(
+                child: CupertinoActivityIndicator(
+                  radius: 13,
+                  color: (isDark ? Colors.white : C.text1).withValues(alpha: 0.45),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

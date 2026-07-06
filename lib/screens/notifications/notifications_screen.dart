@@ -183,6 +183,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     });
 
     if (mounted) setState(() { _notifs = notifs; _loading = false; });
+
+    // Открытие экрана = «просмотрено»: помечаем прочитанными на сервере
+    // непрочитанные уведомления, влияющие на бейдж (задания и оценки; дедлайны —
+    // напоминания, в счётчик не входят). Так красная точка гаснет после
+    // просмотра и статус синхронизируется с сайтом. Текущий вид оставляет
+    // подсветку «непрочитано» — она уйдёт при следующем открытии.
+    final toMark = notifs
+        .where((n) => n.type != _NType.deadline && !_isRead(n.key))
+        .map((n) => n.key)
+        .toList();
+    if (toMark.isNotEmpty) {
+      for (final k in toMark) {
+        _states[k] = {'read': true, 'dismissed': _isDismissed(k)};
+      }
+      try { await api.markAllNotifsRead(toMark); } catch (_) {}
+    }
   }
 
   // Отметить прочитанным на сервере (синхронно с сайтом) + локально.

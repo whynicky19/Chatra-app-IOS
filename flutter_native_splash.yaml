@@ -4,12 +4,15 @@ flutter_native_splash:
   # Иконка та же, что показывает _Splash (logo-icon), — визуально одно целое.
   color: "#FFFFFF"
   color_dark: "#000000"
-  image: assets/logo-icon.png
-  image_dark: assets/logo-icon.png
+  # Компактный логотип с «воздухом» (assets/splash-logo.png = глиф ~38% по центру
+  # прозрачного квадрата) — не растянут на весь экран. Пересборка ассета:
+  # python3 tool/make_splash.py
+  image: assets/splash-logo.png
+  image_dark: assets/splash-logo.png
   android_12:
     color: "#FFFFFF"
     color_dark: "#000000"
-    image: assets/logo-icon.png
-    image_dark: assets/logo-icon.png
+    image: assets/splash-logo.png
+    image_dark: assets/splash-logo.png
   ios: true
   android: true

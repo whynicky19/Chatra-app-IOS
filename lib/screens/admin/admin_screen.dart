@@ -846,6 +846,15 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                   ]),
                 ])),
                 GestureDetector(
+                  onTap: () => _showRejoinableSheet(classId, className, doRefresh),
+                  child: Container(
+                    width: 36, height: 36,
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(color: primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                    child: Icon(CupertinoIcons.person_badge_plus, size: 18, color: primary),
+                  ),
+                ),
+                GestureDetector(
                   onTap: doRefresh,
                   child: Container(
                     width: 36, height: 36,
@@ -933,6 +942,129 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           );
         },
       ),
+    );
+  }
+
+  // ── Вернуть ранее состоявшего студента (из архивных потоков) ──────────────
+  void _showRejoinableSheet(int classId, String className, Future<void> Function() onChanged) {
+    final l = context.read<L10n>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final api = context.read<ApiService>();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      builder: (ctx) {
+        List<dynamic> candidates = [];
+        bool loading = true;
+        bool started = false;
+        final adding = <int>{};
+
+        return StatefulBuilder(builder: (ctx, setS) {
+          if (!started) {
+            started = true;
+            api.getRejoinableStudents(classId).then((v) {
+              candidates = v;
+              if (ctx.mounted) setS(() => loading = false);
+            }).catchError((_) {
+              if (ctx.mounted) setS(() => loading = false);
+            });
+          }
+
+          Future<void> add(Map<String, dynamic> u) async {
+            final id = u['id'] as int;
+            setS(() => adding.add(id));
+            try {
+              await api.addClassMember(classId, id);
+              candidates.removeWhere((c) => c['id'] == id);
+              if (mounted) showToast(context, l.t('student_returned'));
+              await onChanged();
+            } catch (_) {
+              if (mounted) showToast(context, l.t('not_found'), error: true);
+            }
+            if (ctx.mounted) setS(() => adding.remove(id));
+          }
+
+          return DraggableScrollableSheet(
+            expand: false, initialChildSize: 0.6, maxChildSize: 0.92,
+            builder: (ctx, sc) => Column(children: [
+              Container(width: 36, height: 4, margin: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2))),
+              Padding(padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(l.t('return_student'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 3),
+                  Text('$className · ${l.t('return_student_hint')}',
+                      style: const TextStyle(fontSize: 12.5, color: C.text4, height: 1.35)),
+                ])),
+              Divider(height: 1, color: C.border.withValues(alpha: 0.5)),
+              Expanded(child: loading
+                ? Center(child: CupertinoActivityIndicator(color: primary))
+                : candidates.isEmpty
+                  ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(CupertinoIcons.person_crop_circle_badge_checkmark, size: 48, color: C.text4.withValues(alpha: 0.6)),
+                      const SizedBox(height: 12),
+                      Padding(padding: const EdgeInsets.symmetric(horizontal: 40),
+                        child: Text(l.t('no_archived_students'), textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 14, color: C.text4, height: 1.4))),
+                    ]))
+                  : ListView.separated(
+                      controller: sc,
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+                      itemCount: candidates.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (_, i) {
+                        final u = candidates[i] as Map<String, dynamic>;
+                        final display = (u['full_name'] ?? u['email'] ?? '').toString();
+                        final email = (u['email'] ?? '').toString();
+                        final initials = display.trim().isEmpty ? '?' : display.trim()[0].toUpperCase();
+                        final busy = adding.contains(u['id']);
+                        return Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface,
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: softShadow(isDark),
+                          ),
+                          child: Row(children: [
+                            Container(width: 44, height: 44,
+                              decoration: BoxDecoration(
+                                gradient: RadialGradient(colors: [primary.withValues(alpha: 0.24), primary.withValues(alpha: 0.07)]),
+                                shape: BoxShape.circle),
+                              child: Center(child: Text(initials,
+                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: primary)))),
+                            const SizedBox(width: 12),
+                            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              Text(display, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+                              const SizedBox(height: 2),
+                              Text(email, style: const TextStyle(fontSize: 12, color: C.text4), maxLines: 1, overflow: TextOverflow.ellipsis),
+                            ])),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: busy ? null : () => add(u),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                                decoration: BoxDecoration(color: primary, borderRadius: BorderRadius.circular(11)),
+                                child: busy
+                                  ? const SizedBox(width: 16, height: 16, child: CupertinoActivityIndicator(color: Colors.white))
+                                  : Row(mainAxisSize: MainAxisSize.min, children: [
+                                      const Icon(CupertinoIcons.add, size: 15, color: Colors.white),
+                                      const SizedBox(width: 4),
+                                      Text(l.t('return_add'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+                                    ]),
+                              ),
+                            ),
+                          ]),
+                        );
+                      },
+                    )),
+            ]),
+          );
+        });
+      },
     );
   }
 

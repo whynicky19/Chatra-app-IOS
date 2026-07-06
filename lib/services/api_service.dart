@@ -295,6 +295,17 @@ class ApiService {
   Future<void> joinClass(int classId) async => _dio.post('/classes/$classId/join', data: {});
   Future<void> leaveClass(int classId) async => _dio.delete('/classes/$classId/leave');
 
+  // Студенты из архивных потоков класса, которых можно вернуть в активный поток
+  // (для админа/владельца). Возврат — addClassMember.
+  Future<List<dynamic>> getRejoinableStudents(int classId) async {
+    final response = await _dio.get('/classes/$classId/rejoinable-students');
+    return response.data is List ? response.data : [];
+  }
+
+  Future<void> addClassMember(int classId, int userId) async {
+    await _dio.post('/classes/$classId/members', data: {'user_id': userId});
+  }
+
   Future<Map<String, dynamic>> joinByCode(String code) async {
     final response = await _dio.post('/classes/join-by-code', data: {'code': code});
     return response.data;

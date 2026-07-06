@@ -33,8 +33,11 @@ class _LoginScreenState extends State<LoginScreen> {
     final orgType = context.read<OrgProvider>().orgTypeString;
     final ok = await context.read<AuthProvider>().login(_email.text.trim(), _pw.text, orgType: orgType);
     if (!mounted) return;
-    if (!ok) setState(() { _error = l.t('wrong_creds'); _busy = false; });
-    else setState(() => _busy = false);
+    if (!ok) {
+      setState(() { _error = l.t('wrong_creds'); _busy = false; });
+    } else {
+      setState(() => _busy = false);
+    }
   }
 
   // Ступенчатое появление — как на экране выбора организации.

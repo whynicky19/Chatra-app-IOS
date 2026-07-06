@@ -280,12 +280,15 @@ class ApiService {
 
   /// Mirrors the site: try the teacher-facing endpoint first (works without
   /// admin rights), fall back to the admin one only if that fails.
-  Future<List<dynamic>> getClassMembers(int classId) async {
+  /// [cohortId] filters to a specific academic-year cohort (teacher viewing past
+  /// years). Omit it for the active cohort — keeps the existing behaviour intact.
+  Future<List<dynamic>> getClassMembers(int classId, {int? cohortId}) async {
+    final params = cohortId != null ? {'cohort_id': cohortId} : null;
     try {
-      final response = await _dio.get('/classes/$classId/members');
+      final response = await _dio.get('/classes/$classId/members', queryParameters: params);
       if (response.data is List) return response.data;
     } catch (_) {}
-    final response = await _dio.get('/admin/classes/$classId/members');
+    final response = await _dio.get('/admin/classes/$classId/members', queryParameters: params);
     return response.data is List ? response.data : [];
   }
 
@@ -321,6 +324,69 @@ class ApiService {
   }
 
   Future<void> deleteClass(int classId) async => _dio.delete('/classes/$classId');
+
+  // ── Cohorts / Rollover (teacher-owner only) ────────────────────────────────────
+
+  /// Rating for a class. [cohortId] targets a past academic year (owner/admin);
+  /// omit for the active cohort. Returns the `StudentRatingResponse` map.
+  Future<Map<String, dynamic>> getClassRating(int classId, {int? cohortId}) async {
+    final response = await _dio.get('/classes/$classId/rating',
+        queryParameters: cohortId != null ? {'cohort_id': cohortId} : null);
+    return response.data;
+  }
+
+  /// All cohorts (academic years) of a class, newest first. Owner/admin only.
+  Future<List<dynamic>> getClassCohorts(int classId) async {
+    final response = await _dio.get('/classes/$classId/cohorts');
+    return response.data is List ? response.data : [];
+  }
+
+  /// Toggle a class between 'manual' and 'yearly' rotation. Returns the updated class.
+  Future<Map<String, dynamic>> setRotationMode(int classId, String mode) async {
+    final response = await _dio.patch('/classes/$classId/rotation-mode',
+        data: {'rotation_mode': mode});
+    return response.data;
+  }
+
+  /// Classes eligible for year rollover (rotation_mode='yearly' + active cohort).
+  Future<List<dynamic>> getRolloverPreview() async {
+    final response = await _dio.get('/rollover/preview');
+    return response.data is List ? response.data : [];
+  }
+
+  /// Roll the given classes into a new academic year. [newStartDate] is 'YYYY-MM-DD',
+  /// [newAcademicYear] must match 'YYYY/YYYY'. Returns per-class result items.
+  Future<List<dynamic>> rollover(List<int> classIds,
+      {required String newAcademicYear, required String newStartDate}) async {
+    final response = await _dio.post('/rollover', data: {
+      'class_ids': classIds,
+      'new_academic_year': newAcademicYear,
+      'new_start_date': newStartDate,
+    });
+    return response.data is List ? response.data : [];
+  }
+
+  /// Deadlines of a cohort (post-rollover drafts included). Owner only.
+  Future<List<dynamic>> getCohortDeadlines(int cohortId) async {
+    final response = await _dio.get('/cohorts/$cohortId/deadlines');
+    return response.data is List ? response.data : [];
+  }
+
+  /// Edit a single deadline's date and/or publish state. [dueDate] is ISO-8601.
+  Future<Map<String, dynamic>> updateDeadline(int deadlineId,
+      {String? dueDate, bool? isPublished}) async {
+    final response = await _dio.patch('/deadlines/$deadlineId', data: {
+      if (dueDate != null) 'due_date': dueDate,
+      if (isPublished != null) 'is_published': isPublished,
+    });
+    return response.data;
+  }
+
+  /// Publish all draft deadlines of a cohort at once. Returns {'published': n}.
+  Future<Map<String, dynamic>> publishAllDeadlines(int cohortId) async {
+    final response = await _dio.patch('/cohorts/$cohortId/deadlines/publish-all');
+    return response.data is Map<String, dynamic> ? response.data : {};
+  }
 
   // ── Assignments ───────────────────────────────────────────────────────────────
 
@@ -361,8 +427,11 @@ class ApiService {
     return response.data;
   }
 
-  Future<List<dynamic>> getSubmissions(int assignmentId) async {
-    final response = await _dio.get('/assignments/$assignmentId/submissions');
+  /// [cohortId] filters submissions to a past cohort (teacher viewing prior
+  /// years). Omit it for the active cohort.
+  Future<List<dynamic>> getSubmissions(int assignmentId, {int? cohortId}) async {
+    final response = await _dio.get('/assignments/$assignmentId/submissions',
+        queryParameters: cohortId != null ? {'cohort_id': cohortId} : null);
     return response.data;
   }
 

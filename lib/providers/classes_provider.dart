@@ -29,6 +29,10 @@ class ClassesProvider extends ChangeNotifier {
         'title': c['name'],
         'teacher_name': c['teacher'],
         'user_id': c['created_by'],
+        // Cohort fields — default safely so the UI keeps working against a
+        // backend that predates the cohorts change (regular active-cohort flow).
+        'rotation_mode': c['rotation_mode'] ?? 'manual',
+        'is_archived_for_user': c['is_archived_for_user'] ?? false,
       };
 
   Future<void> load() async {
@@ -203,6 +207,18 @@ class ClassesProvider extends ChangeNotifier {
     }
     return allClasses.where((c) => joinedClassIds.contains(c['id'] as int)).toList();
   }
+
+  // Classes the user is only in via archived cohorts — shown read-only in a
+  // collapsed "Archive" section. Teachers/admins never see their classes as
+  // archived (is_archived_for_user is a student-membership flag).
+  bool _isArchived(Map<String, dynamic> c) =>
+      !_auth.isTeacher && !_auth.isAdmin && (c['is_archived_for_user'] == true);
+
+  List<Map<String, dynamic>> get activeClasses =>
+      classes.where((c) => !_isArchived(c)).toList();
+
+  List<Map<String, dynamic>> get archivedClasses =>
+      classes.where((c) => _isArchived(c)).toList();
 
   int lectureCount(int id) =>
     posts.where((p) => (p['title'] ?? '').startsWith('[LECTURE][$id]')).length;

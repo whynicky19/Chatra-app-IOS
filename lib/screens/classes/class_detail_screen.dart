@@ -24,6 +24,7 @@ import 'tabs/class_posts_tab.dart';
 import 'tabs/class_assignments_tab.dart';
 import 'tabs/class_ai_tab.dart';
 import 'tabs/class_avatar_tab.dart';
+import 'rollover_screen.dart';
 
 class ClassDetailScreen extends StatefulWidget {
   final int classId;
@@ -54,6 +55,22 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   String _headerSig = '';
   // Populated lazily by ClassAvatarTab once it first loads — null means "not known yet".
   int? _avatarLectureCount;
+  // Cohorts (academic years) of this class — for viewing past years.
+  // _selectedCohortId == null means the active cohort (current year).
+  List<dynamic> _cohorts = [];
+  int? _selectedCohortId;
+
+  // Cohort management (rotation toggle, rollover, past-year selector) is
+  // restricted server-side to the class creator (or an admin) — the cohorts
+  // router returns 403 for other teachers. Mirror that in the UI so we never
+  // show controls that would 403.
+  bool get _canManageCohorts {
+    final auth = context.read<AuthProvider>();
+    if (!auth.isTeacher) return false;
+    if (auth.isAdmin) return true;
+    final createdBy = _meta['created_by'] ?? _classData['created_by'];
+    return createdBy != null && (createdBy as num).toInt() == auth.userId;
+  }
 
   @override
   void initState() {
@@ -111,6 +128,18 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     _recomputeDerived();
     if (mounted) setState(() => _loading = false);
     _loadFileTexts();
+    // Only the creator/admin may list cohorts (others get 403).
+    if (_canManageCohorts) _loadCohorts();
+  }
+
+  // Teacher-only: cohorts for the "past years" selector. Silent on failure so a
+  // backend without the cohorts endpoint just shows no selector.
+  Future<void> _loadCohorts() async {
+    try {
+      final cohorts = await context.read<ApiService>().getClassCohorts(widget.classId);
+      if (!mounted) return;
+      setState(() => _cohorts = cohorts);
+    } catch (_) {}
   }
 
   // Parses post bodies once (after data arrives) and caches the results so that
@@ -210,10 +239,12 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       }));
     }
 
-    if (mounted) setState(() {
+    if (mounted) {
+      setState(() {
       _fileTexts = result;
       _recomputeAiContext();
     });
+    }
   }
 
   Future<void> _loadAssignments() async {
@@ -416,10 +447,17 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     // so CachedNetworkImage mounts during the page-push animation, not after.
     final clsData = context.read<ClassesProvider>().allClasses
         .firstWhere((c) => c['id'] == widget.classId, orElse: () => <String, dynamic>{});
-    final _rawCoverImg = meta['cover_image'] ?? clsData['cover_image'];
-    final coverImg = (_rawCoverImg != null && !_rawCoverImg.toString().startsWith('data:'))
-        ? context.read<ApiService>().fixUrl(_rawCoverImg.toString())
-        : _rawCoverImg;
+
+    // Archived-for-user: the student is only in archived cohorts of this class →
+    // read-only (no submitting, no AI chat). Teachers are never archived.
+    final isArchivedForUser =
+        (meta['is_archived_for_user'] == true) || (clsData['is_archived_for_user'] == true);
+    final viewOnly = isArchivedForUser && !auth.isTeacher;
+
+    final rawCoverImg = meta['cover_image'] ?? clsData['cover_image'];
+    final coverImg = (rawCoverImg != null && !rawCoverImg.toString().startsWith('data:'))
+        ? context.read<ApiService>().fixUrl(rawCoverImg.toString())
+        : rawCoverImg;
     final displayTitle = (_title.isNotEmpty ? _title : (clsData['title'] ?? '')).toString();
     final displayDesc = (meta['description'] ?? clsData['description'] ?? '').toString();
 
@@ -429,7 +467,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     // of its actual inputs changes.
     final inviteCode = (meta['invite_code'] as String?) ?? '';
     final headerSig = '$displayTitle|$displayDesc|${coverImg?.toString() ?? ''}|'
-        '${auth.isTeacher}|$inviteCode|${l.t('class_code')}|${l.t('code_copied')}';
+        '${auth.isTeacher}|$inviteCode|$isArchivedForUser|${l.t('class_code')}|${l.t('code_copied')}|${l.t('archived_badge')}';
     if (headerSig != _headerSig || _headerCache == null) {
       _headerSig = headerSig;
       _headerCache = _ClassCoverSliver(
@@ -439,6 +477,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
         coverImg: coverImg,
         isTeacher: auth.isTeacher,
         inviteCode: inviteCode,
+        isArchived: isArchivedForUser,
+        archivedLabel: l.t('archived_badge'),
         codeLabel: l.t('class_code'),
         codeCopiedLabel: l.t('code_copied'),
         onBack: () => Navigator.pop(context),
@@ -479,6 +519,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     _avatarLectureCount != null ? '${l.t('avatar')} ($_avatarLectureCount)' : l.t('avatar')),
                 ],
               ),
+              // Cohort (academic-year) selector — creator/admin viewing past years.
+              if (_canManageCohorts && _cohorts.length > 1) _cohortSelector(l),
               if (auth.isTeacher) AnimatedBuilder(animation: _tabCtrl, builder: (ctx, _) {
                 if (_tabCtrl.index == 3 || _tabCtrl.index == 4) return const SizedBox.shrink();
                 return Padding(
@@ -543,10 +585,11 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 ClassAssignmentsTab(
                   assignments: _assignments, mySubs: _mySubs, rating: _rating,
                   isTeacher: auth.isTeacher, classId: widget.classId, isLoading: _loadingAsg,
+                  viewOnly: viewOnly, cohortId: auth.isTeacher ? _selectedCohortId : null,
                   onRefresh: _loadAssignments, onEditAssignment: _editAssignment,
                   onOpenFile: (url, name) => _openFileViewer(context, url, name),
                 ),
-                _aiTab(),
+                _aiTab(viewOnly),
                 ClassAvatarTab(
                   classId: widget.classId,
                   isTeacher: auth.isTeacher,
@@ -611,7 +654,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                       try {
                         final res = await api.uploadFile(pf.path!, pf.name);
                         final url = res['url'] ?? res['file_url'] ?? res['path'];
-                        if (url != null) setS(() => editFiles.add('${url}#${Uri.encodeComponent(pf.name)}'));
+                        if (url != null) setS(() => editFiles.add('$url#${Uri.encodeComponent(pf.name)}'));
                       } catch (_) {}
                     }
                   }
@@ -686,12 +729,108 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   }
 
 
+  // ── Cohort selector (teacher, past academic years) ──
+  Widget _cohortSelector(L10n l) {
+    // Active cohort maps to the null selection (getSubmissions without cohort_id).
+    final activeCohort = _cohorts.firstWhere(
+      (c) => c['status'] == 'active',
+      orElse: () => null,
+    );
+    final activeId = activeCohort != null ? (activeCohort['id'] as num).toInt() : null;
+    final isViewingPast = _selectedCohortId != null && _selectedCohortId != activeId;
+    final primary = Theme.of(context).colorScheme.primary;
+
+    String labelFor(dynamic c) {
+      final year = (c['academic_year'] ?? '').toString();
+      final isActive = c['status'] == 'active';
+      return isActive ? '$year · ${l.t('active_cohort')}' : year;
+    }
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+        decoration: BoxDecoration(
+          color: isViewingPast
+              ? primary.withValues(alpha: 0.10)
+              : adaptiveSurface2(context),
+          borderRadius: BorderRadius.circular(12),
+          border: isViewingPast
+              ? Border.all(color: primary.withValues(alpha: 0.4))
+              : null,
+        ),
+        child: Row(children: [
+          Icon(CupertinoIcons.calendar, size: 15,
+              color: isViewingPast ? primary : C.text4),
+          const SizedBox(width: 8),
+          Text('${l.t('select_cohort')}:',
+              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600,
+                  color: isViewingPast ? primary : C.text4)),
+          const SizedBox(width: 4),
+          Expanded(
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<int?>(
+                isExpanded: true,
+                isDense: true,
+                // Must always match one of the items (all non-null cohort ids).
+                // Fall back to the newest cohort when there is no active one
+                // (all archived) — otherwise a null value would assert.
+                value: _selectedCohortId ?? activeId ?? (_cohorts.first['id'] as num).toInt(),
+                icon: Icon(CupertinoIcons.chevron_down, size: 14,
+                    color: isViewingPast ? primary : C.text4),
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
+                    color: adaptiveText1(context)),
+                items: [
+                  for (final c in _cohorts)
+                    DropdownMenuItem<int?>(
+                      value: (c['id'] as num).toInt(),
+                      child: Text(labelFor(c), overflow: TextOverflow.ellipsis),
+                    ),
+                ],
+                onChanged: (v) {
+                  HapticFeedback.selectionClick();
+                  // Normalize the active cohort back to null so downstream calls
+                  // hit the active-cohort code path (no cohort_id query param).
+                  setState(() => _selectedCohortId = (v == activeId) ? null : v);
+                },
+              ),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+
   // ── AI Chat tab ──
-  Widget _aiTab() => ClassAiTab(
-    classId: widget.classId, className: _title, lectureContext: _cachedLectureContext,
-    lectureImageUrls: _cachedLectureImageUrls, isActive: _aiTabActive,
-    isTeacher: context.read<AuthProvider>().isTeacher,
-  );
+  Widget _aiTab(bool viewOnly) {
+    // Archived students get a read-only class — AI chat is hidden behind a notice
+    // (the backend does not gate it, so this is a client-side guard).
+    if (viewOnly) {
+      final l = context.read<L10n>();
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(CupertinoIcons.lock_circle, size: 44,
+                  color: adaptiveText1(context).withValues(alpha: 0.4)),
+              const SizedBox(height: 14),
+              Text(l.t('ai_unavailable_archive'),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600,
+                      color: adaptiveText1(context).withValues(alpha: 0.6))),
+            ],
+          ),
+        ),
+      );
+    }
+    return ClassAiTab(
+      classId: widget.classId, className: _title, lectureContext: _cachedLectureContext,
+      lectureImageUrls: _cachedLectureImageUrls, isActive: _aiTabActive,
+      isTeacher: context.read<AuthProvider>().isTeacher,
+    );
+  }
 
   // ── Show post detail ──
   void _showPost(dynamic p, String type, int num) {
@@ -968,7 +1107,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               child: Row(children: [Icon(CupertinoIcons.doc_text, size: 14, color: Theme.of(context).colorScheme.primary), SizedBox(width: 6), Expanded(child: Text(f.name, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary), overflow: TextOverflow.ellipsis)), GestureDetector(onTap: () => setS(() => lectureFiles.remove(f)), child: Icon(CupertinoIcons.xmark, size: 14, color: C.text4))])))],
           SizedBox(height: 20),
           Row(children: [
-            Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: Text('Отмена'), style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)))),
+            Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)), child: Text('Отмена'))),
             SizedBox(width: 12),
             Expanded(child: ElevatedButton.icon(icon: Icon(CupertinoIcons.plus, size: 16, color: Colors.white), label: Text('Опубликовать'),
               style: ElevatedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)),
@@ -983,7 +1122,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                       try {
                         final res = await api.uploadFile(pf.path!, pf.name);
                         final url = res['url'] ?? res['file_url'] ?? res['path'];
-                        if (url != null) fileUrls.add('${url}#${Uri.encodeComponent(pf.name)}');
+                        if (url != null) fileUrls.add('$url#${Uri.encodeComponent(pf.name)}');
                       } catch (_) {}
                     }
                   }
@@ -1135,7 +1274,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           }),
           SizedBox(height: 24),
           Row(children: [
-            Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: Text('Отмена'), style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)))),
+            Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)), child: Text('Отмена'))),
             SizedBox(width: 12),
             Expanded(child: ElevatedButton.icon(icon: Icon(CupertinoIcons.plus, size: 16, color: Colors.white), label: Text('Создать задание'),
               style: ElevatedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)),
@@ -1152,7 +1291,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                         final res = await api.uploadFile(pf.path!, pf.name);
                         final url = res['url'] ?? res['file_url'] ?? res['path'];
                         if (url != null && url.toString().isNotEmpty) {
-                          fileUrls.add('${url}#${Uri.encodeComponent(pf.name)}');
+                          fileUrls.add('$url#${Uri.encodeComponent(pf.name)}');
                         }
                       } catch (e) {
                         if (mounted) showToast(context, 'Ошибка загрузки ${pf.name}', error: true);
@@ -1353,7 +1492,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           ),
           SizedBox(height: 24),
           Row(children: [
-            Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: Text('Отмена'), style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)))),
+            Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)), child: Text('Отмена'))),
             SizedBox(width: 12),
             Expanded(child: ElevatedButton.icon(
               icon: Icon(CupertinoIcons.checkmark, size: 16, color: Colors.white),
@@ -1369,7 +1508,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                       try {
                         final res = await api.uploadFile(pf.path!, pf.name);
                         final url = res['url'] ?? res['file_url'] ?? res['path'];
-                        if (url != null) uploadedUrls.add('${url}#${Uri.encodeComponent(pf.name)}');
+                        if (url != null) uploadedUrls.add('$url#${Uri.encodeComponent(pf.name)}');
                       } catch (_) {}
                     }
                   }
@@ -1525,6 +1664,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     XFile? newCoverFile;
     bool coverRemoved = false;
     bool saving = false;
+    final bool rotationOriginal = (meta['rotation_mode'] == 'yearly');
+    bool rotationYearly = rotationOriginal;
 
     showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
@@ -1585,9 +1726,59 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           SizedBox(height: 16),
           _fieldLabel2('ИМЯ УЧИТЕЛЯ'),
           TextField(controller: tn, decoration: InputDecoration(hintText: 'Отображаемое имя учителя')),
+          // Cohort management (rotation + rollover) — creator/admin only, else 403.
+          if (_canManageCohorts) ...[
+          SizedBox(height: 20),
+          // Yearly rotation — enrolls the class in the annual rollover flow.
+          Container(
+            decoration: BoxDecoration(
+              color: adaptiveSurface2(context),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: SwitchListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              value: rotationYearly,
+              onChanged: saving ? null : (v) => setS(() => rotationYearly = v),
+              title: Text(context.read<L10n>().t('yearly_rotation'),
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+              subtitle: Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(context.read<L10n>().t('yearly_rotation_sub'),
+                    style: TextStyle(fontSize: 12.5, color: C.text4)),
+              ),
+            ),
+          ),
+          if (rotationYearly) ...[
+            SizedBox(height: 12),
+            GestureDetector(
+              onTap: () async {
+                Navigator.pop(ctx);
+                final changed = await Navigator.push<bool>(context,
+                    MaterialPageRoute(builder: (_) => const RolloverScreen()));
+                if (changed == true && mounted) _load();
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.35)),
+                ),
+                child: Row(children: [
+                  Icon(CupertinoIcons.calendar_badge_plus, size: 19, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(context.read<L10n>().t('new_academic_year'),
+                      style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700,
+                          color: Theme.of(context).colorScheme.primary))),
+                  Icon(CupertinoIcons.chevron_right, size: 15, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6)),
+                ]),
+              ),
+            ),
+          ],
+          ],
           SizedBox(height: 28),
           Row(children: [
-            Expanded(child: OutlinedButton(onPressed: saving ? null : () => Navigator.pop(ctx), child: Text('Отмена'), style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)))),
+            Expanded(child: OutlinedButton(onPressed: saving ? null : () => Navigator.pop(ctx), style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)), child: Text('Отмена'))),
             SizedBox(width: 12),
             Expanded(child: ElevatedButton(
               style: ElevatedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)),
@@ -1609,6 +1800,10 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                       description: dc.text.trim(),
                       teacher: tn.text.trim(),
                       coverImage: coverImage);
+                  if (rotationYearly != rotationOriginal) {
+                    await api.setRotationMode(
+                        widget.classId, rotationYearly ? 'yearly' : 'manual');
+                  }
                   if (!mounted || !ctx.mounted) return;
                   Navigator.pop(ctx); _load(); showToast(context, 'Класс обновлён');
                 } catch (_) {
@@ -1642,6 +1837,8 @@ class _ClassCoverSliver extends StatelessWidget {
   final dynamic coverImg; // fixed http(s) URL, a data: URI, or null
   final bool isTeacher;
   final String inviteCode;
+  final bool isArchived;
+  final String archivedLabel;
   final String codeLabel;
   final String codeCopiedLabel;
   final VoidCallback onBack;
@@ -1654,6 +1851,8 @@ class _ClassCoverSliver extends StatelessWidget {
     required this.coverImg,
     required this.isTeacher,
     required this.inviteCode,
+    required this.isArchived,
+    required this.archivedLabel,
     required this.codeLabel,
     required this.codeCopiedLabel,
     required this.onBack,
@@ -1725,6 +1924,21 @@ class _ClassCoverSliver extends StatelessWidget {
             colors: [Colors.black38, Colors.transparent, Colors.black54],
           ))),
           Positioned(bottom: 16, left: 16, right: 16, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            if (isArchived) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.45),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(CupertinoIcons.archivebox, size: 13, color: Colors.white70),
+                  const SizedBox(width: 5),
+                  Text(archivedLabel, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white70, letterSpacing: 0.3)),
+                ]),
+              ),
+              const SizedBox(height: 8),
+            ],
             Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white, shadows: [Shadow(color: Colors.black54, blurRadius: 6)]), maxLines: 2, overflow: TextOverflow.ellipsis),
             if (desc.isNotEmpty) ...[
               const SizedBox(height: 4),

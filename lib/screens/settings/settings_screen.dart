@@ -151,7 +151,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 onTap: _saving ? null : () async {
                   setState(() => _saving = true);
                   await auth.updateProfile(_nameCtrl.text.trim());
-                  if (!mounted) return;
+                  if (!context.mounted) return;
                   setState(() => _saving = false);
                   showToast(context, l.t('saved'));
                 },

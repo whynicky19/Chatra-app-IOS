@@ -34,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   late AnimationController _headerCtrl;
   late Animation<double> _headerAnim;
   late final ClassesProvider _classesProvider = context.read<ClassesProvider>();
+  bool _archiveExpanded = false;
 
   @override
   void initState() {
@@ -101,7 +102,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   List<Map<String, dynamic>> get _sortedClasses {
     final provider = context.read<ClassesProvider>();
-    final all = provider.classes;
+    // Active cohorts only — archived classes live in a separate collapsed block.
+    final all = provider.activeClasses;
     final pinned = all.where((c) => _pinnedIds.contains(c['id'] as int)).toList();
     final regular = all.where((c) => !_pinnedIds.contains(c['id'] as int)).toList();
     pinned.sort((a, b) {
@@ -117,19 +119,19 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return [...pinned, ...regular];
   }
 
-  void _onReorder(int oldIndex, int newIndex) {
+  // onReorderItem passes newIndex already adjusted for the removed item at
+  // oldIndex, so no manual `newIndex -= 1` is needed (unlike the old onReorder).
+  void _onReorderItem(int oldIndex, int newIndex) {
     final classes = _sortedClasses;
     final pinnedCount = _pinnedIds.length;
     // Prevent mixing pinned/regular zones
     final isOldPinned = oldIndex < pinnedCount;
-    final adjustedNew = newIndex > oldIndex ? newIndex - 1 : newIndex;
-    final isNewPinned = adjustedNew < pinnedCount;
+    final isNewPinned = newIndex < pinnedCount;
     if (isOldPinned != isNewPinned) {
       HapticFeedback.heavyImpact();
       return;
     }
     HapticFeedback.lightImpact();
-    if (newIndex > oldIndex) newIndex -= 1;
     final list = classes.toList();
     final item = list.removeAt(oldIndex);
     list.insert(newIndex, item);
@@ -238,7 +240,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           ))),
 
           // ── Class cards ──────────────────────────────────────
-          if (provider.loading)
+          // Only show skeletons on the FIRST load (empty cache). On a reload
+          // (e.g. after creating a class, load() flips loading=true), keep the
+          // existing reorderable list mounted instead of tearing it down and
+          // rebuilding — swapping the list out mid-flight deactivates its
+          // Theme-dependent _ClassCard items and trips the framework's
+          // `_dependents.isEmpty` assertion.
+          if (provider.loading && provider.classes.isEmpty)
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 90),
               sliver: SliverList(delegate: SliverChildBuilderDelegate(
@@ -283,7 +291,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               return SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
               sliver: SliverReorderableList(
-                onReorder: _onReorder,
+                onReorderItem: _onReorderItem,
                 proxyDecorator: (child, _, animation) => Transform.scale(
                   scale: 1.03,
                   child: DecoratedBox(
@@ -339,6 +347,28 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               );
             }),
           ],
+
+          // ── Archive: classes the user only has archived cohorts in ──
+          if (provider.archivedClasses.isNotEmpty)
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              sliver: SliverToBoxAdapter(
+                child: _ArchiveSection(
+                  classes: provider.archivedClasses,
+                  expanded: _archiveExpanded,
+                  onToggle: () {
+                    HapticFeedback.lightImpact();
+                    setState(() => _archiveExpanded = !_archiveExpanded);
+                  },
+                  grads: _grads,
+                  lectureCount: provider.lectureCount,
+                  onOpen: (id) {
+                    HapticFeedback.lightImpact();
+                    Navigator.pushNamed(context, '/class', arguments: id);
+                  },
+                ),
+              ),
+            ),
 
           // "Add subject" card — students only
           if (!auth.isTeacher && !provider.loading && provider.classes.isNotEmpty)
@@ -551,7 +581,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         void onKey(int i, String val) {
           if (val.length > 1) {
             final clean = val.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
-            for (int j = 0; j < 6 && j < clean.length; j++) controllers[j].text = clean[j];
+            for (int j = 0; j < 6 && j < clean.length; j++) {
+              controllers[j].text = clean[j];
+            }
             focusNodes[5].requestFocus(); setS(() { scheduleLookup(get6Code()); }); return;
           }
           if (val.isNotEmpty && i < 5) {
@@ -725,7 +757,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               const SizedBox(height: 24),
             ]))),
             Padding(padding: const EdgeInsets.fromLTRB(24, 8, 24, 20), child: Row(children: [
-              Expanded(child: OutlinedButton(onPressed: submitting ? null : () => Navigator.pop(ctx), child: Text(l.t('cancel')), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)))),
+              Expanded(child: OutlinedButton(onPressed: submitting ? null : () => Navigator.pop(ctx), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)), child: Text(l.t('cancel')))),
               const SizedBox(width: 12),
               Expanded(child: ElevatedButton(
                 style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
@@ -739,7 +771,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       final res = await api.uploadFile(coverFile!.path, coverFile!.name);
                       coverUrl = (res['url'] ?? res['file_url'] ?? res['path'])?.toString();
                     }
-                    await provider.createClass(nameC.text.trim(),
+                    // Create the class first WITHOUT reloading the list. Reloading
+                    // via provider.createClass() fires notifyListeners() (rebuilding
+                    // the home class list) while this dialog route is still mounted;
+                    // that overlap of a list rebuild with the dialog teardown trips
+                    // the framework's `_dependents.isEmpty` assertion. So: POST →
+                    // close the dialog → only then reload the list.
+                    await api.createClass(nameC.text.trim(),
                         description: descC.text.trim(),
                         teacher: teacherC.text.trim(),
                         period: periodC.text.trim(),
@@ -747,6 +785,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     if (!mounted || !ctx.mounted) return;
                     Navigator.pop(ctx);
                     showToast(context, l.t('class_created'));
+                    // Dialog is gone now — safe to rebuild the list.
+                    await provider.load();
                   } catch (_) {
                     if (mounted) showToast(context, l.t('error'), error: true);
                     if (ctx.mounted) setS(() => submitting = false);
@@ -979,6 +1019,162 @@ class _ActionRow extends StatelessWidget {
   }
 }
 
+
+// ── Archive Section ───────────────────────────────────────────────────────────
+// Collapsed block at the bottom of the class list holding classes the student
+// is only enrolled in via archived cohorts (read-only, past academic years).
+
+class _ArchiveSection extends StatelessWidget {
+  final List<Map<String, dynamic>> classes;
+  final bool expanded;
+  final VoidCallback onToggle;
+  final List<List<Color>> grads;
+  final int Function(int id) lectureCount;
+  final void Function(int id) onOpen;
+
+  const _ArchiveSection({
+    required this.classes,
+    required this.expanded,
+    required this.onToggle,
+    required this.grads,
+    required this.lectureCount,
+    required this.onOpen,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.watch<L10n>();
+    final surface = Theme.of(context).colorScheme.surface;
+    return Container(
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: adaptiveText1(context).withValues(alpha: 0.12)),
+      ),
+      child: Column(children: [
+        // Header — tap to expand/collapse
+        InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onToggle,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(children: [
+              Icon(CupertinoIcons.archivebox, size: 20, color: adaptiveText1(context).withValues(alpha: 0.6)),
+              const SizedBox(width: 12),
+              Text(l.t('archive'),
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800,
+                      color: adaptiveText1(context), letterSpacing: -0.2)),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: adaptiveText1(context).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text('${classes.length}',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800,
+                        color: adaptiveText1(context).withValues(alpha: 0.6))),
+              ),
+              const Spacer(),
+              AnimatedRotation(
+                turns: expanded ? 0.5 : 0,
+                duration: const Duration(milliseconds: 200),
+                child: Icon(CupertinoIcons.chevron_down, size: 18, color: adaptiveText1(context).withValues(alpha: 0.6)),
+              ),
+            ]),
+          ),
+        ),
+        // Body — one muted row per archived class
+        AnimatedCrossFade(
+          firstChild: const SizedBox(width: double.infinity),
+          secondChild: Column(
+            children: [
+              for (final cls in classes)
+                _ArchiveRow(
+                  cls: cls,
+                  colors: grads[(cls['id'] as int) % grads.length],
+                  lectureCount: lectureCount(cls['id'] as int),
+                  onOpen: () => onOpen(cls['id'] as int),
+                ),
+              const SizedBox(height: 6),
+            ],
+          ),
+          crossFadeState: expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 200),
+        ),
+      ]),
+    );
+  }
+}
+
+class _ArchiveRow extends StatelessWidget {
+  final Map<String, dynamic> cls;
+  final List<Color> colors;
+  final int lectureCount;
+  final VoidCallback onOpen;
+
+  const _ArchiveRow({
+    required this.cls,
+    required this.colors,
+    required this.lectureCount,
+    required this.onOpen,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.watch<L10n>();
+    final title = (cls['name'] ?? cls['title'] ?? '').toString();
+    final teacher = (cls['teacher'] ?? cls['teacher_name'] ?? '').toString();
+    return InkWell(
+      onTap: onOpen,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        child: Row(children: [
+          // Desaturated square avatar (grey-tinted gradient)
+          Container(
+            width: 40, height: 40,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              gradient: LinearGradient(
+                colors: [colors[0].withValues(alpha: 0.35), colors[1].withValues(alpha: 0.35)],
+                begin: Alignment.topLeft, end: Alignment.bottomRight,
+              ),
+            ),
+            child: Icon(CupertinoIcons.book, size: 18, color: Colors.white.withValues(alpha: 0.8)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, maxLines: 1, overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700,
+                        color: adaptiveText1(context), letterSpacing: -0.2)),
+                if (teacher.isNotEmpty)
+                  Text(teacher, maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 12, color: adaptiveText1(context).withValues(alpha: 0.6))),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          // Grey "Archive" badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+            decoration: BoxDecoration(
+              color: adaptiveText1(context).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(l.t('archived_badge'),
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800,
+                    color: adaptiveText1(context).withValues(alpha: 0.6), letterSpacing: 0.2)),
+          ),
+          const SizedBox(width: 4),
+          Icon(CupertinoIcons.chevron_right, size: 14, color: adaptiveText1(context).withValues(alpha: 0.5)),
+        ]),
+      ),
+    );
+  }
+}
 
 // ── Class Card ────────────────────────────────────────────────────────────────
 // Extracted into its own StatelessWidget so it is NOT rebuilt when the parent

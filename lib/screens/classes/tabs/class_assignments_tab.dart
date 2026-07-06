@@ -16,6 +16,10 @@ class ClassAssignmentsTab extends StatefulWidget {
   final bool isTeacher;
   final int classId;
   final bool isLoading;
+  // Read-only mode for students in an archived cohort: no submitting.
+  final bool viewOnly;
+  // Teacher viewing a past cohort's submissions; null = active cohort.
+  final int? cohortId;
   final VoidCallback onRefresh;
   final void Function(dynamic a) onEditAssignment;
   final void Function(String url, String name) onOpenFile;
@@ -28,6 +32,8 @@ class ClassAssignmentsTab extends StatefulWidget {
     required this.isTeacher,
     required this.classId,
     required this.isLoading,
+    this.viewOnly = false,
+    this.cohortId,
     required this.onRefresh,
     required this.onEditAssignment,
     required this.onOpenFile,
@@ -190,7 +196,8 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               return dl.isAfter(now) && (sub == null || sub['status'] != 'graded');
             }).toList();
             upcoming.sort((a, b) => (a['deadline'] ?? '').compareTo(b['deadline'] ?? ''));
-            if (upcoming.isEmpty) return Container(
+            if (upcoming.isEmpty) {
+              return Container(
               padding: EdgeInsets.all(16),
               decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: adaptiveBorder(context))),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -200,6 +207,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 SizedBox(height: 8),
                 Center(child: Text('Всё сдано!', style: TextStyle(fontSize: 13, color: C.green, fontWeight: FontWeight.w600))),
               ]));
+            }
             final next = upcoming.first;
             final dl = DateTime.parse(next['deadline']);
             final diff = dl.difference(now);
@@ -355,6 +363,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
   }
 
   void _showAssignment(dynamic a, dynamic sub) {
+    final l = context.read<L10n>();
     final tc = TextEditingController(); bool busy = false; bool descHidden = false;
     final isTeacherOrAdmin = widget.isTeacher;
     List<dynamic> criteria = []; try { criteria = jsonDecode(a['criteria'] ?? '[]'); } catch (_) {}
@@ -590,7 +599,11 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
         if (isTeacherOrAdmin && criteria.isNotEmpty) ...[
           SizedBox(height: 16),
           GestureDetector(
-            onTap: () => setS(() { if (_expandedCriteria.contains(a['id'])) _expandedCriteria.remove(a['id']); else _expandedCriteria.add(a['id']); }),
+            onTap: () => setS(() { if (_expandedCriteria.contains(a['id'])) {
+              _expandedCriteria.remove(a['id']);
+            } else {
+              _expandedCriteria.add(a['id']);
+            } }),
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(12)),
@@ -727,7 +740,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             ];
           })(),
         ],
-        if (!isTeacherOrAdmin && sub != null && sub['status'] != 'graded' && sub['grade'] == null) ...[
+        if (!isTeacherOrAdmin && !widget.viewOnly && sub != null && sub['status'] != 'graded' && sub['grade'] == null) ...[
           SizedBox(height: 12),
           GestureDetector(
             onTap: busy ? null : () async {
@@ -753,7 +766,21 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               ])),
           ),
         ],
-        if (!isTeacherOrAdmin && sub == null) ...[
+        if (!isTeacherOrAdmin && widget.viewOnly && sub == null) ...[
+          SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
+            child: Row(children: [
+              Icon(CupertinoIcons.lock, size: 15, color: C.text4),
+              const SizedBox(width: 8),
+              Expanded(child: Text(l.t('archive_readonly'),
+                  style: TextStyle(fontSize: 12.5, color: C.text4, fontWeight: FontWeight.w500))),
+            ]),
+          ),
+        ],
+        if (!isTeacherOrAdmin && !widget.viewOnly && sub == null) ...[
           SizedBox(height: 20),
           Divider(),
           SizedBox(height: 12),
@@ -803,7 +830,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     try {
                       final res = await api.uploadFile(pf.path!, pf.name);
                       final url = res['url'] ?? res['file_url'] ?? res['path'];
-                      if (url != null) fileUrls.add('${url}#${Uri.encodeComponent(pf.name)}');
+                      if (url != null) fileUrls.add('$url#${Uri.encodeComponent(pf.name)}');
                     } catch (_) {}
                   }
                 }
@@ -878,7 +905,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
 
   void _viewSubs(int aId) async {
     try {
-      final subs = await context.read<ApiService>().getSubmissions(aId);
+      final subs = await context.read<ApiService>().getSubmissions(aId, cohortId: widget.cohortId);
       if (!mounted) return;
       showModalBottomSheet(context: context, isScrollControlled: true,
         backgroundColor: Theme.of(context).colorScheme.surface,
@@ -1087,7 +1114,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                       }
                       if (!mounted || !ctx.mounted) return;
                       try {
-                        final updated = await context.read<ApiService>().getSubmissions(aId);
+                        final updated = await context.read<ApiService>().getSubmissions(aId, cohortId: widget.cohortId);
                         subs.clear();
                         subs.addAll(updated);
                       } catch (_) {}

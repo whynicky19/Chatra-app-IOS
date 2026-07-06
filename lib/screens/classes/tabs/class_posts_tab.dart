@@ -70,7 +70,8 @@ class ClassPostsTab extends StatelessWidget {
       ),
     );
 
-    if (posts.isEmpty) return CustomScrollView(
+    if (posts.isEmpty) {
+      return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
         SliverFillRemaining(
@@ -89,6 +90,7 @@ class ClassPostsTab extends StatelessWidget {
         ),
       ],
     );
+    }
 
     final filesPerPost = posts.map(extractFiles).toList();
 

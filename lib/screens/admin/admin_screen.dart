@@ -104,7 +104,9 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
   void _recomputeTotalTokens() {
     if (_aiFilterClassId == null) {
       _totalTokens = 0;
-      for (final s in _aiSummary) _totalTokens += (s['total_tokens'] as num? ?? 0).toInt();
+      for (final s in _aiSummary) {
+        _totalTokens += (s['total_tokens'] as num? ?? 0).toInt();
+      }
     } else {
       final match = _aiSummary.firstWhere(
         (s) => (s['class_id'] as num?)?.toInt() == _aiFilterClassId,
@@ -660,11 +662,13 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     final classes   = _allClassPosts;
     final userNames = _userNameMap;
 
-    if (classes.isEmpty) return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+    if (classes.isEmpty) {
+      return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
       const Icon(CupertinoIcons.book, size: 52, color: C.text4),
       const SizedBox(height: 14),
       Text(l.t('no_classes_admin'), style: const TextStyle(color: C.text4, fontSize: 15, fontWeight: FontWeight.w600)),
     ]));
+    }
 
     return RefreshIndicator(
       color: primary,

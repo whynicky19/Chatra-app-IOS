@@ -169,26 +169,35 @@ class ClassesProvider extends ChangeNotifier {
 
   Future<void> loadNotifBadge() async {
     if (_auth.isTeacher) return;
-    final uid = _auth.userId ?? 0;
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final seenGrade = (prefs.getStringList('notif_seen_grade_$uid') ?? []).map(int.parse).toSet();
-      final seenAsgn  = (prefs.getStringList('notif_seen_asgn_$uid')  ?? []).map(int.parse).toSet();
-      final dismissed = (prefs.getStringList('notif_dismissed_$uid')   ?? []).toSet();
-
+      // Состояние уведомлений — серверная истина (канонические ключи
+      // '{kind}:{ref_id}'), чтобы бейдж совпадал с сайтом. read/dismissed
+      // прочитанное скрывает из счётчика.
       List<dynamic> subs = [];
       List<dynamic> assignments = [];
+      List<dynamic> states = [];
       await Future.wait([
         () async { try { subs = await _api.getMySubmissions(); } catch (_) {} }(),
         () async { try { assignments = await _api.getAssignments(); } catch (_) {} }(),
+        () async { try { states = await _api.getNotifStates(); } catch (_) {} }(),
       ]);
+
+      final stateBy = {
+        for (final s in states)
+          (s['notif_key'] ?? '').toString(): {
+            'read': s['read'] == true, 'dismissed': s['dismissed'] == true,
+          }
+      };
+      bool unread(String key) {
+        final st = stateBy[key];
+        return st == null || (st['read'] != true && st['dismissed'] != true);
+      }
 
       // Unread grade notifications
       int count = subs.where((s) =>
         s['status'] == 'graded' &&
         s['grade'] != null &&
-        !seenGrade.contains((s['id'] as num?)?.toInt()) &&
-        !dismissed.contains('grade_${(s['id'] as num?)?.toInt()}'),
+        unread('grade:${(s['id'] as num?)?.toInt()}'),
       ).length;
 
       // Unread new-assignment notifications (from joined classes, last 7 days)
@@ -197,8 +206,7 @@ class ClassesProvider extends ChangeNotifier {
         final aId  = (a['id'] as num?)?.toInt() ?? 0;
         final cid  = (a['class_id'] as num?)?.toInt();
         if (cid == null || !joinedClassIds.contains(cid)) continue;
-        if (seenAsgn.contains(aId)) continue;
-        if (dismissed.contains('asgn_$aId')) continue;
+        if (!unread('assignment:$aId')) continue;
         final createdAt = a['created_at'] != null ? DateTime.tryParse(a['created_at']) : null;
         if (createdAt != null && now.difference(createdAt).inDays <= 7) count++;
       }

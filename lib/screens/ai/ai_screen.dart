@@ -37,25 +37,68 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _restoreHistory() async {
+    // Сначала показываем локальный кэш (быстро/офлайн), затем синхронизируем
+    // с сервером — история одинакова в приложении и на сайте.
+    final local = await _loadLocal();
+    if (mounted && local.isNotEmpty) {
+      setState(() { _msgs..clear()..addAll(local); });
+      _scrollDown();
+    }
+    await _syncFromServer(local);
+  }
+
+  Future<List<Map<String, String>>> _loadLocal() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       var raw = prefs.getString(_historyKey);
-      // Миграция: история, сохранённая до разделения по аккаунтам,
-      // достаётся текущему пользователю.
+      // Миграция: история, сохранённая до разделения по аккаунтам.
       if ((raw == null || raw.isEmpty) && prefs.containsKey(_legacyHistoryKey)) {
         raw = prefs.getString(_legacyHistoryKey);
         if (raw != null && raw.isNotEmpty) await prefs.setString(_historyKey, raw);
         await prefs.remove(_legacyHistoryKey);
       }
-      if (raw == null || raw.isEmpty) return;
-      final list = (jsonDecode(raw) as List)
+      if (raw == null || raw.isEmpty) return [];
+      return (jsonDecode(raw) as List)
           .whereType<Map>()
           .map((e) => e.map((k, v) => MapEntry(k.toString(), v.toString())))
           .toList();
-      if (!mounted || list.isEmpty) return;
-      setState(() => _msgs.addAll(list));
+    } catch (_) {
+      return [];
+    }
+  }
+
+  // Серверная история → _msgs. Если на сервере пусто, а локально что-то есть —
+  // разово заливаем локальную историю (миграция) и берём ответ сервера.
+  Future<void> _syncFromServer(List<Map<String, String>> local) async {
+    try {
+      final api = context.read<ApiService>();
+      var rows = await api.getAiHistory();
+      if (rows.isEmpty && local.isNotEmpty) {
+        rows = await api.importAiHistory(
+          local.map((m) => {'role': m['role'] ?? 'user', 'content': m['text'] ?? ''}).toList(),
+        );
+      }
+      final list = rows.map<Map<String, String>>((r) => {
+        'role': (r['role'] ?? 'assistant').toString(),
+        'text': (r['content'] ?? '').toString(),
+        'time': _fmtTime(r['created_at']),
+      }).toList();
+      if (!mounted) return;
+      setState(() { _msgs..clear()..addAll(list); });
+      _saveHistory();
       _scrollDown();
-    } catch (_) {}
+    } catch (_) {
+      // офлайн — остаёмся на локальном кэше
+    }
+  }
+
+  String _fmtTime(dynamic iso) {
+    try {
+      final dt = DateTime.parse(iso.toString()).toLocal();
+      return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return _now();
+    }
   }
 
   void _saveHistory() {
@@ -69,6 +112,8 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
     SharedPreferences.getInstance().then((prefs) {
       try { prefs.remove(_historyKey); } catch (_) {}
     }).catchError((_) {});
+    // Очистка и на сервере — чтобы не «воскресло» на другом устройстве.
+    try { context.read<ApiService>().clearAiHistory(); } catch (_) {}
   }
 
   @override

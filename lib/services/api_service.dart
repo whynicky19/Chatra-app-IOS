@@ -506,6 +506,42 @@ class ApiService {
     return response.data;
   }
 
+  // История чатов с ИИ хранится на сервере (синхронизация между устройствами).
+  // classId == null — глобальный ИИ-экран; иначе — ИИ-вкладка класса.
+  Future<List<dynamic>> getAiHistory({int? classId}) async {
+    final response = await _dio.get('/ai/history',
+        queryParameters: classId != null ? {'class_id': classId} : null);
+    return response.data as List<dynamic>;
+  }
+
+  Future<void> clearAiHistory({int? classId}) async {
+    await _dio.delete('/ai/history',
+        queryParameters: classId != null ? {'class_id': classId} : null);
+  }
+
+  Future<List<dynamic>> importAiHistory(List<Map<String, String>> messages, {int? classId}) async {
+    final response = await _dio.post('/ai/history/import',
+        data: {'class_id': classId, 'messages': messages});
+    return response.data as List<dynamic>;
+  }
+
+  // Состояние уведомлений (прочитано/скрыто) — серверная истина.
+  Future<List<dynamic>> getNotifStates() async {
+    final response = await _dio.get('/notifications/state');
+    return response.data as List<dynamic>;
+  }
+
+  Future<void> setNotifState(String notifKey, {bool? read, bool? dismissed}) async {
+    final data = <String, dynamic>{'notif_key': notifKey};
+    if (read != null) data['read'] = read;
+    if (dismissed != null) data['dismissed'] = dismissed;
+    await _dio.post('/notifications/state', data: data);
+  }
+
+  Future<void> markAllNotifsRead(List<String> keys) async {
+    await _dio.post('/notifications/read-all', data: {'keys': keys});
+  }
+
   // ── Upload ────────────────────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> uploadFile(String filePath, String fileName) async {

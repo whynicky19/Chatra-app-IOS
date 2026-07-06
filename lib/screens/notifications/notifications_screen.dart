@@ -34,7 +34,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override void initState() { super.initState(); _load(); }
 
-  static const _readTtlDays = 2;
+  // notif_key -> {read, dismissed}: серверное состояние (синхронно с сайтом).
+  Map<String, Map<String, bool>> _states = {};
+
+  bool _isRead(String key) => _states[key]?['read'] == true;
+  bool _isDismissed(String key) => _states[key]?['dismissed'] == true;
 
   Future<void> _load() async {
     if (!mounted) return;
@@ -45,45 +49,30 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final prefs = await SharedPreferences.getInstance();
 
     final joinedIds = (prefs.getStringList('joined_classes_$uid') ?? []).map(int.parse).toSet();
-    final seenAsgn = (prefs.getStringList('notif_seen_asgn_$uid') ?? []).map(int.parse).toSet();
-    final seenGrade = (prefs.getStringList('notif_seen_grade_$uid') ?? []).map(int.parse).toSet();
-    final dismissed = (prefs.getStringList('notif_dismissed_$uid') ?? []).toSet();
-
-    // read-at timestamps: id -> ISO string
-    Map<int, DateTime> readAtAsgn = {};
-    Map<int, DateTime> readAtGrade = {};
-    try {
-      final rawA = prefs.getString('notif_read_at_asgn_$uid');
-      if (rawA != null) {
-        (jsonDecode(rawA) as Map).forEach((k, v) {
-          final dt = DateTime.tryParse(v.toString());
-          if (dt != null) readAtAsgn[int.parse(k.toString())] = dt;
-        });
-      }
-      final rawG = prefs.getString('notif_read_at_grade_$uid');
-      if (rawG != null) {
-        (jsonDecode(rawG) as Map).forEach((k, v) {
-          final dt = DateTime.tryParse(v.toString());
-          if (dt != null) readAtGrade[int.parse(k.toString())] = dt;
-        });
-      }
-    } catch (_) {}
 
     final now = DateTime.now();
     final notifs = <_Notif>[];
-    final newSeenAsgn = Set<int>.from(seenAsgn);
-    final newSeenGrade = Set<int>.from(seenGrade);
 
     List<dynamic> allAssignments = [];
     List<dynamic> mySubs = [];
     List<dynamic> posts = [];
+    List<dynamic> states = [];
 
     await Future.wait([
       () async { try { allAssignments = await api.getAssignments(); } catch (_) {} }(),
       () async { try { mySubs = await api.getMySubmissions(); } catch (_) {} }(),
       () async { try { posts = await api.getPosts(); } catch (_) {} }(),
+      () async { try { states = await api.getNotifStates(); } catch (_) {} }(),
     ]);
     if (!mounted) return;
+
+    _states = {
+      for (final s in states)
+        (s['notif_key'] ?? '').toString(): {
+          'read': s['read'] == true,
+          'dismissed': s['dismissed'] == true,
+        }
+    };
 
     // Build class name map from posts and collect existing class IDs
     final classNames = <int, String>{};
@@ -117,17 +106,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       final assignment = aId != null ? allAssignments.firstWhere((a) => a['id'] == aId, orElse: () => null) : null;
       final cid = (assignment?['class_id'] as num?)?.toInt();
       // Skip if the class was deleted
-      if (cid != null && !existingClassIds.contains(cid)) { newSeenGrade.add(subId); continue; }
-      final isRead = seenGrade.contains(subId);
-      // Record read-at on first sight
-      if (isRead && !readAtGrade.containsKey(subId)) readAtGrade[subId] = now;
-      // Skip if read more than TTL days ago
-      if (isRead) {
-        final readAt = readAtGrade[subId];
-        if (readAt != null && now.difference(readAt).inDays >= _readTtlDays) { newSeenGrade.add(subId); continue; }
-      }
-      final nKey = 'grade_$subId';
-      if (dismissed.contains(nKey)) continue;
+      if (cid != null && !existingClassIds.contains(cid)) continue;
+      final nKey = 'grade:$subId';
+      if (_isDismissed(nKey)) continue;
       final score = sub['grade']['score'];
       final aTitle = assignment?['title']?.toString() ?? l.t('assignment');
       notifs.add(_Notif(
@@ -136,10 +117,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         title: l.t('notif_graded'),
         body: '"$aTitle" — $score ${l.t('pts')}',
         date: sub['submitted_at'] != null ? (DateTime.tryParse(sub['submitted_at']) ?? now) : now,
-        isRead: isRead,
+        isRead: _isRead(nKey),
         classId: cid,
       ));
-      newSeenGrade.add(subId);
     }
 
     // ── Assignment notifications (only for joined AND existing classes) ──
@@ -158,29 +138,24 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
       // New assignment (last 7 days)
       if (createdAt != null && now.difference(createdAt).inDays <= 7) {
-        final nKey = 'asgn_$aId';
-        final isRead = seenAsgn.contains(aId);
-        if (isRead && !readAtAsgn.containsKey(aId)) readAtAsgn[aId] = now;
-        final skip = dismissed.contains(nKey) ||
-            (isRead && readAtAsgn[aId] != null && now.difference(readAtAsgn[aId]!).inDays >= _readTtlDays);
-        if (!skip) {
+        final nKey = 'assignment:$aId';
+        if (!_isDismissed(nKey)) {
           notifs.add(_Notif(
             key: nKey,
             type: _NType.newAssignment,
             title: l.t('new_assignment'),
             body: '"$aTitle"${cName.isNotEmpty ? '  •  $cName' : ''}',
             date: createdAt,
-            isRead: isRead,
+            isRead: _isRead(nKey),
             classId: cid,
           ));
         }
-        newSeenAsgn.add(aId);
       }
 
       // Deadline reminder (within 48 h, not submitted)
       if (deadline != null && deadline.isAfter(now) && deadline.difference(now).inHours <= 48 && sub == null) {
-        final nKey = 'dl_$aId';
-        if (!dismissed.contains(nKey)) {
+        final nKey = 'deadline:$aId';
+        if (!_isDismissed(nKey)) {
           final diff = deadline.difference(now);
           final timeStr = diff.inHours >= 1 ? '${diff.inHours} ${l.t('hours_short')}' : '${diff.inMinutes} ${l.t('minutes_short')}';
           notifs.add(_Notif(
@@ -201,14 +176,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       await prefs.setStringList('joined_classes_$uid', activeJoinedIds.map((id) => '$id').toList());
     }
 
-    // Persist seen state + read-at timestamps
-    await Future.wait([
-      prefs.setStringList('notif_seen_asgn_$uid', newSeenAsgn.map((id) => '$id').toList()),
-      prefs.setStringList('notif_seen_grade_$uid', newSeenGrade.map((id) => '$id').toList()),
-      prefs.setString('notif_read_at_asgn_$uid', jsonEncode(readAtAsgn.map((k, v) => MapEntry('$k', v.toIso8601String())))),
-      prefs.setString('notif_read_at_grade_$uid', jsonEncode(readAtGrade.map((k, v) => MapEntry('$k', v.toIso8601String())))),
-    ]);
-
     // Sort: unread first, then by date desc
     notifs.sort((a, b) {
       if (a.isRead != b.isRead) return a.isRead ? 1 : -1;
@@ -218,13 +185,25 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (mounted) setState(() { _notifs = notifs; _loading = false; });
   }
 
+  // Отметить прочитанным на сервере (синхронно с сайтом) + локально.
+  void _markRead(String nKey) {
+    if (_isRead(nKey)) return;
+    setState(() {
+      _states[nKey] = {'read': true, 'dismissed': _isDismissed(nKey)};
+      _notifs = _notifs.map((n) => n.key == nKey
+          ? _Notif(key: n.key, type: n.type, title: n.title, body: n.body,
+              date: n.date, isRead: true, classId: n.classId)
+          : n).toList();
+    });
+    try { context.read<ApiService>().setNotifState(nKey, read: true); } catch (_) {}
+  }
+
   Future<void> _dismiss(String nKey) async {
-    setState(() => _notifs.removeWhere((n) => n.key == nKey));
-    final uid = context.read<AuthProvider>().userId ?? 0;
-    final prefs = await SharedPreferences.getInstance();
-    final dismissed = (prefs.getStringList('notif_dismissed_$uid') ?? []).toSet();
-    dismissed.add(nKey);
-    await prefs.setStringList('notif_dismissed_$uid', dismissed.toList());
+    setState(() {
+      _notifs.removeWhere((n) => n.key == nKey);
+      _states[nKey] = {'read': _isRead(nKey), 'dismissed': true};
+    });
+    try { await context.read<ApiService>().setNotifState(nKey, dismissed: true); } catch (_) {}
   }
 
   String _timeAgo(DateTime date, L10n l) {
@@ -307,8 +286,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           ]),
                         ),
                         child: GestureDetector(
-                        onTap: canNavigate ? () => Navigator.push(context, MaterialPageRoute(
-                          builder: (_) => ClassDetailScreen(classId: n.classId!, initialTab: 2))) : null,
+                        onTap: () {
+                          _markRead(n.key);
+                          if (canNavigate) {
+                            Navigator.push(context, MaterialPageRoute(
+                              builder: (_) => ClassDetailScreen(classId: n.classId!, initialTab: 2)));
+                          }
+                        },
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 10),
                           decoration: BoxDecoration(

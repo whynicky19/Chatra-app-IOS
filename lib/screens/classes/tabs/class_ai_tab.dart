@@ -73,13 +73,43 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
   void dispose() { _scrollCtrl.dispose(); _pulseCtrl.dispose(); _fadeCtrl.dispose(); _ctrl.dispose(); super.dispose(); }
 
   Future<void> _loadHistory() async {
+    // Локальный кэш (быстро/офлайн) → затем сервер (синхронно с сайтом).
+    final local = await _loadLocal();
+    if (mounted && local.isNotEmpty) {
+      setState(() { _msgs..clear()..addAll(local); });
+    }
+    await _syncFromServer(local);
+  }
+
+  Future<List<Map<String, String>>> _loadLocal() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString(_historyKey);
-      if (raw != null && raw.isNotEmpty && mounted) {
-        final list = jsonDecode(raw) as List;
-        setState(() => _msgs.addAll(list.map((e) => Map<String, String>.from(e as Map))));
+      if (raw != null && raw.isNotEmpty) {
+        return (jsonDecode(raw) as List).map((e) => Map<String, String>.from(e as Map)).toList();
       }
+    } catch (_) {}
+    return [];
+  }
+
+  Future<void> _syncFromServer(List<Map<String, String>> local) async {
+    try {
+      final api = context.read<ApiService>();
+      var rows = await api.getAiHistory(classId: widget.classId);
+      if (rows.isEmpty && local.isNotEmpty) {
+        rows = await api.importAiHistory(
+          local.map((m) => {'role': m['role'] ?? 'user', 'content': m['text'] ?? ''}).toList(),
+          classId: widget.classId,
+        );
+      }
+      final list = rows.map<Map<String, String>>((r) => {
+        'role': (r['role'] ?? 'assistant').toString(),
+        'text': (r['content'] ?? '').toString(),
+      }).toList();
+      if (!mounted) return;
+      setState(() { _msgs..clear()..addAll(list); });
+      _saveHistory();
+      _scrollToBottom();
     } catch (_) {}
   }
 
@@ -90,6 +120,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
   }
 
   Future<void> _clearHistory() async {
+    final api = context.read<ApiService>();
     final ok = await showConfirmDialog(context,
       title: 'Очистить историю?',
       message: 'Все сообщения этого чата будут удалены.',
@@ -103,6 +134,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove(_historyKey);
       } catch (_) {}
+      try { api.clearAiHistory(classId: widget.classId); } catch (_) {}
     }
   }
 

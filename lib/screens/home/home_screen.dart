@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:dio/dio.dart' show DioException;
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -698,9 +699,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     if (!mounted) return;
                     showToast(context, '${l.t('joined_class')} $title');
                     Navigator.pushNamed(context, '/class', arguments: id);
-                  } catch (_) {
+                  } catch (e) {
                     setS(() => busy = false);
-                    showToast(context, l.t('not_found'), error: true);
+                    // 409 no_active_cohort — у класса нет активного учебного года.
+                    final isNoCohort = e is DioException &&
+                        e.response?.statusCode == 409 &&
+                        (e.response?.data is Map) &&
+                        e.response?.data['detail'] == 'no_active_cohort';
+                    showToast(context, l.t(isNoCohort ? 'no_active_cohort' : 'not_found'), error: true);
                   }
                 },
                 child: busy

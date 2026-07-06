@@ -327,14 +327,6 @@ class ApiService {
 
   // ── Cohorts / Rollover (teacher-owner only) ────────────────────────────────────
 
-  /// Rating for a class. [cohortId] targets a past academic year (owner/admin);
-  /// omit for the active cohort. Returns the `StudentRatingResponse` map.
-  Future<Map<String, dynamic>> getClassRating(int classId, {int? cohortId}) async {
-    final response = await _dio.get('/classes/$classId/rating',
-        queryParameters: cohortId != null ? {'cohort_id': cohortId} : null);
-    return response.data;
-  }
-
   /// All cohorts (academic years) of a class, newest first. Owner/admin only.
   Future<List<dynamic>> getClassCohorts(int classId) async {
     final response = await _dio.get('/classes/$classId/cohorts');

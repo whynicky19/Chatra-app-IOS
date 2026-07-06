@@ -12,6 +12,10 @@ class ClassesProvider extends ChangeNotifier {
   List<dynamic> posts = [];
   List<Map<String, dynamic>> _cachedAllClasses = [];
   Set<int> joinedClassIds = {};
+  // Классы, где студент состоит только в архивных потоках. Признак приходит
+  // из GET /classes/ (там он считается per-student); /classes/all его не
+  // отдаёт, поэтому храним отдельно, а не читаем c['is_archived_for_user'].
+  Set<int> archivedClassIds = {};
   int unreadNotifCount = 0;
   bool loading = true;
   String? errorMessage;
@@ -58,6 +62,10 @@ class ClassesProvider extends ChangeNotifier {
     try {
       final list = await _api.getClasses();
       joinedClassIds = list.map((c) => (c['id'] as num).toInt()).toSet();
+      archivedClassIds = list
+          .where((c) => c['is_archived_for_user'] == true)
+          .map((c) => (c['id'] as num).toInt())
+          .toSet();
       notifyListeners();
       await _saveJoined();
     } catch (e) {
@@ -222,7 +230,7 @@ class ClassesProvider extends ChangeNotifier {
   // collapsed "Archive" section. Teachers/admins never see their classes as
   // archived (is_archived_for_user is a student-membership flag).
   bool _isArchived(Map<String, dynamic> c) =>
-      !_auth.isTeacher && !_auth.isAdmin && (c['is_archived_for_user'] == true);
+      !_auth.isTeacher && !_auth.isAdmin && archivedClassIds.contains(c['id'] as int);
 
   List<Map<String, dynamic>> get activeClasses =>
       classes.where((c) => !_isArchived(c)).toList();

@@ -14,6 +14,7 @@ import 'screens/auth/register_screen.dart';
 import 'screens/auth/org_select_screen.dart';
 import 'screens/main_shell.dart';
 import 'screens/classes/class_detail_screen.dart';
+import 'screens/classes/archive_screen.dart';
 
 /// Единый бэкенд для всех платформ — тот же, что у сайта (общая база).
 String _resolveBaseUrl() {
@@ -90,6 +91,7 @@ class ChatraApp extends StatelessWidget {
       onGenerateRoute: (s) {
         switch (s.name) {
           case '/class': return MaterialPageRoute(builder: (_) => ClassDetailScreen(classId: s.arguments as int));
+          case '/archive': return MaterialPageRoute(builder: (_) => const ArchiveScreen());
           default: return MaterialPageRoute(builder: (_) => const _AuthGate());
         }
       },

@@ -35,7 +35,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   late AnimationController _headerCtrl;
   late Animation<double> _headerAnim;
   late final ClassesProvider _classesProvider = context.read<ClassesProvider>();
-  bool _archiveExpanded = false;
 
   @override
   void initState() {
@@ -351,23 +350,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             }),
           ],
 
-          // ── Archive: classes the user only has archived cohorts in ──
+          // ── Archive: entry row (WhatsApp-style) → separate ArchiveScreen ──
           if (provider.archivedClasses.isNotEmpty)
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               sliver: SliverToBoxAdapter(
-                child: _ArchiveSection(
-                  classes: provider.archivedClasses,
-                  expanded: _archiveExpanded,
-                  onToggle: () {
+                child: _ArchiveEntry(
+                  count: provider.archivedClasses.length,
+                  onTap: () {
                     HapticFeedback.lightImpact();
-                    setState(() => _archiveExpanded = !_archiveExpanded);
-                  },
-                  grads: _grads,
-                  lectureCount: provider.lectureCount,
-                  onOpen: (id) {
-                    HapticFeedback.lightImpact();
-                    Navigator.pushNamed(context, '/class', arguments: id);
+                    Navigator.pushNamed(context, '/archive');
                   },
                 ),
               ),
@@ -704,12 +696,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     Navigator.pushNamed(context, '/class', arguments: id);
                   } catch (e) {
                     setS(() => busy = false);
+                    final detail = (e is DioException && e.response?.data is Map)
+                        ? e.response?.data['detail']
+                        : null;
                     // 409 no_active_cohort — у класса нет активного учебного года.
-                    final isNoCohort = e is DioException &&
-                        e.response?.statusCode == 409 &&
-                        (e.response?.data is Map) &&
-                        e.response?.data['detail'] == 'no_active_cohort';
-                    showToast(context, l.t(isNoCohort ? 'no_active_cohort' : 'not_found'), error: true);
+                    // 403 archived_rejoin_blocked — ученик уже был в классе, его
+                    // поток в архиве; вернуть доступ может только преподаватель.
+                    final String key = detail == 'no_active_cohort'
+                        ? 'no_active_cohort'
+                        : detail == 'archived_rejoin_blocked'
+                            ? 'archived_rejoin_blocked'
+                            : 'not_found';
+                    showToast(context, l.t(key), error: true);
                   }
                 },
                 child: busy
@@ -1032,157 +1030,74 @@ class _ActionRow extends StatelessWidget {
 }
 
 
-// ── Archive Section ───────────────────────────────────────────────────────────
-// Collapsed block at the bottom of the class list holding classes the student
-// is only enrolled in via archived cohorts (read-only, past academic years).
+// ── Archive Entry ─────────────────────────────────────────────────────────────
+// WhatsApp-style row on the home screen: opens the separate ArchiveScreen with
+// classes the student is only enrolled in via archived cohorts (read-only).
 
-class _ArchiveSection extends StatelessWidget {
-  final List<Map<String, dynamic>> classes;
-  final bool expanded;
-  final VoidCallback onToggle;
-  final List<List<Color>> grads;
-  final int Function(int id) lectureCount;
-  final void Function(int id) onOpen;
+class _ArchiveEntry extends StatelessWidget {
+  final int count;
+  final VoidCallback onTap;
 
-  const _ArchiveSection({
-    required this.classes,
-    required this.expanded,
-    required this.onToggle,
-    required this.grads,
-    required this.lectureCount,
-    required this.onOpen,
-  });
+  const _ArchiveEntry({required this.count, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final l = context.watch<L10n>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = Theme.of(context).colorScheme.surface;
-    return Container(
-      decoration: BoxDecoration(
-        color: surface,
+    return Material(
+      color: surface,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: adaptiveText1(context).withValues(alpha: 0.12)),
-      ),
-      child: Column(children: [
-        // Header — tap to expand/collapse
-        InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: onToggle,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(children: [
-              Icon(CupertinoIcons.archivebox, size: 20, color: adaptiveText1(context).withValues(alpha: 0.6)),
-              const SizedBox(width: 12),
-              Text(l.t('archive'),
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800,
-                      color: adaptiveText1(context), letterSpacing: -0.2)),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: adaptiveText1(context).withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text('${classes.length}',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800,
-                        color: adaptiveText1(context).withValues(alpha: 0.6))),
-              ),
-              const Spacer(),
-              AnimatedRotation(
-                turns: expanded ? 0.5 : 0,
-                duration: const Duration(milliseconds: 200),
-                child: Icon(CupertinoIcons.chevron_down, size: 18, color: adaptiveText1(context).withValues(alpha: 0.6)),
-              ),
-            ]),
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            color: surface,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: cardShadow(isDark),
           ),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(children: [
+            // Rounded icon tile
+            Container(
+              width: 42, height: 42,
+              decoration: BoxDecoration(
+                color: adaptiveSurface2(context),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(CupertinoIcons.archivebox, size: 21,
+                  color: adaptiveText1(context).withValues(alpha: 0.65)),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(l.t('archive'),
+                    style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800,
+                        color: adaptiveText1(context), letterSpacing: -0.3)),
+                const SizedBox(height: 1),
+                Text(l.t('archive_entry_sub'),
+                    maxLines: 1, overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12.5,
+                        color: adaptiveText1(context).withValues(alpha: 0.5))),
+              ]),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+              decoration: BoxDecoration(
+                color: adaptiveText1(context).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(100),
+              ),
+              child: Text('$count',
+                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800,
+                      color: adaptiveText1(context).withValues(alpha: 0.6))),
+            ),
+            const SizedBox(width: 6),
+            Icon(CupertinoIcons.chevron_right, size: 17,
+                color: adaptiveText1(context).withValues(alpha: 0.4)),
+          ]),
         ),
-        // Body — one muted row per archived class
-        AnimatedCrossFade(
-          firstChild: const SizedBox(width: double.infinity),
-          secondChild: Column(
-            children: [
-              for (final cls in classes)
-                _ArchiveRow(
-                  cls: cls,
-                  colors: grads[(cls['id'] as int) % grads.length],
-                  lectureCount: lectureCount(cls['id'] as int),
-                  onOpen: () => onOpen(cls['id'] as int),
-                ),
-              const SizedBox(height: 6),
-            ],
-          ),
-          crossFadeState: expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-          duration: const Duration(milliseconds: 200),
-        ),
-      ]),
-    );
-  }
-}
-
-class _ArchiveRow extends StatelessWidget {
-  final Map<String, dynamic> cls;
-  final List<Color> colors;
-  final int lectureCount;
-  final VoidCallback onOpen;
-
-  const _ArchiveRow({
-    required this.cls,
-    required this.colors,
-    required this.lectureCount,
-    required this.onOpen,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.watch<L10n>();
-    final title = (cls['name'] ?? cls['title'] ?? '').toString();
-    final teacher = (cls['teacher'] ?? cls['teacher_name'] ?? '').toString();
-    return InkWell(
-      onTap: onOpen,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-        child: Row(children: [
-          // Desaturated square avatar (grey-tinted gradient)
-          Container(
-            width: 40, height: 40,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              gradient: LinearGradient(
-                colors: [colors[0].withValues(alpha: 0.35), colors[1].withValues(alpha: 0.35)],
-                begin: Alignment.topLeft, end: Alignment.bottomRight,
-              ),
-            ),
-            child: Icon(CupertinoIcons.book, size: 18, color: Colors.white.withValues(alpha: 0.8)),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, maxLines: 1, overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700,
-                        color: adaptiveText1(context), letterSpacing: -0.2)),
-                if (teacher.isNotEmpty)
-                  Text(teacher, maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 12, color: adaptiveText1(context).withValues(alpha: 0.6))),
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          // Grey "Archive" badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-            decoration: BoxDecoration(
-              color: adaptiveText1(context).withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(l.t('archived_badge'),
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800,
-                    color: adaptiveText1(context).withValues(alpha: 0.6), letterSpacing: 0.2)),
-          ),
-          const SizedBox(width: 4),
-          Icon(CupertinoIcons.chevron_right, size: 14, color: adaptiveText1(context).withValues(alpha: 0.5)),
-        ]),
       ),
     );
   }

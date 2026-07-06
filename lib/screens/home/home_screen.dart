@@ -328,8 +328,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     onTap: () { HapticFeedback.lightImpact(); Navigator.pushNamed(context, '/class', arguments: id); },
                     onLongPress: () { HapticFeedback.heavyImpact(); _showContextMenu(cls); },
                     onDelete: () async {
-                      await context.read<ClassesProvider>().deleteClass(id);
-                      if (context.mounted) showToast(context, context.read<L10n>().t('class_deleted'));
+                      final prov = context.read<ClassesProvider>();
+                      final ok = await prov.deleteClass(id);
+                      if (!context.mounted) return;
+                      showToast(context, ok ? context.read<L10n>().t('class_deleted') : (prov.errorMessage ?? context.read<L10n>().t('error')), error: !ok);
                     },
                     onLeave: () async {
                       await context.read<ClassesProvider>().leaveClass(id);
@@ -523,9 +525,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   }));
                   if (!mounted) return;
                   if (ok == true) {
-                    await context.read<ClassesProvider>().deleteClass(id);
+                    final prov = context.read<ClassesProvider>();
+                    final done = await prov.deleteClass(id);
                     if (!mounted) return;
-                    showToast(context, l.t('class_deleted'));
+                    showToast(context, done ? l.t('class_deleted') : (prov.errorMessage ?? l.t('error')), error: !done);
                   }
                 },
               ),
@@ -793,8 +796,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     showToast(context, l.t('class_created'));
                     // Dialog is gone now — safe to rebuild the list.
                     await provider.load();
-                  } catch (_) {
-                    if (mounted) showToast(context, l.t('error'), error: true);
+                  } catch (e) {
+                    if (mounted) {
+                      final detail = (e is DioException && e.response?.data is Map) ? e.response?.data['detail'] : null;
+                      showToast(context, detail?.toString() ?? l.t('error'), error: true);
+                    }
                     if (ctx.mounted) setS(() => submitting = false);
                   }
                 },

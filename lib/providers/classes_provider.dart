@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:dio/dio.dart' show DioException;
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
@@ -125,15 +126,24 @@ class ClassesProvider extends ChangeNotifier {
     return _normalizeClass(cls);
   }
 
-  Future<void> deleteClass(int id) async {
+  /// Возвращает true при успехе. При ошибке кладёт человекочитаемый текст
+  /// (detail с бэкенда, если есть) в [errorMessage], чтобы UI мог его показать
+  /// вместо ложного «удалено».
+  Future<bool> deleteClass(int id) async {
     try {
       await _api.deleteClass(id);
+    } on DioException catch (e) {
+      final detail = (e.response?.data is Map) ? e.response?.data['detail'] : null;
+      errorMessage = detail?.toString() ?? 'Ошибка при удалении класса: ${e.message}';
+      notifyListeners();
+      return false;
     } catch (e) {
       errorMessage = 'Ошибка при удалении класса: $e';
       notifyListeners();
-      return;
+      return false;
     }
     await load();
+    return true;
   }
 
   Future<void> createClass(String name,

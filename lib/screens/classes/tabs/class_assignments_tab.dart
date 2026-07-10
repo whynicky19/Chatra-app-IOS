@@ -449,7 +449,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
                         Icon(CupertinoIcons.doc_text, size: 11, color: Theme.of(context).colorScheme.primary),
                         SizedBox(width: 4),
-                        Text('ЗАДАНИЕ', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary, letterSpacing: 0.6)),
+                        Text(l.t('task_badge'), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary, letterSpacing: 0.6)),
                       ]),
                     ),
                     SizedBox(width: 8),
@@ -474,7 +474,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                       decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(8)),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
                         Icon(CupertinoIcons.star_fill, size: 13, color: Theme.of(context).colorScheme.primary), SizedBox(width: 4),
-                        Text('${a['max_score'] ?? 100} баллов', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w700)),
+                        Text('${a['max_score'] ?? 100} ${l.t('pts')}', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w700)),
                       ]),
                     ),
                     if (deadline != null) ...[
@@ -519,7 +519,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 Row(children: [
                   Container(width: 3, height: 16, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, borderRadius: BorderRadius.circular(2))),
                   SizedBox(width: 8),
-                  Text('Описание', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary)),
+                  Text(l.t('description'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary)),
                   Spacer(),
                   GestureDetector(
                     onTap: () => setS(() => descHidden = !descHidden),
@@ -533,7 +533,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                           child: Icon(CupertinoIcons.chevron_up, size: 14, color: C.text4),
                         ),
                         SizedBox(width: 4),
-                        Text(descHidden ? 'Показать' : 'Скрыть', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: C.text4)),
+                        Text(descHidden ? l.t('show') : l.t('hide'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: C.text4)),
                       ]),
                     ),
                   ),
@@ -558,14 +558,14 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 child: Row(children: [
                   SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.primary)),
                   SizedBox(width: 10),
-                  Text('Загрузка файлов...', style: TextStyle(fontSize: 13, color: C.text4)),
+                  Text(l.t('loading_files'), style: TextStyle(fontSize: 13, color: C.text4)),
                 ]),
               )
               else if (allFiles.isNotEmpty) ...[
                 Row(children: [
                   Container(width: 3, height: 16, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, borderRadius: BorderRadius.circular(2))),
                   SizedBox(width: 8),
-                  Text('Прикреплённые файлы', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary, letterSpacing: 0.3)),
+                  Text(l.t('attached_files'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary, letterSpacing: 0.3)),
                 ]),
                 SizedBox(height: 10),
                 ...allFiles.asMap().entries.map((entry) {
@@ -597,7 +597,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     SizedBox(width: 11),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text(name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700), overflow: TextOverflow.ellipsis),
-                      Text('Нажмите для открытия', style: TextStyle(fontSize: 11, color: C.text4)),
+                      Text(l.t('click_open'), style: TextStyle(fontSize: 11, color: C.text4)),
                     ])),
                     Container(width: 32, height: 32, decoration: BoxDecoration(color: fileColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(9)),
                       child: Icon(CupertinoIcons.arrow_up_right_square, size: 15, color: fileColor)),
@@ -636,7 +636,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               child: Row(children: [
                 Icon(CupertinoIcons.list_bullet, size: 16, color: Theme.of(context).colorScheme.primary),
                 SizedBox(width: 8),
-                Text('Критерии оценивания', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
+                Text(l.t('criteria'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
                 SizedBox(width: 4),
                 Text('(${criteria.length})', style: TextStyle(fontSize: 12, color: C.text4)),
                 Spacer(),
@@ -677,20 +677,20 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       Icon(sub['grade']['graded_by'] == 'ai' ? CupertinoIcons.bolt_fill : CupertinoIcons.person, size: 14, color: Theme.of(context).colorScheme.primary),
                       SizedBox(width: 4),
-                      Text(sub['grade']['graded_by'] == 'ai' ? 'ИИ-проверка' : 'Учитель', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
+                      Text(sub['grade']['graded_by'] == 'ai' ? l.t('ai_check') : l.t('teacher_short'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
                     ])),
                 ]),
               ]),
               if (sub['grade']['feedback'] != null) ...[
                 SizedBox(height: 14),
-                Text('ФИДБЕК', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
+                Text(l.t('feedback'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
                 SizedBox(height: 6),
                 Text(sub['grade']['feedback'], style: TextStyle(fontSize: 14, color: adaptiveText1(context), height: 1.6)),
               ],
             ])),
           if (sub['grade']['criteria_scores'] != null) ...[
             SizedBox(height: 12),
-            Text('ПО КРИТЕРИЯМ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
+            Text(l.t('by_criteria'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
             SizedBox(height: 8),
             ...(() {
               List<dynamic> criteriaScores = [];
@@ -727,12 +727,12 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             child: Row(children: [
               SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.primary)),
               SizedBox(width: 12),
-              Expanded(child: Text('ИИ проверяет вашу работу...', style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w500))),
+              Expanded(child: Text(l.t('ai_checking'), style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w500))),
             ])),
         ],
         if (sub != null && (sub['text_content'] != null || sub['file_urls'] != null)) ...[
           SizedBox(height: 16),
-          Text('ВАШ ОТВЕТ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
+          Text(l.t('your_answer'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
           SizedBox(height: 6),
           if (sub['text_content'] != null && sub['text_content'].toString().isNotEmpty)
             Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
@@ -895,18 +895,18 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               onPressed: () async {
                 Navigator.pop(ctx);
                 final ok = await showConfirmDialog(context,
-                  title: 'Удалить задание?',
-                  message: 'Это действие нельзя отменить',
+                  title: l.t('delete_assignment_q'),
+                  message: l.t('delete_irreversible'),
                   icon: CupertinoIcons.trash,
                   danger: true,
-                  confirmText: 'Удалить',
-                  cancelText: 'Отмена');
+                  confirmText: l.t('delete'),
+                  cancelText: l.t('cancel'));
                 if (ok == true && mounted) {
                   try {
                     await context.read<ApiService>().deleteAssignment(a['id']);
-                    if (mounted) { widget.onRefresh(); showToast(context, 'Задание удалено'); }
+                    if (mounted) { widget.onRefresh(); showToast(context, l.t('assignment_deleted')); }
                   } catch (_) {
-                    if (mounted) showToast(context, 'Ошибка', error: true);
+                    if (mounted) showToast(context, l.t('error_generic'), error: true);
                   }
                 }
               },
@@ -917,7 +917,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
           SizedBox(height: 10),
           SizedBox(width: double.infinity, height: 48, child: ElevatedButton.icon(
             icon: Icon(CupertinoIcons.list_bullet, size: 18),
-            label: Text('Просмотр работ'),
+            label: Text(l.t('view_works')),
             onPressed: () => _viewSubs(a['id']),
             style: ElevatedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 12)),
           )),
@@ -932,6 +932,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
   }
 
   void _viewSubs(int aId) async {
+    final l = context.read<L10n>();
     try {
       final subs = await context.read<ApiService>().getSubmissions(aId, cohortId: widget.cohortId);
       if (!mounted) return;
@@ -967,7 +968,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 Center(child: Container(width: 40, height: 4, margin: EdgeInsets.only(bottom: 16), decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2)))),
                 GestureDetector(onTap: () => setS(() => selectedSub = null),
                   child: Container(padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8), decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(12)),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(CupertinoIcons.chevron_left, size: 16, color: C.text4), SizedBox(width: 6), Text('Назад к списку', style: TextStyle(fontSize: 13, color: C.text4))]))),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(CupertinoIcons.chevron_left, size: 16, color: C.text4), SizedBox(width: 6), Text(l.t('back_to_list'), style: TextStyle(fontSize: 13, color: C.text4))]))),
                 SizedBox(height: 16),
                 Row(children: [
                   CircleAvatar(radius: 22, backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15), child: Text(initials, style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w800, fontSize: 14))),
@@ -979,7 +980,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 ]),
                 if (selectedSub['text_content'] != null || submittedFileUrls.isNotEmpty) ...[
                   SizedBox(height: 16),
-                  Text('РАБОТА СТУДЕНТА', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
+                  Text(l.t('student_work'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
                   SizedBox(height: 8),
                   if (selectedSub['text_content'] != null) Container(padding: EdgeInsets.all(12), margin: EdgeInsets.only(bottom: 6),
                     decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(12)),
@@ -1010,18 +1011,18 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                         ])),
                         Spacer(),
                         Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
-                          child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(CupertinoIcons.bolt_fill, size: 14, color: Theme.of(context).colorScheme.primary), SizedBox(width: 4), Text('ИИ-проверка', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary))])),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(CupertinoIcons.bolt_fill, size: 14, color: Theme.of(context).colorScheme.primary), SizedBox(width: 4), Text(l.t('ai_check'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary))])),
                       ]),
                       if (feedback != null) ...[
                         SizedBox(height: 12),
-                        Text('ФИДБЕК', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
+                        Text(l.t('feedback'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
                         SizedBox(height: 6),
                         Text(feedback, style: TextStyle(fontSize: 14, height: 1.6)),
                       ],
                     ])),
                   if (criteria.isNotEmpty) ...[
                     SizedBox(height: 16),
-                    Text('ПО КРИТЕРИЯМ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
+                    Text(l.t('by_criteria'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
                     SizedBox(height: 8),
                     ...criteria.map((c) => Container(margin: EdgeInsets.only(bottom: 8), padding: EdgeInsets.all(14),
                       decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(14)),
@@ -1047,11 +1048,11 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                         final updated = await context.read<ApiService>().getSubmission(selectedSub['id']);
                         if (!mounted || !ctx.mounted) return;
                         setS(() { selectedSub = updated; grading = false; });
-                        showToast(context, 'Переоценено!');
+                        showToast(context, l.t('regraded'));
                       } catch (e) {
                         if (!mounted || !ctx.mounted) return;
                         setS(() => grading = false);
-                        final msg = e.toString().contains('criteria') ? 'Нет критериев оценивания' : 'Ошибка оценки';
+                        final msg = e.toString().contains('criteria') ? l.t('no_criteria') : l.t('grade_error');
                         showToast(context, msg, error: true);
                       }
                     },
@@ -1059,12 +1060,12 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                       ? Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                           SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
                           SizedBox(width: 12),
-                          Text('ИИ оценивает...', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                          Text(l.t('ai_grading'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                         ])
                       : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                           Icon(CupertinoIcons.bolt_fill, size: 18, color: Colors.white),
                           SizedBox(width: 8),
-                          Text('Перепроверить ИИ', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                          Text(l.t('recheck_ai'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                         ]),
                   )),
                   SizedBox(height: 10),
@@ -1085,11 +1086,11 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                         final updated = await context.read<ApiService>().getSubmission(selectedSub['id']);
                         if (!mounted || !ctx.mounted) return;
                         setS(() { selectedSub = updated; grading = false; });
-                        showToast(context, 'Оценено!');
+                        showToast(context, l.t('graded_ok'));
                       } catch (e) {
                         if (!mounted || !ctx.mounted) return;
                         setS(() => grading = false);
-                        final msg = e.toString().contains('criteria') ? 'Нет критериев оценивания' : 'Ошибка оценки';
+                        final msg = e.toString().contains('criteria') ? l.t('no_criteria') : l.t('grade_error');
                         showToast(context, msg, error: true);
                       }
                     },
@@ -1097,12 +1098,12 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                       ? Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                           SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
                           SizedBox(width: 12),
-                          Text('ИИ оценивает...', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                          Text(l.t('ai_grading'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                         ])
                       : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                           Icon(CupertinoIcons.bolt_fill, size: 18, color: Colors.white),
                           SizedBox(width: 8),
-                          Text('Оценить ИИ', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                          Text(l.t('grade_ai'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                         ]),
                   )),
                   SizedBox(height: 10),
@@ -1119,11 +1120,11 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             return ListView(controller: sc, padding: EdgeInsets.all(20), children: [
               Center(child: Container(width: 40, height: 4, margin: EdgeInsets.only(bottom: 16), decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2)))),
               Row(children: [
-                _statBox('${subs.length}', 'Всего', adaptiveText1(context)),
+                _statBox('${subs.length}', l.t('total'), adaptiveText1(context)),
                 SizedBox(width: 8),
-                _statBox('$graded', 'Проверено', Theme.of(context).colorScheme.primary),
+                _statBox('$graded', l.t('checked'), Theme.of(context).colorScheme.primary),
                 SizedBox(width: 8),
-                _statBox('$pending', 'Ожидают', C.red),
+                _statBox('$pending', l.t('pending'), C.red),
               ]),
               // Batch AI grading button
               if (pending > 0) ...[
@@ -1147,7 +1148,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                         subs.addAll(updated);
                       } catch (_) {}
                       if (mounted && ctx.mounted) setS(() { gradingAll = false; });
-                      if (mounted) showToast(context, 'Проверено $gradingDone из $gradingTotal');
+                      if (mounted) showToast(context, '${l.t('grade_progress')} $gradingDone / $gradingTotal');
                     },
                     style: ElevatedButton.styleFrom(
                       padding: EdgeInsets.symmetric(vertical: 14),
@@ -1157,17 +1158,17 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                       if (gradingAll) ...[
                         SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.primary)),
                         SizedBox(width: 12),
-                        Text('Проверено $gradingDone / $gradingTotal...', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
+                        Text('${l.t('grade_progress')} $gradingDone / $gradingTotal...', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
                       ] else ...[
                         Icon(CupertinoIcons.bolt_fill, size: 18, color: Colors.white),
                         SizedBox(width: 8),
-                        Text('Проверить все ИИ ($pending)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                        Text('${l.t('grade_all_ai')} ($pending)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                       ],
                     ]),
                   )),
               ],
               SizedBox(height: 16),
-              TextField(decoration: InputDecoration(hintText: 'Поиск по ФИО студента...', prefixIcon: Icon(CupertinoIcons.search, size: 18, color: C.text4), contentPadding: EdgeInsets.symmetric(vertical: 10)),
+              TextField(decoration: InputDecoration(hintText: l.t('search_student'), prefixIcon: Icon(CupertinoIcons.search, size: 18, color: C.text4), contentPadding: EdgeInsets.symmetric(vertical: 10)),
                 onChanged: (v) => setS(() => search = v)),
               SizedBox(height: 12),
               ...filtered.map((s) {
@@ -1189,14 +1190,14 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                       Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                         if (score != null) Text('$score/100', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary))
                         else Text('—', style: TextStyle(fontSize: 16, color: C.text4)),
-                        Text(isGraded ? 'Оценено' : 'Ожидает', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: isGraded ? Theme.of(context).colorScheme.primary : C.yellow)),
+                        Text(isGraded ? l.t('graded_one') : l.t('pending_one'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: isGraded ? Theme.of(context).colorScheme.primary : C.yellow)),
                       ]),
                     ])));
               }),
             ]);
           }));
         });
-    } catch (_) { showToast(context, 'Ошибка загрузки', error: true); }
+    } catch (_) { showToast(context, l.t('error_loading'), error: true); }
   }
 
   // ── Manual grading + submission delete (site parity) ────────────────────────

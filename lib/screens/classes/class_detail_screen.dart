@@ -1051,6 +1051,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
 
   // ── FAB menu ──
   void _showAddMenu() {
+    final l = context.read<L10n>();
     String type = 'lecture';
     final tc = TextEditingController(), cc = TextEditingController();
     List<PlatformFile> lectureFiles = [];
@@ -1067,8 +1068,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               child: Icon(CupertinoIcons.book, color: Theme.of(context).colorScheme.primary, size: 22)),
             SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Добавить лекцию', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-              Text('Учебный материал для класса', style: TextStyle(fontSize: 12, color: C.text4)),
+              Text(l.t('add_lecture'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              Text(l.t('add_sub'), style: TextStyle(fontSize: 12, color: C.text4)),
             ])),
             IconButton(icon: Icon(CupertinoIcons.xmark), onPressed: () => Navigator.pop(ctx)),
           ]),
@@ -1078,10 +1079,10 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             child: Row(children: [
               Expanded(child: GestureDetector(onTap: () => setS(() => type = 'lecture'),
                 child: Container(padding: EdgeInsets.symmetric(vertical: 12), decoration: BoxDecoration(color: type == 'lecture' ? Theme.of(ctx).colorScheme.surface : Colors.transparent, borderRadius: BorderRadius.circular(12)),
-                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(CupertinoIcons.book, size: 16, color: type == 'lecture' ? Theme.of(context).colorScheme.primary : C.text4), SizedBox(width: 6), Text('Лекция', style: TextStyle(fontWeight: FontWeight.w600, color: type == 'lecture' ? Theme.of(context).colorScheme.primary : C.text4))])))),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(CupertinoIcons.book, size: 16, color: type == 'lecture' ? Theme.of(context).colorScheme.primary : C.text4), SizedBox(width: 6), Text(l.t('lecture'), style: TextStyle(fontWeight: FontWeight.w600, color: type == 'lecture' ? Theme.of(context).colorScheme.primary : C.text4))])))),
               Expanded(child: GestureDetector(onTap: () => setS(() => type = 'material'),
                 child: Container(padding: EdgeInsets.symmetric(vertical: 12), decoration: BoxDecoration(color: type == 'material' ? Theme.of(ctx).colorScheme.surface : Colors.transparent, borderRadius: BorderRadius.circular(12)),
-                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(CupertinoIcons.doc_text, size: 16, color: type == 'material' ? Theme.of(context).colorScheme.primary : C.text4), SizedBox(width: 6), Text('Материал', style: TextStyle(fontWeight: FontWeight.w600, color: type == 'material' ? Theme.of(context).colorScheme.primary : C.text4))])))),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(CupertinoIcons.doc_text, size: 16, color: type == 'material' ? Theme.of(context).colorScheme.primary : C.text4), SizedBox(width: 6), Text(l.t('material'), style: TextStyle(fontWeight: FontWeight.w600, color: type == 'material' ? Theme.of(context).colorScheme.primary : C.text4))])))),
             ])),
           SizedBox(height: 20),
           _fieldLabel2('ТЕМА ${type == 'lecture' ? 'ЛЕКЦИИ' : 'МАТЕРИАЛА'} *'),

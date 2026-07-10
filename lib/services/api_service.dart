@@ -559,7 +559,17 @@ class ApiService {
     final formData = FormData.fromMap({
       'file': await MultipartFile.fromFile(filePath, filename: fileName),
     });
-    final response = await _dio.post('/upload/', data: formData);
+    // AP-4: аплоад большого файла по мобильной сети + серверный парсинг
+    // (OCR/pdf) легко перешагивают дефолтные 15с — ставим 2 мин на отправку и
+    // приём, иначе клиент показывает ложную ошибку, хотя файл уже принят.
+    final response = await _dio.post(
+      '/upload/',
+      data: formData,
+      options: Options(
+        sendTimeout: const Duration(minutes: 2),
+        receiveTimeout: const Duration(minutes: 2),
+      ),
+    );
     return response.data;
   }
 

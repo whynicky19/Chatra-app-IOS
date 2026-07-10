@@ -83,12 +83,10 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       _isLoading = false;
+      // AP-2: храним семантический КЛЮЧ ошибки, а не русский текст — экран
+      // регистрации переводит его через L10n (kk/en больше не видят русский).
       final statusCode = (e is DioException) ? e.response?.statusCode : null;
-      if (statusCode == 409) {
-        lastError = 'Этот email уже зарегистрирован';
-      } else {
-        lastError = 'Ошибка регистрации. Попробуйте снова';
-      }
+      lastError = (statusCode == 409) ? 'email_taken' : 'register_error';
       notifyListeners();
       return false;
     }

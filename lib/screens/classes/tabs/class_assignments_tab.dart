@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:dio/dio.dart' show DioException;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +9,29 @@ import '../../../services/api_service.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/app_dialog.dart';
 import '../../../widgets/toast.dart';
+
+/// AP-1: сбой аплоада вложения при сдаче. Кидается вместо молчаливого catch,
+/// чтобы прервать сдачу и не отправить работу с потерянными файлами.
+class _UploadFailure implements Exception {
+  final String fileName;
+  _UploadFailure(this.fileName);
+}
+
+/// AP-3: единый маппинг ошибок сдачи в локализованный текст (как в join-флоу).
+/// 409 — уже сдано; 403/no_active_cohort — архивный/неактивный поток; сбой
+/// аплоада — своя строка; иначе backend-detail либо общий текст.
+String _submitErrorText(L10n l, Object e) {
+  if (e is _UploadFailure) return l.t('upload_failed');
+  if (e is DioException) {
+    final status = e.response?.statusCode;
+    final detail = (e.response?.data is Map) ? e.response?.data['detail']?.toString() : null;
+    if (status == 409) return l.t('already_submitted');
+    if (detail == 'no_active_cohort') return l.t('no_active_cohort');
+    if (status == 403) return l.t('archived_submit');
+    if (detail != null && detail.isNotEmpty) return detail;
+  }
+  return l.t('submit_error');
+}
 
 class ClassAssignmentsTab extends StatefulWidget {
   final List<dynamic> assignments;
@@ -201,11 +225,11 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               padding: EdgeInsets.all(16),
               decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: adaptiveBorder(context))),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('СЛЕД. ДЕДЛАЙН', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
+                Text(l.t('next_deadline'), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
                 SizedBox(height: 16),
                 Center(child: Icon(CupertinoIcons.checkmark_circle, size: 32, color: C.green)),
                 SizedBox(height: 8),
-                Center(child: Text('Всё сдано!', style: TextStyle(fontSize: 13, color: C.green, fontWeight: FontWeight.w600))),
+                Center(child: Text(l.t('all_submitted'), style: TextStyle(fontSize: 13, color: C.green, fontWeight: FontWeight.w600))),
               ]));
             }
             final next = upcoming.first;
@@ -213,13 +237,15 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             final diff = dl.difference(now);
             final days = diff.inDays;
             final hours = diff.inHours % 24;
-            final months = ['ЯНВ','ФЕВ','МАР','АПР','МАЙ','ИЮН','ИЮЛ','АВГ','СЕН','ОКТ','НОЯ','ДЕК'];
-            final remaining = days > 0 ? '$days дн. $hours ч.' : '$hours ч. ${diff.inMinutes % 60} мин.';
+            final months = l.t('months_short').split(',');
+            final remaining = days > 0
+                ? '$days ${l.t('days_short')} $hours ${l.t('hours_short')}'
+                : '$hours ${l.t('hours_short')} ${diff.inMinutes % 60} ${l.t('minutes_short')}';
             return Container(
               padding: EdgeInsets.all(16),
               decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: adaptiveBorder(context))),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('СЛЕД. ДЕДЛАЙН', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
+                Text(l.t('next_deadline'), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
                 SizedBox(height: 10),
                 Row(children: [
                   Container(
@@ -234,7 +260,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(next['title'] ?? '', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
                     SizedBox(height: 2),
-                    Text('Осталось: $remaining', style: TextStyle(fontSize: 11, color: days <= 1 ? C.red : Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w500)),
+                    Text('${l.t('remaining')}: $remaining', style: TextStyle(fontSize: 11, color: days <= 1 ? C.red : Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w500)),
                   ])),
                 ]),
               ]),
@@ -243,7 +269,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
         ])),
       ),
       Row(children: [
-        Text('Задания', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+        Text(l.t('assignments'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
         Spacer(),
         Container(padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(10)),
           child: Row(children: [Icon(CupertinoIcons.arrow_up_arrow_down, size: 14, color: C.text4), SizedBox(width: 4), Text(l.t('sort_deadline'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: C.text4))])),
@@ -256,7 +282,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
         SizedBox(height: 18),
         Text(l.t('no_assignments'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: adaptiveText1(context))),
         SizedBox(height: 6),
-        Text(widget.isTeacher ? 'Создайте первое задание' : 'Заданий пока нет',
+        Text(widget.isTeacher ? l.t('create_first_assignment') : l.t('no_assignments_yet'),
           style: TextStyle(fontSize: 13, color: C.text4)),
       ]))),
       // Pre-compute lookup map once — avoids O(N×M) linear scans per card
@@ -347,7 +373,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     ),
                     Spacer(),
                     Row(children: [
-                      Text('Открыть', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
+                      Text(l.t('open'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
                       SizedBox(width: 3),
                       Icon(CupertinoIcons.chevron_right, size: 13, color: Theme.of(context).colorScheme.primary),
                     ]),
@@ -375,9 +401,9 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
     final sheetStatusColor = sub?['status'] == 'graded' ? C.green
         : sub?['status'] == 'submitted' ? Theme.of(context).colorScheme.primary
         : isLate ? C.red : C.text4;
-    final sheetStatusText = sub?['status'] == 'graded' ? 'Проверено'
-        : sub?['status'] == 'submitted' ? 'Сдано'
-        : isLate ? 'Просрочено' : 'Новое';
+    final sheetStatusText = sub?['status'] == 'graded' ? l.t('graded')
+        : sub?['status'] == 'submitted' ? l.t('submitted')
+        : isLate ? l.t('overdue') : l.t('new_status');
 
     final assignmentFuture = context.read<ApiService>().getAssignment((a['id'] as num).toInt());
 
@@ -749,11 +775,11 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 await context.read<ApiService>().retractSubmission(sub['id']);
                 if (mounted && ctx.mounted) {
                   Navigator.pop(ctx);
-                  showToast(context, 'Сдача отозвана — можно отправить заново');
+                  showToast(context, l.t('submission_retracted'));
                   widget.onRefresh();
                 }
               } catch (_) {
-                if (mounted && ctx.mounted) showToast(context, 'Ошибка', error: true);
+                if (mounted && ctx.mounted) showToast(context, l.t('error_generic'), error: true);
               }
               if (ctx.mounted) setS(() => busy = false);
             },
@@ -762,7 +788,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 Icon(CupertinoIcons.arrow_counterclockwise, size: 14, color: C.text4),
                 SizedBox(width: 6),
-                Text(busy ? 'Отзыв...' : 'Отозвать и сдать заново', style: TextStyle(fontSize: 13, color: C.text4)),
+                Text(busy ? l.t('retracting') : l.t('retract_resubmit'), style: TextStyle(fontSize: 13, color: C.text4)),
               ])),
           ),
         ],
@@ -784,9 +810,9 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
           SizedBox(height: 20),
           Divider(),
           SizedBox(height: 12),
-          Text('Отправить работу', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+          Text(l.t('submit_work'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
           SizedBox(height: 10),
-          TextField(controller: tc, maxLines: 4, decoration: InputDecoration(hintText: 'Текст работы или ссылка (необязательно)...')),
+          TextField(controller: tc, maxLines: 4, decoration: InputDecoration(hintText: l.t('work_text_hint'))),
           SizedBox(height: 12),
           GestureDetector(
             onTap: () async {
@@ -797,7 +823,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               child: Row(children: [
                 Icon(CupertinoIcons.paperclip, color: Theme.of(context).colorScheme.primary, size: 20),
                 SizedBox(width: 10),
-                Expanded(child: Text(pickedFiles.isEmpty ? 'Прикрепить файлы' : 'Файлов выбрано: ${pickedFiles.length}', style: TextStyle(fontSize: 14, color: pickedFiles.isEmpty ? C.text4 : Theme.of(context).colorScheme.primary, fontWeight: pickedFiles.isEmpty ? FontWeight.normal : FontWeight.w600))),
+                Expanded(child: Text(pickedFiles.isEmpty ? l.t('attach_file') : '${l.t('files_selected')}: ${pickedFiles.length}', style: TextStyle(fontSize: 14, color: pickedFiles.isEmpty ? C.text4 : Theme.of(context).colorScheme.primary, fontWeight: pickedFiles.isEmpty ? FontWeight.normal : FontWeight.w600))),
                 Icon(CupertinoIcons.chevron_right, color: C.text4, size: 18),
               ])),
           ),
@@ -818,21 +844,21 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
           SizedBox(width: double.infinity, height: 48, child: ElevatedButton(
             onPressed: busy ? null : () async {
               if (tc.text.trim().isEmpty && pickedFiles.isEmpty) {
-                showToast(context, 'Добавьте текст или прикрепите файлы', error: true);
+                showToast(context, l.t('add_text_or_files'), error: true);
                 return;
               }
               setS(() => busy = true);
               try {
                 final api = context.read<ApiService>();
                 final fileUrls = <String>[];
+                // AP-1: любой сбой аплоада прерывает сдачу — иначе работа уходила
+                // с неполными file_urls, а студент видел «Работа отправлена!».
                 for (final pf in pickedFiles) {
-                  if (pf.path != null) {
-                    try {
-                      final res = await api.uploadFile(pf.path!, pf.name);
-                      final url = res['url'] ?? res['file_url'] ?? res['path'];
-                      if (url != null) fileUrls.add('$url#${Uri.encodeComponent(pf.name)}');
-                    } catch (_) {}
-                  }
+                  if (pf.path == null) continue;
+                  final res = await api.uploadFile(pf.path!, pf.name);
+                  final url = res['url'] ?? res['file_url'] ?? res['path'];
+                  if (url == null) throw _UploadFailure(pf.name);
+                  fileUrls.add('$url#${Uri.encodeComponent(pf.name)}');
                 }
                 await api.submitAssignment(a['id'], {
                   if (tc.text.trim().isNotEmpty) 'text_content': tc.text.trim(),
@@ -840,15 +866,17 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 });
                 if (mounted && ctx.mounted) {
                   Navigator.pop(ctx);
-                  showToast(context, 'Работа отправлена!');
+                  showToast(context, l.t('work_submitted'));
                   widget.onRefresh();
                 }
-              } catch (_) {
-                if (mounted && ctx.mounted) showToast(context, 'Ошибка отправки', error: true);
+              } catch (e) {
+                // AP-3: показываем осмысленную причину (уже сдано / архивный
+                // поток / сбой аплоада), а не общий «Ошибка отправки».
+                if (mounted && ctx.mounted) showToast(context, _submitErrorText(l, e), error: true);
               }
               if (ctx.mounted) setS(() => busy = false);
             },
-            child: busy ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : Text('Отправить'),
+            child: busy ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : Text(l.t('submit')),
           )),
         ],
         if (isTeacherOrAdmin) ...[
@@ -858,7 +886,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
           Row(children: [
             Expanded(child: OutlinedButton.icon(
               icon: Icon(CupertinoIcons.pencil, size: 16),
-              label: Text('Редактировать'),
+              label: Text(l.t('edit')),
               onPressed: () { Navigator.pop(ctx); widget.onEditAssignment(a); },
               style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 12)),
             )),

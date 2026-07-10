@@ -69,7 +69,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     } else {
       setState(() => _submitted = false);
       final l = context.read<L10n>();
-      showToast(context, auth.lastError ?? l.t('error_generic'), error: true);
+      // AP-2: lastError теперь ключ L10n (email_taken / register_error).
+      showToast(context, l.t(auth.lastError ?? 'register_error'), error: true);
     }
   }
 

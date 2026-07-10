@@ -467,7 +467,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     // of its actual inputs changes.
     final inviteCode = (meta['invite_code'] as String?) ?? '';
     final headerSig = '$displayTitle|$displayDesc|${coverImg?.toString() ?? ''}|'
-        '${auth.isTeacher}|$inviteCode|$isArchivedForUser|${l.t('class_code')}|${l.t('code_copied')}|${l.t('archived_badge')}';
+        '${auth.isTeacher}|$inviteCode|$isArchivedForUser|${l.t('class_code')}|${l.t('code_copied')}|${l.t('archived_badge')}|${l.t('regenerate_code')}';
     if (headerSig != _headerSig || _headerCache == null) {
       _headerSig = headerSig;
       _headerCache = _ClassCoverSliver(
@@ -483,6 +483,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
         codeCopiedLabel: l.t('code_copied'),
         onBack: () => Navigator.pop(context),
         onEdit: _editClass,
+        regenerateLabel: l.t('regenerate_code'),
+        onRegenerateCode: _regenerateCode,
       );
     }
 
@@ -1655,6 +1657,27 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     ).then((_) { variantTitleC.dispose(); variantContentC.dispose(); });
   }
 
+  Future<void> _regenerateCode() async {
+    final l = context.read<L10n>();
+    final ok = await showConfirmDialog(context,
+      title: l.t('regenerate_code_confirm'),
+      icon: CupertinoIcons.refresh,
+      confirmText: l.t('regenerate_code'),
+      cancelText: l.t('cancel'));
+    if (ok != true || !mounted) return;
+    try {
+      final newCode = await context.read<ApiService>().regenerateInviteCode(widget.classId);
+      if (!mounted) return;
+      setState(() {
+        _classData = {..._classData, 'invite_code': newCode};
+        _meta = _classData;
+      });
+      showToast(context, '${l.t('regenerate_code_ok')}: $newCode');
+    } catch (_) {
+      if (mounted) showToast(context, l.t('error'), error: true);
+    }
+  }
+
   void _editClass() {
     final meta = _meta;
     final tc = TextEditingController(text: _title), dc = TextEditingController(text: meta['description'] ?? ''), tn = TextEditingController(text: meta['teacher'] ?? '');
@@ -1842,8 +1865,10 @@ class _ClassCoverSliver extends StatelessWidget {
   final String archivedLabel;
   final String codeLabel;
   final String codeCopiedLabel;
+  final String regenerateLabel;
   final VoidCallback onBack;
   final VoidCallback onEdit;
+  final VoidCallback onRegenerateCode;
 
   const _ClassCoverSliver({
     required this.classId,
@@ -1856,8 +1881,10 @@ class _ClassCoverSliver extends StatelessWidget {
     required this.archivedLabel,
     required this.codeLabel,
     required this.codeCopiedLabel,
+    required this.regenerateLabel,
     required this.onBack,
     required this.onEdit,
+    required this.onRegenerateCode,
   });
 
   @override
@@ -1947,19 +1974,37 @@ class _ClassCoverSliver extends StatelessWidget {
             ],
             if (isTeacher && inviteCode.isNotEmpty) ...[
               const SizedBox(height: 8),
-              GestureDetector(
-                onTap: () { Clipboard.setData(ClipboardData(text: inviteCode)); showToast(context, '$codeCopiedLabel: $inviteCode'); },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(color: adaptivePrimaryLt(context).withValues(alpha: 0.9), borderRadius: BorderRadius.circular(8)),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(CupertinoIcons.doc_on_doc, size: 14, color: primary),
-                    const SizedBox(width: 6),
-                    Text('$codeLabel: ', style: TextStyle(fontSize: 13, color: primary)),
-                    Text(inviteCode, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: primary, letterSpacing: 2)),
-                  ]),
+              Wrap(spacing: 8, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
+                GestureDetector(
+                  onTap: () { Clipboard.setData(ClipboardData(text: inviteCode)); showToast(context, '$codeCopiedLabel: $inviteCode'); },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(color: adaptivePrimaryLt(context).withValues(alpha: 0.9), borderRadius: BorderRadius.circular(8)),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(CupertinoIcons.doc_on_doc, size: 14, color: primary),
+                      const SizedBox(width: 6),
+                      Text('$codeLabel: ', style: TextStyle(fontSize: 13, color: primary)),
+                      Text(inviteCode, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: primary, letterSpacing: 2)),
+                    ]),
+                  ),
                 ),
-              ),
+                GestureDetector(
+                  onTap: onRegenerateCode,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+                    ),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(CupertinoIcons.refresh, size: 13, color: Colors.white),
+                      const SizedBox(width: 6),
+                      Text(regenerateLabel, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white)),
+                    ]),
+                  ),
+                ),
+              ]),
             ],
           ])),
         ]),

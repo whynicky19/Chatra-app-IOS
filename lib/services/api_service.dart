@@ -295,6 +295,13 @@ class ApiService {
   Future<void> joinClass(int classId) async => _dio.post('/classes/$classId/join', data: {});
   Future<void> leaveClass(int classId) async => _dio.delete('/classes/$classId/leave');
 
+  // Перегенерация инвайт-кода класса (владелец/админ). Старый код перестаёт
+  // работать, возвращается новый.
+  Future<String> regenerateInviteCode(int classId) async {
+    final response = await _dio.post('/classes/$classId/regenerate-code', data: {});
+    return (response.data?['invite_code'] ?? '').toString();
+  }
+
   // Студенты из архивных потоков класса, которых можно вернуть в активный поток
   // (для админа/владельца). Возврат — addClassMember.
   Future<List<dynamic>> getRejoinableStudents(int classId) async {

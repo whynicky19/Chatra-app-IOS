@@ -417,6 +417,8 @@ class L10n extends ChangeNotifier {
 
       // ── Connectivity ──
       'no_connection': 'Нет соединения с интернетом',
+      'checking_connection': 'Проверяем подключение…',
+      'swipe_up_hide': 'Смахните вверх, чтобы скрыть',
 
       // ── Class detail extras ──
       'add_first_material': 'Добавьте первый материал',
@@ -988,6 +990,8 @@ class L10n extends ChangeNotifier {
 
       // ── Connectivity ──
       'no_connection': 'Интернет байланысы жоқ',
+      'checking_connection': 'Байланыс тексерілуде…',
+      'swipe_up_hide': 'Жасыру үшін жоғары сырғытыңыз',
 
       // ── Class detail extras ──
       'add_first_material': 'Бірінші материалды қосыңыз',
@@ -1559,6 +1563,8 @@ class L10n extends ChangeNotifier {
 
       // ── Connectivity ──
       'no_connection': 'No internet connection',
+      'checking_connection': 'Checking connection…',
+      'swipe_up_hide': 'Swipe up to hide',
 
       // ── Class detail extras ──
       'add_first_material': 'Add the first material',

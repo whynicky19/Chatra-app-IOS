@@ -27,7 +27,10 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
   late AnimationController _navAnim;
 
   bool _isOnline = true;
+  bool _bannerDismissed = false; // юзер смахнул баннер вручную
   StreamSubscription<List<ConnectivityResult>>? _connectSub;
+  Timer? _offlineDebounce;
+  Timer? _recheckTimer; // пока оффлайн — периодически перепроверяем сеть
 
   @override
   void initState() {
@@ -36,19 +39,55 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
     _navAnim.forward();
     context.read<ChatsProvider>().isScreenVisible = _idx == _chatsTabIndex;
 
-    Connectivity().checkConnectivity().then((results) {
-      if (mounted) setState(() => _isOnline = _online(results));
-    });
-    _connectSub = Connectivity().onConnectivityChanged.listen((results) {
-      if (mounted) setState(() => _isOnline = _online(results));
+    Connectivity().checkConnectivity().then(_applyConnectivity);
+    _connectSub = Connectivity().onConnectivityChanged.listen(_applyConnectivity);
+  }
+
+  // connectivity_plus can briefly report `none` (or an empty list) right after a
+  // screen (re)mounts — e.g. logging into a second account tears down and rebuilds
+  // MainShell — even when the network is perfectly fine. To avoid a false
+  // "no connection" banner: treat an empty result as online, flip to ONLINE
+  // immediately, but only flip to OFFLINE if it stays offline for a few seconds
+  // (a transient `none` is cancelled before the banner ever shows).
+  void _applyConnectivity(List<ConnectivityResult> results) {
+    final online = results.isEmpty || results.any((v) => v != ConnectivityResult.none);
+    _offlineDebounce?.cancel();
+    if (online) {
+      _recheckTimer?.cancel();
+      _recheckTimer = null;
+      if (!_isOnline && mounted) {
+        setState(() {
+          _isOnline = true;
+          _bannerDismissed = false;
+        });
+      }
+    } else {
+      _offlineDebounce = Timer(const Duration(seconds: 3), () {
+        if (mounted && _isOnline) {
+          setState(() {
+            _isOnline = false;
+            _bannerDismissed = false;
+          });
+          _startRecheck();
+        }
+      });
+    }
+  }
+
+  // Поток onConnectivityChanged иногда «пропускает» возврат сети (особенно в
+  // эмуляторе), из-за чего баннер зависал. Пока мы оффлайн — сами опрашиваем
+  // connectivity раз в 2 сек, так что при возврате интернета баннер уходит сам.
+  void _startRecheck() {
+    _recheckTimer?.cancel();
+    _recheckTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+      Connectivity().checkConnectivity().then(_applyConnectivity);
     });
   }
 
-  static bool _online(List<ConnectivityResult> r) =>
-      r.any((v) => v != ConnectivityResult.none);
-
   @override
   void dispose() {
+    _offlineDebounce?.cancel();
+    _recheckTimer?.cancel();
     _connectSub?.cancel();
     _navAnim.dispose();
     super.dispose();
@@ -98,9 +137,41 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
             children: screens,
           ),
         ),
-        if (!_isOnline) Positioned(
+        // Баннер всегда в дереве — переключаем banner↔пусто через
+        // AnimatedSwitcher, поэтому карточка плавно съезжает сверху при
+        // появлении и так же плавно уезжает вверх при восстановлении сети.
+        Positioned(
           top: 0, left: 0, right: 0,
-          child: _OfflineBanner(message: l.t('no_connection')),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 340),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            layoutBuilder: (currentChild, previousChildren) => Stack(
+              alignment: Alignment.topCenter,
+              children: [
+                ...previousChildren,
+                if (currentChild != null) currentChild,
+              ],
+            ),
+            transitionBuilder: (child, anim) => FadeTransition(
+              opacity: anim,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, -1),
+                  end: Offset.zero,
+                ).animate(anim),
+                child: child,
+              ),
+            ),
+            child: (_isOnline || _bannerDismissed)
+                ? const SizedBox.shrink(key: ValueKey('online'))
+                : _OfflineBanner(
+                    key: const ValueKey('offline'),
+                    title: l.t('no_connection'),
+                    subtitle: l.t('checking_connection'),
+                    onDismiss: () => setState(() => _bannerDismissed = true),
+                  ),
+          ),
         ),
         Positioned(
           left: 16, right: 16, bottom: 16,
@@ -397,33 +468,171 @@ class _LazyIndexedStackState extends State<_LazyIndexedStack> {
 //  Offline Banner
 // ─────────────────────────────────────────────────────────
 class _OfflineBanner extends StatelessWidget {
-  final String message;
-  const _OfflineBanner({required this.message});
+  final String title;
+  final String subtitle;
+  final VoidCallback onDismiss;
+  const _OfflineBanner({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.onDismiss,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final topPad = MediaQuery.of(context).padding.top;
-    return Material(
-      color: Colors.transparent,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-        color: const Color(0xFFB71C1C),
-        padding: EdgeInsets.fromLTRB(16, topPad + 6, 16, 8),
-        child: Row(children: [
-          const Icon(CupertinoIcons.wifi_slash, size: 16, color: Colors.white),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+    // A calm liquid-glass pill instead of a harsh full-bleed red bar — matches
+    // the app's nav-bar language (frosted blur, soft shadow, subtle red accent).
+    // Slide/fade in-and-out is driven by the parent AnimatedSwitcher; a swipe-up
+    // gesture dismisses it manually (onDismiss triggers the same exit animation).
+    final glass = isDark
+        ? Colors.white.withValues(alpha: 0.10)
+        : Colors.white.withValues(alpha: 0.72);
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, topPad + 8, 16, 0),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        // Смахивание вверх — скрыть; вниз игнорируем.
+        onVerticalDragEnd: (d) {
+          if ((d.primaryVelocity ?? 0) < -80) onDismiss();
+        },
+        child: Material(
+          color: Colors.transparent,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadii.card),
+              boxShadow: cardShadow(isDark),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadii.card),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 11),
+                  decoration: BoxDecoration(
+                    color: glass,
+                    borderRadius: BorderRadius.circular(AppRadii.card),
+                    border: Border.all(
+                      color: C.red.withValues(alpha: isDark ? 0.32 : 0.20),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Grabber — намёк, что окно можно смахнуть вверх.
+                      Container(
+                        width: 34, height: 4,
+                        decoration: BoxDecoration(
+                          color: (isDark ? C.darkText2 : C.text3)
+                              .withValues(alpha: 0.35),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(children: [
+                        Container(
+                          width: 34, height: 34,
+                          decoration: BoxDecoration(
+                            color: C.red.withValues(alpha: isDark ? 0.22 : 0.14),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(CupertinoIcons.wifi_slash,
+                              size: 16, color: C.red),
+                        ),
+                        const SizedBox(width: 11),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                title,
+                                style: TextStyle(
+                                  color: adaptiveText1(context),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.2,
+                                ),
+                              ),
+                              const SizedBox(height: 1),
+                              Row(children: [
+                                _PulsingDot(),
+                                const SizedBox(width: 6),
+                                Text(
+                                  subtitle,
+                                  style: TextStyle(
+                                    color: isDark ? C.darkText2 : C.text3,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ]),
+                            ],
+                          ),
+                        ),
+                        // Явная кнопка-крестик для тех, кто не догадается про свайп.
+                        GestureDetector(
+                          onTap: onDismiss,
+                          behavior: HitTestBehavior.opaque,
+                          child: Padding(
+                            padding: const EdgeInsets.all(4),
+                            child: Icon(
+                              CupertinoIcons.xmark,
+                              size: 15,
+                              color: (isDark ? C.darkText2 : C.text3),
+                            ),
+                          ),
+                        ),
+                      ]),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
-        ]),
+        ),
+      ),
+    );
+  }
+}
+
+// Мягко пульсирующая точка рядом с «Проверяем подключение…» — живой индикатор.
+class _PulsingDot extends StatefulWidget {
+  @override
+  State<_PulsingDot> createState() => _PulsingDotState();
+}
+
+class _PulsingDotState extends State<_PulsingDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: Tween<double>(begin: 0.35, end: 1.0).animate(
+        CurvedAnimation(parent: _c, curve: Curves.easeInOut),
+      ),
+      child: Container(
+        width: 6, height: 6,
+        decoration: const BoxDecoration(
+          color: C.red,
+          shape: BoxShape.circle,
+        ),
       ),
     );
   }

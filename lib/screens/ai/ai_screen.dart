@@ -534,9 +534,10 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Input bar — isolated StatefulWidget so keystrokes don't rebuild the whole screen
+// Input bar — isolated widget; keystrokes rebuild ONLY the send button (via a
+// ValueListenableBuilder on the controller), not the whole bar or screen.
 // ─────────────────────────────────────────────────────────────────────────────
-class _AiInputBar extends StatefulWidget {
+class _AiInputBar extends StatelessWidget {
   final TextEditingController ctrl;
   final bool loading;
   final VoidCallback onSend;
@@ -544,39 +545,10 @@ class _AiInputBar extends StatefulWidget {
   const _AiInputBar({required this.ctrl, required this.loading, required this.onSend});
 
   @override
-  State<_AiInputBar> createState() => _AiInputBarState();
-}
-
-class _AiInputBarState extends State<_AiInputBar> {
-  @override
-  void initState() {
-    super.initState();
-    widget.ctrl.addListener(_onCtrlChange);
-  }
-
-  @override
-  void didUpdateWidget(_AiInputBar old) {
-    super.didUpdateWidget(old);
-    if (old.ctrl != widget.ctrl) {
-      old.ctrl.removeListener(_onCtrlChange);
-      widget.ctrl.addListener(_onCtrlChange);
-    }
-  }
-
-  @override
-  void dispose() {
-    widget.ctrl.removeListener(_onCtrlChange);
-    super.dispose();
-  }
-
-  void _onCtrlChange() => setState(() {});
-
-  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = Theme.of(context).colorScheme.surface;
     final l = context.read<L10n>();
-    final hasText = widget.ctrl.text.trim().isNotEmpty;
     final isKZ = l.lang == 'KZ';
     final isEN = l.lang == 'EN';
     final hint = isKZ ? 'Chatra AI-дан сұраңыз...' : isEN ? 'Ask Chatra AI...' : 'Спросите Chatra AI...';
@@ -600,7 +572,7 @@ class _AiInputBarState extends State<_AiInputBar> {
               boxShadow: softShadow(isDark),
             ),
             child: TextField(
-              controller: widget.ctrl,
+              controller: ctrl,
               decoration: InputDecoration(
                 hintText: hint,
                 hintStyle: const TextStyle(color: C.text4, fontSize: 15),
@@ -610,43 +582,50 @@ class _AiInputBarState extends State<_AiInputBar> {
                 filled: false,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
               ),
-              onSubmitted: (_) => widget.onSend(),
+              onSubmitted: (_) => onSend(),
               maxLines: 4,
               minLines: 1,
             ),
           ),
         ),
         const SizedBox(width: 10),
-        GestureDetector(
-          onTap: widget.onSend,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutCubic,
-            width: 46, height: 46,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: hasText && !widget.loading
-                  ? Theme.of(context).colorScheme.primary
-                  : surface,
-              boxShadow: hasText && !widget.loading
-                  ? primaryGlow(Theme.of(context).colorScheme.primary, opacity: 0.32)
-                  : softShadow(isDark),
-            ),
-            child: widget.loading
-                ? Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Theme.of(context).colorScheme.primary)))
-                : AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 180),
-                    switchInCurve: Curves.easeOutBack,
-                    switchOutCurve: Curves.easeIn,
-                    transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
-                    child: Icon(
-                      CupertinoIcons.arrow_up,
-                      key: ValueKey(hasText),
-                      color: hasText ? Colors.white : C.text4,
-                      size: 21,
-                    ),
-                  ),
-          ),
+        // Rebuilds on each keystroke via the controller's own notifier — but only
+        // this button subtree, not the Container/TextField above it.
+        ValueListenableBuilder<TextEditingValue>(
+          valueListenable: ctrl,
+          builder: (context, value, _) {
+            final hasText = value.text.trim().isNotEmpty;
+            final active = hasText && !loading;
+            return GestureDetector(
+              onTap: onSend,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                width: 46, height: 46,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: active ? Theme.of(context).colorScheme.primary : surface,
+                  boxShadow: active
+                      ? primaryGlow(Theme.of(context).colorScheme.primary, opacity: 0.32)
+                      : softShadow(isDark),
+                ),
+                child: loading
+                    ? Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Theme.of(context).colorScheme.primary)))
+                    : AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 180),
+                        switchInCurve: Curves.easeOutBack,
+                        switchOutCurve: Curves.easeIn,
+                        transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+                        child: Icon(
+                          CupertinoIcons.arrow_up,
+                          key: ValueKey(hasText),
+                          color: hasText ? Colors.white : C.text4,
+                          size: 21,
+                        ),
+                      ),
+              ),
+            );
+          },
         ),
       ]),
     );

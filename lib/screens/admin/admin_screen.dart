@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -50,9 +51,15 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     _initAll();
   }
 
-  @override void dispose() { _tabCtrl.dispose(); super.dispose(); }
+  Timer? _searchDebounce;
 
-  Future<void> _initAll() async { await _load(); await _loadClasses(); await _loadAi(); }
+  @override void dispose() { _searchDebounce?.cancel(); _tabCtrl.dispose(); super.dispose(); }
+
+  // The three loads are independent — run them in parallel so each tab appears
+  // as its own data arrives instead of waiting for the previous request.
+  Future<void> _initAll() async {
+    await Future.wait([_load(), _loadClasses(), _loadAi()]);
+  }
 
   Future<void> _load() async {
     setState(() => _loading = true);
@@ -318,7 +325,15 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               child: Icon(CupertinoIcons.search, size: 18, color: C.text4)),
             contentPadding: const EdgeInsets.symmetric(vertical: 12),
           ),
-          onChanged: (v) => setState(() => _search = v),
+          // Debounced: the field stays responsive, but filtering (which rebuilds
+          // the whole admin screen, incl. the AI/classes tabs) fires only after a
+          // short pause instead of on every keystroke.
+          onChanged: (v) {
+            _searchDebounce?.cancel();
+            _searchDebounce = Timer(const Duration(milliseconds: 250), () {
+              if (mounted) setState(() => _search = v);
+            });
+          },
         ),
       ),
       Expanded(child: _loading

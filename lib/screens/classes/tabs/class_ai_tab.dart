@@ -340,7 +340,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isDark ? C.darkSurface : Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppRadii.card),
           boxShadow: cardShadow(isDark),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

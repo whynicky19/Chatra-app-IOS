@@ -301,7 +301,7 @@ class _CreateAvatarBanner extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
           gradient: LinearGradient(colors: [const Color(0xFF006475), primary], begin: Alignment.topLeft, end: Alignment.bottomRight),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppRadii.card),
           boxShadow: primaryGlow(primary, opacity: 0.32),
         ),
         child: Stack(children: [
@@ -347,7 +347,7 @@ class _ApprovedAvatarCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadii.card),
         boxShadow: cardShadow(isDark),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -438,7 +438,7 @@ class _LectureCard extends StatelessWidget {
                       ? LinearGradient(colors: [statusColor, statusColor.withValues(alpha: 0.75)], begin: Alignment.topLeft, end: Alignment.bottomRight)
                       : null,
                   color: lecture.isReady ? null : statusColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppRadii.tile),
                   boxShadow: lecture.isReady ? [BoxShadow(color: statusColor.withValues(alpha: 0.32), blurRadius: 10, offset: const Offset(0, 3))] : null,
                 ),
                 child: Icon(lecture.isReady ? CupertinoIcons.play_fill : statusIcon, color: lecture.isReady ? Colors.white : statusColor, size: 20)),
@@ -463,7 +463,7 @@ class _LectureCard extends StatelessWidget {
                   child: Container(
                     margin: const EdgeInsets.only(left: 6),
                     padding: const EdgeInsets.all(7),
-                    decoration: BoxDecoration(color: C.red.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(10)),
+                    decoration: BoxDecoration(color: C.red.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(AppRadii.chip)),
                     child: const Icon(CupertinoIcons.trash, size: 15, color: C.red),
                   ),
                 )

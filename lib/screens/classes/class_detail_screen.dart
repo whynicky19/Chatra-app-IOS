@@ -104,7 +104,15 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       final rawUrl = clsData['cover_image'];
       if (rawUrl != null && rawUrl.toString().isNotEmpty && !rawUrl.toString().startsWith('data:')) {
         final url = context.read<ApiService>().fixUrl(rawUrl.toString());
-        precacheImage(CachedNetworkImageProvider(url, cacheKey: 'class_cover_${widget.classId}'), context);
+        // Prime the SAME resized entry the cover widget uses (memCacheWidth: 800),
+        // otherwise precache would decode a second, full-resolution bitmap.
+        precacheImage(
+          ResizeImage(
+            CachedNetworkImageProvider(url, cacheKey: 'class_cover_${widget.classId}'),
+            width: 800,
+          ),
+          context,
+        );
       }
     }
   }
@@ -532,7 +540,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                       onTap: () => _createAssignment(),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 11),
-                        decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(13), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.28))),
+                        decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.28))),
                         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                           Icon(CupertinoIcons.doc, size: 15, color: Theme.of(context).colorScheme.primary),
                           const SizedBox(width: 6),
@@ -545,7 +553,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                       onTap: () => _showAddMenu(),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 11),
-                        decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary]), borderRadius: BorderRadius.circular(13), boxShadow: primaryGlow(Theme.of(context).colorScheme.primary, opacity: 0.28)),
+                        decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary]), borderRadius: BorderRadius.circular(AppRadii.tile), boxShadow: primaryGlow(Theme.of(context).colorScheme.primary, opacity: 0.28)),
                         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                           const Icon(CupertinoIcons.plus, size: 16, color: Colors.white),
                           const SizedBox(width: 6),
@@ -635,7 +643,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 return Container(
                   margin: EdgeInsets.only(bottom: 6),
                   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(10)),
+                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(AppRadii.chip)),
                   child: Row(children: [
                     Icon(CupertinoIcons.doc, size: 14, color: Theme.of(context).colorScheme.primary),
                     SizedBox(width: 6),
@@ -1000,7 +1008,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                             ])),
                             Container(
                               width: 34, height: 34,
-                              decoration: BoxDecoration(color: fileColor.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(10)),
+                              decoration: BoxDecoration(color: fileColor.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(AppRadii.chip)),
                               child: Icon(CupertinoIcons.arrow_up_right_square, size: 16, color: fileColor),
                             ),
                           ]),
@@ -1066,7 +1074,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           SizedBox(height: 16),
           // Header
           Row(children: [
-            Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(14)),
+            Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: Icon(CupertinoIcons.book, color: Theme.of(context).colorScheme.primary, size: 22)),
             SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1077,7 +1085,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           ]),
           SizedBox(height: 20),
           // Type toggle
-          Container(decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(14)),
+          Container(decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(AppRadii.tile)),
             child: Row(children: [
               Expanded(child: GestureDetector(onTap: () => setS(() => type = 'lecture'),
                 child: Container(padding: EdgeInsets.symmetric(vertical: 12), decoration: BoxDecoration(color: type == 'lecture' ? Theme.of(ctx).colorScheme.surface : Colors.transparent, borderRadius: BorderRadius.circular(12)),
@@ -1098,7 +1106,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           GestureDetector(onTap: () async {
             final result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
             if (result != null) setS(() => lectureFiles.addAll(result.files));
-          }, child: Container(padding: EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3))),
+          }, child: Container(padding: EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3))),
             child: Column(children: [
               Icon(CupertinoIcons.arrow_up_doc, size: 24, color: Theme.of(context).colorScheme.primary), SizedBox(height: 6),
               RichText(text: TextSpan(style: TextStyle(fontSize: 13, color: C.text4), children: [TextSpan(text: 'Нажмите или '), TextSpan(text: 'выберите файлы', style: TextStyle(fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary))])),
@@ -1106,7 +1114,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             ]))),
           if (lectureFiles.isNotEmpty) ...[SizedBox(height: 8),
             ...lectureFiles.map((f) => Container(margin: EdgeInsets.only(bottom: 4), padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(AppRadii.chip)),
               child: Row(children: [Icon(CupertinoIcons.doc_text, size: 14, color: Theme.of(context).colorScheme.primary), SizedBox(width: 6), Expanded(child: Text(f.name, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary), overflow: TextOverflow.ellipsis)), GestureDetector(onTap: () => setS(() => lectureFiles.remove(f)), child: Icon(CupertinoIcons.xmark, size: 14, color: C.text4))])))],
           SizedBox(height: 20),
           Row(children: [
@@ -1153,7 +1161,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => DraggableScrollableSheet(expand: false, initialChildSize: 0.9, maxChildSize: 0.95,
         builder: (ctx, scroll) => ListView(controller: scroll, padding: EdgeInsets.all(24), children: [
           Row(children: [
-            Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(14)),
+            Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: Icon(CupertinoIcons.pencil, color: Theme.of(context).colorScheme.primary, size: 22)),
             SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1180,7 +1188,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               setS(() => deadline = DateTime(d.year, d.month, d.day, t?.hour ?? 23, t?.minute ?? 59));
             }
           }, child: Container(padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(14)),
+            decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(AppRadii.tile)),
             child: Row(children: [
               Text(deadline != null ? '${deadline!.day.toString().padLeft(2, '0')}.${deadline!.month.toString().padLeft(2, '0')}.${deadline!.year} ${deadline!.hour.toString().padLeft(2, '0')}:${deadline!.minute.toString().padLeft(2, '0')}' : 'ДД.ММ.ГГГГ --:--', style: TextStyle(fontSize: 14, color: deadline != null ? null : C.text4)),
               Spacer(), Icon(CupertinoIcons.calendar, size: 18, color: C.text4),
@@ -1217,7 +1225,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           Container(padding: EdgeInsets.all(16), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.04), borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15))),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                Container(width: 36, height: 36, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                Container(width: 36, height: 36, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.chip)),
                   child: Icon(CupertinoIcons.checkmark_circle, size: 18, color: Theme.of(context).colorScheme.primary)),
                 SizedBox(width: 10),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1230,7 +1238,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 final result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
                 if (result != null) setS(() => referenceFiles.addAll(result.files));
               },
-              child: Container(padding: EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3))),
+              child: Container(padding: EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3))),
                 child: Column(children: [
                   Icon(CupertinoIcons.arrow_up_doc, size: 28, color: Theme.of(context).colorScheme.primary),
                   SizedBox(height: 6),
@@ -1240,7 +1248,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               if (referenceFiles.isNotEmpty) ...[
                 SizedBox(height: 8),
                 ...referenceFiles.map((f) => Container(margin: EdgeInsets.only(bottom: 4), padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(10)),
+                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(AppRadii.chip)),
                   child: Row(children: [Icon(CupertinoIcons.doc_text, size: 14, color: Theme.of(context).colorScheme.primary), SizedBox(width: 6), Expanded(child: Text(f.name, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary), overflow: TextOverflow.ellipsis)), GestureDetector(onTap: () => setS(() => referenceFiles.remove(f)), child: Icon(CupertinoIcons.xmark, size: 14, color: C.text4))]))),
               ],
             ])),
@@ -1260,7 +1268,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             final weightC = TextEditingController(text: '${criteria[i]['weight']}');
             final descC = TextEditingController(text: criteria[i]['desc'] ?? '');
             return Container(margin: EdgeInsets.only(bottom: 10), padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(14)),
+              decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: Column(children: [
                 Row(children: [
                   Text('${i + 1}', style: TextStyle(fontSize: 12, color: C.text4)),
@@ -1376,7 +1384,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
         expand: false, initialChildSize: 0.9, maxChildSize: 0.95,
         builder: (ctx, scroll) => ListView(controller: scroll, padding: EdgeInsets.all(24), children: [
           Row(children: [
-            Container(width: 44, height: 44, decoration: BoxDecoration(color: Color(0xFFF59E0B).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(14)),
+            Container(width: 44, height: 44, decoration: BoxDecoration(color: Color(0xFFF59E0B).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: Icon(CupertinoIcons.pencil, color: Color(0xFFF59E0B), size: 22)),
             SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1403,7 +1411,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               setS(() => deadline = DateTime(d.year, d.month, d.day, t?.hour ?? 23, t?.minute ?? 59));
             }
           }, child: Container(padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(14)),
+            decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(AppRadii.tile)),
             child: Row(children: [
               Text(deadline != null ? '${deadline!.day.toString().padLeft(2,'0')}.${deadline!.month.toString().padLeft(2,'0')}.${deadline!.year} ${deadline!.hour.toString().padLeft(2,'0')}:${deadline!.minute.toString().padLeft(2,'0')}' : 'ДД.ММ.ГГГГ --:--', style: TextStyle(fontSize: 14, color: deadline != null ? null : C.text4)),
               Spacer(), Icon(CupertinoIcons.calendar, size: 18, color: C.text4),
@@ -1465,7 +1473,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             final weightC = TextEditingController(text: '${criteria[i]['weight']}');
             final descC   = TextEditingController(text: criteria[i]['desc'] ?? '');
             return Container(margin: EdgeInsets.only(bottom: 10), padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(14)),
+              decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: Column(children: [
                 Row(children: [
                   Text('${i+1}', style: TextStyle(fontSize: 12, color: C.text4)), SizedBox(width: 8),
@@ -1484,7 +1492,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             onTap: () => _showVariantsSheet((a['id'] as num).toInt()),
             child: Container(
               padding: EdgeInsets.all(14),
-              decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(14)),
+              decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: Row(children: [
                 Icon(CupertinoIcons.square_stack, size: 18, color: Theme.of(context).colorScheme.primary),
                 SizedBox(width: 10),
@@ -1623,7 +1631,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                       ...variants!.map((v) {
                         final vid = (v['id'] as num?)?.toInt();
                         return Container(margin: EdgeInsets.only(bottom: 8), padding: EdgeInsets.all(14),
-                          decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(14)),
+                          decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
                           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                               Text((v['title'] ?? '').toString(), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
@@ -1697,7 +1705,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
         builder: (ctx, scroll) => ListView(controller: scroll, padding: EdgeInsets.all(24), children: [
           // Header
           Row(children: [
-            Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(14)),
+            Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: Icon(CupertinoIcons.pencil, color: Theme.of(context).colorScheme.primary, size: 22)),
             SizedBox(width: 12),
             Expanded(child: Text('Редактировать класс', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800))),
@@ -1724,7 +1732,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     return bytes != null ? Image.memory(bytes, fit: BoxFit.cover, gaplessPlayback: true) : Container(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1));
                   })
                 else if (!coverRemoved && existingCover != null)
-                  CachedNetworkImage(imageUrl: context.read<ApiService>().fixUrl(existingCover), fit: BoxFit.cover, fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero, placeholder: (_, __) => const SizedBox.shrink(), errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF006475), Theme.of(context).colorScheme.primary]))))
+                  CachedNetworkImage(imageUrl: context.read<ApiService>().fixUrl(existingCover), fit: BoxFit.cover, memCacheWidth: 800, fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero, placeholder: (_, __) => const SizedBox.shrink(), errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF006475), Theme.of(context).colorScheme.primary]))))
                 else
                   Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF006475), Theme.of(context).colorScheme.primary], begin: Alignment.topLeft, end: Alignment.bottomRight))),
                 // Overlay
@@ -1900,6 +1908,9 @@ class _ClassCoverSliver extends StatelessWidget {
         cacheKey: 'class_cover_$classId',
         fit: BoxFit.cover,
         alignment: Alignment.topCenter,
+        // Matches the home card's memCacheWidth (same cacheKey) so both screens
+        // reuse one decoded bitmap rather than decoding the full upload twice.
+        memCacheWidth: 800,
         fadeInDuration: Duration.zero,
         fadeOutDuration: Duration.zero,
         placeholder: (_, __) => const SizedBox.shrink(),
@@ -1926,18 +1937,27 @@ class _ClassCoverSliver extends StatelessWidget {
       forceMaterialTransparency: true,
       leading: IconButton(
         padding: EdgeInsets.zero,
-        icon: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(10)), child: const Icon(CupertinoIcons.chevron_left, color: Colors.white, size: 20)),
+        icon: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(AppRadii.chip)), child: const Icon(CupertinoIcons.chevron_left, color: Colors.white, size: 20)),
         onPressed: onBack,
       ),
       actions: [
         if (isTeacher) IconButton(
           padding: EdgeInsets.zero,
-          icon: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(10)), child: const Icon(CupertinoIcons.pencil, color: Colors.white70, size: 18)),
+          icon: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(AppRadii.chip)), child: const Icon(CupertinoIcons.pencil, color: Colors.white70, size: 18)),
           onPressed: onEdit,
         ),
         const SizedBox(width: 8),
       ],
-      flexibleSpace: FlexibleSpaceBar(
+      flexibleSpace: LayoutBuilder(builder: (context, constraints) {
+        final topPad = MediaQuery.of(context).padding.top;
+        // settle: 1 = fully expanded, 0 = collapsed to the toolbar.
+        final settle = ((constraints.maxHeight - kToolbarHeight - topPad) /
+                (220 - kToolbarHeight))
+            .clamp(0.0, 1.0);
+        // Collapsed title only fades in over the last ~30% of the collapse, so
+        // the big cover title and the pinned toolbar title never both show.
+        final collapsedTitleOpacity = ((0.3 - settle) / 0.3).clamp(0.0, 1.0);
+        return FlexibleSpaceBar(
         collapseMode: CollapseMode.pin,
         titlePadding: EdgeInsets.zero,
         background: Stack(fit: StackFit.expand, children: [
@@ -1951,7 +1971,16 @@ class _ClassCoverSliver extends StatelessWidget {
             stops: [0.0, 0.4, 1.0],
             colors: [Colors.black38, Colors.transparent, Colors.black54],
           ))),
-          Positioned(bottom: 16, left: 16, right: 16, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          // Pinned toolbar title — appears centered only once collapsed.
+          if (collapsedTitleOpacity > 0)
+            Positioned(top: topPad, left: 56, right: 56, height: kToolbarHeight,
+              child: Opacity(opacity: collapsedTitleOpacity, child: Center(
+                child: Text(title,
+                  maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white,
+                    shadows: [Shadow(color: Colors.black54, blurRadius: 6)])),
+              ))),
+          Positioned(bottom: 16, left: 16, right: 16, child: Opacity(opacity: settle, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             if (isArchived) ...[
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -2006,9 +2035,10 @@ class _ClassCoverSliver extends StatelessWidget {
                 ),
               ]),
             ],
-          ])),
+          ]))),
         ]),
-      ),
+      );
+      }),
     );
   }
 }

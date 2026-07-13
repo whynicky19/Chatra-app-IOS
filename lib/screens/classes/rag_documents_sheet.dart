@@ -153,7 +153,7 @@ class _RagDocumentsSheetState extends State<_RagDocumentsSheet> {
                       final date = _fmtDate(doc['created_at']?.toString());
                       return Container(
                         padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(14), boxShadow: softShadow(isDark)),
+                        decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(AppRadii.tile), boxShadow: softShadow(isDark)),
                         child: Row(children: [
                           Container(width: 40, height: 40, decoration: BoxDecoration(color: primary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(11)),
                             child: Icon(CupertinoIcons.doc_text, color: primary, size: 18)),

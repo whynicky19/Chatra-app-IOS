@@ -65,7 +65,7 @@ class ClassPostsTab extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: 34, height: 34,
-        decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(10)),
+        decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(AppRadii.chip)),
         child: Icon(ic, size: 17, color: C.text4),
       ),
     );
@@ -109,7 +109,7 @@ class ClassPostsTab extends StatelessWidget {
           onTap: () => onShowPost(p, type, num),
           child: Container(
             margin: EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(20), boxShadow: cardShadow(isDark)),
+            decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(AppRadii.card), boxShadow: cardShadow(isDark)),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Padding(padding: EdgeInsets.fromLTRB(16, 16, 14, 14), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Container(width: 54, height: 54,

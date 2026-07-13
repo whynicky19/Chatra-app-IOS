@@ -144,7 +144,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text(l.t('deadlines'), style: TextStyle(
                           fontSize: 28, fontWeight: FontWeight.w700,
-                          color: adaptiveText1(context), letterSpacing: -0.6, height: 1.1,
+                          color: adaptiveText1(context), letterSpacing: -0.4, height: 1.1,
                         )),
                         Text(
                           _deadlineMap.isEmpty
@@ -178,7 +178,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
       decoration: BoxDecoration(
         color: surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadii.card),
         boxShadow: cardShadow(isDark),
       ),
       child: Column(children: [
@@ -289,7 +289,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       width: 32, height: 32,
       decoration: BoxDecoration(
         color: adaptiveSurface2(context),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadii.chip),
       ),
       child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
     ),
@@ -405,7 +405,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(10)),
+                borderRadius: BorderRadius.circular(AppRadii.chip)),
               child: Text('${items.length}', style: TextStyle(
                 fontSize: 10, fontWeight: FontWeight.w800,
                 color: Theme.of(context).colorScheme.primary)),

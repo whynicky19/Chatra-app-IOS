@@ -213,7 +213,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                   width: 46, height: 46,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(colors: [primary, Theme.of(context).colorScheme.secondary]),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(AppRadii.tile),
                     boxShadow: primaryGlow(primary, opacity: 0.32),
                   ),
                   child: const Icon(CupertinoIcons.shield_fill, color: Colors.white, size: 22),
@@ -278,7 +278,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                     padding: const EdgeInsets.only(left: 6),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                      decoration: BoxDecoration(color: C.red, borderRadius: BorderRadius.circular(10)),
+                      decoration: BoxDecoration(color: C.red, borderRadius: BorderRadius.circular(AppRadii.chip)),
                       child: Text('$_avatarsPendingCount', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800)),
                     ),
                   ),
@@ -383,7 +383,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                         child: Container(
                           width: 34, height: 34,
                           margin: const EdgeInsets.only(left: 4),
-                          decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(10)),
+                          decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
                           child: const Icon(CupertinoIcons.ellipsis, size: 17, color: C.text4),
                         ),
                       ),
@@ -421,12 +421,12 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, primary], begin: Alignment.topLeft, end: Alignment.bottomRight),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppRadii.card),
             boxShadow: primaryGlow(primary, opacity: 0.32),
           ),
           child: Row(children: [
             Container(width: 48, height: 48,
-              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(14)),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: const Icon(CupertinoIcons.bolt_fill, color: Colors.white, size: 26)),
             const SizedBox(width: 16),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -438,7 +438,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               onTap: _loadAi,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(10)),
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(AppRadii.chip)),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
                   const Icon(CupertinoIcons.arrow_counterclockwise, size: 14, color: Colors.white),
                   const SizedBox(width: 4),
@@ -699,7 +699,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               onTap: () => _showStudentsSheet(classId, title, coverImg, i),
               child: Container(
                 margin: const EdgeInsets.only(bottom: 14),
-                decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(20), boxShadow: cardShadow(isDark)),
+                decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(AppRadii.card), boxShadow: cardShadow(isDark)),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   // Cover
                   ClipRRect(
@@ -713,7 +713,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                         )))),
                         Positioned(top: 10, right: 10, child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.52), borderRadius: BorderRadius.circular(20)),
+                          decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.52), borderRadius: BorderRadius.circular(AppRadii.card)),
                           child: Row(mainAxisSize: MainAxisSize.min, children: [
                             const Icon(CupertinoIcons.person_2, size: 13, color: Colors.white),
                             const SizedBox(width: 4),
@@ -850,7 +850,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                   child: Container(
                     width: 36, height: 36,
                     margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(color: primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                    decoration: BoxDecoration(color: primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.chip)),
                     child: Icon(CupertinoIcons.person_badge_plus, size: 18, color: primary),
                   ),
                 ),
@@ -858,7 +858,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                   onTap: doRefresh,
                   child: Container(
                     width: 36, height: 36,
-                    decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(10)),
+                    decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
                     child: Icon(CupertinoIcons.arrow_counterclockwise, size: 18, color: primary),
                   ),
                 ),
@@ -911,7 +911,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: Theme.of(context).colorScheme.surface,
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(AppRadii.tile),
                             boxShadow: softShadow(isDark),
                           ),
                           child: Row(children: [
@@ -1026,7 +1026,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: Theme.of(context).colorScheme.surface,
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(AppRadii.tile),
                             boxShadow: softShadow(isDark),
                           ),
                           child: Row(children: [
@@ -1137,7 +1137,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
                 color: selected ? color.withValues(alpha: 0.12) : adaptiveSurface2(ctx),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(AppRadii.tile),
                 border: Border.all(color: selected ? color : Colors.transparent, width: 1.5),
               ),
               child: Column(children: [
@@ -1155,10 +1155,10 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             child: Container(
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(color: adaptiveSurface2(ctx).withValues(alpha: 0.6), borderRadius: BorderRadius.circular(14)),
+              decoration: BoxDecoration(color: adaptiveSurface2(ctx).withValues(alpha: 0.6), borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: Row(children: [
                 Container(width: 36, height: 36,
-                  decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                  decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.chip)),
                   child: Icon(icon, size: 18, color: color)),
                 const SizedBox(width: 12),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1370,7 +1370,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-            decoration: BoxDecoration(color: C.red.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(color: C.red.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(AppRadii.chip)),
             child: Row(children: [
               const Icon(CupertinoIcons.exclamationmark_circle, size: 15, color: C.red),
               const SizedBox(width: 7),
@@ -1411,7 +1411,7 @@ class _StatCard extends StatelessWidget {
       boxShadow: softShadow(isDark),
     ),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Container(width: 34, height: 34, decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+      Container(width: 34, height: 34, decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.chip)),
         child: Icon(icon, size: 17, color: color)),
       const SizedBox(height: 8),
       Text(value, style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: adaptiveText1(context), height: 1)),
@@ -1432,7 +1432,7 @@ class _RoleBadge extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(right: 4),
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(AppRadii.card)),
       child: Text(role, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: color)),
     );
   }

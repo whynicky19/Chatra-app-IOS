@@ -144,7 +144,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
         // Header
         Padding(padding: const EdgeInsets.fromLTRB(20, 24, 20, 0), child: Row(children: [
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(l.t('messages_title'), style: TextStyle(fontSize: 30, fontWeight: FontWeight.w700, color: adaptiveText1(context), letterSpacing: -0.8)),
+            Text(l.t('messages_title'), style: TextStyle(fontSize: 34, fontWeight: FontWeight.w700, color: adaptiveText1(context), letterSpacing: -0.4)),
             Text(l.t('your_conversations'), style: const TextStyle(fontSize: 13, color: C.text4)),
           ])),
         ])),
@@ -243,7 +243,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
                         margin: const EdgeInsets.only(bottom: 8),
                         decoration: BoxDecoration(
                           color: const Color(0xFFEF4444),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(AppRadii.card),
                         ),
                         alignment: Alignment.centerRight,
                         padding: const EdgeInsets.only(right: 24),
@@ -278,7 +278,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
                           margin: const EdgeInsets.only(bottom: 8),
                           decoration: BoxDecoration(
                             color: surface,
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(AppRadii.card),
                             boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04), blurRadius: 10, offset: const Offset(0, 2))],
                           ),
                           child: Padding(padding: const EdgeInsets.all(14), child: Row(children: [
@@ -514,7 +514,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
     onTap: onTap,
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(color: adaptiveSurface2(ctx), borderRadius: BorderRadius.circular(14)),
+      decoration: BoxDecoration(color: adaptiveSurface2(ctx), borderRadius: BorderRadius.circular(AppRadii.tile)),
       child: Row(children: [
         Container(width: 40, height: 40, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
           child: Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary)),

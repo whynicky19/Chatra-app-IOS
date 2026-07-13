@@ -163,7 +163,7 @@ class _AdminAvatarsTabState extends State<AdminAvatarsTab> with SingleTickerProv
     return Column(children: [
       Container(
         margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-        decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(14), boxShadow: softShadow(isDark)),
+        decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(AppRadii.tile), boxShadow: softShadow(isDark)),
         child: TabBar(
           controller: _subTabCtrl,
           labelColor: primary,
@@ -241,7 +241,7 @@ class _AdminAvatarsTabState extends State<AdminAvatarsTab> with SingleTickerProv
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(color: selected ? primary : adaptiveSurface2(context), borderRadius: BorderRadius.circular(10)),
+        decoration: BoxDecoration(color: selected ? primary : adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
         child: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: selected ? Colors.white : C.text3)),
       ),
     );
@@ -293,7 +293,7 @@ class _AvatarRequestCard extends StatelessWidget {
             child: Text(avatar.rejectionReason!, style: const TextStyle(fontSize: 12, color: C.red, height: 1.4))),
         if (avatar.isApproved && avatar.voiceCloneWarning != null && avatar.voiceCloneWarning!.isNotEmpty)
           Padding(padding: const EdgeInsets.only(top: 8),
-            child: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: C.amber.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+            child: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: C.amber.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppRadii.chip)),
               child: Row(children: [
                 const Icon(CupertinoIcons.exclamationmark_triangle_fill, size: 14, color: C.amber),
                 const SizedBox(width: 6),
@@ -312,7 +312,7 @@ class _AvatarRequestCard extends StatelessWidget {
             const SizedBox(width: 8),
           ],
           GestureDetector(onTap: onDelete, child: Container(padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: C.red.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(color: C.red.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(AppRadii.chip)),
             child: const Icon(CupertinoIcons.trash, size: 16, color: C.red))),
         ]),
       ]),
@@ -380,7 +380,7 @@ class _AdminLectureCard extends StatelessWidget {
               ),
               child: Row(children: [
                 Container(width: 36, height: 36,
-                  decoration: BoxDecoration(color: primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                  decoration: BoxDecoration(color: primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.chip)),
                   child: Icon(
                     (lecture.sourceFilename ?? '').toLowerCase().endsWith('.pdf')
                         ? CupertinoIcons.doc_text_fill : CupertinoIcons.film_fill,
@@ -473,7 +473,7 @@ class _MiniAudioPlayerState extends State<_MiniAudioPlayer> {
       onTap: _toggle,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(10)),
+        decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(_isPlaying ? CupertinoIcons.pause_fill : CupertinoIcons.play_fill, size: 14, color: primary),
           const SizedBox(width: 6),

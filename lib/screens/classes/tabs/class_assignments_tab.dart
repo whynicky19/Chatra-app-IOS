@@ -173,7 +173,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
 
   Widget _statBox(String val, String label, Color color) => Expanded(child: Container(
     padding: EdgeInsets.all(14),
-    decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.2))),
+    decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.2))),
     child: Column(children: [Text(val, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: color)), SizedBox(height: 2), Text(label, style: TextStyle(fontSize: 11, color: C.text4))])));
 
   @override
@@ -250,7 +250,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 Row(children: [
                   Container(
                     width: 48, height: 56,
-                    decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(10)),
+                    decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
                     child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                       Text(months[dl.month - 1], style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
                       Text('${dl.day}', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.primary, height: 1.1)),
@@ -271,7 +271,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
       Row(children: [
         Text(l.t('assignments'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
         Spacer(),
-        Container(padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(10)),
+        Container(padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
           child: Row(children: [Icon(CupertinoIcons.arrow_up_arrow_down, size: 14, color: C.text4), SizedBox(width: 4), Text(l.t('sort_deadline'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: C.text4))])),
       ]),
       SizedBox(height: 12),
@@ -324,7 +324,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               child: Column(children: [
                 Padding(padding: EdgeInsets.all(16), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Container(width: 48, height: 48,
-                    decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(14)),
+                    decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.tile)),
                     child: Icon(statusIcon, color: statusColor, size: 22)),
                   SizedBox(width: 12),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -332,7 +332,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                       Expanded(child: Text(a['title'] ?? '', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800), maxLines: 2, overflow: TextOverflow.ellipsis)),
                       SizedBox(width: 8),
                       Container(padding: EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                        decoration: BoxDecoration(color: statusBg, borderRadius: BorderRadius.circular(20)),
+                        decoration: BoxDecoration(color: statusBg, borderRadius: BorderRadius.circular(AppRadii.card)),
                         child: Text(statusText, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: statusColor))),
                     ]),
                     if (a['description'] != null && _cleanContent(a['description'].toString()).isNotEmpty)
@@ -547,7 +547,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                           padding: EdgeInsets.only(top: 10, bottom: 20),
                           child: Container(
                             padding: EdgeInsets.all(14),
-                            decoration: BoxDecoration(color: isDark ? C.darkSurface2 : C.bg, borderRadius: BorderRadius.circular(14), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10))),
+                            decoration: BoxDecoration(color: isDark ? C.darkSurface2 : C.bg, borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10))),
                             child: Text(descText, style: TextStyle(fontSize: 14, height: 1.65)),
                           ),
                         ),
@@ -583,7 +583,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                   padding: EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: isDark ? C.darkSurface2 : Colors.white,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(AppRadii.tile),
                     border: Border.all(color: fileColor.withValues(alpha: 0.2)),
                     boxShadow: [BoxShadow(color: fileColor.withValues(alpha: 0.06), blurRadius: 8, offset: Offset(0, 2))],
                   ),
@@ -648,7 +648,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
           AnimatedSize(duration: Duration(milliseconds: 300), curve: Curves.easeInOut,
             child: _expandedCriteria.contains(a['id']) ? Column(children: [
               SizedBox(height: 8),
-              ...criteria.map((c) => Container(margin: EdgeInsets.only(bottom: 8), padding: EdgeInsets.all(12), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(10)),
+              ...criteria.map((c) => Container(margin: EdgeInsets.only(bottom: 8), padding: EdgeInsets.all(12), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
                 child: Row(children: [Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(c['name'] ?? '', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                   if (c['description'] != null && c['description'].toString().isNotEmpty)
@@ -673,7 +673,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                   Text('${(sub['grade']['score'] / (a['max_score'] ?? 100) * 100).round()}%', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
                   SizedBox(height: 4),
                   Container(padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
+                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppRadii.card)),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       Icon(sub['grade']['graded_by'] == 'ai' ? CupertinoIcons.bolt_fill : CupertinoIcons.person, size: 14, color: Theme.of(context).colorScheme.primary),
                       SizedBox(width: 4),
@@ -702,7 +702,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 final maxScore = (cs['max_score'] ?? cs['max'] ?? cs['weight'] ?? 100) as num;
                 final pct = maxScore > 0 ? score / maxScore : 0.0;
                 return Container(margin: EdgeInsets.only(bottom: 8), padding: EdgeInsets.all(14),
-                  decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(14)),
+                  decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Row(children: [
                       Expanded(child: Text(cs['name'] ?? '', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700))),
@@ -723,7 +723,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
         ],
         if (sub != null && sub['status'] == 'grading' && sub['grade'] == null) ...[
           SizedBox(height: 16),
-          Container(padding: EdgeInsets.all(14), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(14), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15))),
+          Container(padding: EdgeInsets.all(14), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15))),
             child: Row(children: [
               SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.primary)),
               SizedBox(width: 12),
@@ -819,7 +819,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               final result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
               if (result != null) setS(() => pickedFiles = result.files);
             },
-            child: Container(padding: EdgeInsets.all(14), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(14), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3), width: 1.5)),
+            child: Container(padding: EdgeInsets.all(14), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3), width: 1.5)),
               child: Row(children: [
                 Icon(CupertinoIcons.paperclip, color: Theme.of(context).colorScheme.primary, size: 20),
                 SizedBox(width: 10),
@@ -1010,7 +1010,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                           TextSpan(text: ' / 100', style: TextStyle(fontSize: 16, color: C.text4)),
                         ])),
                         Spacer(),
-                        Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
+                        Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppRadii.card)),
                           child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(CupertinoIcons.bolt_fill, size: 14, color: Theme.of(context).colorScheme.primary), SizedBox(width: 4), Text(l.t('ai_check'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary))])),
                       ]),
                       if (feedback != null) ...[
@@ -1025,7 +1025,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     Text(l.t('by_criteria'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
                     SizedBox(height: 8),
                     ...criteria.map((c) => Container(margin: EdgeInsets.only(bottom: 8), padding: EdgeInsets.all(14),
-                      decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(14)),
+                      decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(AppRadii.tile)),
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Row(children: [
                           Expanded(child: Text(c['name'] ?? '', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700))),

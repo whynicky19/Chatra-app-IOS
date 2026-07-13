@@ -295,7 +295,7 @@ class _LecturePlayerScreenState extends State<LecturePlayerScreen> {
               constraints: const BoxConstraints(maxHeight: 120),
               margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
               padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(14)),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: SingleChildScrollView(child: Text(cleanMathText(slide.narrationText!), style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.5))),
             ),
           _buildControls(l, slides.length),
@@ -329,7 +329,7 @@ class _LecturePlayerScreenState extends State<LecturePlayerScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               margin: const EdgeInsets.only(right: 4),
-              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.chip)),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 const Icon(CupertinoIcons.doc_text, size: 14, color: Colors.white),
                 const SizedBox(width: 5),

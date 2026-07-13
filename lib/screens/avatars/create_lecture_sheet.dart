@@ -119,7 +119,7 @@ class _CreateLectureSheetState extends State<_CreateLectureSheet> {
 
           Container(
             padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(14)),
+            decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Icon(CupertinoIcons.info_circle_fill, size: 18, color: primary),
               const SizedBox(width: 10),
@@ -139,7 +139,7 @@ class _CreateLectureSheetState extends State<_CreateLectureSheet> {
             onTap: _pickFile,
             child: Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: primary.withValues(alpha: 0.3))),
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: primary.withValues(alpha: 0.3))),
               child: _sourceFile == null
                   ? Column(children: [
                       Icon(CupertinoIcons.doc_richtext, size: 26, color: primary),
@@ -149,12 +149,12 @@ class _CreateLectureSheetState extends State<_CreateLectureSheet> {
                       Text(l.t('lecture_materials_hint'), style: const TextStyle(fontSize: 11, color: C.text4), textAlign: TextAlign.center),
                     ])
                   : Row(children: [
-                      Container(width: 40, height: 40, decoration: BoxDecoration(color: primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                      Container(width: 40, height: 40, decoration: BoxDecoration(color: primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.chip)),
                         child: Center(child: Text(ext, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: primary)))),
                       const SizedBox(width: 10),
                       Expanded(child: Text(_sourceFile!.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis)),
                       Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(10)),
+                        decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
                         child: Text(l.t('lecture_materials_replace'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600))),
                     ]),
             ),
@@ -214,7 +214,7 @@ class _CreateLectureSheetState extends State<_CreateLectureSheet> {
             onTap: () => setState(() => _autoSummary = !_autoSummary),
             child: Container(
               padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(14)),
+              decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: Row(children: [
                 Icon(_autoSummary ? CupertinoIcons.checkmark_square_fill : CupertinoIcons.square, color: _autoSummary ? primary : C.text4, size: 22),
                 const SizedBox(width: 12),
@@ -246,7 +246,7 @@ class _CreateLectureSheetState extends State<_CreateLectureSheet> {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: selected ? primary.withValues(alpha: 0.1) : adaptiveSurface2(context),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadii.tile),
           border: Border.all(color: selected ? primary : Colors.transparent, width: 1.5),
         ),
         child: Row(children: [

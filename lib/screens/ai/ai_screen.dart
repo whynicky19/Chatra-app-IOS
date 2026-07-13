@@ -245,7 +245,7 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
           width: 46, height: 46,
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadii.tile),
             border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15)),
           ),
           padding: const EdgeInsets.all(8),
@@ -314,7 +314,7 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
                   width: 68, height: 68,
                   decoration: BoxDecoration(
                     color: isDark ? C.darkSurface : Colors.white,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AppRadii.card),
                     boxShadow: [
                       BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.18), blurRadius: 20, offset: const Offset(0, 5)),
                       BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, 2)),
@@ -366,7 +366,7 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: isDark ? C.darkSurface : Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppRadii.card),
             boxShadow: cardShadow(isDark),
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -455,7 +455,7 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
           margin: const EdgeInsets.only(top: 2, right: 10),
           decoration: BoxDecoration(
             color: isDark ? C.darkSurface : Colors.white,
-            borderRadius: BorderRadius.circular(13),
+            borderRadius: BorderRadius.circular(AppRadii.tile),
             border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2), width: 1.5),
             boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, 2))],
           ),
@@ -504,7 +504,7 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
           margin: const EdgeInsets.only(top: 2, right: 10),
           decoration: BoxDecoration(
             color: isDark ? C.darkSurface : Colors.white,
-            borderRadius: BorderRadius.circular(13),
+            borderRadius: BorderRadius.circular(AppRadii.tile),
             border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2), width: 1.5),
             boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), blurRadius: 10)],
           ),

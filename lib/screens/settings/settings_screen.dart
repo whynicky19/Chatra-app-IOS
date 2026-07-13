@@ -54,8 +54,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         // ── Page title ──────────────────────────────────────────
         _animated(Padding(padding: const EdgeInsets.fromLTRB(4, 0, 4, 28), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(l.t('settings'),
-            style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700,
-              color: adaptiveText1(context), letterSpacing: -0.6, height: 1.1)),
+            style: TextStyle(fontSize: 34, fontWeight: FontWeight.w700,
+              color: adaptiveText1(context), letterSpacing: -0.4, height: 1.1)),
           const SizedBox(height: 3),
           Text(l.t('settings_sub'), style: const TextStyle(fontSize: 14, color: C.text4)),
         ])), 0.0, 0.4),
@@ -95,7 +95,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                  decoration: BoxDecoration(color: primary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(20)),
+                  decoration: BoxDecoration(color: primary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(AppRadii.card)),
                   child: Text(_roleLabel(auth.role, l),
                     style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: primary)),
                 ),
@@ -109,7 +109,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
                     color: C.amber.withValues(alpha: isDark ? 0.16 : 0.10),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppRadii.chip),
                   ),
                   child: const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Icon(CupertinoIcons.exclamationmark_triangle_fill, size: 15, color: C.amberDk),
@@ -132,7 +132,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: C.red.withValues(alpha: isDark ? 0.16 : 0.08),
-                      borderRadius: BorderRadius.circular(10)),
+                      borderRadius: BorderRadius.circular(AppRadii.chip)),
                     child: const Row(children: [
                       Icon(CupertinoIcons.xmark_circle, size: 14, color: C.red),
                       SizedBox(width: 7),
@@ -226,7 +226,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                     padding: const EdgeInsets.symmetric(vertical: 9),
                     decoration: BoxDecoration(
                       color: sel ? surface : Colors.transparent,
-                      borderRadius: BorderRadius.circular(9),
+                      borderRadius: BorderRadius.circular(AppRadii.chip),
                       boxShadow: sel ? softShadow(isDark) : null,
                     ),
                     child: Column(children: [

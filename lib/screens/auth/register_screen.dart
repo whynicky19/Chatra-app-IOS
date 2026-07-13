@@ -97,7 +97,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: (error ? C.red : C.amber).withValues(alpha: isDark ? 0.16 : 0.09),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(AppRadii.chip),
         ),
         child: Row(children: [
           Icon(error ? CupertinoIcons.exclamationmark_circle : CupertinoIcons.info_circle, size: 14, color: color),

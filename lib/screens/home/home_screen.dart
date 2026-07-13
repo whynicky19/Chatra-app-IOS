@@ -185,8 +185,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             padding: const EdgeInsets.fromLTRB(22, 24, 22, 18),
             child: Row(children: [
               Expanded(child: Text(l.t('classes'), style: TextStyle(
-                fontSize: 30, fontWeight: FontWeight.w900,
-                color: adaptiveText1(context), letterSpacing: -0.8, height: 1.1,
+                // iOS large title: 34 / bold / tracking −0.4 (matches theme's displayLarge).
+                fontSize: 34, fontWeight: FontWeight.w700,
+                color: adaptiveText1(context), letterSpacing: -0.4, height: 1.1,
               ))),
               const SizedBox(width: 8),
               _HeaderBtn(icon: CupertinoIcons.calendar, onTap: _openCalendar, isDark: isDark),
@@ -201,7 +202,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     width: 42, height: 42,
                     decoration: BoxDecoration(
                       color: primary,
-                      borderRadius: BorderRadius.circular(13),
+                      borderRadius: BorderRadius.circular(AppRadii.tile),
                       boxShadow: primaryGlow(primary, opacity: 0.30),
                     ),
                     child: const Icon(CupertinoIcons.add, color: Colors.white, size: 20),
@@ -231,7 +232,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     width: 42, height: 42,
                     decoration: BoxDecoration(
                       color: primary,
-                      borderRadius: BorderRadius.circular(13),
+                      borderRadius: BorderRadius.circular(AppRadii.tile),
                       boxShadow: primaryGlow(primary, opacity: 0.30),
                     ),
                     child: const Icon(CupertinoIcons.lock, color: Colors.white, size: 18))),
@@ -381,7 +382,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     padding: const EdgeInsets.symmetric(vertical: 30),
                     decoration: BoxDecoration(
                       color: surface,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(AppRadii.card),
                       border: Border.all(color: primary.withValues(alpha: 0.35), width: 1.5),
                       boxShadow: softShadow(isDark),
                     ),
@@ -600,7 +601,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 child: Container(width: 32, height: 32, decoration: BoxDecoration(color: adaptiveSurface2(context), shape: BoxShape.circle),
                   child: const Icon(CupertinoIcons.xmark, size: 16, color: C.text4)))),
             const SizedBox(height: 4),
-            Container(width: 68, height: 68, decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(20)),
+            Container(width: 68, height: 68, decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(AppRadii.card)),
               child: Icon(CupertinoIcons.lock, color: Theme.of(context).colorScheme.primary, size: 32)),
             const SizedBox(height: 16),
             Text(l.t('join_class_title'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
@@ -629,8 +630,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   decoration: InputDecoration(
                     counterText: '',
                     filled: true, fillColor: adaptiveSurface2(context),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2)),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadii.tile), borderSide: BorderSide.none),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadii.tile), borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2)),
                     contentPadding: EdgeInsets.zero,
                   ),
                   onChanged: (val) => onKey(i, val),
@@ -657,7 +658,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       child: coverImg != null && coverImg.toString().startsWith('data:')
                           ? Builder(builder: (_) { final bytes = decodeBase64Image(coverImg.toString()); return bytes != null ? Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, gaplessPlayback: true, cacheWidth: 640) : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))); })
                           : coverImg != null
-                              ? CachedNetworkImage(imageUrl: context.read<ApiService>().fixUrl(coverImg.toString()), fit: BoxFit.cover, width: double.infinity, fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero, placeholder: (_, __) => const SizedBox.shrink(), errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))))
+                              ? CachedNetworkImage(imageUrl: context.read<ApiService>().fixUrl(coverImg.toString()), fit: BoxFit.cover, width: double.infinity, memCacheWidth: 640, fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero, placeholder: (_, __) => const SizedBox.shrink(), errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))))
                               : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))));
                   }),
                   Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -755,7 +756,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3), width: 1.5), color: coverFile != null ? null : adaptivePrimaryLt(context).withValues(alpha: 0.3)),
                 child: coverFile != null
                     ? ClipRRect(borderRadius: BorderRadius.circular(16), child: Image.file(File(coverFile!.path), fit: BoxFit.cover, width: double.infinity))
-                    : Column(mainAxisAlignment: MainAxisAlignment.center, children: [Container(width: 50, height: 50, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(14)), child: Icon(CupertinoIcons.photo, size: 26, color: Theme.of(context).colorScheme.primary)), const SizedBox(height: 10), Text(l.t('click_to_upload'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)), const Text('JPG, PNG', style: TextStyle(fontSize: 12, color: C.text4))]))),
+                    : Column(mainAxisAlignment: MainAxisAlignment.center, children: [Container(width: 50, height: 50, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(AppRadii.tile)), child: Icon(CupertinoIcons.photo, size: 26, color: Theme.of(context).colorScheme.primary)), const SizedBox(height: 10), Text(l.t('click_to_upload'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)), const Text('JPG, PNG', style: TextStyle(fontSize: 12, color: C.text4))]))),
               const SizedBox(height: 20),
               _fl3(l.t('class_name_required')), TextField(controller: nameC, decoration: InputDecoration(hintText: l.t('class_name_hint'))),
               const SizedBox(height: 16), _fl3(l.t('class_desc')), TextField(controller: descC, decoration: InputDecoration(hintText: l.t('class_desc_hint')), maxLines: 3),
@@ -867,11 +868,11 @@ class _ClassContextMenu extends StatelessWidget {
         width: 288,
         decoration: BoxDecoration(
           color: surface,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppRadii.card),
           boxShadow: cardShadow(isDark),
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppRadii.card),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
 
             // ── Cover header ──
@@ -880,7 +881,7 @@ class _ClassContextMenu extends StatelessWidget {
                 coverImg != null && coverImg.toString().startsWith('data:')
                     ? Builder(builder: (_) { final bytes = decodeBase64Image(coverImg.toString()); return bytes != null ? Image.memory(bytes, fit: BoxFit.cover, gaplessPlayback: true, cacheWidth: 640) : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))); })
                     : coverImg != null
-                        ? CachedNetworkImage(imageUrl: context.read<ApiService>().fixUrl(coverImg.toString()), cacheKey: 'class_cover_${cls['id']}', fit: BoxFit.cover, fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero, placeholder: (_, __) => const SizedBox.shrink(), errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))))
+                        ? CachedNetworkImage(imageUrl: context.read<ApiService>().fixUrl(coverImg.toString()), cacheKey: 'class_cover_${cls['id']}', fit: BoxFit.cover, memCacheWidth: 800, fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero, placeholder: (_, __) => const SizedBox.shrink(), errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))))
                         : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight))),
                 Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                   begin: Alignment.topCenter, end: Alignment.bottomCenter,
@@ -902,7 +903,7 @@ class _ClassContextMenu extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppRadii.chip),
                     border: Border.all(color: primary.withValues(alpha: 0.2)),
                   ),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -975,7 +976,7 @@ class _SmallAction extends StatelessWidget {
     onTap: onTap,
     child: Container(
       width: 34, height: 34,
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(AppRadii.chip)),
       child: Icon(icon, size: 16, color: iconColor),
     ),
   );
@@ -1007,15 +1008,15 @@ class _ActionRow extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadii.tile),
         child: Ink(
-          decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(14)),
+          decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(AppRadii.tile)),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
             child: Row(children: [
               Container(
                 width: 34, height: 34,
-                decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(10)),
+                decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(AppRadii.chip)),
                 child: Icon(icon, size: 17, color: iconColor),
               ),
               const SizedBox(width: 12),
@@ -1167,7 +1168,7 @@ class _ClassCard extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
             color: surface,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppRadii.card),
             boxShadow: cardShadow(isDark),
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1191,6 +1192,11 @@ class _ClassCard extends StatelessWidget {
                             cacheKey: 'class_cover_$id',
                             fit: BoxFit.cover,
                             width: double.infinity,
+                            // Decode the cover at ~card resolution instead of full
+                            // upload size (up to 1200px). Same memCacheWidth as the
+                            // detail-screen cover (same cacheKey) → they share one
+                            // decoded bitmap in memory instead of two.
+                            memCacheWidth: 800,
                             fadeInDuration: Duration.zero,
                             fadeOutDuration: Duration.zero,
                           ),
@@ -1206,7 +1212,7 @@ class _ClassCard extends StatelessWidget {
                       onTap: onCopyCode,
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.55), borderRadius: BorderRadius.circular(8)),
+                        decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.55), borderRadius: BorderRadius.circular(AppRadii.chip)),
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
                           const Icon(CupertinoIcons.doc_on_doc, size: 11, color: Colors.white60),
                           const SizedBox(width: 4),
@@ -1227,7 +1233,7 @@ class _ClassCard extends StatelessWidget {
                   Positioned(bottom: 10, left: 12,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                      decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.48), borderRadius: BorderRadius.circular(8)),
+                      decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.48), borderRadius: BorderRadius.circular(AppRadii.chip)),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
                         const Icon(CupertinoIcons.play_circle, size: 13, color: Colors.white70),
                         const SizedBox(width: 4),
@@ -1248,7 +1254,7 @@ class _ClassCard extends StatelessWidget {
               Row(children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                  decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(10)),
+                  decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Text(openLabel, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
                     const SizedBox(width: 4),
@@ -1304,7 +1310,7 @@ class _HeaderBtn extends StatelessWidget {
     child: Container(width: 42, height: 42,
       decoration: BoxDecoration(
         color: adaptiveSurface2(context),
-        borderRadius: BorderRadius.circular(13),
+        borderRadius: BorderRadius.circular(AppRadii.tile),
         border: Border.all(color: adaptiveBorder(context)),
       ),
       child: Icon(icon,
@@ -1327,7 +1333,7 @@ class _MetaChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
         color: c.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadii.chip),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(icon, size: 12, color: c),
@@ -1351,7 +1357,7 @@ class _ActionBtn extends StatelessWidget {
     child: Container(width: 34, height: 34,
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadii.chip),
       ),
       child: Icon(icon, size: 17, color: color)),
   );

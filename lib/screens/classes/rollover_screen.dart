@@ -421,7 +421,7 @@ class _RolloverScreenState extends State<RolloverScreen> {
           padding: const EdgeInsets.all(13),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadii.tile),
             border: Border.all(color: adaptiveBorder(context)),
           ),
           child: Row(children: [

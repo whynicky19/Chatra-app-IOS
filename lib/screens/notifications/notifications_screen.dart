@@ -321,7 +321,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             Container(width: 44, height: 44,
                               decoration: BoxDecoration(
                                 color: (cfg['color'] as Color).withValues(alpha: n.isRead ? 0.08 : 0.14),
-                                borderRadius: BorderRadius.circular(13),
+                                borderRadius: BorderRadius.circular(AppRadii.tile),
                               ),
                               child: Icon(cfg['icon'] as IconData, size: 20, color: cfg['color'] as Color)),
                             const SizedBox(width: 12),

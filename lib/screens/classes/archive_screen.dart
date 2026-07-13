@@ -59,7 +59,7 @@ class ArchiveScreen extends StatelessWidget {
                     width: 44, height: 44,
                     decoration: BoxDecoration(
                       color: adaptiveSurface2(context),
-                      borderRadius: BorderRadius.circular(13),
+                      borderRadius: BorderRadius.circular(AppRadii.tile),
                     ),
                     child: Icon(CupertinoIcons.archivebox,
                         size: 22, color: adaptiveText1(context).withValues(alpha: 0.7)),
@@ -68,8 +68,8 @@ class ArchiveScreen extends StatelessWidget {
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text(l.t('archive'),
-                          style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800,
-                              color: adaptiveText1(context), letterSpacing: -0.6, height: 1.05)),
+                          style: TextStyle(fontSize: 30, fontWeight: FontWeight.w700,
+                              color: adaptiveText1(context), letterSpacing: -0.4, height: 1.05)),
                       const SizedBox(height: 3),
                       Text(l.t('archive_subtitle'),
                           style: TextStyle(fontSize: 13.5,
@@ -191,7 +191,7 @@ class _ArchiveCard extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             color: surface,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppRadii.card),
             boxShadow: cardShadow(isDark),
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

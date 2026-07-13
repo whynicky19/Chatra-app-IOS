@@ -236,7 +236,7 @@ class _OrgCardState extends State<_OrgCard> {
             color: selected
                 ? Color.alphaBlend(accent.withValues(alpha: isDark ? 0.10 : 0.05), Theme.of(context).colorScheme.surface)
                 : Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppRadii.card),
             border: Border.all(color: selected ? accent : Colors.transparent, width: 2),
             boxShadow: selected ? primaryGlow(accent, opacity: 0.22) : cardShadow(isDark),
           ),

@@ -41,6 +41,18 @@ class C {
   static const darkAmberLt = Color(0xFF2A1F00);
 }
 
+// ── Corner-radius scale ────────────────────────────────────
+// One small, consistent set of radii (iOS-style concentric corners) instead of
+// ad-hoc 8/10/13/16 values scattered per widget.
+//   card — outer surfaces (class cards, sheets, big containers)
+//   tile — square icon buttons / medium controls
+//   chip — small pills, badges, code tags
+class AppRadii {
+  static const double card = 20;
+  static const double tile = 14;
+  static const double chip = 10;
+}
+
 // ── Shadow helpers ─────────────────────────────────────────
 List<BoxShadow> cardShadow(bool isDark) => [
   BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.28 : 0.07), blurRadius: 20, offset: const Offset(0, 6)),

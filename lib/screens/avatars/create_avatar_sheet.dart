@@ -190,7 +190,7 @@ class _CreateAvatarSheetState extends State<_CreateAvatarSheet> {
           // Info banner
           Container(
             padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(14)),
+            decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Icon(CupertinoIcons.info_circle_fill, size: 18, color: primary),
               const SizedBox(width: 10),
@@ -226,7 +226,7 @@ class _CreateAvatarSheetState extends State<_CreateAvatarSheet> {
                       Image.file(File(_photo!.path), fit: BoxFit.cover),
                       Positioned(bottom: 8, right: 8, child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.55), borderRadius: BorderRadius.circular(10)),
+                        decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.55), borderRadius: BorderRadius.circular(AppRadii.chip)),
                         child: Text(l.t('avatar_photo_replace'), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
                       )),
                     ]),
@@ -237,7 +237,7 @@ class _CreateAvatarSheetState extends State<_CreateAvatarSheet> {
           Text(l.t('avatar_voice_label'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)),
           const SizedBox(height: 8),
           Container(
-            decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(14)),
+            decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
             child: Row(children: [
               Expanded(child: GestureDetector(
                 onTap: () => setState(() => _voiceMode = 0),
@@ -278,7 +278,7 @@ class _CreateAvatarSheetState extends State<_CreateAvatarSheet> {
     if (_recordedPath != null && !_isRecording) {
       return Container(
         padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(14)),
+        decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
         child: Row(children: [
           GestureDetector(
             onTap: _togglePlayback,
@@ -327,7 +327,7 @@ class _CreateAvatarSheetState extends State<_CreateAvatarSheet> {
       onTap: _pickVoiceFile,
       child: Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: primary.withValues(alpha: 0.3))),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: primary.withValues(alpha: 0.3))),
         child: Row(children: [
           Icon(CupertinoIcons.waveform, color: primary, size: 22),
           const SizedBox(width: 10),

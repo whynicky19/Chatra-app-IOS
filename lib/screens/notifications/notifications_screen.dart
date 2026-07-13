@@ -222,6 +222,36 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     try { await context.read<ApiService>().setNotifState(nKey, dismissed: true); } catch (_) {}
   }
 
+  // Groups notifications into recency buckets (today / yesterday / this week /
+  // earlier). Order inside each bucket is preserved from _notifs (unread-first,
+  // then date-desc). Returns a flat list of section-title Strings interleaved
+  // with _Notif items, ready for a single ListView.builder.
+  List<Object> _grouped(L10n l) {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final yesterdayStart = todayStart.subtract(const Duration(days: 1));
+    final weekStart = todayStart.subtract(const Duration(days: 7));
+    int bucketOf(DateTime d) {
+      if (!d.isBefore(todayStart)) return 0;      // today (or an imminent future deadline)
+      if (!d.isBefore(yesterdayStart)) return 1;  // yesterday
+      if (!d.isBefore(weekStart)) return 2;       // earlier this week
+      return 3;                                   // older
+    }
+    final buckets = <int, List<_Notif>>{};
+    for (final n in _notifs) {
+      buckets.putIfAbsent(bucketOf(n.date), () => []).add(n);
+    }
+    const keys = ['notif_today', 'notif_yesterday', 'notif_this_week', 'notif_earlier'];
+    final out = <Object>[];
+    for (var b = 0; b < 4; b++) {
+      final list = buckets[b];
+      if (list == null || list.isEmpty) continue;
+      out.add(l.t(keys[b]));
+      out.addAll(list);
+    }
+    return out;
+  }
+
   String _timeAgo(DateTime date, L10n l) {
     final diff = DateTime.now().difference(date);
     if (diff.inMinutes < 1) return l.t('just_now');
@@ -238,6 +268,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final surface = Theme.of(context).colorScheme.surface;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final unread = _notifs.where((n) => !n.isRead).length;
+    final grouped = _grouped(l);
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -249,7 +280,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               child: Icon(CupertinoIcons.chevron_left, size: 20, color: adaptiveText1(context)))),
           SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(l.t('notifications'), style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: adaptiveText1(context), letterSpacing: -0.3)),
+            Text(l.t('notifications'), style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: adaptiveText1(context), letterSpacing: -0.4, height: 1.05)),
             if (!_loading)
               Text(unread > 0 ? '$unread ${l.t('notif_unread')}' : l.t('all_read'), style: TextStyle(fontSize: 12, color: C.text4)),
           ])),
@@ -268,9 +299,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 onRefresh: _load,
                 child: ListView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
-                  itemCount: _notifs.length,
+                  itemCount: grouped.length,
                   itemBuilder: (ctx, i) {
-                    final n = _notifs[i];
+                    final item = grouped[i];
+                    if (item is String) {
+                      return Padding(
+                        padding: EdgeInsets.only(left: 6, top: i == 0 ? 2 : 14, bottom: 8),
+                        child: Text(item.toUpperCase(), style: const TextStyle(
+                          fontSize: 11.5, fontWeight: FontWeight.w800, color: C.text4, letterSpacing: 1.0)),
+                      );
+                    }
+                    final n = item as _Notif;
                     final cfg = _config(n.type);
                     final canNavigate = n.classId != null;
                     return TweenAnimationBuilder<double>(
@@ -318,12 +357,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             boxShadow: cardShadow(isDark),
                           ),
                           child: Padding(padding: const EdgeInsets.all(14), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Container(width: 44, height: 44,
-                              decoration: BoxDecoration(
-                                color: (cfg['color'] as Color).withValues(alpha: n.isRead ? 0.08 : 0.14),
-                                borderRadius: BorderRadius.circular(AppRadii.tile),
-                              ),
-                              child: Icon(cfg['icon'] as IconData, size: 20, color: cfg['color'] as Color)),
+                            Builder(builder: (_) {
+                              final c = cfg['color'] as Color;
+                              return Container(width: 44, height: 44,
+                                decoration: BoxDecoration(
+                                  // Unread: white glyph on a coloured gradient tile with a
+                                  // soft glow. Read: quiet tinted tile.
+                                  gradient: n.isRead ? null : LinearGradient(
+                                    colors: [c.withValues(alpha: 0.85), c],
+                                    begin: Alignment.topLeft, end: Alignment.bottomRight),
+                                  color: n.isRead ? c.withValues(alpha: 0.10) : null,
+                                  borderRadius: BorderRadius.circular(AppRadii.tile),
+                                  boxShadow: n.isRead ? null : [BoxShadow(color: c.withValues(alpha: 0.30), blurRadius: 9, spreadRadius: -2, offset: const Offset(0, 3))],
+                                ),
+                                child: Icon(cfg['icon'] as IconData, size: 20, color: n.isRead ? c : Colors.white));
+                            }),
                             const SizedBox(width: 12),
                             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                               Row(children: [

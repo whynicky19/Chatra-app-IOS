@@ -446,12 +446,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 boxShadow: cardShadow(isDark),
               ),
               child: Row(children: [
+                // Status tile — a checkmark for submitted work, a clock for a
+                // still-open deadline. Replaces the old thin accent bar.
                 Container(
-                  width: 4, height: 48,
+                  width: 42, height: 42,
                   decoration: BoxDecoration(
-                    color: accentColor,
-                    borderRadius: BorderRadius.circular(2),
+                    color: accentColor.withValues(alpha: isDark ? 0.22 : 0.14),
+                    borderRadius: BorderRadius.circular(12),
                   ),
+                  child: Icon(isSubmitted ? CupertinoIcons.checkmark_alt : CupertinoIcons.clock,
+                      size: 20, color: accentColor),
                 ),
                 const SizedBox(width: 12),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -477,9 +481,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     ],
                   ]),
                 ])),
-                if (isSubmitted)
-                  const Icon(CupertinoIcons.checkmark_circle_fill, size: 20, color: C.green)
-                else if (classId != null)
+                if (classId != null)
                   const Icon(CupertinoIcons.chevron_right, size: 18, color: C.text4),
               ]),
             ),

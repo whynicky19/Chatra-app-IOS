@@ -238,8 +238,8 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                 ),
                 const SizedBox(width: 12),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(l.t('admin'), style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: adaptiveText1(context), letterSpacing: -0.5)),
-                  Text(l.t('admin_sub'), style: const TextStyle(fontSize: 12, color: C.text4)),
+                  Text(l.t('admin'), style: TextStyle(fontSize: 27, fontWeight: FontWeight.w800, color: adaptiveText1(context), letterSpacing: -0.5, height: 1.05)),
+                  Text(l.t('admin_sub'), style: const TextStyle(fontSize: 12.5, color: C.text4)),
                 ])),
                 GestureDetector(
                   onTap: _showCreateDialog,
@@ -1466,19 +1466,31 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Expanded(child: Container(
-    padding: const EdgeInsets.all(14),
+    padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
       color: Theme.of(context).colorScheme.surface,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(18),
       boxShadow: softShadow(isDark),
     ),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Container(width: 34, height: 34, decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.chip)),
-        child: Icon(icon, size: 17, color: color)),
-      const SizedBox(height: 8),
-      Text(value, style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: adaptiveText1(context), height: 1)),
-      const SizedBox(height: 1),
-      Text(label, style: const TextStyle(fontSize: 11, color: C.text4, fontWeight: FontWeight.w500)),
+      // White glyph on a coloured gradient tile with a soft glow — matches the
+      // premium tile language used on the home/auth screens.
+      Container(
+        width: 38, height: 38,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [color.withValues(alpha: 0.88), color],
+            begin: Alignment.topLeft, end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [BoxShadow(color: color.withValues(alpha: 0.30), blurRadius: 10, spreadRadius: -2, offset: const Offset(0, 4))],
+        ),
+        child: Icon(icon, size: 19, color: Colors.white),
+      ),
+      const SizedBox(height: 12),
+      Text(value, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: adaptiveText1(context), height: 1, letterSpacing: -0.5)),
+      const SizedBox(height: 3),
+      Text(label, style: const TextStyle(fontSize: 11.5, color: C.text4, fontWeight: FontWeight.w500)),
     ]),
   ));
 }
@@ -1524,6 +1536,7 @@ class _AiFilterChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected ? primary : adaptiveSurface2(context),
           borderRadius: BorderRadius.circular(12),
+          boxShadow: selected ? primaryGlow(primary, opacity: 0.28) : null,
         ),
         child: Text(label, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: selected ? Colors.white : C.text3)),
       ),

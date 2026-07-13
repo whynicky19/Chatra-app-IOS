@@ -171,6 +171,27 @@ class ClassesProvider extends ChangeNotifier {
     await load();
   }
 
+  /// Optimistically insert a just-created class into the cached list so it shows
+  /// instantly, without waiting for a full [load] round-trip. Idempotent.
+  void addCreatedClass(Map<String, dynamic> raw) {
+    final normalized = _normalizeClass(raw);
+    final id = (normalized['id'] as num?)?.toInt();
+    if (id == null) return;
+    if (!_cachedAllClasses.any((c) => (c['id'] as num?)?.toInt() == id)) {
+      _cachedAllClasses = [normalized, ..._cachedAllClasses];
+      notifyListeners();
+    }
+  }
+
+  /// Merge server-returned fields into a cached class in place (e.g. after an
+  /// edit) so the home card reflects the new title/cover without a full reload.
+  void patchCachedClass(int id, Map<String, dynamic> raw) {
+    final idx = _cachedAllClasses.indexWhere((c) => (c['id'] as num?)?.toInt() == id);
+    if (idx < 0) return;
+    _cachedAllClasses[idx] = {..._cachedAllClasses[idx], ..._normalizeClass(raw)};
+    notifyListeners();
+  }
+
   Future<void> loadNotifBadge() async {
     if (_auth.isTeacher) return;
     try {

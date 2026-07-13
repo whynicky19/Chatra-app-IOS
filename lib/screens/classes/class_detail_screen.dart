@@ -140,6 +140,33 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     if (_canManageCohorts) _loadCohorts();
   }
 
+  // Bust the cached cover after it changes. The cover widgets use a stable
+  // cacheKey (so the image survives ngrok host changes between sessions), which
+  // means a new upload would otherwise keep serving the old cached bitmap.
+  Future<void> _evictCoverCache(String? newUrl) async {
+    try {
+      final fixed = (newUrl != null && newUrl.isNotEmpty)
+          ? context.read<ApiService>().fixUrl(newUrl) : '';
+      await CachedNetworkImage.evictFromCache(fixed, cacheKey: 'class_cover_${widget.classId}');
+    } catch (_) {}
+    // Drop decoded copies held in memory (base + the memCacheWidth:800 variant)
+    // so the cover re-resolves the new file. Blunt, but this is a rare action.
+    PaintingBinding.instance.imageCache.clear();
+    PaintingBinding.instance.imageCache.clearLiveImages();
+  }
+
+  // Apply a class edit from the server response without a full _load(): patches
+  // local derived data and the shared ClassesProvider cache (home card).
+  void _applyClassUpdate(Map<String, dynamic> updated) {
+    if (mounted) {
+      setState(() {
+        _classData = {..._classData, ...updated};
+        _recomputeDerived();
+      });
+    }
+    context.read<ClassesProvider>().patchCachedClass(widget.classId, updated);
+  }
+
   // Teacher-only: cohorts for the "past years" selector. Silent on failure so a
   // backend without the cohorts endpoint just shows no selector.
   Future<void> _loadCohorts() async {
@@ -1818,6 +1845,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 setS(() => saving = true);
                 try {
                   final api = context.read<ApiService>();
+                  final coverChanged = newCoverFile != null || coverRemoved;
                   String? coverImage;
                   if (newCoverFile != null) {
                     final res = await api.uploadFile(newCoverFile!.path, newCoverFile!.name);
@@ -1827,7 +1855,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   } else if (existingCover != null) {
                     coverImage = existingCover;
                   }
-                  await api.updateClass(widget.classId,
+                  final updated = await api.updateClass(widget.classId,
                       name: tc.text.trim(),
                       description: dc.text.trim(),
                       teacher: tn.text.trim(),
@@ -1837,7 +1865,17 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                         widget.classId, rotationYearly ? 'yearly' : 'manual');
                   }
                   if (!mounted || !ctx.mounted) return;
-                  Navigator.pop(ctx); _load(); showToast(context, 'Класс обновлён');
+                  // The cover uses a stable cacheKey (survives ngrok host changes),
+                  // so a NEW cover would keep serving the OLD cached bitmap. Bust it.
+                  if (coverChanged) await _evictCoverCache(coverImage);
+                  if (!mounted || !ctx.mounted) return;
+                  Navigator.pop(ctx);
+                  // Patch local + provider caches from the server response instead
+                  // of a full _load() — that refetches posts, rating AND every
+                  // attached file's text over the network, which is slow and
+                  // pointless for a metadata/cover edit.
+                  _applyClassUpdate(updated);
+                  showToast(context, 'Класс обновлён');
                 } catch (_) {
                   if (mounted && ctx.mounted) { showToast(context, 'Ошибка', error: true); setS(() => saving = false); }
                 }

@@ -230,17 +230,35 @@ class ChatsProvider extends ChangeNotifier {
     if (!isScreenVisible) return;
     // Background polling errors (e.g. offline) are swallowed — surfacing them
     // as toasts would spam the user for a poll they didn't trigger.
+    // Notify at most ONCE per cycle, and only if something actually changed —
+    // the old code fired notifyListeners() per chat every 10 s unconditionally,
+    // rebuilding the whole chats screen N times even when no new messages came.
+    bool changed = false;
     try {
       for (final c in chats) {
         final id = (c['id'] as num).toInt();
         // Skip the chat that WS is already streaming.
         if (id == activeChatId && (_wsManager?.isConnected ?? false)) continue;
         try {
-          messages[id] = await _api.getMessages(id);
-          notifyListeners();
+          final fresh = await _api.getMessages(id);
+          if (_messagesDiffer(messages[id], fresh)) {
+            messages[id] = fresh;
+            changed = true;
+          }
         } catch (_) {}
       }
     } catch (_) {}
+    if (changed) notifyListeners();
+  }
+
+  // Cheap change check: different count, or a different last-message id.
+  bool _messagesDiffer(List<dynamic>? a, List<dynamic> b) {
+    if (a == null) return b.isNotEmpty;
+    if (a.length != b.length) return true;
+    if (a.isEmpty) return false;
+    final aLast = (a.last['id'] as num?)?.toInt();
+    final bLast = (b.last['id'] as num?)?.toInt();
+    return aLast != bLast;
   }
 
   // ── Messaging ─────────────────────────────────────────────────────────────────
@@ -434,9 +452,10 @@ class ChatsProvider extends ChangeNotifier {
   void _resetTypingCleaner() {
     _typingCleaner?.cancel();
     _typingCleaner = Timer(const Duration(seconds: 4), () {
+      final before = _typingTimestamps.length;
       final cutoff = DateTime.now().subtract(const Duration(seconds: 3));
       _typingTimestamps.removeWhere((_, ts) => ts.isBefore(cutoff));
-      notifyListeners();
+      if (_typingTimestamps.length != before) notifyListeners();
     });
   }
 

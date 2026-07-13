@@ -746,6 +746,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     // Reload the home list only AFTER the dialog route is fully gone (see the
     // `.then` below). Doing it inline still races the dialog's exit animation.
     bool created = false;
+    Map<String, dynamic>? createdClass;
     showDialog(context: context, barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -796,13 +797,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     // of a list rebuild with the dialog teardown trips the framework's
                     // `_dependents.isEmpty` assertion (red screen). So: POST → close
                     // the dialog → reload only in the route's `.then`, once it's gone.
-                    await api.createClass(nameC.text.trim(),
+                    final createdCls = await api.createClass(nameC.text.trim(),
                         description: descC.text.trim(),
                         teacher: teacherC.text.trim(),
                         period: periodC.text.trim(),
                         coverImage: coverUrl);
                     if (!mounted || !ctx.mounted) return;
                     created = true;
+                    createdClass = createdCls;
                     Navigator.pop(ctx);
                     showToast(context, l.t('class_created'));
                   } catch (e) {
@@ -825,8 +827,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       teacherC.dispose();
       periodC.dispose();
       // Route is fully closed now — safe to rebuild the list without racing the
-      // dialog teardown.
-      if (created && mounted) provider.load();
+      // dialog teardown. Show the new class instantly from the POST response,
+      // then reconcile server-computed fields (invite_code, etc.) in the
+      // background so the user never waits on the full reload.
+      if (created && mounted) {
+        if (createdClass != null) provider.addCreatedClass(createdClass!);
+        provider.load();
+      }
     });
   }
 

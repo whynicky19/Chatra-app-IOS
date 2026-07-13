@@ -216,14 +216,22 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   },
                   child: Stack(children: [
                     _HeaderBtn(icon: CupertinoIcons.bell, onTap: null, isDark: isDark),
-                    if (provider.unreadNotifCount > 0)
-                      Positioned(top: 7, right: 7, child: Container(
-                        width: 9, height: 9,
-                        decoration: BoxDecoration(
-                          color: C.red, shape: BoxShape.circle,
-                          border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 1.5),
-                        ),
-                      )),
+                    // The badge listens to its OWN notifier (ClassesProvider.notifBadge),
+                    // so refreshing the unread count repaints just this 9×9 dot instead
+                    // of rebuilding the whole class list. Positioned stays the direct
+                    // Stack child so top/right still apply.
+                    Positioned(top: 7, right: 7, child: ValueListenableBuilder<int>(
+                      valueListenable: context.read<ClassesProvider>().notifBadge,
+                      builder: (context, count, _) => count > 0
+                          ? Container(
+                              width: 9, height: 9,
+                              decoration: BoxDecoration(
+                                color: C.red, shape: BoxShape.circle,
+                                border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 1.5),
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                    )),
                   ]),
                 ),
                 const SizedBox(width: 8),
@@ -735,6 +743,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     // same as the site: the class stores a file URL, not a base64 blob.
     XFile? coverFile;
     bool submitting = false;
+    // Reload the home list only AFTER the dialog route is fully gone (see the
+    // `.then` below). Doing it inline still races the dialog's exit animation.
+    bool created = false;
     showDialog(context: context, barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -779,22 +790,21 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       final res = await api.uploadFile(coverFile!.path, coverFile!.name);
                       coverUrl = (res['url'] ?? res['file_url'] ?? res['path'])?.toString();
                     }
-                    // Create the class first WITHOUT reloading the list. Reloading
-                    // via provider.createClass() fires notifyListeners() (rebuilding
-                    // the home class list) while this dialog route is still mounted;
-                    // that overlap of a list rebuild with the dialog teardown trips
-                    // the framework's `_dependents.isEmpty` assertion. So: POST →
-                    // close the dialog → only then reload the list.
+                    // Create the class WITHOUT reloading the list here. Reloading
+                    // fires notifyListeners() (rebuilding the home class list) while
+                    // this dialog route is still mounted/animating out; that overlap
+                    // of a list rebuild with the dialog teardown trips the framework's
+                    // `_dependents.isEmpty` assertion (red screen). So: POST → close
+                    // the dialog → reload only in the route's `.then`, once it's gone.
                     await api.createClass(nameC.text.trim(),
                         description: descC.text.trim(),
                         teacher: teacherC.text.trim(),
                         period: periodC.text.trim(),
                         coverImage: coverUrl);
                     if (!mounted || !ctx.mounted) return;
+                    created = true;
                     Navigator.pop(ctx);
                     showToast(context, l.t('class_created'));
-                    // Dialog is gone now — safe to rebuild the list.
-                    await provider.load();
                   } catch (e) {
                     if (mounted) {
                       final detail = (e is DioException && e.response?.data is Map) ? e.response?.data['detail'] : null;
@@ -814,6 +824,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       descC.dispose();
       teacherC.dispose();
       periodC.dispose();
+      // Route is fully closed now — safe to rebuild the list without racing the
+      // dialog teardown.
+      if (created && mounted) provider.load();
     });
   }
 

@@ -16,7 +16,11 @@ class ClassesProvider extends ChangeNotifier {
   // из GET /classes/ (там он считается per-student); /classes/all его не
   // отдаёт, поэтому храним отдельно, а не читаем c['is_archived_for_user'].
   Set<int> archivedClassIds = {};
-  int unreadNotifCount = 0;
+  // Unread notification badge kept in its OWN notifier so updating it does not
+  // fire the ChangeNotifier's general listeners — i.e. refreshing the badge no
+  // longer rebuilds the whole home class list. Read it via [notifBadge].
+  final ValueNotifier<int> notifBadge = ValueNotifier<int>(0);
+  int get unreadNotifCount => notifBadge.value;
   bool loading = true;
   String? errorMessage;
 
@@ -211,8 +215,8 @@ class ClassesProvider extends ChangeNotifier {
         if (createdAt != null && now.difference(createdAt).inDays <= 7) count++;
       }
 
-      unreadNotifCount = count;
-      notifyListeners();
+      // ValueNotifier notifies only the badge widget — not the class list.
+      notifBadge.value = count;
     } catch (e) {
       errorMessage = 'Не удалось загрузить уведомления: $e';
       notifyListeners();

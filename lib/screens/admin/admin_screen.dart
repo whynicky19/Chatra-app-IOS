@@ -53,6 +53,14 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
 
   Timer? _searchDebounce;
 
+  // Memoized tab bodies: an unrelated parent setState (tab badge, another tab's
+  // data, the avatars callback) returns the SAME cached instance, so Flutter
+  // skips rebuilding that tab's subtree and its aggregations. A tab is rebuilt
+  // only when its own inputs change (data identity/length, filters, loading,
+  // theme, language) — see the signatures below.
+  Widget? _usersTabCache, _aiTabCache, _classesTabCache;
+  String _usersTabSig = '', _aiTabSig = '', _classesTabSig = '';
+
   @override void dispose() { _searchDebounce?.cancel(); _tabCtrl.dispose(); super.dispose(); }
 
   // The three loads are independent — run them in parallel so each tab appears
@@ -206,6 +214,9 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     final primary  = Theme.of(context).colorScheme.primary;
     final teachers = _users.where((u) => u['role'] == 'teacher').length;
     final students = _users.where((u) => u['role'] == 'student').length;
+    // Shared theme+language part of each tab's memo signature — a brightness,
+    // primary-color or locale change invalidates all cached tab bodies.
+    final tabSig = '$isDark|$primary|${l.lang}';
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -294,9 +305,9 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             ),
           ),
           Expanded(child: TabBarView(controller: _tabCtrl, children: [
-            _usersTab(),
-            _aiTab(),
-            _classesTab(),
+            _memoUsersTab(tabSig),
+            _memoAiTab(tabSig),
+            _memoClassesTab(tabSig),
             AdminAvatarsTab(
               isActive: _avatarsTabActive,
               onPendingCountChanged: (count) {
@@ -307,6 +318,42 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
         ]),
       )),
     );
+  }
+
+  // ── Tab memoization ──────────────────────────────────────
+  // [tl] is a common theme+language signature so a dark/light or locale switch
+  // still rebuilds every tab. Data lists are reassigned wholesale on load (so
+  // identityHashCode detects reloads); _aiLogs is the exception — _loadMoreAiLogs
+  // mutates it in place, hence its length is part of the signature too.
+  Widget _memoUsersTab(String tl) {
+    final sig = 'u|$_loading|${identityHashCode(_users)}|$_search|$tl';
+    if (sig != _usersTabSig || _usersTabCache == null) {
+      _usersTabSig = sig;
+      _usersTabCache = _usersTab();
+    }
+    return _usersTabCache!;
+  }
+
+  Widget _memoAiTab(String tl) {
+    final sig = 'a|$_aiLoading|${identityHashCode(_aiLogs)}|${_aiLogs.length}|$_aiLogPage'
+        '|${identityHashCode(_aiSummary)}|${identityHashCode(_allClassPosts)}'
+        '|${identityHashCode(_users)}|$_aiFilterClassId|$_aiLogLoadingMore'
+        '|$_aiLogTotal|$_totalTokens|$tl';
+    if (sig != _aiTabSig || _aiTabCache == null) {
+      _aiTabSig = sig;
+      _aiTabCache = _aiTab();
+    }
+    return _aiTabCache!;
+  }
+
+  Widget _memoClassesTab(String tl) {
+    final sig = 'c|$_classesLoading|${identityHashCode(_allClassPosts)}'
+        '|${identityHashCode(_classMembers)}|${identityHashCode(_users)}|$tl';
+    if (sig != _classesTabSig || _classesTabCache == null) {
+      _classesTabSig = sig;
+      _classesTabCache = _classesTab();
+    }
+    return _classesTabCache!;
   }
 
   // ── Users tab ────────────────────────────────────────────

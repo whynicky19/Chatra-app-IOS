@@ -6,7 +6,9 @@ import '../../providers/theme_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_dialog.dart';
+import '../../widgets/telegram_logo.dart';
 import '../../widgets/toast.dart';
+import 'contact_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -243,6 +245,36 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             ),
           ]),
         ), 0.45, 0.82),
+
+        const SizedBox(height: 16),
+
+        // ── Contact developer ───────────────────────────────────
+        _animated(
+          GestureDetector(
+            onTap: () => Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const ContactScreen())),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: surface,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: cardShadow(isDark),
+              ),
+              child: Row(children: [
+                const TelegramLogo(size: 32),
+                const SizedBox(width: 14),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Связаться с разработчиком',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: adaptiveText1(context))),
+                  const SizedBox(height: 1),
+                  const Text('Вопросы, ошибки и предложения',
+                    style: TextStyle(fontSize: 13, color: C.text4)),
+                ])),
+                const Icon(CupertinoIcons.chevron_right, size: 14, color: C.text4),
+              ]),
+            ),
+          ),
+        0.5, 0.88),
 
         const SizedBox(height: 16),
 

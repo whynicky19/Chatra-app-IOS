@@ -26,6 +26,7 @@ dependencies:
   just_audio: ^0.10.4
   video_player: ^2.9.5
   permission_handler: ^11.4.0
+  flutter_svg: ^2.3.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

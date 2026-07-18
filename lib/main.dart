@@ -45,6 +45,8 @@ void main() {
   final chats = ChatsProvider(api, auth);
 
   api.onUnauthorized = () => auth.logout();
+  // Заблокированный админом аккаунт — разлогин с причиной для сообщения на входе.
+  api.onAccountBlocked = () => auth.logout(reason: 'account_blocked');
   // Kick off initialization but never let a failing init() bubble up as an
   // unhandled async error — the app must still start (providers fall back to
   // their default state and _AuthGate shows the splash until they settle).

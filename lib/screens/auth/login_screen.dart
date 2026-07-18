@@ -7,6 +7,8 @@ import '../../providers/org_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/ambient_glow.dart';
 import '../../widgets/app_logo.dart';
+import 'verify_email_screen.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final VoidCallback? onGoRegister;
@@ -22,6 +24,17 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _busy = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Разлогин по причине (напр. блокировка аккаунта) — показываем один раз.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final reason = context.read<AuthProvider>().consumeSessionEndReason();
+      if (reason != null) setState(() => _error = context.read<L10n>().t(reason));
+    });
+  }
+
+  @override
   void dispose() { _email.dispose(); _pw.dispose(); super.dispose(); }
 
   Future<void> _submit() async {
@@ -31,13 +44,24 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     setState(() { _error = null; _busy = true; });
     final orgType = context.read<OrgProvider>().orgTypeString;
-    final ok = await context.read<AuthProvider>().login(_email.text.trim(), _pw.text, orgType: orgType);
+    // null = успех, иначе ключ L10n (wrong_creds / login_rate_limited /
+    // account_blocked / email_not_verified / no_connection).
+    final errKey = await context.read<AuthProvider>().login(_email.text.trim(), _pw.text, orgType: orgType);
     if (!mounted) return;
-    if (!ok) {
-      setState(() { _error = l.t('wrong_creds'); _busy = false; });
-    } else {
-      setState(() => _busy = false);
+    setState(() => _busy = false);
+    if (errKey == 'email_not_verified') {
+      // Email не подтверждён — уводим на ввод кода (там сразу вышлем свежий).
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) =>
+        VerifyEmailScreen(email: _email.text.trim(), orgType: orgType, autoSend: true)));
+      return;
     }
+    if (errKey != null) setState(() => _error = l.t(errKey));
+  }
+
+  void _openForgot() {
+    final orgType = context.read<OrgProvider>().orgTypeString;
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) =>
+      ForgotPasswordScreen(orgType: orgType, initialEmail: _email.text.trim().isEmpty ? null : _email.text.trim())));
   }
 
   // Ступенчатое появление — как на экране выбора организации.
@@ -129,6 +153,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     onChanged: (_) { if (_error != null) setState(() => _error = null); },
                     onSubmitted: (_) => _submit(),
+                  ),
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: GestureDetector(
+                      onTap: _openForgot,
+                      child: Text(l.t('forgot_password_link'),
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: primary)),
+                    ),
                   ),
                 ])),
 

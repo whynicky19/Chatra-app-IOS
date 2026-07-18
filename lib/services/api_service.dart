@@ -7,6 +7,9 @@ class ApiService {
   Dio get dio => _dio;
   String? _token;
   VoidCallback? onUnauthorized;
+  // Аккаунт заблокирован админом (is_active=false → 403 user_inactive):
+  // клиент должен разлогинить с понятным сообщением, а не «ломаться» молча.
+  VoidCallback? onAccountBlocked;
   // Shared in-flight refresh: while non-null, concurrent 401s await this instead
   // of each firing their own /auth/refresh (which would race and invalidate tokens).
   Future<String?>? _refreshing;
@@ -86,6 +89,27 @@ class ApiService {
               return handler.next(e);
             }
           }
+          await clearToken();
+          onUnauthorized?.call();
+          return handler.next(error);
+        }
+
+        // Аккаунт заблокирован админом в активной сессии: бэкенд отдаёт 403 с
+        // detail='user_inactive'. Немедленно разлогиниваем — иначе экран сыпет
+        // ошибками без объяснения, пока не истечёт access-токен.
+        if (status == 403 &&
+            error.response?.data is Map &&
+            error.response!.data['detail'] == 'user_inactive') {
+          await clearToken();
+          onAccountBlocked?.call();
+          return handler.next(error);
+        }
+
+        // Неподтверждённый email по сохранённому токену — тихо разлогиниваем,
+        // чтобы юзер вернулся на вход и прошёл верификацию (login → экран кода).
+        if (status == 403 &&
+            error.response?.data is Map &&
+            error.response!.data['detail'] == 'email_not_verified') {
           await clearToken();
           onUnauthorized?.call();
           return handler.next(error);
@@ -221,6 +245,73 @@ class ApiService {
       'full_name': fullName,
     });
     return response.data;
+  }
+
+  /// Best-effort серверный отзыв токенов. Ошибку глотаем — локальный logout
+  /// (очистка secure storage) выполняется в любом случае.
+  Future<void> logoutServer() async {
+    try {
+      await _dio.post('/auth/logout');
+    } catch (_) {}
+  }
+
+  /// Меняет пароль и сохраняет новую пару токенов (старые сессии сервер отзывает).
+  Future<void> changePassword(String currentPassword, String newPassword) async {
+    final response = await _dio.post('/auth/change-password', data: {
+      'current_password': currentPassword,
+      'new_password': newPassword,
+    });
+    final access = response.data['access_token'] as String?;
+    final refresh = response.data['refresh_token'] as String?;
+    if (access != null) await saveToken(access);
+    if (refresh != null) await saveRefreshToken(refresh);
+  }
+
+  /// Удаляет собственный аккаунт (подтверждение паролем).
+  Future<void> deleteAccount(String password) async {
+    await _dio.delete('/auth/me', data: {'password': password});
+  }
+
+  // ── Верификация email / восстановление пароля (OTP-код) ──────────────────────
+
+  /// Подтверждает email кодом и сохраняет выданную пару токенов (авто-вход).
+  Future<void> verifyEmail(String email, String code, {String orgType = 'university'}) async {
+    final resp = await _dio.post('/auth/verify-email',
+        data: {'email': email, 'org_type': orgType, 'code': code},
+        options: Options(extra: {'_skipAuth': true}));
+    await _saveTokenPair(resp.data);
+  }
+
+  /// Повторно шлёт код подтверждения. Возвращает тело ответа ({sent, dev_code?}).
+  Future<Map<String, dynamic>> resendVerification(String email, {String orgType = 'university'}) async {
+    final resp = await _dio.post('/auth/resend-verification',
+        data: {'email': email, 'org_type': orgType},
+        options: Options(extra: {'_skipAuth': true}));
+    return resp.data is Map<String, dynamic> ? resp.data : {};
+  }
+
+  /// Запрашивает код сброса пароля. Возвращает тело ответа ({sent, dev_code?}).
+  Future<Map<String, dynamic>> forgotPassword(String email, {String orgType = 'university'}) async {
+    final resp = await _dio.post('/auth/forgot-password',
+        data: {'email': email, 'org_type': orgType},
+        options: Options(extra: {'_skipAuth': true}));
+    return resp.data is Map<String, dynamic> ? resp.data : {};
+  }
+
+  /// Сбрасывает пароль по коду и сохраняет выданную пару токенов (авто-вход).
+  Future<void> resetPassword(String email, String code, String newPassword,
+      {String orgType = 'university'}) async {
+    final resp = await _dio.post('/auth/reset-password',
+        data: {'email': email, 'org_type': orgType, 'code': code, 'new_password': newPassword},
+        options: Options(extra: {'_skipAuth': true}));
+    await _saveTokenPair(resp.data);
+  }
+
+  Future<void> _saveTokenPair(dynamic data) async {
+    final access = (data is Map) ? data['access_token'] as String? : null;
+    final refresh = (data is Map) ? data['refresh_token'] as String? : null;
+    if (access != null) await saveToken(access);
+    if (refresh != null) await saveRefreshToken(refresh);
   }
 
   // ── Posts (class storage) ────────────────────────────────────────────────────

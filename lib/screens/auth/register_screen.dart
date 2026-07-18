@@ -8,6 +8,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/ambient_glow.dart';
 import '../../widgets/app_logo.dart';
 import '../../widgets/toast.dart';
+import 'verify_email_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   final VoidCallback? onGoLogin;
@@ -55,17 +56,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!_isValid || _submitted) return;
     setState(() => _submitted = true);
     final auth = context.read<AuthProvider>();
-    final goLogin = widget.onGoLogin;
-    final ok = await auth.register(_email.text.trim(), _pw.text, 'student',
+    final email = _email.text.trim();
+    final orgType = org.orgTypeString;
+    final ok = await auth.register(email, _pw.text, 'student',
         fullName: _name.text.trim(),
-        orgType: org.orgTypeString);
-    if (!mounted) {
-      if (ok) goLogin?.call();
-      return;
-    }
+        orgType: orgType);
+    if (!mounted) return;
     if (ok) {
       showToast(context, context.read<L10n>().t('account_created'));
-      goLogin?.call();
+      // Бэкенд уже выслал код подтверждения — ведём на его ввод (autoSend:false,
+      // чтобы не слать второй раз). После подтверждения — авто-вход в MainShell.
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) =>
+        VerifyEmailScreen(email: email, orgType: orgType, autoSend: false)));
+      setState(() => _submitted = false);
     } else {
       setState(() => _submitted = false);
       final l = context.read<L10n>();

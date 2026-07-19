@@ -205,10 +205,39 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
                 margin: const EdgeInsets.only(bottom: 16),
                 alignment: Alignment.bottomCenter,
                 itemPadding: 6,
+                // Стекло бара: приглушённое краевое свечение (низкий lightIntensity
+                // + мягкий OpticalBorder) и более плотный фрост, чтобы иконки и
+                // подписи читались на любом фоне.
+                style: LiquidGlassStyle(
+                  shape: const LiquidGlassShape.roundedRectangle(
+                    cornerRadius: 32,
+                    borderWidth: 1.0,
+                    lightIntensity: 0.35,
+                    borderType: OpticalBorder(
+                      borderSaturation: 1.0,
+                      ambientIntensity: 0.30,
+                      borderSolidity: 0.25,
+                      lightSpread: 0.35,
+                    ),
+                  ),
+                  appearance: LiquidGlassAppearance(
+                    // Прозрачное стекло — прозрачность НЕ глушим: лишь лёгкий тинт
+                    // и subtle blur (он же чуть помогает читаемости фона).
+                    color: isDark ? const Color(0x26000000) : const Color(0x26FFFFFF),
+                    blur: const LiquidGlassBlur(sigmaX: 6, sigmaY: 6),
+                  ),
+                  refraction: const LiquidGlassRefraction(
+                    distortion: 0.06,
+                    distortionWidth: 24,
+                    chromaticAberration: 0.0,
+                  ),
+                ),
                 // Иконки: активная — контрастный акцент, неактивные приглушены.
                 itemStyle: LiquidGlassNavItemStyle(
                   selectedColor: Theme.of(context).colorScheme.primary,
-                  unselectedColor: isDark ? Colors.white.withValues(alpha: 0.5) : C.text4,
+                  unselectedColor: isDark
+                      ? Colors.white.withValues(alpha: 0.80)
+                      : const Color(0xFF3C4043),
                   iconSize: 23,
                   labelFontSize: 10.5,
                   selectedFontWeight: FontWeight.w700,
@@ -223,7 +252,9 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
                   animationCurve: Curves.easeOutCubic,
                   distortion: 0.06,
                   distortionWidth: 10,
-                  color: isDark ? const Color(0x24FFFFFF) : const Color(0x40FFFFFF),
+                  // Чуть плотнее материал капсулы выбора → активный контент
+                  // всегда читаем, но капсула остаётся стеклянной (не заливка).
+                  color: isDark ? const Color(0x33FFFFFF) : const Color(0x59FFFFFF),
                 ),
               ),
             ),

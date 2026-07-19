@@ -172,9 +172,9 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
   }
 
   Widget _statBox(String val, String label, Color color) => Expanded(child: Container(
-    padding: EdgeInsets.all(14),
+    padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.2))),
-    child: Column(children: [Text(val, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: color)), SizedBox(height: 2), Text(label, style: TextStyle(fontSize: 11, color: C.text4))])));
+    child: Column(children: [Text(val, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: color)), const SizedBox(height: 2), Text(label, style: const TextStyle(fontSize: 11, color: C.text4))])));
 
   @override
   Widget build(BuildContext context) {
@@ -185,31 +185,31 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
     final avg = (widget.rating['avg_score'] ?? 0).round();
     final pct = (widget.rating['avg_percent'] ?? 0).round();
 
-    return ListView(padding: EdgeInsets.fromLTRB(12, 12, 12, 90), children: [
+    return ListView(padding: const EdgeInsets.fromLTRB(12, 12, 12, 90), children: [
       if (!widget.isTeacher && widget.rating.isNotEmpty) Padding(
-        padding: EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.only(bottom: 16),
         child: IntrinsicHeight(child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Expanded(child: Container(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [Color(0xFF006475), Theme.of(context).colorScheme.primary], begin: Alignment.topLeft, end: Alignment.bottomRight),
+              gradient: LinearGradient(colors: [const Color(0xFF006475), Theme.of(context).colorScheme.primary], begin: Alignment.topLeft, end: Alignment.bottomRight),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(l.t('your_rating'), style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1)),
-              SizedBox(height: 8),
+              Text(l.t('your_rating'), style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1)),
+              const SizedBox(height: 8),
               RichText(text: TextSpan(children: [
-                TextSpan(text: '$avg', style: TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w900, height: 1)),
-                TextSpan(text: ' /100', style: TextStyle(color: Colors.white60, fontSize: 14, fontWeight: FontWeight.w600)),
+                TextSpan(text: '$avg', style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w900, height: 1)),
+                const TextSpan(text: ' /100', style: TextStyle(color: Colors.white60, fontSize: 14, fontWeight: FontWeight.w600)),
               ])),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               ClipRRect(borderRadius: BorderRadius.circular(3), child: LinearProgressIndicator(
                 value: avg / 100, backgroundColor: Colors.white24, color: Colors.white, minHeight: 4)),
-              SizedBox(height: 4),
-              Text('${l.t('performance')}: $pct%', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w500)),
+              const SizedBox(height: 4),
+              Text('${l.t('performance')}: $pct%', style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w500)),
             ]),
           )),
-          SizedBox(width: 10),
+          const SizedBox(width: 10),
           Expanded(child: Builder(builder: (_) {
             final now = DateTime.now();
             final upcoming = widget.assignments.where((a) {
@@ -222,14 +222,14 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             upcoming.sort((a, b) => (a['deadline'] ?? '').compareTo(b['deadline'] ?? ''));
             if (upcoming.isEmpty) {
               return Container(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: adaptiveBorder(context))),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(l.t('next_deadline'), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
-                SizedBox(height: 16),
-                Center(child: Icon(CupertinoIcons.checkmark_circle, size: 32, color: C.green)),
-                SizedBox(height: 8),
-                Center(child: Text(l.t('all_submitted'), style: TextStyle(fontSize: 13, color: C.green, fontWeight: FontWeight.w600))),
+                Text(l.t('next_deadline'), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
+                const SizedBox(height: 16),
+                const Center(child: Icon(CupertinoIcons.checkmark_circle, size: 32, color: C.green)),
+                const SizedBox(height: 8),
+                Center(child: Text(l.t('all_submitted'), style: const TextStyle(fontSize: 13, color: C.green, fontWeight: FontWeight.w600))),
               ]));
             }
             final next = upcoming.first;
@@ -242,11 +242,11 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 ? '$days ${l.t('days_short')} $hours ${l.t('hours_short')}'
                 : '$hours ${l.t('hours_short')} ${diff.inMinutes % 60} ${l.t('minutes_short')}';
             return Container(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: adaptiveBorder(context))),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(l.t('next_deadline'), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
-                SizedBox(height: 10),
+                Text(l.t('next_deadline'), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
+                const SizedBox(height: 10),
                 Row(children: [
                   Container(
                     width: 48, height: 56,
@@ -256,10 +256,10 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                       Text('${dl.day}', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.primary, height: 1.1)),
                     ]),
                   ),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(next['title'] ?? '', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
-                    SizedBox(height: 2),
+                    Text(next['title'] ?? '', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 2),
                     Text('${l.t('remaining')}: $remaining', style: TextStyle(fontSize: 11, color: days <= 1 ? C.red : Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w500)),
                   ])),
                 ]),
@@ -269,21 +269,21 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
         ])),
       ),
       Row(children: [
-        Text(l.t('assignments'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
-        Spacer(),
-        Container(padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
-          child: Row(children: [Icon(CupertinoIcons.arrow_up_arrow_down, size: 14, color: C.text4), SizedBox(width: 4), Text(l.t('sort_deadline'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: C.text4))])),
+        Text(l.t('assignments'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+        const Spacer(),
+        Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
+          child: Row(children: [const Icon(CupertinoIcons.arrow_up_arrow_down, size: 14, color: C.text4), const SizedBox(width: 4), Text(l.t('sort_deadline'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: C.text4))])),
       ]),
-      SizedBox(height: 12),
-      if (widget.assignments.isEmpty) Container(padding: EdgeInsets.symmetric(vertical: 52), child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+      const SizedBox(height: 12),
+      if (widget.assignments.isEmpty) Container(padding: const EdgeInsets.symmetric(vertical: 52), child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
         Container(width: 80, height: 80,
           decoration: BoxDecoration(gradient: RadialGradient(colors: [Theme.of(context).colorScheme.primary.withValues(alpha: 0.16), Theme.of(context).colorScheme.primary.withValues(alpha: 0.04)]), shape: BoxShape.circle),
           child: Icon(CupertinoIcons.doc_text, size: 36, color: Theme.of(context).colorScheme.primary)),
-        SizedBox(height: 18),
+        const SizedBox(height: 18),
         Text(l.t('no_assignments'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: adaptiveText1(context))),
-        SizedBox(height: 6),
+        const SizedBox(height: 6),
         Text(widget.isTeacher ? l.t('create_first_assignment') : l.t('no_assignments_yet'),
-          style: TextStyle(fontSize: 13, color: C.text4)),
+          style: const TextStyle(fontSize: 13, color: C.text4)),
       ]))),
       // Pre-compute lookup map once — avoids O(N×M) linear scans per card
       ...() {
@@ -315,66 +315,66 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
           child: RepaintBoundary(child: GestureDetector(
             onTap: () => _showAssignment(a, sub),
             child: Container(
-              margin: EdgeInsets.only(bottom: 12),
+              margin: const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
                 color: surface,
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: cardShadow(isDark),
               ),
               child: Column(children: [
-                Padding(padding: EdgeInsets.all(16), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Padding(padding: const EdgeInsets.all(16), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Container(width: 48, height: 48,
                     decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.tile)),
                     child: Icon(statusIcon, color: statusColor, size: 22)),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Row(children: [
-                      Expanded(child: Text(a['title'] ?? '', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800), maxLines: 2, overflow: TextOverflow.ellipsis)),
-                      SizedBox(width: 8),
-                      Container(padding: EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                      Expanded(child: Text(a['title'] ?? '', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800), maxLines: 2, overflow: TextOverflow.ellipsis)),
+                      const SizedBox(width: 8),
+                      Container(padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                         decoration: BoxDecoration(color: statusBg, borderRadius: BorderRadius.circular(AppRadii.card)),
                         child: Text(statusText, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: statusColor))),
                     ]),
                     if (a['description'] != null && _cleanContent(a['description'].toString()).isNotEmpty)
-                      Padding(padding: EdgeInsets.only(top: 4),
-                        child: Text(_cleanContent(a['description'].toString()), style: TextStyle(fontSize: 13, color: C.text4), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                    SizedBox(height: 10),
+                      Padding(padding: const EdgeInsets.only(top: 4),
+                        child: Text(_cleanContent(a['description'].toString()), style: const TextStyle(fontSize: 13, color: C.text4), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                    const SizedBox(height: 10),
                     Wrap(spacing: 12, children: [
                       if (deadline != null) Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(CupertinoIcons.calendar, size: 12, color: isLate ? C.red : C.text4), SizedBox(width: 4),
+                        Icon(CupertinoIcons.calendar, size: 12, color: isLate ? C.red : C.text4), const SizedBox(width: 4),
                         Text(_fmtDate(deadline), style: TextStyle(fontSize: 12, color: isLate ? C.red : C.text4, fontWeight: FontWeight.w500)),
                       ]),
                       Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(CupertinoIcons.star_fill, size: 14, color: Theme.of(context).colorScheme.primary), SizedBox(width: 3),
+                        Icon(CupertinoIcons.star_fill, size: 14, color: Theme.of(context).colorScheme.primary), const SizedBox(width: 3),
                         Text('${a['max_score'] ?? 100} ${l.t('pts')}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
                       ]),
                       if (grade != null) Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(CupertinoIcons.checkmark_circle_fill, size: 12, color: C.green), SizedBox(width: 3),
-                        Text('${grade['score']}/${a['max_score']}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: C.green)),
+                        const Icon(CupertinoIcons.checkmark_circle_fill, size: 12, color: C.green), const SizedBox(width: 3),
+                        Text('${grade['score']}/${a['max_score']}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: C.green)),
                       ]),
                     ]),
                   ])),
                 ])),
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
                   decoration: BoxDecoration(
                     color: adaptiveSurface2(context).withValues(alpha: 0.45),
-                    borderRadius: BorderRadius.vertical(bottom: Radius.circular(18)),
+                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(18)),
                   ),
                   child: Row(children: [
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(8)),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
                         Icon(statusIcon, size: 12, color: statusColor),
-                        SizedBox(width: 4),
+                        const SizedBox(width: 4),
                         Text(statusText, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: statusColor)),
                       ]),
                     ),
-                    Spacer(),
+                    const Spacer(),
                     Row(children: [
                       Text(l.t('open'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
-                      SizedBox(width: 3),
+                      const SizedBox(width: 3),
                       Icon(CupertinoIcons.chevron_right, size: 13, color: Theme.of(context).colorScheme.primary),
                     ]),
                   ]),
@@ -415,7 +415,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
         builder: (ctx, sc) => Container(
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           ),
           clipBehavior: Clip.antiAlias,
           child: Column(children: [
@@ -426,7 +426,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               ),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Padding(
-                  padding: EdgeInsets.fromLTRB(20, 12, 16, 0),
+                  padding: const EdgeInsets.fromLTRB(20, 12, 16, 0),
                   child: Row(children: [
                     Expanded(child: Center(child: Container(
                       width: 36, height: 4,
@@ -436,58 +436,58 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                       onTap: () => Navigator.pop(ctx),
                       child: Container(width: 32, height: 32,
                         decoration: BoxDecoration(color: adaptiveSurface2(context), shape: BoxShape.circle),
-                        child: Icon(CupertinoIcons.xmark, color: C.text4, size: 16)),
+                        child: const Icon(CupertinoIcons.xmark, color: C.text4, size: 16)),
                     ),
                   ]),
                 ),
                 Padding(
-                  padding: EdgeInsets.fromLTRB(20, 14, 20, 0),
+                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
                   child: Row(children: [
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                       decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(7)),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
                         Icon(CupertinoIcons.doc_text, size: 11, color: Theme.of(context).colorScheme.primary),
-                        SizedBox(width: 4),
+                        const SizedBox(width: 4),
                         Text(l.t('task_badge'), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary, letterSpacing: 0.6)),
                       ]),
                     ),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                       decoration: BoxDecoration(color: sheetStatusColor.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(7)),
                       child: Text(sheetStatusText, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: sheetStatusColor)),
                     ),
                   ]),
                 ),
                 Padding(
-                  padding: EdgeInsets.fromLTRB(20, 10, 20, 0),
+                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
                   child: Text(a['title'] ?? '',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, height: 1.2, letterSpacing: -0.3, color: adaptiveText1(context)),
                     maxLines: 2, overflow: TextOverflow.ellipsis),
                 ),
                 Padding(
-                  padding: EdgeInsets.fromLTRB(20, 10, 20, 16),
+                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
                   child: Row(children: [
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(8)),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(CupertinoIcons.star_fill, size: 13, color: Theme.of(context).colorScheme.primary), SizedBox(width: 4),
+                        Icon(CupertinoIcons.star_fill, size: 13, color: Theme.of(context).colorScheme.primary), const SizedBox(width: 4),
                         Text('${a['max_score'] ?? 100} ${l.t('pts')}', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w700)),
                       ]),
                     ),
                     if (deadline != null) ...[
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
                           color: isLate ? C.red.withValues(alpha: 0.08) : adaptiveSurface2(context),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
                           Icon(CupertinoIcons.calendar, size: 12, color: isLate ? C.red : C.text4),
-                          SizedBox(width: 4),
+                          const SizedBox(width: 4),
                           Text(_fmtDate(deadline), style: TextStyle(fontSize: 12, color: isLate ? C.red : C.text4, fontWeight: FontWeight.w600)),
                         ]),
                       ),
@@ -496,7 +496,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 ),
               ]),
             ),
-            Expanded(child: ListView(controller: sc, padding: EdgeInsets.fromLTRB(20, 20, 20, 24), children: [
+            Expanded(child: ListView(controller: sc, padding: const EdgeInsets.fromLTRB(20, 20, 20, 24), children: [
         FutureBuilder<Map<String, dynamic>>(
           future: assignmentFuture,
           builder: (ctx, snap) {
@@ -518,56 +518,56 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               if (descText.isNotEmpty) ...[
                 Row(children: [
                   Container(width: 3, height: 16, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, borderRadius: BorderRadius.circular(2))),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Text(l.t('description'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary)),
-                  Spacer(),
+                  const Spacer(),
                   GestureDetector(
                     onTap: () => setS(() => descHidden = !descHidden),
                     child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(8)),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
                         AnimatedRotation(
                           turns: descHidden ? 0.5 : 0.0,
-                          duration: Duration(milliseconds: 220),
-                          child: Icon(CupertinoIcons.chevron_up, size: 14, color: C.text4),
+                          duration: const Duration(milliseconds: 220),
+                          child: const Icon(CupertinoIcons.chevron_up, size: 14, color: C.text4),
                         ),
-                        SizedBox(width: 4),
-                        Text(descHidden ? l.t('show') : l.t('hide'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: C.text4)),
+                        const SizedBox(width: 4),
+                        Text(descHidden ? l.t('show') : l.t('hide'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: C.text4)),
                       ]),
                     ),
                   ),
                 ]),
                 AnimatedSize(
-                  duration: Duration(milliseconds: 250),
+                  duration: const Duration(milliseconds: 250),
                   curve: Curves.easeInOut,
                   child: descHidden
-                      ? SizedBox.shrink()
+                      ? const SizedBox.shrink()
                       : Padding(
-                          padding: EdgeInsets.only(top: 10, bottom: 20),
+                          padding: const EdgeInsets.only(top: 10, bottom: 20),
                           child: Container(
-                            padding: EdgeInsets.all(14),
+                            padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(color: isDark ? C.darkSurface2 : C.bg, borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10))),
-                            child: Text(descText, style: TextStyle(fontSize: 14, height: 1.65)),
+                            child: Text(descText, style: const TextStyle(fontSize: 14, height: 1.65)),
                           ),
                         ),
                 ),
               ],
               if (isLoading) Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Row(children: [
                   SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.primary)),
-                  SizedBox(width: 10),
-                  Text(l.t('loading_files'), style: TextStyle(fontSize: 13, color: C.text4)),
+                  const SizedBox(width: 10),
+                  Text(l.t('loading_files'), style: const TextStyle(fontSize: 13, color: C.text4)),
                 ]),
               )
               else if (allFiles.isNotEmpty) ...[
                 Row(children: [
                   Container(width: 3, height: 16, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, borderRadius: BorderRadius.circular(2))),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Text(l.t('attached_files'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary, letterSpacing: 0.3)),
                 ]),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 ...allFiles.asMap().entries.map((entry) {
               final f = entry.value;
               final name = _fileDisplayName(f);
@@ -579,25 +579,25 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               return GestureDetector(
                 onTap: () => widget.onOpenFile(f, name),
                 child: Container(
-                  margin: EdgeInsets.only(bottom: 8),
-                  padding: EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: isDark ? C.darkSurface2 : Colors.white,
                     borderRadius: BorderRadius.circular(AppRadii.tile),
                     border: Border.all(color: fileColor.withValues(alpha: 0.2)),
-                    boxShadow: [BoxShadow(color: fileColor.withValues(alpha: 0.06), blurRadius: 8, offset: Offset(0, 2))],
+                    boxShadow: [BoxShadow(color: fileColor.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 2))],
                   ),
                   child: Row(children: [
                     Container(width: 42, height: 42, decoration: BoxDecoration(color: fileBg, borderRadius: BorderRadius.circular(11)),
                       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                         Icon(fileIcon, size: 18, color: fileColor),
-                        SizedBox(height: 1),
+                        const SizedBox(height: 1),
                         Text(ext.toUpperCase(), style: TextStyle(fontSize: 7, fontWeight: FontWeight.w900, color: fileColor)),
                       ])),
-                    SizedBox(width: 11),
+                    const SizedBox(width: 11),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700), overflow: TextOverflow.ellipsis),
-                      Text(l.t('click_open'), style: TextStyle(fontSize: 11, color: C.text4)),
+                      Text(name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700), overflow: TextOverflow.ellipsis),
+                      Text(l.t('click_open'), style: const TextStyle(fontSize: 11, color: C.text4)),
                     ])),
                     Container(width: 32, height: 32, decoration: BoxDecoration(color: fileColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(9)),
                       child: Icon(CupertinoIcons.arrow_up_right_square, size: 15, color: fileColor)),
@@ -605,25 +605,25 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 ),
               );
             }),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
               ],
               if (showDebug) Container(
-                margin: EdgeInsets.only(top: 8, bottom: 8),
-                padding: EdgeInsets.all(12),
+                margin: const EdgeInsets.only(top: 8, bottom: 8),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.orange.withValues(alpha: 0.3))),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('DEBUG: file_urls', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.orange)),
-                  SizedBox(height: 4),
-                  Text('list: $rawFromList', style: TextStyle(fontSize: 10, color: C.text4)),
-                  Text('detail: $rawFromDetail', style: TextStyle(fontSize: 10, color: C.text4)),
-                  if (hasError) Text('error: ${snap.error}', style: TextStyle(fontSize: 10, color: C.red)),
+                  const Text('DEBUG: file_urls', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.orange)),
+                  const SizedBox(height: 4),
+                  Text('list: $rawFromList', style: const TextStyle(fontSize: 10, color: C.text4)),
+                  Text('detail: $rawFromDetail', style: const TextStyle(fontSize: 10, color: C.text4)),
+                  if (hasError) Text('error: ${snap.error}', style: const TextStyle(fontSize: 10, color: C.red)),
                 ]),
               ),
             ]);
           },
         ),
         if (isTeacherOrAdmin && criteria.isNotEmpty) ...[
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           GestureDetector(
             onTap: () => setS(() { if (_expandedCriteria.contains(a['id'])) {
               _expandedCriteria.remove(a['id']);
@@ -631,67 +631,67 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               _expandedCriteria.add(a['id']);
             } }),
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(12)),
               child: Row(children: [
                 Icon(CupertinoIcons.list_bullet, size: 16, color: Theme.of(context).colorScheme.primary),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Text(l.t('criteria'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
-                SizedBox(width: 4),
-                Text('(${criteria.length})', style: TextStyle(fontSize: 12, color: C.text4)),
-                Spacer(),
-                AnimatedRotation(turns: _expandedCriteria.contains(a['id']) ? 0.5 : 0.0, duration: Duration(milliseconds: 200),
+                const SizedBox(width: 4),
+                Text('(${criteria.length})', style: const TextStyle(fontSize: 12, color: C.text4)),
+                const Spacer(),
+                AnimatedRotation(turns: _expandedCriteria.contains(a['id']) ? 0.5 : 0.0, duration: const Duration(milliseconds: 200),
                   child: Icon(CupertinoIcons.chevron_down, size: 20, color: Theme.of(context).colorScheme.primary)),
               ]),
             ),
           ),
-          AnimatedSize(duration: Duration(milliseconds: 300), curve: Curves.easeInOut,
+          AnimatedSize(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut,
             child: _expandedCriteria.contains(a['id']) ? Column(children: [
-              SizedBox(height: 8),
-              ...criteria.map((c) => Container(margin: EdgeInsets.only(bottom: 8), padding: EdgeInsets.all(12), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
+              const SizedBox(height: 8),
+              ...criteria.map((c) => Container(margin: const EdgeInsets.only(bottom: 8), padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
                 child: Row(children: [Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(c['name'] ?? '', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  Text(c['name'] ?? '', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                   if (c['description'] != null && c['description'].toString().isNotEmpty)
-                    Padding(padding: EdgeInsets.only(top: 4), child: Text(c['description'], style: TextStyle(fontSize: 12, color: C.text4))),
+                    Padding(padding: const EdgeInsets.only(top: 4), child: Text(c['description'], style: const TextStyle(fontSize: 12, color: C.text4))),
                 ])),
-                  Container(padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(8)),
+                  Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(8)),
                     child: Text('${c['weight'] ?? 0}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary)))])))
-            ]) : SizedBox.shrink(),
+            ]) : const SizedBox.shrink(),
           ),
         ],
         if (sub?['grade'] != null) ...[
-          SizedBox(height: 16),
-          Container(padding: EdgeInsets.all(18), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(16), border: Border.all(color: adaptiveBorder(context))),
+          const SizedBox(height: 16),
+          Container(padding: const EdgeInsets.all(18), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(16), border: Border.all(color: adaptiveBorder(context))),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
                 RichText(text: TextSpan(children: [
                   TextSpan(text: '${sub['grade']['score']}', style: TextStyle(fontSize: 42, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.primary, height: 1)),
-                  TextSpan(text: ' / ${a['max_score']}', style: TextStyle(fontSize: 18, color: C.text4, fontWeight: FontWeight.w600)),
+                  TextSpan(text: ' / ${a['max_score']}', style: const TextStyle(fontSize: 18, color: C.text4, fontWeight: FontWeight.w600)),
                 ])),
-                Spacer(),
+                const Spacer(),
                 Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                   Text('${(sub['grade']['score'] / (a['max_score'] ?? 100) * 100).round()}%', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
-                  SizedBox(height: 4),
-                  Container(padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  const SizedBox(height: 4),
+                  Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppRadii.card)),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       Icon(sub['grade']['graded_by'] == 'ai' ? CupertinoIcons.bolt_fill : CupertinoIcons.person, size: 14, color: Theme.of(context).colorScheme.primary),
-                      SizedBox(width: 4),
+                      const SizedBox(width: 4),
                       Text(sub['grade']['graded_by'] == 'ai' ? l.t('ai_check') : l.t('teacher_short'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
                     ])),
                 ]),
               ]),
               if (sub['grade']['feedback'] != null) ...[
-                SizedBox(height: 14),
-                Text(l.t('feedback'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
-                SizedBox(height: 6),
+                const SizedBox(height: 14),
+                Text(l.t('feedback'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
+                const SizedBox(height: 6),
                 Text(sub['grade']['feedback'], style: TextStyle(fontSize: 14, color: adaptiveText1(context), height: 1.6)),
               ],
             ])),
           if (sub['grade']['criteria_scores'] != null) ...[
-            SizedBox(height: 12),
-            Text(l.t('by_criteria'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
-            SizedBox(height: 8),
+            const SizedBox(height: 12),
+            Text(l.t('by_criteria'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
+            const SizedBox(height: 8),
             ...(() {
               List<dynamic> criteriaScores = [];
               try { criteriaScores = jsonDecode(sub['grade']['criteria_scores']); } catch (_) {
@@ -701,19 +701,19 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 final score = (cs['score'] ?? 0) as num;
                 final maxScore = (cs['max_score'] ?? cs['max'] ?? cs['weight'] ?? 100) as num;
                 final pct = maxScore > 0 ? score / maxScore : 0.0;
-                return Container(margin: EdgeInsets.only(bottom: 8), padding: EdgeInsets.all(14),
+                return Container(margin: const EdgeInsets.only(bottom: 8), padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Row(children: [
-                      Expanded(child: Text(cs['name'] ?? '', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700))),
+                      Expanded(child: Text(cs['name'] ?? '', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700))),
                       RichText(text: TextSpan(children: [
                         TextSpan(text: '${score.toInt()}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary)),
-                        TextSpan(text: ' / ${maxScore.toInt()}', style: TextStyle(fontSize: 13, color: C.text4)),
+                        TextSpan(text: ' / ${maxScore.toInt()}', style: const TextStyle(fontSize: 13, color: C.text4)),
                       ])),
                     ]),
                     if (cs['comment'] != null || cs['feedback'] != null)
-                      Padding(padding: EdgeInsets.only(top: 6), child: Text(cs['comment'] ?? cs['feedback'] ?? '', style: TextStyle(fontSize: 13, color: C.text4, height: 1.5))),
-                    SizedBox(height: 8),
+                      Padding(padding: const EdgeInsets.only(top: 6), child: Text(cs['comment'] ?? cs['feedback'] ?? '', style: const TextStyle(fontSize: 13, color: C.text4, height: 1.5))),
+                    const SizedBox(height: 8),
                     ClipRRect(borderRadius: BorderRadius.circular(3),
                       child: LinearProgressIndicator(value: pct.toDouble(), backgroundColor: adaptiveBorder(context), color: Theme.of(context).colorScheme.primary, minHeight: 4)),
                   ]));
@@ -722,21 +722,21 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
           ],
         ],
         if (sub != null && sub['status'] == 'grading' && sub['grade'] == null) ...[
-          SizedBox(height: 16),
-          Container(padding: EdgeInsets.all(14), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15))),
+          const SizedBox(height: 16),
+          Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15))),
             child: Row(children: [
               SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.primary)),
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
               Expanded(child: Text(l.t('ai_checking'), style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w500))),
             ])),
         ],
         if (sub != null && (sub['text_content'] != null || sub['file_urls'] != null)) ...[
-          SizedBox(height: 16),
-          Text(l.t('your_answer'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
-          SizedBox(height: 6),
+          const SizedBox(height: 16),
+          Text(l.t('your_answer'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
+          const SizedBox(height: 6),
           if (sub['text_content'] != null && sub['text_content'].toString().isNotEmpty)
-            Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
-              child: Text(sub['text_content'], style: TextStyle(fontSize: 13, height: 1.6), maxLines: 5, overflow: TextOverflow.ellipsis)),
+            Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
+              child: Text(sub['text_content'], style: const TextStyle(fontSize: 13, height: 1.6), maxLines: 5, overflow: TextOverflow.ellipsis)),
           ...(() {
             List<String> urls = [];
             final raw = sub['file_urls'];
@@ -747,17 +747,17 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             }
             if (urls.isEmpty) return <Widget>[];
             return [
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               ...urls.map((url) {
                 final name = _fileDisplayName(url);
                 final ext = name.split('.').last.toLowerCase();
                 final icon = ext == 'pdf' ? CupertinoIcons.doc_text : ext == 'pptx' || ext == 'ppt' ? CupertinoIcons.film : ext == 'doc' || ext == 'docx' ? CupertinoIcons.doc_text : CupertinoIcons.doc;
                 return GestureDetector(
                   onTap: () => widget.onOpenFile(url, name),
-                  child: Container(margin: EdgeInsets.only(bottom: 6), padding: EdgeInsets.all(12),
+                  child: Container(margin: const EdgeInsets.only(bottom: 6), padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(12)),
                     child: Row(children: [
-                      Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary), SizedBox(width: 8),
+                      Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary), const SizedBox(width: 8),
                       Expanded(child: Text(name, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis)),
                       Icon(CupertinoIcons.arrow_up_right_square, size: 14, color: Theme.of(context).colorScheme.primary),
                     ])),
@@ -767,7 +767,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
           })(),
         ],
         if (!isTeacherOrAdmin && !widget.viewOnly && sub != null && sub['status'] != 'graded' && sub['grade'] == null) ...[
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           GestureDetector(
             onTap: busy ? null : () async {
               setS(() => busy = true);
@@ -783,64 +783,64 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               }
               if (ctx.mounted) setS(() => busy = false);
             },
-            child: Container(padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Container(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(CupertinoIcons.arrow_counterclockwise, size: 14, color: C.text4),
-                SizedBox(width: 6),
-                Text(busy ? l.t('retracting') : l.t('retract_resubmit'), style: TextStyle(fontSize: 13, color: C.text4)),
+                const Icon(CupertinoIcons.arrow_counterclockwise, size: 14, color: C.text4),
+                const SizedBox(width: 6),
+                Text(busy ? l.t('retracting') : l.t('retract_resubmit'), style: const TextStyle(fontSize: 13, color: C.text4)),
               ])),
           ),
         ],
         if (!isTeacherOrAdmin && widget.viewOnly && sub == null) ...[
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
             child: Row(children: [
-              Icon(CupertinoIcons.lock, size: 15, color: C.text4),
+              const Icon(CupertinoIcons.lock, size: 15, color: C.text4),
               const SizedBox(width: 8),
               Expanded(child: Text(l.t('archive_readonly'),
-                  style: TextStyle(fontSize: 12.5, color: C.text4, fontWeight: FontWeight.w500))),
+                  style: const TextStyle(fontSize: 12.5, color: C.text4, fontWeight: FontWeight.w500))),
             ]),
           ),
         ],
         if (!isTeacherOrAdmin && !widget.viewOnly && sub == null) ...[
-          SizedBox(height: 20),
-          Divider(),
-          SizedBox(height: 12),
-          Text(l.t('submit_work'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-          SizedBox(height: 10),
+          const SizedBox(height: 20),
+          const Divider(),
+          const SizedBox(height: 12),
+          Text(l.t('submit_work'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 10),
           TextField(controller: tc, maxLines: 4, decoration: InputDecoration(hintText: l.t('work_text_hint'))),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           GestureDetector(
             onTap: () async {
               final result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
               if (result != null) setS(() => pickedFiles = result.files);
             },
-            child: Container(padding: EdgeInsets.all(14), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3), width: 1.5)),
+            child: Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3), width: 1.5)),
               child: Row(children: [
                 Icon(CupertinoIcons.paperclip, color: Theme.of(context).colorScheme.primary, size: 20),
-                SizedBox(width: 10),
+                const SizedBox(width: 10),
                 Expanded(child: Text(pickedFiles.isEmpty ? l.t('attach_file') : '${l.t('files_selected')}: ${pickedFiles.length}', style: TextStyle(fontSize: 14, color: pickedFiles.isEmpty ? C.text4 : Theme.of(context).colorScheme.primary, fontWeight: pickedFiles.isEmpty ? FontWeight.normal : FontWeight.w600))),
-                Icon(CupertinoIcons.chevron_right, color: C.text4, size: 18),
+                const Icon(CupertinoIcons.chevron_right, color: C.text4, size: 18),
               ])),
           ),
           if (pickedFiles.isNotEmpty) ...[
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             ...pickedFiles.map((f) => Padding(
-              padding: EdgeInsets.only(bottom: 4),
+              padding: const EdgeInsets.only(bottom: 4),
               child: Row(children: [
                 Icon(CupertinoIcons.doc, size: 14, color: Theme.of(context).colorScheme.primary),
-                SizedBox(width: 6),
-                Expanded(child: Text(f.name, style: TextStyle(fontSize: 12, color: C.text3), overflow: TextOverflow.ellipsis)),
+                const SizedBox(width: 6),
+                Expanded(child: Text(f.name, style: const TextStyle(fontSize: 12, color: C.text3), overflow: TextOverflow.ellipsis)),
                 GestureDetector(onTap: () => setS(() => pickedFiles.removeWhere((x) => x.name == f.name)),
-                  child: Icon(CupertinoIcons.xmark, size: 14, color: C.text4)),
+                  child: const Icon(CupertinoIcons.xmark, size: 14, color: C.text4)),
               ]),
             )),
           ],
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           SizedBox(width: double.infinity, height: 48, child: ElevatedButton(
             onPressed: busy ? null : () async {
               if (tc.text.trim().isEmpty && pickedFiles.isEmpty) {
@@ -876,21 +876,21 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               }
               if (ctx.mounted) setS(() => busy = false);
             },
-            child: busy ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : Text(l.t('submit')),
+            child: busy ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : Text(l.t('submit')),
           )),
         ],
         if (isTeacherOrAdmin) ...[
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           Divider(height: 1, color: adaptiveBorder(context)),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Row(children: [
             Expanded(child: OutlinedButton.icon(
-              icon: Icon(CupertinoIcons.pencil, size: 16),
+              icon: const Icon(CupertinoIcons.pencil, size: 16),
               label: Text(l.t('edit')),
               onPressed: () { Navigator.pop(ctx); widget.onEditAssignment(a); },
-              style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 12)),
+              style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
             )),
-            SizedBox(width: 10),
+            const SizedBox(width: 10),
             OutlinedButton(
               onPressed: () async {
                 Navigator.pop(ctx);
@@ -910,19 +910,19 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                   }
                 }
               },
-              style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12), side: BorderSide(color: C.red.withValues(alpha: 0.5))),
-              child: Icon(CupertinoIcons.trash, size: 18, color: C.red),
+              style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12), side: BorderSide(color: C.red.withValues(alpha: 0.5))),
+              child: const Icon(CupertinoIcons.trash, size: 18, color: C.red),
             ),
           ]),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           SizedBox(width: double.infinity, height: 48, child: ElevatedButton.icon(
-            icon: Icon(CupertinoIcons.list_bullet, size: 18),
+            icon: const Icon(CupertinoIcons.list_bullet, size: 18),
             label: Text(l.t('view_works')),
             onPressed: () => _viewSubs(a['id']),
-            style: ElevatedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 12)),
+            style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
           )),
         ],
-        SizedBox(height: 24),
+        const SizedBox(height: 24),
       ])),
           ]),
         ),
@@ -938,7 +938,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
       if (!mounted) return;
       showModalBottomSheet(context: context, isScrollControlled: true,
         backgroundColor: Theme.of(context).colorScheme.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
         builder: (ctx) {
           String search = '';
           dynamic selectedSub;
@@ -964,82 +964,82 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               } else if (rawUrls is String && rawUrls.isNotEmpty) {
                 try { submittedFileUrls = (jsonDecode(rawUrls) as List).map((f) => context.read<ApiService>().fixUrl(f.toString())).toList(); } catch (_) {}
               }
-              return ListView(controller: sc, padding: EdgeInsets.all(20), children: [
-                Center(child: Container(width: 40, height: 4, margin: EdgeInsets.only(bottom: 16), decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2)))),
+              return ListView(controller: sc, padding: const EdgeInsets.all(20), children: [
+                Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 16), decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2)))),
                 GestureDetector(onTap: () => setS(() => selectedSub = null),
-                  child: Container(padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8), decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(12)),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(CupertinoIcons.chevron_left, size: 16, color: C.text4), SizedBox(width: 6), Text(l.t('back_to_list'), style: TextStyle(fontSize: 13, color: C.text4))]))),
-                SizedBox(height: 16),
+                  child: Container(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8), decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(12)),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [const Icon(CupertinoIcons.chevron_left, size: 16, color: C.text4), const SizedBox(width: 6), Text(l.t('back_to_list'), style: const TextStyle(fontSize: 13, color: C.text4))]))),
+                const SizedBox(height: 16),
                 Row(children: [
                   CircleAvatar(radius: 22, backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15), child: Text(initials, style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w800, fontSize: 14))),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(name, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-                    Text(selectedSub['submitted_at'] != null ? _fmtDate(selectedSub['submitted_at']) : '', style: TextStyle(fontSize: 12, color: C.text4)),
+                    Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                    Text(selectedSub['submitted_at'] != null ? _fmtDate(selectedSub['submitted_at']) : '', style: const TextStyle(fontSize: 12, color: C.text4)),
                   ])),
                 ]),
                 if (selectedSub['text_content'] != null || submittedFileUrls.isNotEmpty) ...[
-                  SizedBox(height: 16),
-                  Text(l.t('student_work'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
-                  SizedBox(height: 8),
-                  if (selectedSub['text_content'] != null) Container(padding: EdgeInsets.all(12), margin: EdgeInsets.only(bottom: 6),
+                  const SizedBox(height: 16),
+                  Text(l.t('student_work'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
+                  const SizedBox(height: 8),
+                  if (selectedSub['text_content'] != null) Container(padding: const EdgeInsets.all(12), margin: const EdgeInsets.only(bottom: 6),
                     decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(12)),
-                    child: Text(selectedSub['text_content'], style: TextStyle(fontSize: 13))),
+                    child: Text(selectedSub['text_content'], style: const TextStyle(fontSize: 13))),
                   ...submittedFileUrls.map((url) {
                     final name = _fileDisplayName(url);
                     final ext = name.split('.').last.toLowerCase();
                     final icon = ext == 'pdf' ? CupertinoIcons.doc_text : ext == 'pptx' || ext == 'ppt' ? CupertinoIcons.film : ext == 'doc' || ext == 'docx' ? CupertinoIcons.doc_text : CupertinoIcons.doc;
                     return GestureDetector(
                       onTap: () => widget.onOpenFile(url, name),
-                      child: Container(padding: EdgeInsets.all(12), margin: EdgeInsets.only(bottom: 6),
+                      child: Container(padding: const EdgeInsets.all(12), margin: const EdgeInsets.only(bottom: 6),
                         decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(12)),
                         child: Row(children: [
-                          Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary), SizedBox(width: 8),
+                          Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary), const SizedBox(width: 8),
                           Expanded(child: Text(name, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary), overflow: TextOverflow.ellipsis)),
                           Icon(CupertinoIcons.arrow_up_right_square, size: 14, color: Theme.of(context).colorScheme.primary),
                         ])));
                   }),
                 ],
                 if (score != null) ...[
-                  SizedBox(height: 20),
-                  Container(padding: EdgeInsets.all(16), decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(16)),
+                  const SizedBox(height: 20),
+                  Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(16)),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Row(children: [
                         RichText(text: TextSpan(children: [
                           TextSpan(text: '$score', style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.primary)),
-                          TextSpan(text: ' / 100', style: TextStyle(fontSize: 16, color: C.text4)),
+                          const TextSpan(text: ' / 100', style: TextStyle(fontSize: 16, color: C.text4)),
                         ])),
-                        Spacer(),
-                        Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppRadii.card)),
-                          child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(CupertinoIcons.bolt_fill, size: 14, color: Theme.of(context).colorScheme.primary), SizedBox(width: 4), Text(l.t('ai_check'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary))])),
+                        const Spacer(),
+                        Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppRadii.card)),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(CupertinoIcons.bolt_fill, size: 14, color: Theme.of(context).colorScheme.primary), const SizedBox(width: 4), Text(l.t('ai_check'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary))])),
                       ]),
                       if (feedback != null) ...[
-                        SizedBox(height: 12),
-                        Text(l.t('feedback'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
-                        SizedBox(height: 6),
-                        Text(feedback, style: TextStyle(fontSize: 14, height: 1.6)),
+                        const SizedBox(height: 12),
+                        Text(l.t('feedback'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
+                        const SizedBox(height: 6),
+                        Text(feedback, style: const TextStyle(fontSize: 14, height: 1.6)),
                       ],
                     ])),
                   if (criteria.isNotEmpty) ...[
-                    SizedBox(height: 16),
-                    Text(l.t('by_criteria'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
-                    SizedBox(height: 8),
-                    ...criteria.map((c) => Container(margin: EdgeInsets.only(bottom: 8), padding: EdgeInsets.all(14),
+                    const SizedBox(height: 16),
+                    Text(l.t('by_criteria'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
+                    const SizedBox(height: 8),
+                    ...criteria.map((c) => Container(margin: const EdgeInsets.only(bottom: 8), padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(AppRadii.tile)),
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Row(children: [
-                          Expanded(child: Text(c['name'] ?? '', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700))),
+                          Expanded(child: Text(c['name'] ?? '', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700))),
                           RichText(text: TextSpan(children: [
                             TextSpan(text: '${c['score'] ?? 0}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary)),
-                            TextSpan(text: ' / ${c['max_score'] ?? c['weight'] ?? 0}', style: TextStyle(fontSize: 13, color: C.text4)),
+                            TextSpan(text: ' / ${c['max_score'] ?? c['weight'] ?? 0}', style: const TextStyle(fontSize: 13, color: C.text4)),
                           ])),
                         ]),
-                        if (c['feedback'] != null) Padding(padding: EdgeInsets.only(top: 6), child: Text(c['feedback'], style: TextStyle(fontSize: 13, color: C.text4, height: 1.5))),
+                        if (c['feedback'] != null) Padding(padding: const EdgeInsets.only(top: 6), child: Text(c['feedback'], style: const TextStyle(fontSize: 13, color: C.text4, height: 1.5))),
                       ]))),
                   ],
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   SizedBox(width: double.infinity, height: 50, child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)),
+                    style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
                     onPressed: grading ? null : () async {
                       setS(() => grading = true);
                       try {
@@ -1058,26 +1058,26 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     },
                     child: grading
                       ? Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                          SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
-                          SizedBox(width: 12),
-                          Text(l.t('ai_grading'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                          const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+                          const SizedBox(width: 12),
+                          Text(l.t('ai_grading'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                         ])
                       : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                          Icon(CupertinoIcons.bolt_fill, size: 18, color: Colors.white),
-                          SizedBox(width: 8),
-                          Text(l.t('recheck_ai'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                          const Icon(CupertinoIcons.bolt_fill, size: 18, color: Colors.white),
+                          const SizedBox(width: 8),
+                          Text(l.t('recheck_ai'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                         ]),
                   )),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
                   _manualGradeAndDeleteRow(ctx, selectedSub, (updated) => setS(() => selectedSub = updated), () {
                     subs.removeWhere((s) => s['id'] == selectedSub['id']);
                     setS(() => selectedSub = null);
                     widget.onRefresh();
                   }),
                 ] else ...[
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
                   SizedBox(width: double.infinity, height: 50, child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)),
+                    style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
                     onPressed: grading ? null : () async {
                       setS(() => grading = true);
                       try {
@@ -1096,39 +1096,39 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     },
                     child: grading
                       ? Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                          SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
-                          SizedBox(width: 12),
-                          Text(l.t('ai_grading'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                          const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+                          const SizedBox(width: 12),
+                          Text(l.t('ai_grading'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                         ])
                       : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                          Icon(CupertinoIcons.bolt_fill, size: 18, color: Colors.white),
-                          SizedBox(width: 8),
-                          Text(l.t('grade_ai'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                          const Icon(CupertinoIcons.bolt_fill, size: 18, color: Colors.white),
+                          const SizedBox(width: 8),
+                          Text(l.t('grade_ai'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                         ]),
                   )),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
                   _manualGradeAndDeleteRow(ctx, selectedSub, (updated) => setS(() => selectedSub = updated), () {
                     subs.removeWhere((s) => s['id'] == selectedSub['id']);
                     setS(() => selectedSub = null);
                     widget.onRefresh();
                   }),
                 ],
-                SizedBox(height: 24),
+                const SizedBox(height: 24),
               ]);
             }
             final filtered = subs.where((s) => search.isEmpty || (s['student_name'] ?? '').toLowerCase().contains(search.toLowerCase())).toList();
-            return ListView(controller: sc, padding: EdgeInsets.all(20), children: [
-              Center(child: Container(width: 40, height: 4, margin: EdgeInsets.only(bottom: 16), decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2)))),
+            return ListView(controller: sc, padding: const EdgeInsets.all(20), children: [
+              Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 16), decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2)))),
               Row(children: [
                 _statBox('${subs.length}', l.t('total'), adaptiveText1(context)),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 _statBox('$graded', l.t('checked'), Theme.of(context).colorScheme.primary),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 _statBox('$pending', l.t('pending'), C.red),
               ]),
               // Batch AI grading button
               if (pending > 0) ...[
-                SizedBox(height: 14),
+                const SizedBox(height: 14),
                 SizedBox(width: double.infinity, height: 50,
                   child: ElevatedButton(
                     onPressed: gradingAll ? null : () async {
@@ -1151,45 +1151,45 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                       if (mounted) showToast(context, '${l.t('grade_progress')} $gradingDone / $gradingTotal');
                     },
                     style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 14),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                       backgroundColor: gradingAll ? adaptiveSurface2(context) : null,
                     ),
                     child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                       if (gradingAll) ...[
                         SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.primary)),
-                        SizedBox(width: 12),
+                        const SizedBox(width: 12),
                         Text('${l.t('grade_progress')} $gradingDone / $gradingTotal...', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
                       ] else ...[
-                        Icon(CupertinoIcons.bolt_fill, size: 18, color: Colors.white),
-                        SizedBox(width: 8),
-                        Text('${l.t('grade_all_ai')} ($pending)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                        const Icon(CupertinoIcons.bolt_fill, size: 18, color: Colors.white),
+                        const SizedBox(width: 8),
+                        Text('${l.t('grade_all_ai')} ($pending)', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                       ],
                     ]),
                   )),
               ],
-              SizedBox(height: 16),
-              TextField(decoration: InputDecoration(hintText: l.t('search_student'), prefixIcon: Icon(CupertinoIcons.search, size: 18, color: C.text4), contentPadding: EdgeInsets.symmetric(vertical: 10)),
+              const SizedBox(height: 16),
+              TextField(decoration: InputDecoration(hintText: l.t('search_student'), prefixIcon: const Icon(CupertinoIcons.search, size: 18, color: C.text4), contentPadding: const EdgeInsets.symmetric(vertical: 10)),
                 onChanged: (v) => setS(() => search = v)),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               ...filtered.map((s) {
                 final name = s['student_name'] ?? s['student_email'] ?? '#${s['student_id']}';
                 final initials = name.length >= 2 ? '${name[0]}${name.split(' ').length > 1 ? name.split(' ').last[0] : name[1]}'.toUpperCase() : name[0].toUpperCase();
                 final score = s['grade']?['score'];
                 final isGraded = s['status'] == 'graded';
                 return GestureDetector(onTap: () => setS(() => selectedSub = s),
-                  child: Container(margin: EdgeInsets.only(bottom: 8), padding: EdgeInsets.all(14),
+                  child: Container(margin: const EdgeInsets.only(bottom: 8), padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(16)),
                     child: Row(children: [
                       CircleAvatar(radius: 20, backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15), child: Text(initials, style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w800, fontSize: 13))),
-                      SizedBox(width: 12),
+                      const SizedBox(width: 12),
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(name, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-                        SizedBox(height: 2),
-                        Text(s['submitted_at'] != null ? _fmtDate(s['submitted_at']) : '', style: TextStyle(fontSize: 11, color: C.text4)),
+                        Text(name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                        const SizedBox(height: 2),
+                        Text(s['submitted_at'] != null ? _fmtDate(s['submitted_at']) : '', style: const TextStyle(fontSize: 11, color: C.text4)),
                       ])),
                       Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                         if (score != null) Text('$score/100', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary))
-                        else Text('—', style: TextStyle(fontSize: 16, color: C.text4)),
+                        else const Text('—', style: TextStyle(fontSize: 16, color: C.text4)),
                         Text(isGraded ? l.t('graded_one') : l.t('pending_one'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: isGraded ? Theme.of(context).colorScheme.primary : C.yellow)),
                       ]),
                     ])));
@@ -1206,17 +1206,17 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
     return Row(children: [
       Expanded(child: OutlinedButton.icon(
         onPressed: () => _showManualGradeDialog(ctx, sub, onGraded),
-        icon: Icon(CupertinoIcons.pencil, size: 16),
-        label: Text(l.t('grade_manually'), style: TextStyle(fontSize: 13)),
-        style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 12)),
+        icon: const Icon(CupertinoIcons.pencil, size: 16),
+        label: Text(l.t('grade_manually'), style: const TextStyle(fontSize: 13)),
+        style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
       )),
-      SizedBox(width: 10),
+      const SizedBox(width: 10),
       GestureDetector(
         onTap: () => _confirmDeleteSubmission(ctx, sub, onDeleted),
         child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: C.red.withValues(alpha: 0.5))),
-          child: Icon(CupertinoIcons.trash, size: 18, color: C.red),
+          child: const Icon(CupertinoIcons.trash, size: 18, color: C.red),
         ),
       ),
     ]);
@@ -1234,10 +1234,10 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
       builder: (c) => StatefulBuilder(builder: (c, setD) => CupertinoAlertDialog(
         title: Text(l.t('grade_manual_title')),
         content: Padding(
-          padding: EdgeInsets.only(top: 12),
+          padding: const EdgeInsets.only(top: 12),
           child: Column(children: [
             CupertinoTextField(controller: scoreC, placeholder: l.t('grade_score_hint'), keyboardType: TextInputType.number),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             CupertinoTextField(controller: feedbackC, placeholder: l.t('grade_feedback_hint'), maxLines: 3),
           ]),
         ),
@@ -1266,7 +1266,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               }
             },
             child: saving
-                ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                 : Text(l.t('grade_save')),
           ),
         ],

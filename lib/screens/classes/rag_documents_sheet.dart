@@ -137,7 +137,7 @@ class _RagDocumentsSheetState extends State<_RagDocumentsSheet> {
             ? Center(child: CircularProgressIndicator(color: primary, strokeWidth: 2.5))
             : _docs.isEmpty
                 ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(CupertinoIcons.doc_text, size: 44, color: C.text4),
+                    const Icon(CupertinoIcons.doc_text, size: 44, color: C.text4),
                     const SizedBox(height: 10),
                     Text(l.t('ai_documents_empty'), style: const TextStyle(color: C.text4, fontSize: 14, fontWeight: FontWeight.w600)),
                   ]))

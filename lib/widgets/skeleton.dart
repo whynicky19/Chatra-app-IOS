@@ -87,28 +87,28 @@ class SkeletonClassCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: cardShadow(isDark),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         // Cover image placeholder
         ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           child: SkeletonBox(width: double.infinity, height: 168, borderRadius: 0),
         ),
         // Info section
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+          padding: EdgeInsets.fromLTRB(16, 14, 16, 14),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             // Title line
-            const SkeletonBox(width: 190, height: 16, borderRadius: 8),
-            const SizedBox(height: 10),
+            SkeletonBox(width: 190, height: 16, borderRadius: 8),
+            SizedBox(height: 10),
             // Meta chips
-            Row(children: const [
+            Row(children: [
               SkeletonBox(width: 62, height: 22, borderRadius: 8),
               SizedBox(width: 6),
               SkeletonBox(width: 90, height: 22, borderRadius: 8),
             ]),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             // Footer: open button + action button
-            Row(children: const [
+            Row(children: [
               SkeletonBox(width: 86, height: 32, borderRadius: 10),
               Spacer(),
               SkeletonBox(width: 34, height: 34, borderRadius: 10),
@@ -138,22 +138,22 @@ class SkeletonChatRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: softShadow(isDark),
       ),
-      child: Row(children: [
+      child: const Row(children: [
         // Avatar circle
-        const SkeletonBox(width: 52, height: 52, borderRadius: 26),
-        const SizedBox(width: 14),
+        SkeletonBox(width: 52, height: 52, borderRadius: 26),
+        SizedBox(width: 14),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: const [
+            Row(children: [
               // Chat title
               Expanded(child: SkeletonBox(width: double.infinity, height: 14, borderRadius: 7)),
               SizedBox(width: 40),
               // Timestamp
               SkeletonBox(width: 32, height: 10, borderRadius: 5),
             ]),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             // Preview text
-            const SkeletonBox(width: 150, height: 11, borderRadius: 5),
+            SkeletonBox(width: 150, height: 11, borderRadius: 5),
           ]),
         ),
       ]),

@@ -128,12 +128,12 @@ class _CreateLectureSheetState extends State<_CreateLectureSheet> {
           ),
           const SizedBox(height: 20),
 
-          Text(l.t('lecture_title_label'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)),
+          Text(l.t('lecture_title_label'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)),
           const SizedBox(height: 8),
           TextField(controller: _titleCtrl, decoration: InputDecoration(hintText: l.t('lecture_title_hint')), onChanged: (_) => setState(() {})),
           const SizedBox(height: 20),
 
-          Text(l.t('lecture_materials_label'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)),
+          Text(l.t('lecture_materials_label'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)),
           const SizedBox(height: 8),
           GestureDetector(
             onTap: _pickFile,
@@ -161,7 +161,7 @@ class _CreateLectureSheetState extends State<_CreateLectureSheet> {
           ),
           const SizedBox(height: 20),
 
-          Text(l.t('duration'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)),
+          Text(l.t('duration'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)),
           const SizedBox(height: 8),
           Wrap(spacing: 8, runSpacing: 8, children: [
             ..._durationOptions.map((m) {
@@ -201,7 +201,7 @@ class _CreateLectureSheetState extends State<_CreateLectureSheet> {
           ),
           const SizedBox(height: 20),
 
-          Text(l.t('style'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)),
+          Text(l.t('style'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)),
           const SizedBox(height: 8),
           _styleCard('school', l.t('style_school'), l.t('style_school_sub'), CupertinoIcons.book, primary),
           const SizedBox(height: 8),

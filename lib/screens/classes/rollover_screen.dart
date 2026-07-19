@@ -233,7 +233,7 @@ class _RolloverScreenState extends State<RolloverScreen> {
                 style: TextStyle(fontSize: 21, fontWeight: FontWeight.w700,
                     color: adaptiveText1(context), letterSpacing: -0.3)),
             Text(_step == 0 ? l.t('rollover_preview_sub') : l.t('review_deadlines_sub'),
-                style: TextStyle(fontSize: 12, color: C.text4)),
+                style: const TextStyle(fontSize: 12, color: C.text4)),
           ]),
         ),
       ]),
@@ -248,11 +248,11 @@ class _RolloverScreenState extends State<RolloverScreen> {
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(CupertinoIcons.calendar_badge_plus, size: 44, color: C.text4),
+            const Icon(CupertinoIcons.calendar_badge_plus, size: 44, color: C.text4),
             const SizedBox(height: 14),
             Text(l.t('rollover_no_classes'),
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: C.text4)),
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: C.text4)),
           ]),
         ),
       );
@@ -360,7 +360,7 @@ class _RolloverScreenState extends State<RolloverScreen> {
                 Text('${p['academic_year']}  ·  '
                     '${p['student_count']} ${l.t('students_count')}  ·  '
                     '${p['assignment_count']} ${l.t('assignments_count')}',
-                    style: TextStyle(fontSize: 12, color: C.text4)),
+                    style: const TextStyle(fontSize: 12, color: C.text4)),
               ]),
             ),
           ]),
@@ -388,7 +388,7 @@ class _RolloverScreenState extends State<RolloverScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                   child: Text(l.t('no_assignments'),
-                      style: TextStyle(fontSize: 13, color: C.text4)),
+                      style: const TextStyle(fontSize: 13, color: C.text4)),
                 )
               else
                 for (final d in rc.deadlines) _deadlineRow(l, rc, d),
@@ -433,10 +433,10 @@ class _RolloverScreenState extends State<RolloverScreen> {
                         color: adaptiveText1(context))),
                 const SizedBox(height: 3),
                 Row(children: [
-                  Icon(CupertinoIcons.calendar, size: 12, color: C.text4),
+                  const Icon(CupertinoIcons.calendar, size: 12, color: C.text4),
                   const SizedBox(width: 5),
                   Text(due != null ? _fmtDateTime(due) : '—',
-                      style: TextStyle(fontSize: 12, color: C.text4)),
+                      style: const TextStyle(fontSize: 12, color: C.text4)),
                   if (!published) ...[
                     const SizedBox(width: 8),
                     Container(
@@ -462,7 +462,7 @@ class _RolloverScreenState extends State<RolloverScreen> {
   Widget _label(String text) => Padding(
         padding: const EdgeInsets.only(bottom: 8, left: 2),
         child: Text(text.toUpperCase(),
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800,
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800,
                 color: C.text4, letterSpacing: 0.5)),
       );
 

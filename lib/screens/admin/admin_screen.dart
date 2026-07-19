@@ -87,7 +87,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     // Fetch real members for each class in parallel
     final results = await Future.wait(_allClassPosts.map((c) async {
       final id = (c['id'] as num?)?.toInt();
-      if (id == null) return MapEntry(0, <dynamic>[]);
+      if (id == null) return const MapEntry(0, <dynamic>[]);
       try {
         final members = await api.getClassMembers(id);
         return MapEntry(id, members);
@@ -630,13 +630,13 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(16), boxShadow: softShadow(isDark)),
             child: Column(children: [
               // Header row
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(14, 10, 14, 6),
                 child: Row(children: [
-                  const SizedBox(width: 22, child: Text('#', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4))),
-                  const Expanded(flex: 3, child: Text('ПОЛЬЗОВАТЕЛЬ', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 0.5))),
-                  const Expanded(flex: 2, child: Text('КЛАСС', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 0.5))),
-                  SizedBox(width: 74, child: const Text('ТОКЕНЫ', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 0.5), textAlign: TextAlign.right)),
+                  SizedBox(width: 22, child: Text('#', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4))),
+                  Expanded(flex: 3, child: Text('ПОЛЬЗОВАТЕЛЬ', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 0.5))),
+                  Expanded(flex: 2, child: Text('КЛАСС', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 0.5))),
+                  SizedBox(width: 74, child: Text('ТОКЕНЫ', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 0.5), textAlign: TextAlign.right)),
                 ]),
               ),
               Divider(height: 1, color: C.border.withValues(alpha: 0.5)),

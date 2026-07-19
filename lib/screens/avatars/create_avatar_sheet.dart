@@ -199,12 +199,12 @@ class _CreateAvatarSheetState extends State<_CreateAvatarSheet> {
           ),
           const SizedBox(height: 20),
 
-          Text(l.t('avatar_display_name'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)),
+          Text(l.t('avatar_display_name'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)),
           const SizedBox(height: 8),
           TextField(controller: _nameCtrl, decoration: InputDecoration(hintText: l.t('avatar_display_name_hint'))),
           const SizedBox(height: 20),
 
-          Text(l.t('avatar_photo_label'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)),
+          Text(l.t('avatar_photo_label'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)),
           const SizedBox(height: 8),
           GestureDetector(
             onTap: _pickPhoto,
@@ -220,7 +220,7 @@ class _CreateAvatarSheetState extends State<_CreateAvatarSheet> {
                   ? Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                       Icon(CupertinoIcons.person_crop_rectangle, size: 32, color: primary),
                       const SizedBox(height: 8),
-                      Text(l.t('avatar_photo_hint'), style: TextStyle(fontSize: 12, color: C.text4), textAlign: TextAlign.center),
+                      Text(l.t('avatar_photo_hint'), style: const TextStyle(fontSize: 12, color: C.text4), textAlign: TextAlign.center),
                     ])
                   : Stack(fit: StackFit.expand, children: [
                       Image.file(File(_photo!.path), fit: BoxFit.cover),
@@ -234,7 +234,7 @@ class _CreateAvatarSheetState extends State<_CreateAvatarSheet> {
           ),
           const SizedBox(height: 20),
 
-          Text(l.t('avatar_voice_label'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)),
+          Text(l.t('avatar_voice_label'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)),
           const SizedBox(height: 8),
           Container(
             decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
@@ -291,7 +291,7 @@ class _CreateAvatarSheetState extends State<_CreateAvatarSheet> {
           GestureDetector(
             onTap: () { setState(() { _recordedPath = null; _recordSeconds = 0; }); },
             child: Row(children: [
-              Icon(CupertinoIcons.arrow_counterclockwise, size: 14, color: C.text4),
+              const Icon(CupertinoIcons.arrow_counterclockwise, size: 14, color: C.text4),
               const SizedBox(width: 4),
               Text(l.t('avatar_record_again'), style: const TextStyle(fontSize: 12, color: C.text4)),
             ]),
@@ -336,9 +336,9 @@ class _CreateAvatarSheetState extends State<_CreateAvatarSheet> {
             Text(l.t('avatar_voice_file_hint'), style: const TextStyle(fontSize: 11, color: C.text4)),
           ])),
           if (_uploadedVoiceFile != null)
-            Icon(CupertinoIcons.checkmark_circle_fill, color: C.green, size: 20)
+            const Icon(CupertinoIcons.checkmark_circle_fill, color: C.green, size: 20)
           else
-            Icon(CupertinoIcons.chevron_right, color: C.text4, size: 18),
+            const Icon(CupertinoIcons.chevron_right, color: C.text4, size: 18),
         ]),
       ),
     );

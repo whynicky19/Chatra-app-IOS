@@ -94,7 +94,7 @@ void main() async {
       ChangeNotifierProvider<ClassesProvider>.value(value: classes),
       ChangeNotifierProvider<ChatsProvider>.value(value: chats),
     ],
-    child: ChatraApp(),
+    child: const ChatraApp(),
   ));
 }
 
@@ -145,7 +145,7 @@ class _AuthGateState extends State<_AuthGate> {
     super.initState();
     // Короткая брендинг-пауза; дольше держать пользователя незачем —
     // обычно auth/org инициализируются быстрее.
-    Future.delayed(Duration(milliseconds: 400), () {
+    Future.delayed(const Duration(milliseconds: 400), () {
       if (mounted) setState(() => _splashDone = true);
     });
   }
@@ -160,7 +160,7 @@ class _AuthGateState extends State<_AuthGate> {
 
     // Плавный переход от splash к контенту
     return AnimatedSwitcher(
-      duration: Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 500),
       switchInCurve: Curves.easeOut,
       child: auth.isAuthenticated
           ? const MainShell(key: ValueKey('main'))

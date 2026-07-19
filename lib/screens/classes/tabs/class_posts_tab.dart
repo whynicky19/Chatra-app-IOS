@@ -94,7 +94,7 @@ class ClassPostsTab extends StatelessWidget {
 
     final filesPerPost = posts.map(extractFiles).toList();
 
-    return ListView.builder(padding: EdgeInsets.fromLTRB(14, 14, 14, 90), itemCount: posts.length, itemBuilder: (ctx, i) {
+    return ListView.builder(padding: const EdgeInsets.fromLTRB(14, 14, 14, 90), itemCount: posts.length, itemBuilder: (ctx, i) {
       final p = posts[i];
       final files = filesPerPost[i];
       final body = preview(p);
@@ -108,10 +108,10 @@ class ClassPostsTab extends StatelessWidget {
         child: RepaintBoundary(child: GestureDetector(
           onTap: () => onShowPost(p, type, num),
           child: Container(
-            margin: EdgeInsets.only(bottom: 12),
+            margin: const EdgeInsets.only(bottom: 12),
             decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(AppRadii.card), boxShadow: cardShadow(isDark)),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Padding(padding: EdgeInsets.fromLTRB(16, 16, 14, 14), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Padding(padding: const EdgeInsets.fromLTRB(16, 16, 14, 14), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Container(width: 54, height: 54,
                   decoration: BoxDecoration(
                     color: accentColor.withValues(alpha: 0.10),
@@ -120,58 +120,58 @@ class ClassPostsTab extends StatelessWidget {
                   ),
                   child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                     Icon(isLecture ? CupertinoIcons.book : CupertinoIcons.tray, color: accentColor, size: 20),
-                    SizedBox(height: 2),
+                    const SizedBox(height: 2),
                     Text('$num', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: accentColor, height: 1)),
                   ])),
-                SizedBox(width: 14),
+                const SizedBox(width: 14),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(color: accentColor.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(6)),
                     child: Text('${isLecture ? 'ЛЕКЦИЯ' : 'МАТЕРИАЛ'} $num',
                       style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: accentColor, letterSpacing: 0.6)),
                   ),
-                  SizedBox(height: 6),
+                  const SizedBox(height: 6),
                   Text(clean(p['title'] ?? ''),
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, height: 1.25, color: adaptiveText1(context)),
                     maxLines: 2, overflow: TextOverflow.ellipsis),
-                  if (body.isNotEmpty) Padding(padding: EdgeInsets.only(top: 5),
-                    child: Text(body, style: TextStyle(fontSize: 13, color: C.text4, height: 1.45), maxLines: 2, overflow: TextOverflow.ellipsis)),
+                  if (body.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 5),
+                    child: Text(body, style: const TextStyle(fontSize: 13, color: C.text4, height: 1.45), maxLines: 2, overflow: TextOverflow.ellipsis)),
                 ])),
                 if (isTeacher) Column(mainAxisSize: MainAxisSize.min, children: [
                   iconBtn(CupertinoIcons.pencil, () => onEditPost(p)),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   iconBtn(CupertinoIcons.trash, () => onDeletePost(p['id'] as int)),
                 ]),
               ])),
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
                 decoration: BoxDecoration(
                   color: adaptiveSurface2(context).withValues(alpha: 0.55),
-                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
                 ),
                 child: Row(children: [
-                  Icon(CupertinoIcons.clock, size: 12, color: C.text4),
-                  SizedBox(width: 4),
-                  Text(fmtDate(p['created_at'] ?? ''), style: TextStyle(fontSize: 12, color: C.text4)),
+                  const Icon(CupertinoIcons.clock, size: 12, color: C.text4),
+                  const SizedBox(width: 4),
+                  Text(fmtDate(p['created_at'] ?? ''), style: const TextStyle(fontSize: 12, color: C.text4)),
                   if (files.isNotEmpty) ...[
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                       decoration: BoxDecoration(color: accentColor.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(6)),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
                         Icon(CupertinoIcons.paperclip, size: 10, color: accentColor),
-                        SizedBox(width: 3),
+                        const SizedBox(width: 3),
                         Text('${files.length}', style: TextStyle(fontSize: 11, color: accentColor, fontWeight: FontWeight.w700)),
                       ])),
                   ],
-                  Spacer(),
+                  const Spacer(),
                   Container(
-                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(color: accentColor.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(8)),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       Text(l.t('open'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: accentColor)),
-                      SizedBox(width: 3),
+                      const SizedBox(width: 3),
                       Icon(CupertinoIcons.chevron_right, size: 12, color: accentColor),
                     ]),
                   ),

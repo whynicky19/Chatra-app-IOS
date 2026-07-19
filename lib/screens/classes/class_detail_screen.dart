@@ -601,34 +601,34 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     final List<dynamic> editFiles = List<dynamic>.from(existingFiles);
 
     showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(builder: (ctx, setS) {
         return Padding(padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
           child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
             Container(width: 40, height: 4, decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2))),
-            SizedBox(height: 20), Text('Редактировать', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-            SizedBox(height: 16), TextField(controller: tc, decoration: InputDecoration(labelText: 'Заголовок')),
-            SizedBox(height: 12), TextField(controller: cc, decoration: InputDecoration(labelText: 'Содержание'), maxLines: 5),
+            const SizedBox(height: 20), const Text('Редактировать', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 16), TextField(controller: tc, decoration: const InputDecoration(labelText: 'Заголовок')),
+            const SizedBox(height: 12), TextField(controller: cc, decoration: const InputDecoration(labelText: 'Содержание'), maxLines: 5),
             if (editFiles.isNotEmpty) ...[
-              SizedBox(height: 16),
-              Align(alignment: Alignment.centerLeft, child: Text('Прикреплённые файлы', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: C.text3))),
-              SizedBox(height: 8),
+              const SizedBox(height: 16),
+              const Align(alignment: Alignment.centerLeft, child: Text('Прикреплённые файлы', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: C.text3))),
+              const SizedBox(height: 8),
               ...editFiles.map((f) {
                 final name = fileDisplayName(f.toString());
                 return Container(
-                  margin: EdgeInsets.only(bottom: 6),
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  margin: const EdgeInsets.only(bottom: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(AppRadii.chip)),
                   child: Row(children: [
                     Icon(CupertinoIcons.doc, size: 14, color: Theme.of(context).colorScheme.primary),
-                    SizedBox(width: 6),
+                    const SizedBox(width: 6),
                     Expanded(child: Text(name, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary), overflow: TextOverflow.ellipsis)),
-                    GestureDetector(onTap: () => setS(() => editFiles.remove(f)), child: Icon(CupertinoIcons.xmark, size: 14, color: C.text4)),
+                    GestureDetector(onTap: () => setS(() => editFiles.remove(f)), child: const Icon(CupertinoIcons.xmark, size: 14, color: C.text4)),
                   ]),
                 );
               }),
             ],
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             GestureDetector(
               onTap: () async {
                 final result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
@@ -645,13 +645,13 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   }
                 }
               },
-              child: Container(padding: EdgeInsets.symmetric(vertical: 10), decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3))),
-                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(CupertinoIcons.paperclip, size: 16, color: Theme.of(context).colorScheme.primary), SizedBox(width: 6), Text('Прикрепить файлы', style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600))])),
+              child: Container(padding: const EdgeInsets.symmetric(vertical: 10), decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3))),
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(CupertinoIcons.paperclip, size: 16, color: Theme.of(context).colorScheme.primary), const SizedBox(width: 6), Text('Прикрепить файлы', style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600))])),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             Row(children: [
-              Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: Text('Отмена'))),
-              SizedBox(width: 12),
+              Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена'))),
+              const SizedBox(width: 12),
               Expanded(child: ElevatedButton(onPressed: () async {
                 try {
                   final prefix = (p['title'] ?? '').startsWith('[LECTURE]') ? '[LECTURE][${widget.classId}] ' : '[HW][${widget.classId}] ';
@@ -662,7 +662,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   if (!mounted || !ctx.mounted) return;
                   Navigator.pop(ctx); _load(); showToast(context, 'Сохранено');
                 } catch (_) { if (mounted && ctx.mounted) showToast(context, 'Ошибка', error: true); }
-              }, child: Text('Сохранить'))),
+              }, child: const Text('Сохранить'))),
             ]),
           ])));
       })).then((_) { tc.dispose(); cc.dispose(); });
@@ -833,7 +833,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF006475), Theme.of(context).colorScheme.primary],
+                  colors: [const Color(0xFF006475), Theme.of(context).colorScheme.primary],
                   begin: Alignment.topLeft, end: Alignment.bottomRight,
                 ),
               ),
@@ -874,14 +874,14 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 const SizedBox(height: 12),
                 // Meta row
                 Row(children: [
-                  Icon(CupertinoIcons.calendar, size: 12, color: Colors.white60),
+                  const Icon(CupertinoIcons.calendar, size: 12, color: Colors.white60),
                   const SizedBox(width: 5),
                   Text(fmtDate(p['created_at'] ?? ''), style: const TextStyle(fontSize: 12, color: Colors.white60, fontWeight: FontWeight.w500)),
                   if (files.isNotEmpty) ...[
                     const SizedBox(width: 12),
-                    Container(width: 4, height: 4, decoration: BoxDecoration(color: Colors.white30, shape: BoxShape.circle)),
+                    Container(width: 4, height: 4, decoration: const BoxDecoration(color: Colors.white30, shape: BoxShape.circle)),
                     const SizedBox(width: 12),
-                    Icon(CupertinoIcons.paperclip, size: 12, color: Colors.white60),
+                    const Icon(CupertinoIcons.paperclip, size: 12, color: Colors.white60),
                     const SizedBox(width: 4),
                     Text('${files.length} ${files.length == 1 ? 'файл' : 'файла'}', style: const TextStyle(fontSize: 12, color: Colors.white60, fontWeight: FontWeight.w500)),
                   ],
@@ -964,7 +964,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                               Text(name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, height: 1.2), overflow: TextOverflow.ellipsis, maxLines: 1),
                               const SizedBox(height: 3),
-                              Text('Нажмите для открытия', style: TextStyle(fontSize: 11, color: C.text4)),
+                              const Text('Нажмите для открытия', style: TextStyle(fontSize: 11, color: C.text4)),
                             ])),
                             Container(
                               width: 34, height: 34,
@@ -1026,62 +1026,62 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     final tc = TextEditingController(), cc = TextEditingController();
     List<PlatformFile> lectureFiles = [];
     showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => Padding(
         padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Container(width: 40, height: 4, decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2))),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           // Header
           Row(children: [
             Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: Icon(CupertinoIcons.book, color: Theme.of(context).colorScheme.primary, size: 22)),
-            SizedBox(width: 12),
+            const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(l.t('add_lecture'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-              Text(l.t('add_sub'), style: TextStyle(fontSize: 12, color: C.text4)),
+              Text(l.t('add_lecture'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              Text(l.t('add_sub'), style: const TextStyle(fontSize: 12, color: C.text4)),
             ])),
-            IconButton(icon: Icon(CupertinoIcons.xmark), onPressed: () => Navigator.pop(ctx)),
+            IconButton(icon: const Icon(CupertinoIcons.xmark), onPressed: () => Navigator.pop(ctx)),
           ]),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           // Type toggle
           Container(decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(AppRadii.tile)),
             child: Row(children: [
               Expanded(child: GestureDetector(onTap: () => setS(() => type = 'lecture'),
-                child: Container(padding: EdgeInsets.symmetric(vertical: 12), decoration: BoxDecoration(color: type == 'lecture' ? Theme.of(ctx).colorScheme.surface : Colors.transparent, borderRadius: BorderRadius.circular(12)),
-                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(CupertinoIcons.book, size: 16, color: type == 'lecture' ? Theme.of(context).colorScheme.primary : C.text4), SizedBox(width: 6), Text(l.t('lecture'), style: TextStyle(fontWeight: FontWeight.w600, color: type == 'lecture' ? Theme.of(context).colorScheme.primary : C.text4))])))),
+                child: Container(padding: const EdgeInsets.symmetric(vertical: 12), decoration: BoxDecoration(color: type == 'lecture' ? Theme.of(ctx).colorScheme.surface : Colors.transparent, borderRadius: BorderRadius.circular(12)),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(CupertinoIcons.book, size: 16, color: type == 'lecture' ? Theme.of(context).colorScheme.primary : C.text4), const SizedBox(width: 6), Text(l.t('lecture'), style: TextStyle(fontWeight: FontWeight.w600, color: type == 'lecture' ? Theme.of(context).colorScheme.primary : C.text4))])))),
               Expanded(child: GestureDetector(onTap: () => setS(() => type = 'material'),
-                child: Container(padding: EdgeInsets.symmetric(vertical: 12), decoration: BoxDecoration(color: type == 'material' ? Theme.of(ctx).colorScheme.surface : Colors.transparent, borderRadius: BorderRadius.circular(12)),
-                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(CupertinoIcons.doc_text, size: 16, color: type == 'material' ? Theme.of(context).colorScheme.primary : C.text4), SizedBox(width: 6), Text(l.t('material'), style: TextStyle(fontWeight: FontWeight.w600, color: type == 'material' ? Theme.of(context).colorScheme.primary : C.text4))])))),
+                child: Container(padding: const EdgeInsets.symmetric(vertical: 12), decoration: BoxDecoration(color: type == 'material' ? Theme.of(ctx).colorScheme.surface : Colors.transparent, borderRadius: BorderRadius.circular(12)),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(CupertinoIcons.doc_text, size: 16, color: type == 'material' ? Theme.of(context).colorScheme.primary : C.text4), const SizedBox(width: 6), Text(l.t('material'), style: TextStyle(fontWeight: FontWeight.w600, color: type == 'material' ? Theme.of(context).colorScheme.primary : C.text4))])))),
             ])),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           _fieldLabel2('ТЕМА ${type == 'lecture' ? 'ЛЕКЦИИ' : 'МАТЕРИАЛА'} *'),
-          TextField(controller: tc, decoration: InputDecoration(hintText: 'Например: Введение в тему...')),
-          SizedBox(height: 16),
+          TextField(controller: tc, decoration: const InputDecoration(hintText: 'Например: Введение в тему...')),
+          const SizedBox(height: 16),
           _fieldLabel2('СОДЕРЖАНИЕ ${type == 'lecture' ? 'ЛЕКЦИИ' : 'МАТЕРИАЛА'}'),
-          TextField(controller: cc, decoration: InputDecoration(hintText: 'Текст лекции, ссылки на видео...'), maxLines: 4),
-          SizedBox(height: 20),
+          TextField(controller: cc, decoration: const InputDecoration(hintText: 'Текст лекции, ссылки на видео...'), maxLines: 4),
+          const SizedBox(height: 20),
           // File upload
           _fieldLabel2('ПРИКРЕПИТЬ ФАЙЛЫ'),
           GestureDetector(onTap: () async {
             final result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
             if (result != null) setS(() => lectureFiles.addAll(result.files));
-          }, child: Container(padding: EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3))),
+          }, child: Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3))),
             child: Column(children: [
-              Icon(CupertinoIcons.arrow_up_doc, size: 24, color: Theme.of(context).colorScheme.primary), SizedBox(height: 6),
-              RichText(text: TextSpan(style: TextStyle(fontSize: 13, color: C.text4), children: [TextSpan(text: 'Нажмите или '), TextSpan(text: 'выберите файлы', style: TextStyle(fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary))])),
-              Text('PDF, DOCX, PPT, изображения', style: TextStyle(fontSize: 10, color: C.text4)),
+              Icon(CupertinoIcons.arrow_up_doc, size: 24, color: Theme.of(context).colorScheme.primary), const SizedBox(height: 6),
+              RichText(text: TextSpan(style: const TextStyle(fontSize: 13, color: C.text4), children: [const TextSpan(text: 'Нажмите или '), TextSpan(text: 'выберите файлы', style: TextStyle(fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary))])),
+              const Text('PDF, DOCX, PPT, изображения', style: TextStyle(fontSize: 10, color: C.text4)),
             ]))),
-          if (lectureFiles.isNotEmpty) ...[SizedBox(height: 8),
-            ...lectureFiles.map((f) => Container(margin: EdgeInsets.only(bottom: 4), padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          if (lectureFiles.isNotEmpty) ...[const SizedBox(height: 8),
+            ...lectureFiles.map((f) => Container(margin: const EdgeInsets.only(bottom: 4), padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(AppRadii.chip)),
-              child: Row(children: [Icon(CupertinoIcons.doc_text, size: 14, color: Theme.of(context).colorScheme.primary), SizedBox(width: 6), Expanded(child: Text(f.name, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary), overflow: TextOverflow.ellipsis)), GestureDetector(onTap: () => setS(() => lectureFiles.remove(f)), child: Icon(CupertinoIcons.xmark, size: 14, color: C.text4))])))],
-          SizedBox(height: 20),
+              child: Row(children: [Icon(CupertinoIcons.doc_text, size: 14, color: Theme.of(context).colorScheme.primary), const SizedBox(width: 6), Expanded(child: Text(f.name, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary), overflow: TextOverflow.ellipsis)), GestureDetector(onTap: () => setS(() => lectureFiles.remove(f)), child: const Icon(CupertinoIcons.xmark, size: 14, color: C.text4))])))],
+          const SizedBox(height: 20),
           Row(children: [
-            Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)), child: Text('Отмена'))),
-            SizedBox(width: 12),
-            Expanded(child: ElevatedButton.icon(icon: Icon(CupertinoIcons.plus, size: 16, color: Colors.white), label: Text('Опубликовать'),
-              style: ElevatedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)),
+            Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)), child: const Text('Отмена'))),
+            const SizedBox(width: 12),
+            Expanded(child: ElevatedButton.icon(icon: const Icon(CupertinoIcons.plus, size: 16, color: Colors.white), label: const Text('Опубликовать'),
+              style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
               onPressed: () async {
                 if (tc.text.trim().isEmpty) return;
                 final prefix = type == 'lecture' ? '[LECTURE][${widget.classId}]' : '[HW][${widget.classId}]';
@@ -1117,47 +1117,47 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     List<PlatformFile> referenceFiles = [];
 
     showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => DraggableScrollableSheet(expand: false, initialChildSize: 0.9, maxChildSize: 0.95,
-        builder: (ctx, scroll) => ListView(controller: scroll, padding: EdgeInsets.all(24), children: [
+        builder: (ctx, scroll) => ListView(controller: scroll, padding: const EdgeInsets.all(24), children: [
           Row(children: [
             Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: Icon(CupertinoIcons.pencil, color: Theme.of(context).colorScheme.primary, size: 22)),
-            SizedBox(width: 12),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const SizedBox(width: 12),
+            const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('Новое задание', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
               Text('Заполните данные задания', style: TextStyle(fontSize: 12, color: C.text4)),
             ])),
-            IconButton(icon: Icon(CupertinoIcons.xmark), onPressed: () => Navigator.pop(ctx)),
+            IconButton(icon: const Icon(CupertinoIcons.xmark), onPressed: () => Navigator.pop(ctx)),
           ]),
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
           _fieldLabel2('НАЗВАНИЕ ЗАДАНИЯ *'),
-          TextField(controller: tc, decoration: InputDecoration(hintText: 'Например: Контрольная работа по теме...')),
-          SizedBox(height: 16),
+          TextField(controller: tc, decoration: const InputDecoration(hintText: 'Например: Контрольная работа по теме...')),
+          const SizedBox(height: 16),
           _fieldLabel2('ОПИСАНИЕ ЗАДАНИЯ'),
-          TextField(controller: dc, decoration: InputDecoration(hintText: 'Подробное описание, требования...'), maxLines: 4),
-          SizedBox(height: 16),
+          TextField(controller: dc, decoration: const InputDecoration(hintText: 'Подробное описание, требования...'), maxLines: 4),
+          const SizedBox(height: 16),
           _fieldLabel2('МАКС. БАЛЛ'),
-          TextField(controller: sc, keyboardType: TextInputType.number, decoration: InputDecoration(hintText: '100')),
-          SizedBox(height: 16),
+          TextField(controller: sc, keyboardType: TextInputType.number, decoration: const InputDecoration(hintText: '100')),
+          const SizedBox(height: 16),
           _fieldLabel2('ДЕДЛАЙН'),
           GestureDetector(onTap: () async {
-            final d = await showDatePicker(context: ctx, initialDate: DateTime.now().add(Duration(days: 7)), firstDate: DateTime.now(), lastDate: DateTime.now().add(Duration(days: 365)));
+            final d = await showDatePicker(context: ctx, initialDate: DateTime.now().add(const Duration(days: 7)), firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 365)));
             if (d != null && ctx.mounted) {
-              final t = await showTimePicker(context: ctx, initialTime: TimeOfDay(hour: 23, minute: 59));
+              final t = await showTimePicker(context: ctx, initialTime: const TimeOfDay(hour: 23, minute: 59));
               setS(() => deadline = DateTime(d.year, d.month, d.day, t?.hour ?? 23, t?.minute ?? 59));
             }
-          }, child: Container(padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          }, child: Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(AppRadii.tile)),
             child: Row(children: [
               Text(deadline != null ? '${deadline!.day.toString().padLeft(2, '0')}.${deadline!.month.toString().padLeft(2, '0')}.${deadline!.year} ${deadline!.hour.toString().padLeft(2, '0')}:${deadline!.minute.toString().padLeft(2, '0')}' : 'ДД.ММ.ГГГГ --:--', style: TextStyle(fontSize: 14, color: deadline != null ? null : C.text4)),
-              Spacer(), Icon(CupertinoIcons.calendar, size: 18, color: C.text4),
+              const Spacer(), const Icon(CupertinoIcons.calendar, size: 18, color: C.text4),
             ]))),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           // File attachments
           Row(children: [
             Text('ПРИКРЕПЛЁННЫЕ ФАЙЛЫ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
-            Spacer(),
+            const Spacer(),
             GestureDetector(
               onTap: () async {
                 final result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
@@ -1166,89 +1166,89 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               child: Text('+ Добавить', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
             ),
           ]),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           if (attachedFiles.isEmpty)
-            Container(padding: EdgeInsets.all(14), decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(12)),
-              child: Row(children: [Icon(CupertinoIcons.paperclip, size: 16, color: C.text4), SizedBox(width: 8), Text('Нет прикреплённых файлов', style: TextStyle(fontSize: 13, color: C.text4))]))
+            Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(12)),
+              child: const Row(children: [Icon(CupertinoIcons.paperclip, size: 16, color: C.text4), SizedBox(width: 8), Text('Нет прикреплённых файлов', style: TextStyle(fontSize: 13, color: C.text4))]))
           else
-            ...attachedFiles.map((f) => Container(margin: EdgeInsets.only(bottom: 6), padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            ...attachedFiles.map((f) => Container(margin: const EdgeInsets.only(bottom: 6), padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(12)),
               child: Row(children: [
                 Icon(CupertinoIcons.doc, size: 16, color: Theme.of(context).colorScheme.primary),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Expanded(child: Text(f.name, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis)),
                 GestureDetector(onTap: () => setS(() => attachedFiles.removeWhere((x) => x.name == f.name)),
-                  child: Icon(CupertinoIcons.xmark, size: 14, color: C.text4)),
+                  child: const Icon(CupertinoIcons.xmark, size: 14, color: C.text4)),
               ]))),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           // Reference solution
-          Container(padding: EdgeInsets.all(16), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.04), borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15))),
+          Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.04), borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15))),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
                 Container(width: 36, height: 36, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.chip)),
                   child: Icon(CupertinoIcons.checkmark_circle, size: 18, color: Theme.of(context).colorScheme.primary)),
-                SizedBox(width: 10),
+                const SizedBox(width: 10),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [Text('Эталонные решения', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)), Spacer(), Container(padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)), child: Text('ИИ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)))]),
-                  Text('ИИ сравнит работы учеников с эталоном', style: TextStyle(fontSize: 11, color: C.text4)),
+                  Row(children: [const Text('Эталонные решения', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)), const Spacer(), Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)), child: Text('ИИ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)))]),
+                  const Text('ИИ сравнит работы учеников с эталоном', style: TextStyle(fontSize: 11, color: C.text4)),
                 ])),
               ]),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               GestureDetector(onTap: () async {
                 final result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
                 if (result != null) setS(() => referenceFiles.addAll(result.files));
               },
-              child: Container(padding: EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3))),
+              child: Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3))),
                 child: Column(children: [
                   Icon(CupertinoIcons.arrow_up_doc, size: 28, color: Theme.of(context).colorScheme.primary),
-                  SizedBox(height: 6),
-                  RichText(text: TextSpan(style: TextStyle(fontSize: 13, color: C.text4), children: [TextSpan(text: 'Нажмите или '), TextSpan(text: 'выберите файлы', style: TextStyle(fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary))])),
-                  Text('PDF, DOCX, DOC, PPTX, XLSX, TXT, MD', style: TextStyle(fontSize: 10, color: C.text4)),
+                  const SizedBox(height: 6),
+                  RichText(text: TextSpan(style: const TextStyle(fontSize: 13, color: C.text4), children: [const TextSpan(text: 'Нажмите или '), TextSpan(text: 'выберите файлы', style: TextStyle(fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary))])),
+                  const Text('PDF, DOCX, DOC, PPTX, XLSX, TXT, MD', style: TextStyle(fontSize: 10, color: C.text4)),
                 ]))),
               if (referenceFiles.isNotEmpty) ...[
-                SizedBox(height: 8),
-                ...referenceFiles.map((f) => Container(margin: EdgeInsets.only(bottom: 4), padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                const SizedBox(height: 8),
+                ...referenceFiles.map((f) => Container(margin: const EdgeInsets.only(bottom: 4), padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(AppRadii.chip)),
-                  child: Row(children: [Icon(CupertinoIcons.doc_text, size: 14, color: Theme.of(context).colorScheme.primary), SizedBox(width: 6), Expanded(child: Text(f.name, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary), overflow: TextOverflow.ellipsis)), GestureDetector(onTap: () => setS(() => referenceFiles.remove(f)), child: Icon(CupertinoIcons.xmark, size: 14, color: C.text4))]))),
+                  child: Row(children: [Icon(CupertinoIcons.doc_text, size: 14, color: Theme.of(context).colorScheme.primary), const SizedBox(width: 6), Expanded(child: Text(f.name, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary), overflow: TextOverflow.ellipsis)), GestureDetector(onTap: () => setS(() => referenceFiles.remove(f)), child: const Icon(CupertinoIcons.xmark, size: 14, color: C.text4))]))),
               ],
             ])),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           // Criteria
           Row(children: [
             Text('КРИТЕРИИ ОЦЕНИВАНИЯ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
-            Spacer(),
+            const Spacer(),
             GestureDetector(onTap: () => setS(() => criteria.add({'name': '', 'weight': 0, 'desc': ''})),
               child: Text('+ Добавить', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary))),
           ]),
-          SizedBox(height: 4),
-          Text('Сумма весов должна быть равна макс. баллу (${sc.text}/${sc.text})', style: TextStyle(fontSize: 11, color: C.text4)),
-          SizedBox(height: 12),
+          const SizedBox(height: 4),
+          Text('Сумма весов должна быть равна макс. баллу (${sc.text}/${sc.text})', style: const TextStyle(fontSize: 11, color: C.text4)),
+          const SizedBox(height: 12),
           ...List.generate(criteria.length, (i) {
             final nameC = TextEditingController(text: criteria[i]['name']);
             final weightC = TextEditingController(text: '${criteria[i]['weight']}');
             final descC = TextEditingController(text: criteria[i]['desc'] ?? '');
-            return Container(margin: EdgeInsets.only(bottom: 10), padding: EdgeInsets.all(12),
+            return Container(margin: const EdgeInsets.only(bottom: 10), padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: Column(children: [
                 Row(children: [
-                  Text('${i + 1}', style: TextStyle(fontSize: 12, color: C.text4)),
-                  SizedBox(width: 8),
-                  Expanded(child: TextField(controller: nameC, decoration: InputDecoration(hintText: 'Название критерия', contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10)), onChanged: (v) => criteria[i]['name'] = v)),
-                  SizedBox(width: 8),
-                  SizedBox(width: 60, child: TextField(controller: weightC, keyboardType: TextInputType.number, textAlign: TextAlign.center, decoration: InputDecoration(contentPadding: EdgeInsets.symmetric(vertical: 10)), onChanged: (v) => criteria[i]['weight'] = int.tryParse(v) ?? 0)),
-                  SizedBox(width: 4),
-                  GestureDetector(onTap: () { if (criteria.length > 1) setS(() => criteria.removeAt(i)); }, child: Icon(CupertinoIcons.xmark, size: 16, color: C.red)),
+                  Text('${i + 1}', style: const TextStyle(fontSize: 12, color: C.text4)),
+                  const SizedBox(width: 8),
+                  Expanded(child: TextField(controller: nameC, decoration: const InputDecoration(hintText: 'Название критерия', contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10)), onChanged: (v) => criteria[i]['name'] = v)),
+                  const SizedBox(width: 8),
+                  SizedBox(width: 60, child: TextField(controller: weightC, keyboardType: TextInputType.number, textAlign: TextAlign.center, decoration: const InputDecoration(contentPadding: EdgeInsets.symmetric(vertical: 10)), onChanged: (v) => criteria[i]['weight'] = int.tryParse(v) ?? 0)),
+                  const SizedBox(width: 4),
+                  GestureDetector(onTap: () { if (criteria.length > 1) setS(() => criteria.removeAt(i)); }, child: const Icon(CupertinoIcons.xmark, size: 16, color: C.red)),
                 ]),
-                SizedBox(height: 6),
-                TextField(controller: descC, decoration: InputDecoration(hintText: 'Описание (необязательно)', contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10)), onChanged: (v) => criteria[i]['desc'] = v),
+                const SizedBox(height: 6),
+                TextField(controller: descC, decoration: const InputDecoration(hintText: 'Описание (необязательно)', contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10)), onChanged: (v) => criteria[i]['desc'] = v),
               ]));
           }),
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
           Row(children: [
-            Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)), child: Text('Отмена'))),
-            SizedBox(width: 12),
-            Expanded(child: ElevatedButton.icon(icon: Icon(CupertinoIcons.plus, size: 16, color: Colors.white), label: Text('Создать задание'),
-              style: ElevatedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)),
+            Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)), child: const Text('Отмена'))),
+            const SizedBox(width: 12),
+            Expanded(child: ElevatedButton.icon(icon: const Icon(CupertinoIcons.plus, size: 16, color: Colors.white), label: const Text('Создать задание'),
+              style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
               onPressed: () async {
                 if (tc.text.trim().isEmpty) return;
                 try {
@@ -1308,11 +1308,11 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 }
               })),
           ]),
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
         ])))).then((_) { tc.dispose(); dc.dispose(); sc.dispose(); });
   }
 
-  Widget _fieldLabel2(String s) => Padding(padding: EdgeInsets.only(bottom: 8), child: Text(s, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)));
+  Widget _fieldLabel2(String s) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(s, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)));
 
   // ── Edit assignment ──
   void _editAssignment(dynamic a) {
@@ -1339,68 +1339,68 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
 
     showModalBottomSheet(
       context: context, isScrollControlled: true, backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => DraggableScrollableSheet(
         expand: false, initialChildSize: 0.9, maxChildSize: 0.95,
-        builder: (ctx, scroll) => ListView(controller: scroll, padding: EdgeInsets.all(24), children: [
+        builder: (ctx, scroll) => ListView(controller: scroll, padding: const EdgeInsets.all(24), children: [
           Row(children: [
-            Container(width: 44, height: 44, decoration: BoxDecoration(color: Color(0xFFF59E0B).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(AppRadii.tile)),
-              child: Icon(CupertinoIcons.pencil, color: Color(0xFFF59E0B), size: 22)),
-            SizedBox(width: 12),
+            Container(width: 44, height: 44, decoration: BoxDecoration(color: const Color(0xFFF59E0B).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(AppRadii.tile)),
+              child: const Icon(CupertinoIcons.pencil, color: Color(0xFFF59E0B), size: 22)),
+            const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Редактировать задание', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-              Text(a['title'] ?? '', style: TextStyle(fontSize: 12, color: C.text4), overflow: TextOverflow.ellipsis),
+              const Text('Редактировать задание', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+              Text(a['title'] ?? '', style: const TextStyle(fontSize: 12, color: C.text4), overflow: TextOverflow.ellipsis),
             ])),
-            IconButton(icon: Icon(CupertinoIcons.xmark), onPressed: () => Navigator.pop(ctx)),
+            IconButton(icon: const Icon(CupertinoIcons.xmark), onPressed: () => Navigator.pop(ctx)),
           ]),
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
           _fieldLabel2('НАЗВАНИЕ *'),
-          TextField(controller: tc, decoration: InputDecoration(hintText: 'Название задания')),
-          SizedBox(height: 16),
+          TextField(controller: tc, decoration: const InputDecoration(hintText: 'Название задания')),
+          const SizedBox(height: 16),
           _fieldLabel2('ОПИСАНИЕ'),
-          TextField(controller: dc, decoration: InputDecoration(hintText: 'Описание и требования...'), maxLines: 4),
-          SizedBox(height: 16),
+          TextField(controller: dc, decoration: const InputDecoration(hintText: 'Описание и требования...'), maxLines: 4),
+          const SizedBox(height: 16),
           _fieldLabel2('МАКС. БАЛЛ'),
-          TextField(controller: sc, keyboardType: TextInputType.number, decoration: InputDecoration(hintText: '100')),
-          SizedBox(height: 16),
+          TextField(controller: sc, keyboardType: TextInputType.number, decoration: const InputDecoration(hintText: '100')),
+          const SizedBox(height: 16),
           _fieldLabel2('ДЕДЛАЙН'),
           GestureDetector(onTap: () async {
-            final d = await showDatePicker(context: ctx, initialDate: deadline ?? DateTime.now().add(Duration(days: 7)), firstDate: DateTime.now().subtract(Duration(days: 1)), lastDate: DateTime.now().add(Duration(days: 365)));
+            final d = await showDatePicker(context: ctx, initialDate: deadline ?? DateTime.now().add(const Duration(days: 7)), firstDate: DateTime.now().subtract(const Duration(days: 1)), lastDate: DateTime.now().add(const Duration(days: 365)));
             if (d != null && ctx.mounted) {
               final t = await showTimePicker(context: ctx, initialTime: TimeOfDay(hour: deadline?.hour ?? 23, minute: deadline?.minute ?? 59));
               setS(() => deadline = DateTime(d.year, d.month, d.day, t?.hour ?? 23, t?.minute ?? 59));
             }
-          }, child: Container(padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          }, child: Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(AppRadii.tile)),
             child: Row(children: [
               Text(deadline != null ? '${deadline!.day.toString().padLeft(2,'0')}.${deadline!.month.toString().padLeft(2,'0')}.${deadline!.year} ${deadline!.hour.toString().padLeft(2,'0')}:${deadline!.minute.toString().padLeft(2,'0')}' : 'ДД.ММ.ГГГГ --:--', style: TextStyle(fontSize: 14, color: deadline != null ? null : C.text4)),
-              Spacer(), Icon(CupertinoIcons.calendar, size: 18, color: C.text4),
+              const Spacer(), const Icon(CupertinoIcons.calendar, size: 18, color: C.text4),
             ]))),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           // Existing files
           if (keepUrls.isNotEmpty) ...[
             Row(children: [
               Text('ТЕКУЩИЕ ФАЙЛЫ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
-              Spacer(),
-              Text('нажмите × для удаления', style: TextStyle(fontSize: 11, color: C.text4)),
+              const Spacer(),
+              const Text('нажмите × для удаления', style: TextStyle(fontSize: 11, color: C.text4)),
             ]),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             ...keepUrls.map((url) {
               final name = fileDisplayName(url);
-              return Container(margin: EdgeInsets.only(bottom: 6), padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              return Container(margin: const EdgeInsets.only(bottom: 6), padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(12)),
                 child: Row(children: [
-                  Icon(CupertinoIcons.doc, size: 15, color: Theme.of(context).colorScheme.primary), SizedBox(width: 8),
+                  Icon(CupertinoIcons.doc, size: 15, color: Theme.of(context).colorScheme.primary), const SizedBox(width: 8),
                   Expanded(child: Text(name, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary), overflow: TextOverflow.ellipsis)),
-                  GestureDetector(onTap: () => setS(() => keepUrls.remove(url)), child: Icon(CupertinoIcons.xmark, size: 15, color: C.red)),
+                  GestureDetector(onTap: () => setS(() => keepUrls.remove(url)), child: const Icon(CupertinoIcons.xmark, size: 15, color: C.red)),
                 ]));
             }),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
           ],
           // Add new files
           Row(children: [
             Text('ДОБАВИТЬ ФАЙЛЫ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
-            Spacer(),
+            const Spacer(),
             GestureDetector(
               onTap: () async {
                 final r = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
@@ -1409,66 +1409,66 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               child: Text('+ Добавить', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
             ),
           ]),
-          SizedBox(height: 8),
-          if (newFiles.isNotEmpty) ...newFiles.map((f) => Container(margin: EdgeInsets.only(bottom: 6), padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          const SizedBox(height: 8),
+          if (newFiles.isNotEmpty) ...newFiles.map((f) => Container(margin: const EdgeInsets.only(bottom: 6), padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(12)),
             child: Row(children: [
-              Icon(CupertinoIcons.doc, size: 15, color: Theme.of(context).colorScheme.primary), SizedBox(width: 8),
+              Icon(CupertinoIcons.doc, size: 15, color: Theme.of(context).colorScheme.primary), const SizedBox(width: 8),
               Expanded(child: Text(f.name, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary), overflow: TextOverflow.ellipsis)),
-              GestureDetector(onTap: () => setS(() => newFiles.remove(f)), child: Icon(CupertinoIcons.xmark, size: 15, color: C.text4)),
+              GestureDetector(onTap: () => setS(() => newFiles.remove(f)), child: const Icon(CupertinoIcons.xmark, size: 15, color: C.text4)),
             ])))
-          else Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(12)),
-            child: Row(children: [Icon(CupertinoIcons.paperclip, size: 15, color: C.text4), SizedBox(width: 8), Text('Нет новых файлов', style: TextStyle(fontSize: 13, color: C.text4))])),
-          SizedBox(height: 24),
+          else Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(12)),
+            child: const Row(children: [Icon(CupertinoIcons.paperclip, size: 15, color: C.text4), SizedBox(width: 8), Text('Нет новых файлов', style: TextStyle(fontSize: 13, color: C.text4))])),
+          const SizedBox(height: 24),
           // Criteria
           Row(children: [
             Text('КРИТЕРИИ ОЦЕНИВАНИЯ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
-            Spacer(),
+            const Spacer(),
             GestureDetector(onTap: () => setS(() => criteria.add({'name': '', 'weight': 0, 'desc': ''})),
               child: Text('+ Добавить', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary))),
           ]),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           ...List.generate(criteria.length, (i) {
             final nameC   = TextEditingController(text: criteria[i]['name']);
             final weightC = TextEditingController(text: '${criteria[i]['weight']}');
             final descC   = TextEditingController(text: criteria[i]['desc'] ?? '');
-            return Container(margin: EdgeInsets.only(bottom: 10), padding: EdgeInsets.all(12),
+            return Container(margin: const EdgeInsets.only(bottom: 10), padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: Column(children: [
                 Row(children: [
-                  Text('${i+1}', style: TextStyle(fontSize: 12, color: C.text4)), SizedBox(width: 8),
-                  Expanded(child: TextField(controller: nameC, decoration: InputDecoration(hintText: 'Критерий', contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10)), onChanged: (v) => criteria[i]['name'] = v)),
-                  SizedBox(width: 8),
-                  SizedBox(width: 60, child: TextField(controller: weightC, keyboardType: TextInputType.number, textAlign: TextAlign.center, decoration: InputDecoration(contentPadding: EdgeInsets.symmetric(vertical: 10)), onChanged: (v) => criteria[i]['weight'] = int.tryParse(v) ?? 0)),
-                  SizedBox(width: 4),
-                  GestureDetector(onTap: () { if (criteria.length > 1) setS(() => criteria.removeAt(i)); }, child: Icon(CupertinoIcons.xmark, size: 16, color: C.red)),
+                  Text('${i+1}', style: const TextStyle(fontSize: 12, color: C.text4)), const SizedBox(width: 8),
+                  Expanded(child: TextField(controller: nameC, decoration: const InputDecoration(hintText: 'Критерий', contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10)), onChanged: (v) => criteria[i]['name'] = v)),
+                  const SizedBox(width: 8),
+                  SizedBox(width: 60, child: TextField(controller: weightC, keyboardType: TextInputType.number, textAlign: TextAlign.center, decoration: const InputDecoration(contentPadding: EdgeInsets.symmetric(vertical: 10)), onChanged: (v) => criteria[i]['weight'] = int.tryParse(v) ?? 0)),
+                  const SizedBox(width: 4),
+                  GestureDetector(onTap: () { if (criteria.length > 1) setS(() => criteria.removeAt(i)); }, child: const Icon(CupertinoIcons.xmark, size: 16, color: C.red)),
                 ]),
-                SizedBox(height: 6),
-                TextField(controller: descC, decoration: InputDecoration(hintText: 'Описание критерия', contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10)), onChanged: (v) => criteria[i]['desc'] = v),
+                const SizedBox(height: 6),
+                TextField(controller: descC, decoration: const InputDecoration(hintText: 'Описание критерия', contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10)), onChanged: (v) => criteria[i]['desc'] = v),
               ]));
           }),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           GestureDetector(
             onTap: () => _showVariantsSheet((a['id'] as num).toInt()),
             child: Container(
-              padding: EdgeInsets.all(14),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: Row(children: [
                 Icon(CupertinoIcons.square_stack, size: 18, color: Theme.of(context).colorScheme.primary),
-                SizedBox(width: 10),
-                Expanded(child: Text(context.read<L10n>().t('assignment_variants'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700))),
-                Icon(CupertinoIcons.chevron_right, size: 16, color: C.text4),
+                const SizedBox(width: 10),
+                Expanded(child: Text(context.read<L10n>().t('assignment_variants'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700))),
+                const Icon(CupertinoIcons.chevron_right, size: 16, color: C.text4),
               ]),
             ),
           ),
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
           Row(children: [
-            Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)), child: Text('Отмена'))),
-            SizedBox(width: 12),
+            Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)), child: const Text('Отмена'))),
+            const SizedBox(width: 12),
             Expanded(child: ElevatedButton.icon(
-              icon: Icon(CupertinoIcons.checkmark, size: 16, color: Colors.white),
-              label: Text('Сохранить'),
-              style: ElevatedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)),
+              icon: const Icon(CupertinoIcons.checkmark, size: 16, color: Colors.white),
+              label: const Text('Сохранить'),
+              style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
               onPressed: () async {
                 if (tc.text.trim().isEmpty) return;
                 try {
@@ -1514,7 +1514,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               },
             )),
           ]),
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
         ]),
       )),
     ).then((_) { tc.dispose(); dc.dispose(); sc.dispose(); });
@@ -1533,7 +1533,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
 
     showModalBottomSheet(
       context: context, isScrollControlled: true, backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(builder: (ctx, setS) {
         Future<void> load() async {
           try {
@@ -1547,19 +1547,19 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
 
         return DraggableScrollableSheet(expand: false, initialChildSize: 0.75, maxChildSize: 0.95, minChildSize: 0.4,
           builder: (ctx, scroll) => Column(children: [
-            Container(width: 40, height: 4, margin: EdgeInsets.symmetric(vertical: 12),
+            Container(width: 40, height: 4, margin: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2))),
-            Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Row(children: [
-              Expanded(child: Text(l.t('assignment_variants'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800))),
-              IconButton(icon: Icon(CupertinoIcons.xmark), onPressed: () => Navigator.pop(ctx)),
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: Row(children: [
+              Expanded(child: Text(l.t('assignment_variants'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800))),
+              IconButton(icon: const Icon(CupertinoIcons.xmark), onPressed: () => Navigator.pop(ctx)),
             ])),
             Expanded(child: variants == null
                 ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))
-                : ListView(controller: scroll, padding: EdgeInsets.fromLTRB(20, 8, 20, 24), children: [
+                : ListView(controller: scroll, padding: const EdgeInsets.fromLTRB(20, 8, 20, 24), children: [
                     TextField(controller: variantTitleC, decoration: InputDecoration(hintText: l.t('variant_title_hint'))),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     TextField(controller: variantContentC, decoration: InputDecoration(hintText: l.t('variant_content_hint')), maxLines: 3),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
                     SizedBox(width: double.infinity, child: ElevatedButton.icon(
                       onPressed: adding ? null : () async {
                         if (variantTitleC.text.trim().isEmpty) return;
@@ -1579,24 +1579,24 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                         }
                       },
                       icon: adding
-                          ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : Icon(CupertinoIcons.add, size: 16, color: Colors.white),
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Icon(CupertinoIcons.add, size: 16, color: Colors.white),
                       label: Text(l.t('assignment_variants_add')),
                     )),
-                    SizedBox(height: 20),
+                    const SizedBox(height: 20),
                     if (variants!.isEmpty)
-                      Padding(padding: EdgeInsets.symmetric(vertical: 24),
-                        child: Center(child: Text(l.t('assignment_variants_empty'), style: TextStyle(color: C.text4))))
+                      Padding(padding: const EdgeInsets.symmetric(vertical: 24),
+                        child: Center(child: Text(l.t('assignment_variants_empty'), style: const TextStyle(color: C.text4))))
                     else
                       ...variants!.map((v) {
                         final vid = (v['id'] as num?)?.toInt();
-                        return Container(margin: EdgeInsets.only(bottom: 8), padding: EdgeInsets.all(14),
+                        return Container(margin: const EdgeInsets.only(bottom: 8), padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
                           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              Text((v['title'] ?? '').toString(), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-                              if ((v['content'] ?? '').toString().isNotEmpty) Padding(padding: EdgeInsets.only(top: 4),
-                                child: Text((v['content'] ?? '').toString(), style: TextStyle(fontSize: 12, color: C.text4), maxLines: 3, overflow: TextOverflow.ellipsis)),
+                              Text((v['title'] ?? '').toString(), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                              if ((v['content'] ?? '').toString().isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4),
+                                child: Text((v['content'] ?? '').toString(), style: const TextStyle(fontSize: 12, color: C.text4), maxLines: 3, overflow: TextOverflow.ellipsis)),
                             ])),
                             GestureDetector(
                               onTap: () async {
@@ -1615,7 +1615,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                                   if (mounted && ctx.mounted) showToast(context, l.t('error'), error: true);
                                 }
                               },
-                              child: Padding(padding: EdgeInsets.all(4), child: Icon(CupertinoIcons.trash, size: 16, color: C.red)),
+                              child: const Padding(padding: EdgeInsets.all(4), child: Icon(CupertinoIcons.trash, size: 16, color: C.red)),
                             ),
                           ]));
                       }),
@@ -1660,18 +1660,18 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     bool rotationYearly = rotationOriginal;
 
     showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => DraggableScrollableSheet(expand: false, initialChildSize: 0.85, maxChildSize: 0.95,
-        builder: (ctx, scroll) => ListView(controller: scroll, padding: EdgeInsets.all(24), children: [
+        builder: (ctx, scroll) => ListView(controller: scroll, padding: const EdgeInsets.all(24), children: [
           // Header
           Row(children: [
             Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: Icon(CupertinoIcons.pencil, color: Theme.of(context).colorScheme.primary, size: 22)),
-            SizedBox(width: 12),
-            Expanded(child: Text('Редактировать класс', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800))),
-            IconButton(icon: Icon(CupertinoIcons.xmark), onPressed: () => Navigator.pop(ctx)),
+            const SizedBox(width: 12),
+            const Expanded(child: Text('Редактировать класс', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800))),
+            IconButton(icon: const Icon(CupertinoIcons.xmark), onPressed: () => Navigator.pop(ctx)),
           ]),
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
           // Cover image
           _fieldLabel2('ОБЛОЖКА КЛАССА'),
           GestureDetector(
@@ -1692,35 +1692,35 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     return bytes != null ? Image.memory(bytes, fit: BoxFit.cover, gaplessPlayback: true) : Container(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1));
                   })
                 else if (!coverRemoved && existingCover != null)
-                  CachedNetworkImage(imageUrl: context.read<ApiService>().fixUrl(existingCover), fit: BoxFit.cover, memCacheWidth: 800, fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero, placeholder: (_, __) => const SizedBox.shrink(), errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF006475), Theme.of(context).colorScheme.primary]))))
+                  CachedNetworkImage(imageUrl: context.read<ApiService>().fixUrl(existingCover), fit: BoxFit.cover, memCacheWidth: 800, fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero, placeholder: (_, __) => const SizedBox.shrink(), errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [const Color(0xFF006475), Theme.of(context).colorScheme.primary]))))
                 else
-                  Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF006475), Theme.of(context).colorScheme.primary], begin: Alignment.topLeft, end: Alignment.bottomRight))),
+                  Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [const Color(0xFF006475), Theme.of(context).colorScheme.primary], begin: Alignment.topLeft, end: Alignment.bottomRight))),
                 // Overlay
                 Container(color: Colors.black.withValues(alpha: 0.3),
                   child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Icon(CupertinoIcons.photo, color: Colors.white, size: 32),
-                    SizedBox(height: 6),
-                    Text((newCoverFile != null || (!coverRemoved && existingCover != null)) ? 'Нажмите для замены' : 'Выбрать обложку', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                    const Icon(CupertinoIcons.photo, color: Colors.white, size: 32),
+                    const SizedBox(height: 6),
+                    Text((newCoverFile != null || (!coverRemoved && existingCover != null)) ? 'Нажмите для замены' : 'Выбрать обложку', style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
                   ])),
               ])),
           ),
           if (newCoverFile != null || (!coverRemoved && existingCover != null)) ...[
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             GestureDetector(onTap: () => setS(() { newCoverFile = null; coverRemoved = true; }),
-              child: Row(children: [Icon(CupertinoIcons.xmark, size: 14, color: C.red), SizedBox(width: 4), Text('Убрать обложку', style: TextStyle(fontSize: 12, color: C.red))])),
+              child: const Row(children: [Icon(CupertinoIcons.xmark, size: 14, color: C.red), SizedBox(width: 4), Text('Убрать обложку', style: TextStyle(fontSize: 12, color: C.red))])),
           ],
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           _fieldLabel2('НАЗВАНИЕ *'),
-          TextField(controller: tc, decoration: InputDecoration(hintText: 'Название класса')),
-          SizedBox(height: 16),
+          TextField(controller: tc, decoration: const InputDecoration(hintText: 'Название класса')),
+          const SizedBox(height: 16),
           _fieldLabel2('ОПИСАНИЕ'),
-          TextField(controller: dc, decoration: InputDecoration(hintText: 'Описание класса'), maxLines: 3),
-          SizedBox(height: 16),
+          TextField(controller: dc, decoration: const InputDecoration(hintText: 'Описание класса'), maxLines: 3),
+          const SizedBox(height: 16),
           _fieldLabel2('ИМЯ УЧИТЕЛЯ'),
-          TextField(controller: tn, decoration: InputDecoration(hintText: 'Отображаемое имя учителя')),
+          TextField(controller: tn, decoration: const InputDecoration(hintText: 'Отображаемое имя учителя')),
           // Cohort management (rotation + rollover) — creator/admin only, else 403.
           if (_canManageCohorts) ...[
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           // Yearly rotation — enrolls the class in the annual rollover flow.
           Container(
             decoration: BoxDecoration(
@@ -1736,12 +1736,12 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               subtitle: Padding(
                 padding: const EdgeInsets.only(top: 2),
                 child: Text(context.read<L10n>().t('yearly_rotation_sub'),
-                    style: TextStyle(fontSize: 12.5, color: C.text4)),
+                    style: const TextStyle(fontSize: 12.5, color: C.text4)),
               ),
             ),
           ),
           if (rotationYearly) ...[
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             GestureDetector(
               onTap: () async {
                 Navigator.pop(ctx);
@@ -1768,12 +1768,12 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             ),
           ],
           ],
-          SizedBox(height: 28),
+          const SizedBox(height: 28),
           Row(children: [
-            Expanded(child: OutlinedButton(onPressed: saving ? null : () => Navigator.pop(ctx), style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)), child: Text('Отмена'))),
-            SizedBox(width: 12),
+            Expanded(child: OutlinedButton(onPressed: saving ? null : () => Navigator.pop(ctx), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)), child: const Text('Отмена'))),
+            const SizedBox(width: 12),
             Expanded(child: ElevatedButton(
-              style: ElevatedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14)),
+              style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
               onPressed: saving ? null : () async {
                 setS(() => saving = true);
                 try {
@@ -1814,11 +1814,11 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 }
               },
               child: saving
-                  ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : Text('Сохранить'),
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Text('Сохранить'),
             )),
           ]),
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
         ])))).then((_) { tc.dispose(); dc.dispose(); tn.dispose(); });
   }
 

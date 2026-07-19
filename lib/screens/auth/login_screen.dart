@@ -127,9 +127,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _email,
                     keyboardType: TextInputType.emailAddress,
                     autocorrect: false,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       hintText: 'you@example.com',
-                      prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
+                      prefixIcon: Padding(padding: EdgeInsets.only(left: 4),
                         child: Icon(CupertinoIcons.mail, size: 18, color: C.text4)),
                     ),
                     onChanged: (_) { if (_error != null) setState(() => _error = null); },

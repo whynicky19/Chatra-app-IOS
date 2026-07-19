@@ -241,11 +241,11 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
             ),
             child: TextField(
               controller: _ctrl,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: 'Спросите об этом курсе...',
-                hintStyle: const TextStyle(fontSize: 15, color: C.text4),
+                hintStyle: TextStyle(fontSize: 15, color: C.text4),
                 border: InputBorder.none, enabledBorder: InputBorder.none, focusedBorder: InputBorder.none,
-                filled: false, contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+                filled: false, contentPadding: EdgeInsets.symmetric(horizontal: 18, vertical: 13),
               ),
               onSubmitted: (_) => _send(),
               maxLines: 4, minLines: 1,
@@ -423,7 +423,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
         child: const AppLogo(fit: BoxFit.contain),
       ),
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Padding(padding: EdgeInsets.only(left: 2, bottom: 5),
+        Padding(padding: const EdgeInsets.only(left: 2, bottom: 5),
           child: Text('Chatra AI', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 0.2))),
         Container(
           padding: const EdgeInsets.all(16),
@@ -458,7 +458,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
         child: const AppLogo(fit: BoxFit.contain),
       ),
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Padding(padding: EdgeInsets.only(left: 2, bottom: 5),
+        Padding(padding: const EdgeInsets.only(left: 2, bottom: 5),
           child: Text('Chatra AI', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary))),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -489,14 +489,14 @@ class _ClassAiDotState extends State<_ClassAiDot> with SingleTickerProviderState
   @override
   void initState() {
     super.initState();
-    _c = AnimationController(vsync: this, duration: Duration(milliseconds: 500));
+    _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
     Future.delayed(Duration(milliseconds: widget.delay), () { if (mounted) _c.repeat(reverse: true); });
     _a = CurvedAnimation(parent: _c, curve: Curves.easeInOut);
   }
   @override void dispose() { _c.dispose(); super.dispose(); }
   @override
   Widget build(BuildContext context) => AnimatedBuilder(animation: _a, builder: (_, __) => Container(
-    width: 7, height: 7, margin: EdgeInsets.symmetric(horizontal: 3),
+    width: 7, height: 7, margin: const EdgeInsets.symmetric(horizontal: 3),
     decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3 + _a.value * 0.7), shape: BoxShape.circle),
     transform: Matrix4.translationValues(0, -4 * _a.value, 0),
   ));

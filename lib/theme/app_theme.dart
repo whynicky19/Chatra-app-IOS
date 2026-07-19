@@ -102,11 +102,11 @@ const _r16 = BorderRadius.all(Radius.circular(16));
 InputDecorationTheme _input(Color fill, Color focus) => InputDecorationTheme(
   filled: true,
   fillColor: fill,
-  border: OutlineInputBorder(borderRadius: _r16, borderSide: BorderSide.none),
-  enabledBorder: OutlineInputBorder(borderRadius: _r16, borderSide: BorderSide.none),
+  border: const OutlineInputBorder(borderRadius: _r16, borderSide: BorderSide.none),
+  enabledBorder: const OutlineInputBorder(borderRadius: _r16, borderSide: BorderSide.none),
   focusedBorder: OutlineInputBorder(borderRadius: _r16, borderSide: BorderSide(color: focus, width: 1.8)),
   contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
-  hintStyle: TextStyle(color: C.text4, fontSize: 14, fontWeight: FontWeight.w400),
+  hintStyle: const TextStyle(color: C.text4, fontSize: 14, fontWeight: FontWeight.w400),
 );
 
 ElevatedButtonThemeData _btnFor(Color primary) => ElevatedButtonThemeData(style: ElevatedButton.styleFrom(
@@ -115,7 +115,7 @@ ElevatedButtonThemeData _btnFor(Color primary) => ElevatedButtonThemeData(style:
   elevation: 0,
   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
   textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: 0.2),
-  shape: RoundedRectangleBorder(borderRadius: _r16),
+  shape: const RoundedRectangleBorder(borderRadius: _r16),
 ));
 
 const _pageTransitions = PageTransitionsTheme(builders: {
@@ -156,7 +156,7 @@ class AppTheme {
         backgroundColor: C.surface, foregroundColor: C.text1,
         elevation: 0, surfaceTintColor: Colors.transparent,
       ),
-      cardTheme: CardThemeData(
+      cardTheme: const CardThemeData(
         color: C.surface, elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: _r16),
       ),
@@ -167,7 +167,7 @@ class AppTheme {
         side: BorderSide(color: primary, width: 1.5),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-        shape: RoundedRectangleBorder(borderRadius: _r16),
+        shape: const RoundedRectangleBorder(borderRadius: _r16),
       )),
       snackBarTheme: const SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
@@ -210,7 +210,7 @@ class AppTheme {
         backgroundColor: C.darkSurface, foregroundColor: C.darkText1,
         elevation: 0, surfaceTintColor: Colors.transparent,
       ),
-      cardTheme: CardThemeData(
+      cardTheme: const CardThemeData(
         color: C.darkSurface, elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: _r16),
       ),
@@ -221,11 +221,11 @@ class AppTheme {
         side: BorderSide(color: primary, width: 1.5),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-        shape: RoundedRectangleBorder(borderRadius: _r16),
+        shape: const RoundedRectangleBorder(borderRadius: _r16),
       )),
-      snackBarTheme: SnackBarThemeData(
+      snackBarTheme: const SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        shape: const RoundedRectangleBorder(
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(16)),
         ),
         backgroundColor: C.darkSurface2,

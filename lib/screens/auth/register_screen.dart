@@ -165,9 +165,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   _fieldLabel(l.t('full_name_label')),
                   TextField(
                     controller: _name,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       hintText: 'Иванов Иван Иванович',
-                      prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
+                      prefixIcon: Padding(padding: EdgeInsets.only(left: 4),
                         child: Icon(CupertinoIcons.person, size: 18, color: C.text4)),
                     ),
                     onChanged: (_) => setState(() {}),
@@ -184,9 +184,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     controller: _email,
                     keyboardType: TextInputType.emailAddress,
                     autocorrect: false,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       hintText: 'you@example.com',
-                      prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
+                      prefixIcon: Padding(padding: EdgeInsets.only(left: 4),
                         child: Icon(CupertinoIcons.mail, size: 18, color: C.text4)),
                     ),
                     onChanged: (_) => setState(() {}),

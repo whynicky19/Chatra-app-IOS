@@ -303,11 +303,11 @@ class _AvatarRequestCard extends StatelessWidget {
         Row(children: [
           if (avatar.isPending) ...[
             Expanded(child: OutlinedButton(onPressed: onApprove,
-              style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 10), side: BorderSide(color: C.green)),
+              style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 10), side: const BorderSide(color: C.green)),
               child: Text(l.t('approve'), style: const TextStyle(color: C.green, fontSize: 12)))),
             const SizedBox(width: 8),
             Expanded(child: OutlinedButton(onPressed: onReject,
-              style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 10), side: BorderSide(color: C.red)),
+              style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 10), side: const BorderSide(color: C.red)),
               child: Text(l.t('reject'), style: const TextStyle(color: C.red, fontSize: 12)))),
             const SizedBox(width: 8),
           ],

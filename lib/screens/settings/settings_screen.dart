@@ -64,7 +64,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         ])), 0.0, 0.4),
 
         // ── Profile card ────────────────────────────────────────
-        _animated(_SectionLabel('ПРОФИЛЬ'), 0.05, 0.45),
+        _animated(const _SectionLabel('ПРОФИЛЬ'), 0.05, 0.45),
         const SizedBox(height: 8),
 
         _animated(Container(
@@ -178,7 +178,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         const SizedBox(height: 24),
 
         // ── Preferences section ─────────────────────────────────
-        _animated(_SectionLabel('НАСТРОЙКИ'), 0.3, 0.65),
+        _animated(const _SectionLabel('НАСТРОЙКИ'), 0.3, 0.65),
         const SizedBox(height: 8),
 
         _animated(Container(

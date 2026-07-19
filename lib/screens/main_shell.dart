@@ -174,88 +174,82 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
                   ),
           ),
         ),
-        // Нижний navbar — стекло рендерит пакет. Виджет .withImpeller сам
-        // растягивается на весь экран (прозрачное тело) и ставит бар снизу
-        // через alignment/margin, поэтому кладём его в Positioned.fill.
-        // Появление: fade + короткий подъём (без пружины), не завязано на
-        // размер бара, поэтому не ломает self-layout пакета.
-        Positioned.fill(
+        // Нижний navbar — Liquid Glass через пакет, но БЕЗ тяжёлого realtime-
+        // capture морф-капсулы (.withImpeller держал непрерывный захват экрана
+        // каждый кадр → фризы при скролле). Обычный LiquidGlassBottomNavBar =
+        // одна стеклянная ленза (рефракция как у BackdropFilter, только при
+        // перерисовке) + лёгкий скользящий хайлайт выбора. Вид тот же, нагрузка
+        // кратно ниже.
+        Positioned(
+          left: 16, right: 16, bottom: 16,
           child: RepaintBoundary(
-            child: AnimatedBuilder(
-              animation: _navAnim,
-              builder: (context, child) {
-                final t = Curves.easeOutCubic.transform(_navAnim.value.clamp(0.0, 1.0));
-                return Opacity(
-                  opacity: t.clamp(0.0, 1.0),
-                  child: Transform.translate(offset: Offset(0, 44 * (1 - t)), child: child),
-                );
-              },
-              child: LiquidGlassBottomNavBar.withImpeller(
-                items: items
-                    .map((it) => LiquidGlassTabBarItem(
-                          icon: it.inactive,
-                          selectedIcon: it.active,
-                          label: it.label,
-                        ))
-                    .toList(),
-                selectedIndex: _idx,
-                onChanged: _onTap,
-                width: MediaQuery.of(context).size.width - 32,
-                height: 64,
-                margin: const EdgeInsets.only(bottom: 16),
-                alignment: Alignment.bottomCenter,
-                itemPadding: 6,
-                // Стекло бара: приглушённое краевое свечение (низкий lightIntensity
-                // + мягкий OpticalBorder) и более плотный фрост, чтобы иконки и
-                // подписи читались на любом фоне.
-                style: LiquidGlassStyle(
-                  shape: const LiquidGlassShape.roundedRectangle(
-                    cornerRadius: 32,
-                    borderWidth: 1.0,
-                    lightIntensity: 0.35,
-                    borderType: OpticalBorder(
-                      borderSaturation: 1.0,
-                      ambientIntensity: 0.30,
-                      borderSolidity: 0.25,
-                      lightSpread: 0.35,
+            child: FadeTransition(
+              opacity: CurvedAnimation(
+                parent: _navAnim,
+                curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
+              ),
+              child: SlideTransition(
+                position: Tween<Offset>(begin: const Offset(0, 1.2), end: Offset.zero)
+                    .animate(CurvedAnimation(parent: _navAnim, curve: Curves.easeOutCubic)),
+                child: LayoutBuilder(builder: (context, constraints) {
+                  return LiquidGlassBottomNavBar(
+                    items: items
+                        .map((it) => LiquidGlassTabBarItem(
+                              icon: it.inactive,
+                              selectedIcon: it.active,
+                              label: it.label,
+                            ))
+                        .toList(),
+                    selectedIndex: _idx,
+                    onChanged: _onTap,
+                    width: constraints.maxWidth,
+                    height: 64,
+                    itemPadding: 6,
+                    // Стекло бара: приглушённое краевое свечение + лёгкий тинт
+                    // (читаемость), subtle blur.
+                    style: LiquidGlassStyle(
+                      shape: const LiquidGlassShape.roundedRectangle(
+                        cornerRadius: 32,
+                        borderWidth: 1.0,
+                        lightIntensity: 0.35,
+                        borderType: OpticalBorder(
+                          borderSaturation: 1.0,
+                          ambientIntensity: 0.30,
+                          borderSolidity: 0.25,
+                          lightSpread: 0.35,
+                        ),
+                      ),
+                      appearance: LiquidGlassAppearance(
+                        color: isDark ? const Color(0x26000000) : const Color(0x26FFFFFF),
+                        blur: const LiquidGlassBlur(sigmaX: 6, sigmaY: 6),
+                      ),
+                      refraction: const LiquidGlassRefraction(
+                        distortion: 0.06,
+                        distortionWidth: 24,
+                        chromaticAberration: 0.0,
+                      ),
                     ),
-                  ),
-                  appearance: LiquidGlassAppearance(
-                    // Прозрачное стекло — прозрачность НЕ глушим: лишь лёгкий тинт
-                    // и subtle blur (он же чуть помогает читаемости фона).
-                    color: isDark ? const Color(0x26000000) : const Color(0x26FFFFFF),
-                    blur: const LiquidGlassBlur(sigmaX: 6, sigmaY: 6),
-                  ),
-                  refraction: const LiquidGlassRefraction(
-                    distortion: 0.06,
-                    distortionWidth: 24,
-                    chromaticAberration: 0.0,
-                  ),
-                ),
-                // Иконки: активная — контрастный акцент, неактивные приглушены.
-                itemStyle: LiquidGlassNavItemStyle(
-                  selectedColor: Theme.of(context).colorScheme.primary,
-                  unselectedColor: isDark
-                      ? Colors.white.withValues(alpha: 0.80)
-                      : const Color(0xFF3C4043),
-                  iconSize: 23,
-                  labelFontSize: 10.5,
-                  selectedFontWeight: FontWeight.w700,
-                  unselectedFontWeight: FontWeight.w500,
-                ),
-                // Стеклянная капсула выбора: морфинг+рефракция пакета (Impeller),
-                // плавное пружинное перемещение, деликатная дисторшн.
-                pillStyle: LiquidGlassNavPillStyle(
-                  mode: LiquidGlassPillMode.impellerOnly,
-                  animated: true,
-                  animationDuration: const Duration(milliseconds: 320),
-                  animationCurve: Curves.easeOutCubic,
-                  distortion: 0.06,
-                  distortionWidth: 10,
-                  // Чуть плотнее материал капсулы выбора → активный контент
-                  // всегда читаем, но капсула остаётся стеклянной (не заливка).
-                  color: isDark ? const Color(0x33FFFFFF) : const Color(0x59FFFFFF),
-                ),
+                    // Иконки: активная — контрастный акцент, неактивные приглушены.
+                    itemStyle: LiquidGlassNavItemStyle(
+                      selectedColor: Theme.of(context).colorScheme.primary,
+                      unselectedColor: isDark
+                          ? Colors.white.withValues(alpha: 0.80)
+                          : const Color(0xFF3C4043),
+                      iconSize: 23,
+                      labelFontSize: 10.5,
+                      selectedFontWeight: FontWeight.w700,
+                      unselectedFontWeight: FontWeight.w500,
+                    ),
+                    // Лёгкий скользящий хайлайт выбора (без capture-пайплайна).
+                    pillStyle: LiquidGlassNavPillStyle(
+                      mode: LiquidGlassPillMode.none,
+                      animated: true,
+                      animationDuration: const Duration(milliseconds: 240),
+                      animationCurve: Curves.easeOutCubic,
+                      color: isDark ? const Color(0x33FFFFFF) : const Color(0x59FFFFFF),
+                    ),
+                  );
+                }),
               ),
             ),
           ),

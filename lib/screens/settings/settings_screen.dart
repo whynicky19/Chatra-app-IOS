@@ -8,6 +8,8 @@ import '../../theme/app_theme.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/cupertino_liquid_switch.dart';
 import '../../widgets/telegram_logo.dart';
+import '../legal/terms_screen.dart';
+import '../legal/privacy_policy_screen.dart';
 import '../../widgets/toast.dart';
 import 'contact_screen.dart';
 
@@ -279,6 +281,36 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
         const SizedBox(height: 16),
 
+        // ── Community guidelines (UGC Guideline 1.2) ────────────
+        _animated(
+          _actionCard(
+            icon: CupertinoIcons.checkmark_shield,
+            iconBg: primary,
+            title: l.t('terms_title'),
+            sub: l.t('terms_view'),
+            titleColor: adaptiveText1(context),
+            onTap: () => Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const TermsScreen())),
+          ),
+        0.48, 0.88),
+
+        const SizedBox(height: 16),
+
+        // ── Privacy policy ──────────────────────────────────────
+        _animated(
+          _actionCard(
+            icon: CupertinoIcons.lock_shield,
+            iconBg: primary,
+            title: l.t('pp_title'),
+            sub: l.t('pp_view'),
+            titleColor: adaptiveText1(context),
+            onTap: () => Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
+          ),
+        0.5, 0.9),
+
+        const SizedBox(height: 16),
+
         // ── Change password ─────────────────────────────────────
         _animated(
           _actionCard(
@@ -289,7 +321,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             titleColor: adaptiveText1(context),
             onTap: _openChangePassword,
           ),
-        0.5, 0.9),
+        0.52, 0.92),
 
         const SizedBox(height: 16),
 

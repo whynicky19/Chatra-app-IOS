@@ -7,6 +7,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'services/api_service.dart';
 import 'services/push_service.dart';
+import 'services/moderation_service.dart';
 import 'providers/auth_provider.dart';
 import 'providers/org_provider.dart';
 import 'providers/theme_provider.dart';
@@ -21,19 +22,24 @@ import 'screens/main_shell.dart';
 import 'screens/classes/class_detail_screen.dart';
 import 'screens/classes/archive_screen.dart';
 
+/// Дефолт для локальной разработки — локальный FastAPI на этой машине.
+/// Работает на iOS-симуляторе / macOS / web. Для Android-эмулятора используй
+/// http://10.0.2.2:8000, для физического устройства — IP машины в LAN.
+///
+/// ⚠️ ДЛЯ РЕЛИЗА / App Store так собирать НЕЛЬЗЯ: нужен задеплоенный прод-домен
+/// с валидным HTTPS. Передавай его сборке:
+///   flutter build ipa --dart-define=API_URL=https://api.твойдомен
+const String _kDevApiUrl = 'http://localhost:8000';
+
 /// Единый бэкенд для всех платформ — тот же, что у сайта (общая база).
 String _resolveBaseUrl() {
-  // Override via: flutter run --dart-define=API_URL=https://yourserver.com
-  // (some build scripts use API_BASE_URL — both names are accepted)
-  // Для локального бэкенда: --dart-define=API_URL=http://10.0.2.2:8000 (Android-эмулятор)
-  // или http://localhost:8000 (web/десктоп).
+  // Прод-URL инжектится сборкой (принимаются оба имени: API_URL / API_BASE_URL):
+  //   flutter build ipa --dart-define=API_URL=https://api.твойдомен
   const overrideUrl = String.fromEnvironment('API_URL');
   if (overrideUrl.isNotEmpty) return overrideUrl;
   const overrideUrl2 = String.fromEnvironment('API_BASE_URL');
   if (overrideUrl2.isNotEmpty) return overrideUrl2;
-  // Единый бэкенд на всех платформах — тот же, что у сайта,
-  // чтобы аккаунты и классы совпадали везде.
-  return 'https://glacier-radiated-wipe.ngrok-free.dev';
+  return _kDevApiUrl;
 }
 
 /// Глобальный ключ навигатора — нужен push-сервису, чтобы открывать нужный
@@ -51,6 +57,18 @@ void main() async {
   final l10n = L10n();
   final classes = ClassesProvider(api, auth);
   final chats = ChatsProvider(api, auth);
+  final moderation = ModerationService();
+
+  // UGC-модерация: блок-лист свой для каждого аккаунта. Перезагружаем его
+  // только при реальной смене пользователя (логин/логаут/смена аккаунта).
+  int? lastModUid = auth.userId;
+  moderation.configure(auth.userId);
+  auth.addListener(() {
+    if (auth.userId != lastModUid) {
+      lastModUid = auth.userId;
+      moderation.configure(auth.userId);
+    }
+  });
 
   api.onUnauthorized = () => auth.logout();
   // Заблокированный админом аккаунт — разлогин с причиной для сообщения на входе.
@@ -93,6 +111,7 @@ void main() async {
       ChangeNotifierProvider<L10n>.value(value: l10n),
       ChangeNotifierProvider<ClassesProvider>.value(value: classes),
       ChangeNotifierProvider<ChatsProvider>.value(value: chats),
+      ChangeNotifierProvider<ModerationService>.value(value: moderation),
     ],
     child: const ChatraApp(),
   ));

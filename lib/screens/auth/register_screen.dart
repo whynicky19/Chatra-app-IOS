@@ -8,6 +8,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/ambient_glow.dart';
 import '../../widgets/app_logo.dart';
 import '../../widgets/toast.dart';
+import '../legal/terms_screen.dart';
 import 'verify_email_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -22,6 +23,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _pw     = TextEditingController();
   bool _showPw = false;
   bool _submitted = false;
+  // UGC Guideline 1.2: регистрация только после принятия правил сообщества.
+  bool _agreedTerms = false;
 
   @override
   void dispose() { _name.dispose(); _email.dispose(); _pw.dispose(); super.dispose(); }
@@ -38,7 +41,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _nameIsCyrillic &&
         RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(_email.text.trim()) &&
         _pw.text.length >= 8 &&
-        _pwScore > 40;
+        _pwScore > 40 &&
+        _agreedTerms;
   }
 
   int get _pwScore {
@@ -242,7 +246,43 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                     ])),
                 ])),
-                const SizedBox(height: 26),
+                const SizedBox(height: 20),
+
+                // UGC Guideline 1.2 — принятие правил сообщества до регистрации.
+                _reveal(3, Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+                  GestureDetector(
+                    onTap: () => setState(() => _agreedTerms = !_agreedTerms),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 160),
+                      width: 24, height: 24,
+                      decoration: BoxDecoration(
+                        color: _agreedTerms ? primary : Colors.transparent,
+                        borderRadius: BorderRadius.circular(7),
+                        border: Border.all(
+                          color: _agreedTerms ? primary : C.text4.withValues(alpha: 0.5),
+                          width: 1.6),
+                      ),
+                      child: _agreedTerms
+                          ? const Icon(CupertinoIcons.checkmark_alt, size: 15, color: Colors.white)
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(child: Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
+                    GestureDetector(
+                      onTap: () => setState(() => _agreedTerms = !_agreedTerms),
+                      child: Text('${l.t('terms_agree')} · ',
+                        style: const TextStyle(fontSize: 13, color: C.text4, fontWeight: FontWeight.w500)),
+                    ),
+                    GestureDetector(
+                      onTap: () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const TermsScreen())),
+                      child: Text(l.t('terms_view'),
+                        style: TextStyle(fontSize: 13, color: primary, fontWeight: FontWeight.w700)),
+                    ),
+                  ])),
+                ])),
+                const SizedBox(height: 18),
 
                 _reveal(3, Column(children: [
                   GestureDetector(

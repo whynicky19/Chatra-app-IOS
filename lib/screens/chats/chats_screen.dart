@@ -10,8 +10,10 @@ import '../../providers/auth_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../providers/chats_provider.dart';
 import '../../services/api_service.dart';
+import '../../services/moderation_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_dialog.dart';
+import '../../widgets/moderation_actions.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/toast.dart';
 
@@ -133,10 +135,26 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
 
   // ── Chat list ─────────────────────────────────────────────────────────────────
 
+  // id собеседника для 1-на-1 чата (null, если участники ещё не загружены).
+  int? _chatPartnerId(ChatsProvider p, dynamic chat) {
+    final myId = context.read<AuthProvider>().userId;
+    final parts = p.chatUsers[chat['id']] ?? [];
+    for (final u in parts) {
+      final id = (u['id'] as num?)?.toInt();
+      if (id != null && id != myId) return id;
+    }
+    return null;
+  }
+
   Widget _buildChatList(ChatsProvider provider) {
     final l = context.watch<L10n>();
+    final mod = context.watch<ModerationService>();
     final surface = Theme.of(context).colorScheme.surface;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    // UGC: скрываем чаты с заблокированными пользователями (и их превью).
+    final visibleChats = provider.sortedChats
+        .where((c) => !mod.isBlocked(_chatPartnerId(provider, c)))
+        .toList();
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -186,7 +204,9 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
           decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(16),
             boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12)]),
           child: ClipRRect(borderRadius: BorderRadius.circular(16), child: ListView(shrinkWrap: true,
-            children: provider.searchResults.map((u) {
+            children: provider.searchResults
+              .where((u) => !mod.isBlocked((u['id'] as num?)?.toInt()))
+              .map((u) {
               final color = _avatarColors[(u['id'] ?? 0) % _avatarColors.length];
               final initials = (u['full_name'] ?? u['email'] ?? '?')[0].toUpperCase();
               return ListTile(
@@ -215,13 +235,13 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
                 child: const SkeletonChatRow(),
               ),
             )
-          : provider.chats.isEmpty
+          : visibleChats.isEmpty
             ? _emptyState()
             : ListView.builder(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 90),
-                itemCount: provider.sortedChats.length,
+                itemCount: visibleChats.length,
                 itemBuilder: (ctx, i) {
-                  final c = provider.sortedChats[i]; final id = c['id'] as int;
+                  final c = visibleChats[i]; final id = c['id'] as int;
                   final color = _avatarColors[id % _avatarColors.length];
                   final title = provider.chatTitle(c);
                   final unread = provider.hasUnread(id);
@@ -331,12 +351,29 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
 
   Widget _buildChatView(ChatsProvider provider) {
     final l = context.watch<L10n>();
-    final msgs = provider.messages[provider.activeChatId] ?? [];
+    final mod = context.watch<ModerationService>();
+    final allMsgs = provider.messages[provider.activeChatId] ?? [];
     final chat = provider.chats.firstWhere((c) => c['id'] == provider.activeChatId, orElse: () => {'name': 'Chat'});
     final auth = context.read<AuthProvider>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final title = provider.chatTitle(chat);
     final color = _avatarColors[(provider.activeChatId ?? 0) % _avatarColors.length];
+
+    // UGC: id собеседника — из участников чата, иначе из его сообщений.
+    final participants = provider.chatUsers[provider.activeChatId] ?? [];
+    int? partnerId = participants
+        .where((u) => (u['id'] as num?)?.toInt() != auth.userId)
+        .map((u) => (u['id'] as num?)?.toInt())
+        .firstWhere((id) => id != null, orElse: () => null);
+    partnerId ??= allMsgs
+        .map((m) => (m['user_id'] as num?)?.toInt())
+        .firstWhere((id) => id != null && id != auth.userId, orElse: () => null);
+    final partnerBlocked = mod.isBlocked(partnerId);
+
+    // Сообщения заблокированных пользователей не показываем.
+    final msgs = mod.blockedIds.isEmpty
+        ? allMsgs
+        : allMsgs.where((m) => !mod.isBlocked((m['user_id'] as num?)?.toInt())).toList();
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -374,6 +411,12 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
                     Text(context.read<L10n>().t('typing_indicator'), style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w500)),
                 ],
               )),
+              // UGC-модерация: пожаловаться / (раз)блокировать собеседника.
+              if (partnerId != null)
+                IconButton(
+                  icon: const Icon(CupertinoIcons.ellipsis, size: 20),
+                  onPressed: () => _showChatModerationMenu(partnerId!, partnerBlocked),
+                ),
             ]),
           )),
         ),
@@ -412,7 +455,9 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
                     }),
                     child: Align(
                       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                      child: Container(
+                      child: GestureDetector(
+                        onLongPress: () => _showMessageActions(m, isMe),
+                        child: Container(
                         margin: EdgeInsets.only(bottom: showTime ? 12 : 3),
                         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.72),
                         decoration: BoxDecoration(
@@ -427,6 +472,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
                             blurRadius: 12, offset: const Offset(0, 3))],
                         ),
                         child: _buildMessageContent(m['content'] ?? '', isMe),
+                      ),
                       ),
                     ),
                   ),
@@ -454,14 +500,127 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
           onCancel: () => setState(() { _replyTo = null; }),
         ),
 
-        // Input bar — reactive stateful widget (animated border + send button)
-        _ChatInputBar(
-          ctrl: _msgCtrl,
-          onSend: _send,
-          onAdd: () => _showPhotoMenu(context, provider.activeChatId!),
-          onChanged: _onMsgChanged,
-        ),
+        // UGC: если собеседник заблокирован — вместо ввода показываем плашку.
+        if (partnerBlocked)
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.fromLTRB(16, 14, 16, MediaQuery.of(context).padding.bottom + 14),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.05), blurRadius: 12, offset: const Offset(0, -2))],
+            ),
+            child: Row(children: [
+              const Icon(CupertinoIcons.nosign, size: 18, color: C.text4),
+              const SizedBox(width: 10),
+              Expanded(child: Text(l.t('you_blocked_user'),
+                style: const TextStyle(fontSize: 13, color: C.text4, fontWeight: FontWeight.w600))),
+              const SizedBox(width: 10),
+              GestureDetector(
+                onTap: () => unblockUser(context, userId: partnerId!),
+                child: Text(l.t('unblock_user_action'),
+                  style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w700)),
+              ),
+            ]),
+          )
+        else
+          // Input bar — reactive stateful widget (animated border + send button)
+          _ChatInputBar(
+            ctrl: _msgCtrl,
+            onSend: _send,
+            onAdd: () => _showPhotoMenu(context, provider.activeChatId!),
+            onChanged: _onMsgChanged,
+          ),
       ]),
+    );
+  }
+
+  // ── UGC moderation menus ──────────────────────────────────────────────────
+
+  void _showChatModerationMenu(int partnerId, bool blocked) {
+    final l = context.read<L10n>();
+    HapticFeedback.lightImpact();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => SafeArea(child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(width: 40, height: 4,
+            decoration: BoxDecoration(color: adaptiveBorder(ctx), borderRadius: BorderRadius.circular(2))),
+          const SizedBox(height: 10),
+          _modTile(ctx, CupertinoIcons.exclamationmark_octagon, l.t('report_user'), C.red, () {
+            Navigator.pop(ctx);
+            showReportSheet(context, reportedUserId: partnerId);
+          }),
+          if (blocked)
+            _modTile(ctx, CupertinoIcons.lock_open, l.t('unblock_user_action'), Theme.of(ctx).colorScheme.primary, () {
+              Navigator.pop(ctx);
+              unblockUser(context, userId: partnerId);
+            })
+          else
+            _modTile(ctx, CupertinoIcons.nosign, l.t('block_user_action'), C.red, () {
+              Navigator.pop(ctx);
+              confirmAndBlock(context, userId: partnerId);
+            }),
+        ]),
+      )),
+    );
+  }
+
+  void _showMessageActions(Map<String, dynamic> m, bool isMe) {
+    final l = context.read<L10n>();
+    final content = (m['content'] ?? '').toString();
+    final senderId = (m['user_id'] as num?)?.toInt();
+    final messageId = (m['id'] as num?)?.toInt();
+    HapticFeedback.lightImpact();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => SafeArea(child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(width: 40, height: 4,
+            decoration: BoxDecoration(color: adaptiveBorder(ctx), borderRadius: BorderRadius.circular(2))),
+          const SizedBox(height: 10),
+          _modTile(ctx, CupertinoIcons.doc_on_clipboard, l.t('copy_action'), adaptiveText1(ctx), () {
+            Navigator.pop(ctx);
+            Clipboard.setData(ClipboardData(text: content));
+            showToast(context, l.t('copied'));
+          }),
+          _modTile(ctx, CupertinoIcons.arrowshape_turn_up_left, l.t('reply_to'), adaptiveText1(ctx), () {
+            Navigator.pop(ctx);
+            setState(() { _replyTo = m; _replyAnim.forward(from: 0); });
+          }),
+          // Жалоба/блок — только для чужих сообщений.
+          if (!isMe && senderId != null) ...[
+            _modTile(ctx, CupertinoIcons.exclamationmark_octagon, l.t('report_message'), C.red, () {
+              Navigator.pop(ctx);
+              showReportSheet(context, reportedUserId: senderId, content: content, messageId: messageId);
+            }),
+            _modTile(ctx, CupertinoIcons.nosign, l.t('block_user_action'), C.red, () {
+              Navigator.pop(ctx);
+              confirmAndBlock(context, userId: senderId);
+            }),
+          ],
+        ]),
+      )),
+    );
+  }
+
+  Widget _modTile(BuildContext ctx, IconData icon, String label, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        child: Row(children: [
+          Icon(icon, size: 20, color: color),
+          const SizedBox(width: 14),
+          Text(label, style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w600, color: color)),
+        ]),
+      ),
     );
   }
 

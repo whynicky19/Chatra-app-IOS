@@ -22,14 +22,15 @@ import 'screens/main_shell.dart';
 import 'screens/classes/class_detail_screen.dart';
 import 'screens/classes/archive_screen.dart';
 
-/// Дефолт для локальной разработки — локальный FastAPI на этой машине.
-/// Работает на iOS-симуляторе / macOS / web. Для Android-эмулятора используй
-/// http://10.0.2.2:8000, для физического устройства — IP машины в LAN.
+/// Дефолт для локальной разработки. Сейчас — LAN-IP этого Mac, чтобы приложение
+/// на реальном телефоне (в той же Wi-Fi) достучалось до локального FastAPI без
+/// лишних флагов. Для симулятора/macOS/web этот же адрес тоже работает.
+/// Если IP Mac поменяется (другая сеть) — обнови значение здесь.
 ///
 /// ⚠️ ДЛЯ РЕЛИЗА / App Store так собирать НЕЛЬЗЯ: нужен задеплоенный прод-домен
 /// с валидным HTTPS. Передавай его сборке:
 ///   flutter build ipa --dart-define=API_URL=https://api.твойдомен
-const String _kDevApiUrl = 'http://localhost:8000';
+const String _kDevApiUrl = 'http://192.168.10.13:8000';
 
 /// Единый бэкенд для всех платформ — тот же, что у сайта (общая база).
 String _resolveBaseUrl() {

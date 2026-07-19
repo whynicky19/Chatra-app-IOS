@@ -70,6 +70,12 @@
 		<false/>
 		<key>NSAppTransportSecurity</key>
 		<dict>
+			<!-- Разрешает cleartext-HTTP только к локальной сети (.local и приватные
+			     диапазоны IP вроде 192.168.x.x) — для разработки на реальном
+			     устройстве против локального бэкенда. Публичный интернет остаётся
+			     под HTTPS (Apple такое исключение принимает). -->
+			<key>NSAllowsLocalNetworking</key>
+			<true/>
 			<key>NSExceptionDomains</key>
 			<dict>
 				<key>localhost</key>

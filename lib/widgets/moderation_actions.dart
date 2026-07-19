@@ -1,17 +1,17 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
-import '../providers/auth_provider.dart';
 import '../providers/l10n_provider.dart';
+import '../services/api_service.dart';
 import '../services/moderation_service.dart';
 import '../theme/app_theme.dart';
 import 'app_dialog.dart';
 import 'toast.dart';
 
 /// UGC-модерация (App Store Guideline 1.2): жалоба на пользователя/сообщение
-/// и блокировка. Жалоба записывается локально, уходит на почту модерации и
-/// автоматически блокирует нарушителя (чтобы контент сразу пропал у жалобщика).
+/// и блокировка. Жалоба уходит на сервер (эндпоинт POST /reports, где её видит
+/// админ), записывается в локальный журнал и автоматически блокирует нарушителя
+/// (чтобы контент сразу пропал у жалобщика).
 
 Future<void> showReportSheet(
   BuildContext context, {
@@ -83,40 +83,30 @@ Future<void> _submitReport(
 }) async {
   final mod = context.read<ModerationService>();
   final l = context.read<L10n>();
-  final reporterId = context.read<AuthProvider>().userId;
+  final api = context.read<ApiService>();
 
+  // Локальный журнал (на случай оффлайна) + сразу блокируем нарушителя.
   await mod.recordReport(
     reportedUserId: reportedUserId,
     reason: reasonKey,
     content: content,
     messageId: messageId,
   );
-  // Жалоба подразумевает, что жалующийся больше не хочет видеть нарушителя.
   await mod.block(reportedUserId);
 
-  // Отправка модератору на почту (best-effort, не блокирует UX).
-  final subject = 'UGC report: user #$reportedUserId ($reasonKey)';
-  final body = [
-    'Reason: $reasonKey',
-    'Reported user id: $reportedUserId',
-    if (reporterId != null) 'Reporter user id: $reporterId',
-    if (messageId != null) 'Message id: $messageId',
-    if (content != null && content.isNotEmpty) 'Content: $content',
-    'At: ${DateTime.now().toIso8601String()}',
-  ].join('\n');
+  // Отправка на сервер — жалоба попадает к админу. Ошибка (оффлайн) не мешает
+  // UX: локальная запись и блок уже сработали.
   try {
-    await launchUrl(
-      Uri(scheme: 'mailto', path: kModerationEmail, query: _query({'subject': subject, 'body': body})),
-      mode: LaunchMode.externalApplication,
+    await api.createReport(
+      reportedUserId: reportedUserId,
+      reason: reasonKey,
+      content: content,
+      messageId: messageId,
     );
   } catch (_) {}
 
   if (context.mounted) showToast(context, l.t('report_sent'));
 }
-
-String _query(Map<String, String> params) => params.entries
-    .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
-    .join('&');
 
 /// Спросить подтверждение и заблокировать пользователя. Возвращает true, если
 /// заблокировали.

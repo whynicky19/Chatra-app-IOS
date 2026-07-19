@@ -151,10 +151,10 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
     final mod = context.watch<ModerationService>();
     final surface = Theme.of(context).colorScheme.surface;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    // UGC: скрываем чаты с заблокированными пользователями (и их превью).
-    final visibleChats = provider.sortedChats
-        .where((c) => !mod.isBlocked(_chatPartnerId(provider, c)))
-        .toList();
+    // UGC: чаты с заблокированными НЕ прячем — оставляем в списке, просто
+    // помечаем и скрываем их последнее сообщение. Разблокировать можно внутри
+    // чата (плашка) или из меню.
+    final sorted = provider.sortedChats;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -235,18 +235,19 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
                 child: const SkeletonChatRow(),
               ),
             )
-          : visibleChats.isEmpty
+          : sorted.isEmpty
             ? _emptyState()
             : ListView.builder(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 90),
-                itemCount: visibleChats.length,
+                itemCount: sorted.length,
                 itemBuilder: (ctx, i) {
-                  final c = visibleChats[i]; final id = c['id'] as int;
+                  final c = sorted[i]; final id = c['id'] as int;
                   final color = _avatarColors[id % _avatarColors.length];
                   final title = provider.chatTitle(c);
-                  final unread = provider.hasUnread(id);
+                  final blocked = mod.isBlocked(_chatPartnerId(provider, c));
+                  final unread = !blocked && provider.hasUnread(id);
                   final time = provider.chatTime(id);
-                  final preview = provider.lastPreview(id);
+                  final preview = blocked ? l.t('you_blocked_user') : provider.lastPreview(id);
                   final initials = title.isNotEmpty ? title[0].toUpperCase() : '?';
 
                   return TweenAnimationBuilder<double>(

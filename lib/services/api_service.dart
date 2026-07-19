@@ -623,6 +623,33 @@ class ApiService {
     return response.data;
   }
 
+  // ── UGC moderation ──────────────────────────────────────────────────────────
+  // Жалоба на пользователя/сообщение уходит на сервер (таблица reports), где её
+  // видит админ. Guideline 1.2 — жалоба должна доходить до модератора.
+  Future<void> createReport({
+    required int reportedUserId,
+    required String reason,
+    String? content,
+    int? messageId,
+  }) async {
+    await _dio.post('/reports', data: {
+      'reported_user_id': reportedUserId,
+      'reason': reason,
+      if (content != null && content.isNotEmpty) 'content': content,
+      if (messageId != null) 'message_id': messageId,
+    });
+  }
+
+  // Админ: список жалоб (по умолчанию открытые) и пометка обработанной.
+  Future<List<dynamic>> getReports({String? status}) async {
+    final response = await _dio.get('/reports',
+        queryParameters: status != null ? {'status': status} : null);
+    return response.data;
+  }
+
+  Future<void> resolveReport(int reportId) async =>
+      _dio.put('/reports/$reportId/resolve');
+
   Future<void> deleteMessage(int id) async => _dio.delete('/messages/$id');
 
   // ── AI ────────────────────────────────────────────────────────────────────────

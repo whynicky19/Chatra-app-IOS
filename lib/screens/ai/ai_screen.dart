@@ -9,7 +9,6 @@ import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_dialog.dart';
-import '../../widgets/app_logo.dart';
 import '../../widgets/toast.dart';
 
 class AiScreen extends StatefulWidget {
@@ -241,19 +240,8 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
         border: Border(bottom: BorderSide(color: adaptiveBorder(context).withValues(alpha: 0.5), width: 0.5)),
       ),
       child: Row(children: [
-        Container(
-          width: 46, height: 46,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(AppRadii.tile),
-            border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15)),
-          ),
-          padding: const EdgeInsets.all(8),
-          child: const AppLogo(fit: BoxFit.contain),
-        ),
-        const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Chatra AI', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
+          const Text('Chatra AI', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, letterSpacing: -0.4)),
           const SizedBox(height: 2),
           Text(subtitle, style: const TextStyle(fontSize: 13, color: C.text4, fontWeight: FontWeight.w500)),
         ])),
@@ -294,68 +282,47 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
     final isKZ = l.lang == 'KZ';
     final isEN = l.lang == 'EN';
     final subtitle = isKZ
-        ? 'Оқу туралы кез келген нәрсе сұраңыз —\nтүсіндіремін, көмектесемін, тексеремін'
+        ? 'Оқу туралы кез келген нәрсе сұраңыз'
         : isEN
-        ? 'Ask anything about your studies —\nI\'ll explain, help, and review'
-        : 'Спросите что угодно об учёбе —\nобъясню, помогу, проверю';
+        ? 'Ask anything about your studies'
+        : 'Спросите что угодно об учёбе';
 
     return LayoutBuilder(builder: (context, constraints) {
       return SingleChildScrollView(
         key: const ValueKey('empty_state'),
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: constraints.maxHeight),
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Container(
-              width: 92, height: 92,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)),
-              child: Center(
-                child: Container(
-                  width: 68, height: 68,
-                  decoration: BoxDecoration(
-                    color: isDark ? C.darkSurface : Colors.white,
-                    borderRadius: BorderRadius.circular(AppRadii.card),
-                    boxShadow: [
-                      BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.18), blurRadius: 20, offset: const Offset(0, 5)),
-                      BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, 2)),
-                    ],
-                  ),
-                  padding: const EdgeInsets.all(12),
-                  child: const AppLogo(fit: BoxFit.contain),
-                ),
-              ),
+            Text('Chatra AI', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: adaptiveText1(context), letterSpacing: -0.6)),
+            const SizedBox(height: 10),
+            Text(subtitle, style: const TextStyle(fontSize: 15, color: C.text4, height: 1.4), textAlign: TextAlign.center),
+            const SizedBox(height: 28),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: Column(children: [
+                for (var i = 0; i < tips.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 10),
+                  _suggestionRow(tips[i], isDark, i),
+                ],
+              ]),
             ),
-            const SizedBox(height: 12),
-            Text('Chatra AI', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w700, color: adaptiveText1(context), letterSpacing: -0.5)),
-            const SizedBox(height: 5),
-            Text(subtitle, style: const TextStyle(fontSize: 12.5, color: C.text4, height: 1.35), textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            // Сетка с фиксированной пропорцией — все карточки одного размера
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10,
-              childAspectRatio: 1.3,
-              children: List.generate(4, (i) => _tipCard(tips[i], isDark, i)),
-            ),
-            // Приподнимаем блок чуть выше оптического центра
-            const SizedBox(height: 36),
           ]),
         ),
       );
     });
   }
 
-  Widget _tipCard(Map<String, dynamic> tip, bool isDark, int index) {
+  // Полноширинная строка-подсказка: одинаковая ширина, ровный столбик,
+  // короткий текст слева + тонкая стрелка справа (стиль Apple/ChatGPT).
+  Widget _suggestionRow(Map<String, dynamic> tip, bool isDark, int index) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
-      duration: Duration(milliseconds: 280 + index * 60),
+      duration: Duration(milliseconds: 320 + index * 70),
       curve: Curves.easeOutCubic,
       builder: (_, t, child) => Opacity(
-        opacity: t,
-        child: Transform.translate(offset: Offset(0, 14 * (1 - t)), child: child),
+        opacity: t.clamp(0.0, 1.0),
+        child: Transform.translate(offset: Offset(0, 10 * (1 - t)), child: child),
       ),
       child: GestureDetector(
         onTap: () {
@@ -363,26 +330,21 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
           _send(tip['prompt'] as String);
         },
         child: Container(
-          padding: const EdgeInsets.all(14),
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
           decoration: BoxDecoration(
             color: isDark ? C.darkSurface : Colors.white,
-            borderRadius: BorderRadius.circular(AppRadii.card),
-            boxShadow: cardShadow(isDark),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: adaptiveBorder(context).withValues(alpha: 0.6), width: 0.5),
+            boxShadow: softShadow(isDark),
           ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Container(
-              width: 36, height: 36,
-              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(11)),
-              child: Icon(tip['icon'] as IconData, size: 18, color: Theme.of(context).colorScheme.primary),
+          child: Row(children: [
+            Expanded(
+              child: Text(tip['title'] as String,
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveText1(context), letterSpacing: -0.2)),
             ),
-            const Spacer(),
-            Text(tip['title'] as String,
-              style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: adaptiveText1(context), height: 1.15),
-              maxLines: 1, overflow: TextOverflow.ellipsis),
-            const SizedBox(height: 4),
-            Text(tip['desc'] as String,
-              style: const TextStyle(fontSize: 11.5, color: C.text4, height: 1.3),
-              maxLines: 2, overflow: TextOverflow.ellipsis),
+            const SizedBox(width: 12),
+            Icon(CupertinoIcons.arrow_up_left, size: 16, color: C.text4.withValues(alpha: 0.7)),
           ]),
         ),
       ),
@@ -448,23 +410,10 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
     final l = context.read<L10n>();
     final copied = l.lang == 'KZ' ? 'Көшірілді' : l.lang == 'EN' ? 'Copied' : 'Скопировано';
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20, right: 24),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Container(
-          width: 44, height: 44,
-          margin: const EdgeInsets.only(top: 2, right: 10),
-          decoration: BoxDecoration(
-            color: isDark ? C.darkSurface : Colors.white,
-            borderRadius: BorderRadius.circular(AppRadii.tile),
-            border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2), width: 1.5),
-            boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, 2))],
-          ),
-          padding: const EdgeInsets.all(8),
-          child: const AppLogo(fit: BoxFit.contain),
-        ),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Padding(padding: EdgeInsets.only(left: 2, bottom: 5),
-            child: Text('Chatra AI', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 0.2))),
+      padding: const EdgeInsets.only(bottom: 14, right: 52),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
           GestureDetector(
             onLongPress: () {
               HapticFeedback.mediumImpact();
@@ -472,63 +421,47 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
               showToast(context, copied);
             },
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: isDark ? C.darkSurface : Colors.white,
                 borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(6), topRight: Radius.circular(20),
-                  bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20),
+                  topLeft: Radius.circular(20), topRight: Radius.circular(20),
+                  bottomLeft: Radius.circular(6), bottomRight: Radius.circular(20),
                 ),
-                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.06), blurRadius: 14, offset: const Offset(0, 4))],
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.05), blurRadius: 12, offset: const Offset(0, 3))],
               ),
-              child: SelectableText(text, style: const TextStyle(fontSize: 15, height: 1.7, letterSpacing: 0.1)),
+              child: SelectableText(text, style: const TextStyle(fontSize: 15, height: 1.6, letterSpacing: 0.1)),
             ),
           ),
           if ((m['time'] ?? '').isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(left: 4, top: 4),
+              padding: const EdgeInsets.only(left: 6, top: 4),
               child: Text(m['time']!, style: const TextStyle(fontSize: 10, color: C.text4)),
             ),
-        ])),
-      ]),
+        ]),
+      ),
     );
   }
 
   Widget _typingIndicator() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16, right: 24),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Container(
-          width: 44, height: 44,
-          margin: const EdgeInsets.only(top: 2, right: 10),
+      padding: const EdgeInsets.only(bottom: 14, right: 52),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
           decoration: BoxDecoration(
             color: isDark ? C.darkSurface : Colors.white,
-            borderRadius: BorderRadius.circular(AppRadii.tile),
-            border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2), width: 1.5),
-            boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), blurRadius: 10)],
-          ),
-          padding: const EdgeInsets.all(8),
-          child: const AppLogo(fit: BoxFit.contain),
-        ),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Padding(padding: EdgeInsets.only(left: 2, bottom: 5),
-            child: Text('Chatra AI', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary))),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            decoration: BoxDecoration(
-              color: isDark ? C.darkSurface : Colors.white,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(6), topRight: Radius.circular(20),
-                bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20),
-              ),
-              border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: isDark ? 0.12 : 0.08)),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04), blurRadius: 10)],
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20), topRight: Radius.circular(20),
+              bottomLeft: Radius.circular(6), bottomRight: Radius.circular(20),
             ),
-            child: Row(mainAxisSize: MainAxisSize.min, children: List.generate(3, (i) => _Dot(delay: i * 180))),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04), blurRadius: 10)],
           ),
-        ]),
-      ]),
+          child: Row(mainAxisSize: MainAxisSize.min, children: List.generate(3, (i) => _Dot(delay: i * 180))),
+        ),
+      ),
     );
   }
 }

@@ -1,0 +1,15 @@
+{
+  "Simulator Target Bundle": "com.example.chatraApp",
+  "aps": {
+    "alert": {
+      "title": "Айбек Нурланов",
+      "body": "Привет! Ты сделал вторую задачу?"
+    },
+    "sound": "default"
+  },
+  "type": "message",
+  "notif_key": "chat:1",
+  "chat_id": "1",
+  "sender_id": "2",
+  "class_id": "1"
+}

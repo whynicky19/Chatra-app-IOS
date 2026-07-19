@@ -1,0 +1,14 @@
+{
+  "Simulator Target Bundle": "com.example.chatraApp",
+  "aps": {
+    "alert": {
+      "title": "Скоро дедлайн",
+      "body": "«Контрольная №1» — сдать нужно завтра"
+    },
+    "sound": "default"
+  },
+  "type": "deadline",
+  "notif_key": "deadline:1",
+  "assignment_id": "1",
+  "class_id": "1"
+}

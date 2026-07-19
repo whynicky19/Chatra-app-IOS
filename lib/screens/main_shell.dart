@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 import '../providers/auth_provider.dart';
 import '../providers/chats_provider.dart';
 import '../providers/l10n_provider.dart';
@@ -173,242 +174,61 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
                   ),
           ),
         ),
-        Positioned(
-          left: 16, right: 16, bottom: 16,
+        // Нижний navbar — стекло рендерит пакет. Виджет .withImpeller сам
+        // растягивается на весь экран (прозрачное тело) и ставит бар снизу
+        // через alignment/margin, поэтому кладём его в Positioned.fill.
+        // Появление: fade + короткий подъём (без пружины), не завязано на
+        // размер бара, поэтому не ломает self-layout пакета.
+        Positioned.fill(
           child: RepaintBoundary(
-            child: FadeTransition(
-              opacity: CurvedAnimation(
-                parent: _navAnim,
-                curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
-              ),
-              child: SlideTransition(
-                position: Tween<Offset>(begin: const Offset(0, 1.8), end: Offset.zero)
-                    .animate(CurvedAnimation(parent: _navAnim, curve: Curves.elasticOut)),
-                child: _LiquidGlassNavBar(
-                  items: items,
-                  selectedIndex: _idx,
-                  onTap: _onTap,
-                  isDark: isDark,
+            child: AnimatedBuilder(
+              animation: _navAnim,
+              builder: (context, child) {
+                final t = Curves.easeOutCubic.transform(_navAnim.value.clamp(0.0, 1.0));
+                return Opacity(
+                  opacity: t.clamp(0.0, 1.0),
+                  child: Transform.translate(offset: Offset(0, 44 * (1 - t)), child: child),
+                );
+              },
+              child: LiquidGlassBottomNavBar.withImpeller(
+                items: items
+                    .map((it) => LiquidGlassTabBarItem(
+                          icon: it.inactive,
+                          selectedIcon: it.active,
+                          label: it.label,
+                        ))
+                    .toList(),
+                selectedIndex: _idx,
+                onChanged: _onTap,
+                width: MediaQuery.of(context).size.width - 32,
+                height: 64,
+                margin: const EdgeInsets.only(bottom: 16),
+                alignment: Alignment.bottomCenter,
+                itemPadding: 6,
+                // Иконки: активная — контрастный акцент, неактивные приглушены.
+                itemStyle: LiquidGlassNavItemStyle(
+                  selectedColor: Theme.of(context).colorScheme.primary,
+                  unselectedColor: isDark ? Colors.white.withValues(alpha: 0.5) : C.text4,
+                  iconSize: 23,
+                  labelFontSize: 10.5,
+                  selectedFontWeight: FontWeight.w700,
+                  unselectedFontWeight: FontWeight.w500,
+                ),
+                // Стеклянная капсула выбора: морфинг+рефракция пакета (Impeller),
+                // плавное пружинное перемещение, деликатная дисторшн.
+                pillStyle: LiquidGlassNavPillStyle(
+                  mode: LiquidGlassPillMode.impellerOnly,
+                  animated: true,
+                  animationDuration: const Duration(milliseconds: 320),
+                  animationCurve: Curves.easeOutCubic,
+                  distortion: 0.06,
+                  distortionWidth: 10,
+                  color: isDark ? const Color(0x24FFFFFF) : const Color(0x40FFFFFF),
                 ),
               ),
             ),
           ),
         ),
-      ]),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────
-//  Liquid Glass Nav Bar
-// ─────────────────────────────────────────────────────────
-class _LiquidGlassNavBar extends StatelessWidget {
-  final List<_NavItem> items;
-  final int selectedIndex;
-  final void Function(int) onTap;
-  final bool isDark;
-
-  const _LiquidGlassNavBar({
-    required this.items,
-    required this.selectedIndex,
-    required this.onTap,
-    required this.isDark,
-  });
-
-  static final _blur = ImageFilter.blur(sigmaX: 20, sigmaY: 20, tileMode: TileMode.mirror);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 64,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          // Main depth shadow
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.18),
-            blurRadius: 36,
-            spreadRadius: -6,
-            offset: const Offset(0, 14),
-          ),
-          // Primary ambient glow
-          BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: isDark ? 0.14 : 0.10),
-            blurRadius: 28,
-            spreadRadius: -8,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(32),
-        child: BackdropFilter(
-          filter: _blur,
-          child: Container(
-            decoration: BoxDecoration(
-              // Glass tint — lighter on light, darker on dark
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: isDark
-                    ? [
-                        Colors.white.withValues(alpha: 0.07),
-                        Colors.white.withValues(alpha: 0.03),
-                      ]
-                    : [
-                        Colors.white.withValues(alpha: 0.58),
-                        Colors.white.withValues(alpha: 0.38),
-                      ],
-              ),
-              borderRadius: BorderRadius.circular(32),
-              // Glass rim
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.16)
-                    : Colors.white.withValues(alpha: 0.88),
-                width: 0.8,
-              ),
-            ),
-            child: Stack(alignment: Alignment.center, children: [
-              // ── Specular highlight — top edge ──
-              Positioned(
-                top: 1, left: 20, right: 20, height: 1,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.transparent,
-                        Colors.white.withValues(alpha: isDark ? 0.30 : 0.95),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              // ── Nav items ──
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: List.generate(items.length, (i) {
-                    final sel = selectedIndex == i;
-                    return GestureDetector(
-                      onTap: () => onTap(i),
-                      behavior: HitTestBehavior.opaque,
-                      child: TweenAnimationBuilder<double>(
-                        tween: Tween(begin: sel ? 0.0 : 1.0, end: sel ? 1.0 : 0.0),
-                        duration: Duration(milliseconds: sel ? 380 : 120),
-                        curve: Curves.easeOutBack,
-                        builder: (_, t, __) {
-                          final p = t.clamp(0.0, 1.0);
-                          return Transform.scale(
-                            scale: 1.0 + 0.055 * p,
-                            child: _GlassTabPill(
-                              item: items[i],
-                              progress: p,
-                              isDark: isDark,
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  }),
-                ),
-              ),
-            ]),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────
-//  Glass Tab Pill  (active item)
-// ─────────────────────────────────────────────────────────
-class _GlassTabPill extends StatelessWidget {
-  final _NavItem item;
-  final double progress; // 0 = unselected → 1 = selected
-  final bool isDark;
-
-  const _GlassTabPill({
-    required this.item,
-    required this.progress,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sel = progress > 0.5;
-
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: 8.0 + 12.0 * progress,
-        vertical: 10,
-      ),
-      decoration: BoxDecoration(
-        // Active pill: primary glass gradient
-        gradient: progress > 0.01
-            ? LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.82 * progress),
-                  Theme.of(context).colorScheme.secondary.withValues(alpha: 0.68 * progress),
-                ],
-              )
-            : null,
-        borderRadius: BorderRadius.circular(22),
-        // Rim highlight on active pill
-        border: progress > 0.01
-            ? Border.all(
-                color: Colors.white.withValues(alpha: 0.32 * progress),
-                width: 0.8,
-              )
-            : null,
-        boxShadow: progress > 0.3
-            ? [
-                BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.42 * progress),
-                  blurRadius: 18,
-                  spreadRadius: -3,
-                  offset: const Offset(0, 4),
-                ),
-                BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.20 * progress),
-                  blurRadius: 8,
-                  spreadRadius: -1,
-                  offset: const Offset(0, 1),
-                ),
-              ]
-            : null,
-      ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(
-          sel ? item.active : item.inactive,
-          size: 22,
-          color: progress > 0.01
-              ? Color.lerp(
-                  isDark ? Colors.white.withValues(alpha: 0.45) : C.text4,
-                  Colors.white,
-                  progress,
-                )
-              : (isDark ? Colors.white.withValues(alpha: 0.45) : C.text4),
-        ),
-        if (progress > 0.5) ...[
-          SizedBox(width: 6 * progress),
-          Opacity(
-            opacity: ((progress - 0.5) * 2).clamp(0.0, 1.0),
-            child: Text(
-              item.label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
       ]),
     );
   }

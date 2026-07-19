@@ -274,6 +274,15 @@ class L10n extends ChangeNotifier {
 
       // ── Auth ──
       'welcome': 'Добро пожаловать',
+      // ── Org select ──
+      'org_brand_line': 'в Chatra',
+      'org_subtitle': 'Выберите тип организации —\nоформление настроится под него.',
+      'org_university': 'Университет',
+      'org_uni_sub': 'Высшее образование',
+      'org_school': 'Школа',
+      'org_school_sub': 'Среднее образование',
+      'org_continue': 'Продолжить',
+      'org_change_hint': 'Тип организации можно изменить на экране входа',
       'login_sub': 'Войдите в свой аккаунт',
       'login': 'Войти',
       'password': 'Пароль',
@@ -889,6 +898,15 @@ class L10n extends ChangeNotifier {
 
       // ── Auth ──
       'welcome': 'Қош келдіңіз',
+      // ── Org select ──
+      'org_brand_line': 'Chatra-ға',
+      'org_subtitle': 'Ұйым түрін таңдаңыз —\nсыртқы көрінісі соған бейімделеді.',
+      'org_university': 'Университет',
+      'org_uni_sub': 'Жоғары білім',
+      'org_school': 'Мектеп',
+      'org_school_sub': 'Орта білім',
+      'org_continue': 'Жалғастыру',
+      'org_change_hint': 'Ұйым түрін кіру экранында өзгертуге болады',
       'login_sub': 'Аккаунтқа кіріңіз',
       'login': 'Кіру',
       'password': 'Құпия сөз',
@@ -1504,6 +1522,15 @@ class L10n extends ChangeNotifier {
 
       // ── Auth ──
       'welcome': 'Welcome',
+      // ── Org select ──
+      'org_brand_line': 'to Chatra',
+      'org_subtitle': 'Choose your organization type —\nthe interface will adapt to it.',
+      'org_university': 'University',
+      'org_uni_sub': 'Higher education',
+      'org_school': 'School',
+      'org_school_sub': 'Secondary education',
+      'org_continue': 'Continue',
+      'org_change_hint': 'You can change the organization type on the sign-in screen',
       'login_sub': 'Sign in to your account',
       'login': 'Sign In',
       'password': 'Password',

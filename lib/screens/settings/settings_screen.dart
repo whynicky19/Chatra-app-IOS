@@ -6,6 +6,7 @@ import '../../providers/theme_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_dialog.dart';
+import '../../widgets/cupertino_liquid_switch.dart';
 import '../../widgets/telegram_logo.dart';
 import '../../widgets/toast.dart';
 import 'contact_screen.dart';
@@ -451,7 +452,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: adaptiveText1(context))),
           Text(sub, style: const TextStyle(fontSize: 13, color: C.text4)),
         ])),
-        CupertinoSwitch(value: value, onChanged: onChanged, activeTrackColor: primary),
+        CupertinoLiquidSwitch(value: value, onChanged: onChanged, accent: primary),
       ]),
     );
   }

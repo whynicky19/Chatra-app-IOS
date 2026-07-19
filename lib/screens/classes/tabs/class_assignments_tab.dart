@@ -268,12 +268,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
           })),
         ])),
       ),
-      Row(children: [
-        Text(l.t('assignments'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
-        const Spacer(),
-        Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
-          child: Row(children: [const Icon(CupertinoIcons.arrow_up_arrow_down, size: 14, color: C.text4), const SizedBox(width: 4), Text(l.t('sort_deadline'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: C.text4))])),
-      ]),
+      Text(l.t('assignments'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
       const SizedBox(height: 12),
       if (widget.assignments.isEmpty) Container(padding: const EdgeInsets.symmetric(vertical: 52), child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
         Container(width: 80, height: 80,

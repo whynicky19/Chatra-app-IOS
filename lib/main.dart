@@ -1,8 +1,12 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'services/api_service.dart';
+import 'services/push_service.dart';
 import 'providers/auth_provider.dart';
 import 'providers/org_provider.dart';
 import 'providers/theme_provider.dart';
@@ -32,7 +36,11 @@ String _resolveBaseUrl() {
   return 'https://glacier-radiated-wipe.ngrok-free.dev';
 }
 
-void main() {
+/// Глобальный ключ навигатора — нужен push-сервису, чтобы открывать нужный
+/// экран по тапу по уведомлению (в т.ч. из фонового/убитого состояния).
+final navigatorKey = GlobalKey<NavigatorState>();
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
 
@@ -47,6 +55,26 @@ void main() {
   api.onUnauthorized = () => auth.logout();
   // Заблокированный админом аккаунт — разлогин с причиной для сообщения на входе.
   api.onAccountBlocked = () => auth.logout(reason: 'account_blocked');
+
+  // Push-уведомления: только мобильные платформы (Android/iOS). Инициализируем
+  // ДО auth.init(), чтобы при холодном старте с живой сессией токен успел
+  // зарегистрироваться (auth.init → onLogin). Любой сбой не мешает старту.
+  final isMobile = !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS);
+  if (isMobile) {
+    try {
+      await Firebase.initializeApp();
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+      final push = PushService(api, navigatorKey);
+      await push.init();
+      auth.onLogin = () => push.onAuthenticated();
+      auth.onLogout = () => push.onLogout();
+    } catch (e) {
+      debugPrint('Push init error: $e');
+    }
+  }
+
   // Kick off initialization but never let a failing init() bubble up as an
   // unhandled async error — the app must still start (providers fall back to
   // their default state and _AuthGate shows the splash until they settle).
@@ -78,6 +106,7 @@ class ChatraApp extends StatelessWidget {
     final themeMode = context.select<ThemeProvider, ThemeMode>((t) => t.mode);
     final isSchool  = context.select<OrgProvider, bool>((o) => o.isSchool);
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Chatra', debugShowCheckedModeBanner: false,
       theme:     isSchool ? AppTheme.lightSchool : AppTheme.light,
       darkTheme: isSchool ? AppTheme.darkSchool  : AppTheme.dark,

@@ -7,6 +7,11 @@ class AuthProvider extends ChangeNotifier {
 
   AuthProvider(this.api);
 
+  // Хуки push-уведомлений: регистрация FCM-токена при появлении сессии и снятие
+  // при выходе. Задаются в main.dart, чтобы провайдер не зависел от плагина FCM.
+  Future<void> Function()? onLogin;
+  Future<void> Function()? onLogout;
+
   Map<String, dynamic>? _user;
   bool _isLoading = false;
   bool _initialized = false;
@@ -50,6 +55,7 @@ class AuthProvider extends ChangeNotifier {
     if (api.token != null) {
       try {
         _user = await api.me();
+        if (_user != null) onLogin?.call();
       } on DioException catch (e) {
         // Токен стираем ТОЛЬКО если он реально невалиден (401/403 отдаёт
         // интерсептор после неудачного refresh). При сетевой ошибке/таймауте/5xx
@@ -81,6 +87,7 @@ class AuthProvider extends ChangeNotifier {
       final refreshToken = data['refresh_token'] as String?;
       if (refreshToken != null) await api.saveRefreshToken(refreshToken);
       _user = await api.me();
+      onLogin?.call();
       _isLoading = false;
       notifyListeners();
       return null;
@@ -134,10 +141,26 @@ class AuthProvider extends ChangeNotifier {
     } catch (_) {}
   }
 
+  bool _loggingOut = false;
+
   Future<void> logout({String? reason}) async {
+    // Защита от повторного входа: интерсептор при 401 зовёт onUnauthorized→logout,
+    // а сам logout шлёт запросы — без гварда получался бесконечный каскад.
+    if (_loggingOut) return;
+    _loggingOut = true;
+    try {
+      await _performLogout(reason: reason);
+    } finally {
+      _loggingOut = false;
+    }
+  }
+
+  Future<void> _performLogout({String? reason}) async {
     // Серверный отзыв токенов (best-effort) до локальной очистки, пока токен
     // ещё в памяти. Не выполняем при forced-logout (reason задан) — там токен
     // уже недействителен/очищен интерсептором, лишний запрос бессмыслен.
+    // Снимаем FCM-токен, пока access-токен ещё в памяти (best-effort).
+    await onLogout?.call();
     if (reason == null) await api.logoutServer();
     await api.clearToken();
     _user = null;
@@ -188,6 +211,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       await api.verifyEmail(email, code, orgType: orgType);
       _user = await api.me();
+      onLogin?.call();
       notifyListeners();
       return null;
     } on DioException catch (e) {
@@ -224,6 +248,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       await api.resetPassword(email, code, newPassword, orgType: orgType);
       _user = await api.me();
+      onLogin?.call();
       notifyListeners();
       return null;
     } on DioException catch (e) {

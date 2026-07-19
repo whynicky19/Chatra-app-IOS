@@ -75,6 +75,13 @@ class ApiService {
       onError: (error, handler) async {
         final status = error.response?.statusCode ?? 0;
 
+        // Запросы самого logout (logoutServer, unregister push-токена) не должны
+        // запускать refresh/onUnauthorized: при отозванном токене они сами дают
+        // 401, а onUnauthorized → logout → снова эти запросы = бесконечный цикл.
+        if (error.requestOptions.extra['_skipAuthRetry'] == true) {
+          return handler.next(error);
+        }
+
         if (status == 401 && error.requestOptions.path != '/auth/refresh') {
           // Deduplicate concurrent refreshes: the first 401 kicks off the
           // /auth/refresh call, every other in-flight 401 awaits the same Future.
@@ -247,11 +254,30 @@ class ApiService {
     return response.data;
   }
 
+  /// Регистрирует FCM-токен устройства для push-уведомлений (best-effort).
+  Future<void> registerPushToken(String token, {String? platform}) async {
+    await _dio.post('/push/register', data: {
+      'token': token,
+      if (platform != null) 'platform': platform,
+    });
+  }
+
+  /// Удаляет FCM-токен на сервере (при выходе). Ошибку глотаем. _skipAuthRetry —
+  /// чтобы 401 (например при уже отозванном токене) не запускал разлогин-каскад.
+  Future<void> unregisterPushToken(String token) async {
+    try {
+      await _dio.post('/push/unregister',
+          data: {'token': token},
+          options: Options(extra: {'_skipAuthRetry': true}));
+    } catch (_) {}
+  }
+
   /// Best-effort серверный отзыв токенов. Ошибку глотаем — локальный logout
   /// (очистка secure storage) выполняется в любом случае.
   Future<void> logoutServer() async {
     try {
-      await _dio.post('/auth/logout');
+      await _dio.post('/auth/logout',
+          options: Options(extra: {'_skipAuthRetry': true}));
     } catch (_) {}
   }
 

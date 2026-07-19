@@ -27,6 +27,9 @@ dependencies:
   video_player: ^2.9.5
   permission_handler: ^11.4.0
   flutter_svg: ^2.3.0
+  firebase_core: ^4.12.1
+  firebase_messaging: ^16.4.3
+  flutter_local_notifications: ^22.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

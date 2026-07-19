@@ -246,10 +246,10 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(color: primary, borderRadius: BorderRadius.circular(12), boxShadow: primaryGlow(primary, opacity: 0.28)),
-                    child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                      Icon(CupertinoIcons.person_badge_plus, color: Colors.white, size: 16),
-                      SizedBox(width: 6),
-                      Text('Добавить', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(CupertinoIcons.person_badge_plus, color: Colors.white, size: 16),
+                      const SizedBox(width: 6),
+                      Text(l.t('add'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
                     ]),
                   ),
                 ),
@@ -432,7 +432,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                             margin: const EdgeInsets.only(left: 6),
                             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                             decoration: BoxDecoration(color: C.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-                            child: const Text('блок', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.red)),
+                            child: Text(l.t('blocked_short'), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.red)),
                           ),
                         ]),
                         const SizedBox(height: 2),
@@ -543,7 +543,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             final i   = entry.key;
             final s   = entry.value;
             final cid = (s['class_id'] as num?)?.toInt();
-            final className = cid != null ? (classNames[cid] ?? 'Класс #$cid') : 'Без класса';
+            final className = cid != null ? (classNames[cid] ?? 'Класс #$cid') : l.t('no_class_label');
             final tokens    = (s['total_tokens'] as num? ?? 0).toInt();
             final reqCount  = (s['request_count'] as num? ?? 0).toInt();
             return TweenAnimationBuilder<double>(
@@ -567,7 +567,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                   ])),
                   Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                     Text(_fmtTokens(tokens), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: primary)),
-                    const Text('токенов', style: TextStyle(fontSize: 10, color: C.text4)),
+                    Text(l.t('tokens'), style: const TextStyle(fontSize: 10, color: C.text4)),
                   ]),
                 ]),
               )),
@@ -608,12 +608,12 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                     ClipRRect(borderRadius: BorderRadius.circular(4),
                       child: LinearProgressIndicator(value: pct, backgroundColor: primary.withValues(alpha: 0.08), color: primary, minHeight: 5)),
                     const SizedBox(height: 3),
-                    Text('$count запр.', style: const TextStyle(fontSize: 10, color: C.text4)),
+                    Text('$count ${l.t('requests_label')}', style: const TextStyle(fontSize: 10, color: C.text4)),
                   ])),
                   const SizedBox(width: 12),
                   Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                     Text(_fmtTokens(tokens), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: primary)),
-                    const Text('токенов', style: TextStyle(fontSize: 10, color: C.text4)),
+                    Text(l.t('tokens'), style: const TextStyle(fontSize: 10, color: C.text4)),
                   ]),
                 ]),
               )),
@@ -630,13 +630,13 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(16), boxShadow: softShadow(isDark)),
             child: Column(children: [
               // Header row
-              const Padding(
-                padding: EdgeInsets.fromLTRB(14, 10, 14, 6),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
                 child: Row(children: [
-                  SizedBox(width: 22, child: Text('#', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4))),
-                  Expanded(flex: 3, child: Text('ПОЛЬЗОВАТЕЛЬ', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 0.5))),
-                  Expanded(flex: 2, child: Text('КЛАСС', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 0.5))),
-                  SizedBox(width: 74, child: Text('ТОКЕНЫ', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 0.5), textAlign: TextAlign.right)),
+                  const SizedBox(width: 22, child: Text('#', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4))),
+                  Expanded(flex: 3, child: Text(l.t('user_label'), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 0.5))),
+                  Expanded(flex: 2, child: Text(l.t('class_col'), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 0.5))),
+                  SizedBox(width: 74, child: Text(l.t('tokens_col'), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 0.5), textAlign: TextAlign.right)),
                 ]),
               ),
               Divider(height: 1, color: C.border.withValues(alpha: 0.5)),
@@ -675,7 +675,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                           color: isGrade ? primary.withValues(alpha: 0.1) : C.green.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: Text(isGrade ? 'Проверка' : 'Чат', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: isGrade ? primary : C.green)),
+                        child: Text(isGrade ? l.t('check_type') : l.t('chat_type'), style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: isGrade ? primary : C.green)),
                       ),
                     ])),
                     SizedBox(width: 74, child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
@@ -696,7 +696,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                       decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
                       child: Center(child: _aiLogLoadingMore
                           ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: primary))
-                          : Text('Показать ещё', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: primary))),
+                          : Text(l.t('show_more_full'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: primary))),
                     ),
                   ),
                 ),
@@ -904,7 +904,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                     Text('$studentCount ${l.t('students_count')}',
                       style: TextStyle(fontSize: 12, color: primary, fontWeight: FontWeight.w600)),
                     const SizedBox(width: 8),
-                    Text('всего ${members.length}', style: const TextStyle(fontSize: 12, color: C.text4, fontWeight: FontWeight.w500)),
+                    Text('${l.t('total_label').toLowerCase()} ${members.length}', style: const TextStyle(fontSize: 12, color: C.text4, fontWeight: FontWeight.w500)),
                   ]),
                 ])),
                 GestureDetector(
@@ -943,7 +943,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
                           Icon(CupertinoIcons.arrow_counterclockwise, size: 15, color: primary),
                           const SizedBox(width: 6),
-                          Text('Обновить список', style: TextStyle(fontSize: 13, color: primary, fontWeight: FontWeight.w600)),
+                          Text(l.t('refresh_list'), style: TextStyle(fontSize: 13, color: primary, fontWeight: FontWeight.w600)),
                         ]),
                       ),
                     ),
@@ -968,7 +968,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                             .map((w) => w.isEmpty ? '' : w[0].toUpperCase()).join();
                         final isTeacher  = role == 'teacher' || role == 'admin';
                         final roleColor  = isTeacher ? const Color(0xFF6366F1) : primary;
-                        final roleLabel  = isTeacher ? 'Учитель' : 'Ученик';
+                        final roleLabel  = isTeacher ? l.t('role_teacher_short') : l.t('role_student_short');
                         return Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
@@ -1256,7 +1256,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                     margin: const EdgeInsets.only(left: 6),
                     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                     decoration: BoxDecoration(color: C.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-                    child: const Text('блок', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.red)),
+                    child: Text(l.t('blocked_short'), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: C.red)),
                   ),
                 ]),
                 const SizedBox(height: 2),
@@ -1267,25 +1267,25 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             const SizedBox(height: 18),
 
             // Role selector
-            const _SectionLabel('РОЛЬ'),
+            _SectionLabel(l.t('role')),
             const SizedBox(height: 8),
             Row(children: [
-              roleTile('student', 'Ученик',  CupertinoIcons.person,      const Color(0xFF059669)),
+              roleTile('student', l.t('role_student_short'),  CupertinoIcons.person,      const Color(0xFF059669)),
               const SizedBox(width: 8),
-              roleTile('teacher', 'Учитель', CupertinoIcons.book,        const Color(0xFF6366F1)),
+              roleTile('teacher', l.t('role_teacher_short'), CupertinoIcons.book,        const Color(0xFF6366F1)),
               const SizedBox(width: 8),
-              roleTile('admin',   'Админ',   CupertinoIcons.shield_fill, primary),
+              roleTile('admin',   l.t('role_admin_short'),   CupertinoIcons.shield_fill, primary),
             ]),
             const SizedBox(height: 18),
 
             // Actions
-            const _SectionLabel('ДЕЙСТВИЯ'),
+            _SectionLabel(l.t('actions_label')),
             const SizedBox(height: 8),
             actionTile(
               icon: aiUnlimited ? CupertinoIcons.bolt_fill : CupertinoIcons.bolt,
               color: C.amber,
-              title: 'Безлимитный ИИ',
-              subtitle: aiUnlimited ? 'Включён — лимиты не действуют' : 'Выключен — обычные лимиты',
+              title: l.t('ai_unlimited'),
+              subtitle: aiUnlimited ? l.t('ai_unlimited_on_sub') : l.t('ai_unlimited_off_sub'),
               trailing: IgnorePointer(child: Switch(value: aiUnlimited, onChanged: (_) {})),
               onTap: () async {
                 final ok = await _action(u, 'toggle_ai_unlimited');
@@ -1296,13 +1296,13 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               icon: isBlocked ? CupertinoIcons.lock_open : CupertinoIcons.nosign,
               color: isBlocked ? C.green : C.red,
               title: isBlocked ? l.t('unblock') : l.t('block'),
-              subtitle: isBlocked ? 'Вернуть доступ к аккаунту' : 'Пользователь не сможет войти',
+              subtitle: isBlocked ? l.t('unblock_sub') : l.t('block_sub'),
               onTap: () async {
                 final action = isBlocked ? 'unblock' : 'block';
                 if (!isBlocked) {
                   final sure = await showConfirmDialog(context,
                     title: '${l.t('block')}?',
-                    message: '$name больше не сможет войти в приложение.',
+                    message: l.t('block_user_msg'),
                     icon: CupertinoIcons.nosign, danger: true,
                     confirmText: l.t('block'), cancelText: l.t('cancel'));
                   if (sure != true) return;
@@ -1315,11 +1315,11 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               icon: CupertinoIcons.trash,
               color: C.red,
               title: l.t('delete'),
-              subtitle: 'Аккаунт будет удалён навсегда',
+              subtitle: l.t('delete_user_sub'),
               onTap: () async {
                 final sure = await showConfirmDialog(context,
-                  title: 'Удалить пользователя?',
-                  message: 'Аккаунт «$name» и все его данные будут удалены навсегда.',
+                  title: l.t('delete_user_q'),
+                  message: l.t('delete_user_msg'),
                   icon: CupertinoIcons.trash, danger: true,
                   confirmText: l.t('delete'), cancelText: l.t('cancel'));
                 if (sure != true) return;
@@ -1347,11 +1347,11 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
       Future<void> submit() async {
         final email = emailCtrl.text.trim();
         if (email.isEmpty || !email.contains('@') || !email.contains('.')) {
-          setS(() => error = 'Введите корректный email');
+          setS(() => error = l.t('enter_valid_email'));
           return;
         }
         if (pwCtrl.text.length < 6) {
-          setS(() => error = 'Пароль — минимум 6 символов');
+          setS(() => error = l.t('password_min_6'));
           return;
         }
         setS(() { busy = true; error = null; });
@@ -1359,7 +1359,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           await context.read<ApiService>().adminCreateUser(email, pwCtrl.text, role);
           if (mounted && ctx.mounted) { Navigator.pop(ctx); showToast(context, l.t('created')); _load(); }
         } catch (_) {
-          if (ctx.mounted) setS(() { busy = false; error = 'Не удалось создать пользователя'; });
+          if (ctx.mounted) setS(() { busy = false; error = l.t('create_user_error'); });
         }
       }
 
@@ -1410,7 +1410,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           obscureText: obscure,
           style: const TextStyle(fontSize: 14),
           decoration: InputDecoration(
-            hintText: 'Пароль',
+            hintText: l.t('password'),
             prefixIcon: const Icon(CupertinoIcons.lock, size: 18, color: C.text4),
             suffixIcon: GestureDetector(
               onTap: () => setS(() => obscure = !obscure),
@@ -1422,11 +1422,11 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
         ),
         const SizedBox(height: 14),
         Row(children: [
-          roleChip('student', 'Ученик',  CupertinoIcons.person,      const Color(0xFF059669)),
+          roleChip('student', l.t('role_student_short'),  CupertinoIcons.person,      const Color(0xFF059669)),
           const SizedBox(width: 8),
-          roleChip('teacher', 'Учитель', CupertinoIcons.book,        const Color(0xFF6366F1)),
+          roleChip('teacher', l.t('role_teacher_short'), CupertinoIcons.book,        const Color(0xFF6366F1)),
           const SizedBox(width: 8),
-          roleChip('admin',   'Админ',   CupertinoIcons.shield_fill, primary),
+          roleChip('admin',   l.t('role_admin_short'),   CupertinoIcons.shield_fill, primary),
         ]),
         if (error != null) ...[
           const SizedBox(height: 12),
@@ -1443,7 +1443,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
         const SizedBox(height: 18),
         AppDialogActions(
           cancelText: l.t('cancel'),
-          confirmText: 'Создать',
+          confirmText: l.t('create'),
           busy: busy,
           onCancel: () => Navigator.pop(ctx),
           onConfirm: submit,

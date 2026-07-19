@@ -165,17 +165,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   _fieldLabel(l.t('full_name_label')),
                   TextField(
                     controller: _name,
-                    decoration: const InputDecoration(
-                      hintText: 'Иванов Иван Иванович',
-                      prefixIcon: Padding(padding: EdgeInsets.only(left: 4),
+                    decoration: InputDecoration(
+                      hintText: l.t('fio_placeholder'),
+                      prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
                         child: Icon(CupertinoIcons.person, size: 18, color: C.text4)),
                     ),
                     onChanged: (_) => setState(() {}),
                   ),
                   if (_name.text.isNotEmpty && nameWords < 2)
-                    _hint('Введите фамилию и имя полностью'),
+                    _hint(l.t('enter_full_name')),
                   if (_name.text.isNotEmpty && nameWords >= 2 && !_nameIsCyrillic)
-                    _hint('ФИО должно быть на кириллице (рус/каз)', error: true),
+                    _hint(l.t('name_cyrillic_only'), error: true),
                   const SizedBox(height: 14),
 
                   // Email

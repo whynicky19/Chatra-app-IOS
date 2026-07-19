@@ -256,12 +256,12 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
                   onTap: () {
                     HapticFeedback.lightImpact();
                     showConfirmDialog(context,
-                      title: 'Очистить чат?',
-                      message: 'История переписки будет удалена',
+                      title: l.t('clear_chat_q'),
+                      message: l.t('clear_chat_msg'),
                       icon: CupertinoIcons.trash,
                       danger: true,
-                      confirmText: 'Удалить',
-                      cancelText: 'Отмена').then((ok) {
+                      confirmText: l.t('delete'),
+                      cancelText: l.t('cancel')).then((ok) {
                         if (ok == true && mounted) _clearHistory();
                       });
                   },

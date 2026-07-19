@@ -160,13 +160,13 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
             Expanded(child: TextField(
               controller: _searchCtrl,
               style: const TextStyle(fontSize: 15),
-              decoration: const InputDecoration(
-                hintText: 'Найти или начать диалог...',
+              decoration: InputDecoration(
+                hintText: l.t('search_chats'),
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
                 filled: false,
-                hintStyle: TextStyle(color: C.text4, fontSize: 15),
+                hintStyle: const TextStyle(color: C.text4, fontSize: 15),
                 contentPadding: EdgeInsets.zero,
                 isDense: true,
               ),
@@ -247,25 +247,25 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
                         ),
                         alignment: Alignment.centerRight,
                         padding: const EdgeInsets.only(right: 24),
-                        child: const Column(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(CupertinoIcons.trash, color: Colors.white, size: 24),
-                          SizedBox(height: 4),
-                          Text('Удалить', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+                        child: Column(mainAxisSize: MainAxisSize.min, children: [
+                          const Icon(CupertinoIcons.trash, color: Colors.white, size: 24),
+                          const SizedBox(height: 4),
+                          Text(l.t('delete'), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
                         ]),
                       ),
                       confirmDismiss: (_) async {
                         HapticFeedback.mediumImpact();
                         return await showConfirmDialog(context,
-                          title: 'Удалить чат?',
-                          message: 'Чат с $title будет удалён навсегда.',
+                          title: l.t('delete_chat_q'),
+                          message: l.t('delete_chat_msg'),
                           icon: CupertinoIcons.trash,
                           danger: true,
-                          confirmText: 'Удалить',
-                          cancelText: 'Отмена') ?? false;
+                          confirmText: l.t('delete'),
+                          cancelText: l.t('cancel')) ?? false;
                       },
                       onDismissed: (_) async {
                         final ok = await context.read<ChatsProvider>().deleteChat(id);
-                        if (!ok && mounted) showToast(context, 'Ошибка удаления', error: true);
+                        if (!ok && mounted) showToast(context, l.t('delete_error'), error: true);
                       },
                       child: GestureDetector(
                         onTap: () {

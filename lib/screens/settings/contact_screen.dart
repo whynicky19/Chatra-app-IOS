@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/telegram_logo.dart';
 import '../../widgets/toast.dart';
@@ -75,13 +77,14 @@ class _ContactScreenState extends State<ContactScreen> with SingleTickerProvider
       } catch (_) {}
     }
     if (!mounted) return;
-    showToast(context, 'Не удалось открыть Telegram');
+    showToast(context, context.read<L10n>().t('telegram_open_error'));
   }
 
   @override
   Widget build(BuildContext context) {
     final surface = Theme.of(context).colorScheme.surface;
     final isDark  = Theme.of(context).brightness == Brightness.dark;
+    final l = context.watch<L10n>();
 
     return Scaffold(
       body: SafeArea(
@@ -112,15 +115,15 @@ class _ContactScreenState extends State<ContactScreen> with SingleTickerProvider
                 child: const TelegramLogo(size: 76),
               ),
               const SizedBox(height: 18),
-              Text('Связаться с разработчиком',
+              Text(l.t('contact_developer'),
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700,
                   color: adaptiveText1(context), letterSpacing: -0.4, height: 1.15)),
               const SizedBox(height: 6),
-              const Text(
-                'Вопросы по работе приложения, сообщения об ошибках\nи предложения по развитию.',
+              Text(
+                l.t('contact_page_desc'),
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: C.text4, height: 1.4)),
+                style: const TextStyle(fontSize: 14, color: C.text4, height: 1.4)),
             ]),
           ), 0.0, 0.5),
 
@@ -157,8 +160,8 @@ class _ContactScreenState extends State<ContactScreen> with SingleTickerProvider
                   ),
                   // Без иконки: белый самолётик рядом с настоящим логотипом
                   // читался бы как второй, «ненастоящий» знак Telegram.
-                  child: const Center(child: Text('Написать в Telegram',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white))),
+                  child: Center(child: Text(l.t('write_telegram'),
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white))),
                 ),
               ),
             ]),

@@ -185,7 +185,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     _lectures = _posts.where((p) => (p['title'] ?? '').startsWith('[LECTURE][${widget.classId}]')).toList();
     _materials = _posts.where((p) => (p['title'] ?? '').startsWith('[HW][${widget.classId}]')).toList();
     _meta = _classData;
-    _title = (_classData['name'] ?? 'Класс #${widget.classId}').toString();
+    _title = (_classData['name'] ?? '${context.read<L10n>().t('class_label')} #${widget.classId}').toString();
     _recomputeAiContext();
   }
 
@@ -313,6 +313,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
 
   // Downloads the file and opens it with the native viewer (PDF, Word, Excel, images, etc.)
   Future<void> _openFileViewer(BuildContext ctx, String url, String name) async {
+    final l = context.read<L10n>();
     final cleanUrl = cleanFileUrl(url);
     final ext = name.split('.').last.toLowerCase();
 
@@ -337,7 +338,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       builder: (_) => StatefulBuilder(builder: (dCtx, setD) {
         setDialog = setD;
         return CupertinoAlertDialog(
-          title: const Text('Открытие файла'),
+          title: Text(l.t('opening_file')),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
             const SizedBox(height: 8),
             Text(name, style: const TextStyle(fontSize: 12, color: C.text4), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis),
@@ -347,7 +348,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               child: LinearProgressIndicator(value: progress > 0 ? progress : null, color: Theme.of(context).colorScheme.primary, backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12), minHeight: 5),
             ),
             const SizedBox(height: 6),
-            Text(progress > 0 ? '${(progress * 100).toInt()}%' : 'Загрузка...', style: const TextStyle(fontSize: 12, color: C.text4)),
+            Text(progress > 0 ? '${(progress * 100).toInt()}%' : l.t('downloading'), style: const TextStyle(fontSize: 12, color: C.text4)),
           ]),
           actions: [
             CupertinoDialogAction(
@@ -357,7 +358,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 cancelToken.cancel('user_cancelled');
                 Navigator.pop(dCtx);
               },
-              child: const Text('Отмена'),
+              child: Text(l.t('cancel')),
             ),
           ],
         );
@@ -406,7 +407,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       // would only show an error page (or the ngrok interstitial), so report
       // it honestly instead.
       if (e.response?.statusCode == 404) {
-        showToast(context, 'Файл не найден на сервере — возможно, он был удалён', error: true);
+        showToast(context, l.t('file_not_found_server'), error: true);
         return;
       }
       try { await launchUrl(Uri.parse(cleanUrl), mode: LaunchMode.externalApplication); } catch (_) {}
@@ -592,6 +593,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   }
 
   void _editPost(dynamic p) {
+    final l = context.read<L10n>();
     final tc = TextEditingController(text: cleanPostTitle(p['title'] ?? ''));
     final cc = TextEditingController(text: (() { try { return jsonDecode(p['body'])['content'] ?? ''; } catch (_) { return p['body'] ?? ''; } })());
     // Preserve existing files from the body
@@ -606,12 +608,12 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
         return Padding(padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
           child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
             Container(width: 40, height: 4, decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2))),
-            const SizedBox(height: 20), const Text('Редактировать', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 16), TextField(controller: tc, decoration: const InputDecoration(labelText: 'Заголовок')),
-            const SizedBox(height: 12), TextField(controller: cc, decoration: const InputDecoration(labelText: 'Содержание'), maxLines: 5),
+            const SizedBox(height: 20), Text(l.t('edit_title'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 16), TextField(controller: tc, decoration: InputDecoration(labelText: l.t('title_label'))),
+            const SizedBox(height: 12), TextField(controller: cc, decoration: InputDecoration(labelText: l.t('content_label')), maxLines: 5),
             if (editFiles.isNotEmpty) ...[
               const SizedBox(height: 16),
-              const Align(alignment: Alignment.centerLeft, child: Text('Прикреплённые файлы', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: C.text3))),
+              Align(alignment: Alignment.centerLeft, child: Text(l.t('attached_files_edit'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: C.text3))),
               const SizedBox(height: 8),
               ...editFiles.map((f) {
                 final name = fileDisplayName(f.toString());
@@ -646,11 +648,11 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 }
               },
               child: Container(padding: const EdgeInsets.symmetric(vertical: 10), decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3))),
-                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(CupertinoIcons.paperclip, size: 16, color: Theme.of(context).colorScheme.primary), const SizedBox(width: 6), Text('Прикрепить файлы', style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600))])),
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(CupertinoIcons.paperclip, size: 16, color: Theme.of(context).colorScheme.primary), const SizedBox(width: 6), Text(l.t('attach_files_action'), style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600))])),
             ),
             const SizedBox(height: 20),
             Row(children: [
-              Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена'))),
+              Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: Text(l.t('cancel')))),
               const SizedBox(width: 12),
               Expanded(child: ElevatedButton(onPressed: () async {
                 try {
@@ -660,9 +662,9 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     if (editFiles.isNotEmpty) 'files': editFiles,
                   }));
                   if (!mounted || !ctx.mounted) return;
-                  Navigator.pop(ctx); _load(); showToast(context, 'Сохранено');
-                } catch (_) { if (mounted && ctx.mounted) showToast(context, 'Ошибка', error: true); }
-              }, child: const Text('Сохранить'))),
+                  Navigator.pop(ctx); _load(); showToast(context, l.t('save_ok'));
+                } catch (_) { if (mounted && ctx.mounted) showToast(context, l.t('error_generic'), error: true); }
+              }, child: Text(l.t('save')))),
             ]),
           ])));
       })).then((_) { tc.dispose(); cc.dispose(); });
@@ -812,6 +814,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     final isLecture = type == 'lecture';
     final accent    = Theme.of(context).colorScheme.primary;
     final isDark    = Theme.of(context).brightness == Brightness.dark;
+    final l         = context.read<L10n>();
 
     showModalBottomSheet(
       context: context,
@@ -860,7 +863,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.22), borderRadius: BorderRadius.circular(8)),
                   child: Text(
-                    '${isLecture ? 'ЛЕКЦИЯ' : 'МАТЕРИАЛ'} $num',
+                    '${(isLecture ? l.t('lecture') : l.t('material')).toUpperCase()} $num',
                     style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 1.0),
                   ),
                 ),
@@ -883,7 +886,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     const SizedBox(width: 12),
                     const Icon(CupertinoIcons.paperclip, size: 12, color: Colors.white60),
                     const SizedBox(width: 4),
-                    Text('${files.length} ${files.length == 1 ? 'файл' : 'файла'}', style: const TextStyle(fontSize: 12, color: Colors.white60, fontWeight: FontWeight.w500)),
+                    Text('${files.length} ${files.length == 1 ? l.t('file') : l.t('files')}', style: const TextStyle(fontSize: 12, color: Colors.white60, fontWeight: FontWeight.w500)),
                   ],
                 ]),
               ]),
@@ -899,7 +902,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   Row(children: [
                     Container(width: 3, height: 18, decoration: BoxDecoration(color: accent, borderRadius: BorderRadius.circular(2))),
                     const SizedBox(width: 10),
-                    Text('Содержание', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: accent, letterSpacing: 0.3)),
+                    Text(l.t('content_label'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: accent, letterSpacing: 0.3)),
                   ]),
                   const SizedBox(height: 12),
                   Container(
@@ -919,7 +922,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   Row(children: [
                     Container(width: 3, height: 18, decoration: BoxDecoration(color: accent, borderRadius: BorderRadius.circular(2))),
                     const SizedBox(width: 10),
-                    Text('Прикреплённые файлы', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: accent, letterSpacing: 0.3)),
+                    Text(l.t('attached_files_edit'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: accent, letterSpacing: 0.3)),
                   ]),
                   const SizedBox(height: 12),
                   ...files.asMap().entries.map((entry) {
@@ -964,7 +967,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                               Text(name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, height: 1.2), overflow: TextOverflow.ellipsis, maxLines: 1),
                               const SizedBox(height: 3),
-                              const Text('Нажмите для открытия', style: TextStyle(fontSize: 11, color: C.text4)),
+                              Text(l.t('tap_to_open'), style: const TextStyle(fontSize: 11, color: C.text4)),
                             ])),
                             Container(
                               width: 34, height: 34,
@@ -987,7 +990,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                         decoration: BoxDecoration(color: accent.withValues(alpha: 0.08), shape: BoxShape.circle),
                         child: Icon(isLecture ? CupertinoIcons.book : CupertinoIcons.tray, size: 30, color: accent)),
                       const SizedBox(height: 14),
-                      const Text('Содержимое ещё не добавлено', style: TextStyle(fontSize: 14, color: C.text4, fontWeight: FontWeight.w500)),
+                      Text(l.t('content_empty'), style: const TextStyle(fontSize: 14, color: C.text4, fontWeight: FontWeight.w500)),
                     ])),
                   ),
               ],
@@ -1055,22 +1058,22 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(CupertinoIcons.doc_text, size: 16, color: type == 'material' ? Theme.of(context).colorScheme.primary : C.text4), const SizedBox(width: 6), Text(l.t('material'), style: TextStyle(fontWeight: FontWeight.w600, color: type == 'material' ? Theme.of(context).colorScheme.primary : C.text4))])))),
             ])),
           const SizedBox(height: 20),
-          _fieldLabel2('ТЕМА ${type == 'lecture' ? 'ЛЕКЦИИ' : 'МАТЕРИАЛА'} *'),
-          TextField(controller: tc, decoration: const InputDecoration(hintText: 'Например: Введение в тему...')),
+          _fieldLabel2('${type == 'lecture' ? l.t('lecture_topic') : l.t('material_topic')} *'),
+          TextField(controller: tc, decoration: InputDecoration(hintText: l.t('topic_hint'))),
           const SizedBox(height: 16),
-          _fieldLabel2('СОДЕРЖАНИЕ ${type == 'lecture' ? 'ЛЕКЦИИ' : 'МАТЕРИАЛА'}'),
-          TextField(controller: cc, decoration: const InputDecoration(hintText: 'Текст лекции, ссылки на видео...'), maxLines: 4),
+          _fieldLabel2(type == 'lecture' ? l.t('lecture_content') : l.t('material_content')),
+          TextField(controller: cc, decoration: InputDecoration(hintText: l.t('content_body_hint')), maxLines: 4),
           const SizedBox(height: 20),
           // File upload
-          _fieldLabel2('ПРИКРЕПИТЬ ФАЙЛЫ'),
+          _fieldLabel2(l.t('attach_files')),
           GestureDetector(onTap: () async {
             final result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
             if (result != null) setS(() => lectureFiles.addAll(result.files));
           }, child: Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3))),
             child: Column(children: [
               Icon(CupertinoIcons.arrow_up_doc, size: 24, color: Theme.of(context).colorScheme.primary), const SizedBox(height: 6),
-              RichText(text: TextSpan(style: const TextStyle(fontSize: 13, color: C.text4), children: [const TextSpan(text: 'Нажмите или '), TextSpan(text: 'выберите файлы', style: TextStyle(fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary))])),
-              const Text('PDF, DOCX, PPT, изображения', style: TextStyle(fontSize: 10, color: C.text4)),
+              Text(l.t('click_or_choose'), style: const TextStyle(fontSize: 13, color: C.text4)),
+              Text(l.t('file_types_hint'), style: const TextStyle(fontSize: 10, color: C.text4)),
             ]))),
           if (lectureFiles.isNotEmpty) ...[const SizedBox(height: 8),
             ...lectureFiles.map((f) => Container(margin: const EdgeInsets.only(bottom: 4), padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -1078,9 +1081,9 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               child: Row(children: [Icon(CupertinoIcons.doc_text, size: 14, color: Theme.of(context).colorScheme.primary), const SizedBox(width: 6), Expanded(child: Text(f.name, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary), overflow: TextOverflow.ellipsis)), GestureDetector(onTap: () => setS(() => lectureFiles.remove(f)), child: const Icon(CupertinoIcons.xmark, size: 14, color: C.text4))])))],
           const SizedBox(height: 20),
           Row(children: [
-            Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)), child: const Text('Отмена'))),
+            Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)), child: Text(l.t('cancel')))),
             const SizedBox(width: 12),
-            Expanded(child: ElevatedButton.icon(icon: const Icon(CupertinoIcons.plus, size: 16, color: Colors.white), label: const Text('Опубликовать'),
+            Expanded(child: ElevatedButton.icon(icon: const Icon(CupertinoIcons.plus, size: 16, color: Colors.white), label: Text(l.t('publish')),
               style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
               onPressed: () async {
                 if (tc.text.trim().isEmpty) return;
@@ -1102,14 +1105,15 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     if (fileUrls.isNotEmpty) 'files': fileUrls,
                   }));
                   if (!mounted || !ctx.mounted) return;
-                  Navigator.pop(ctx); _load(); showToast(context, 'Опубликовано');
-                } catch (_) { if (mounted && ctx.mounted) showToast(context, 'Ошибка', error: true); }
+                  Navigator.pop(ctx); _load(); showToast(context, l.t('published'));
+                } catch (_) { if (mounted && ctx.mounted) showToast(context, l.t('error_generic'), error: true); }
               })),
           ]),
         ])))).then((_) { tc.dispose(); cc.dispose(); });
   }
 
   void _createAssignment() {
+    final l = context.read<L10n>();
     final tc = TextEditingController(), dc = TextEditingController(), sc = TextEditingController(text: '100');
     DateTime? deadline;
     List<Map<String, dynamic>> criteria = [{'name': '', 'weight': 100, 'desc': ''}];
@@ -1124,23 +1128,23 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: Icon(CupertinoIcons.pencil, color: Theme.of(context).colorScheme.primary, size: 22)),
             const SizedBox(width: 12),
-            const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Новое задание', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-              Text('Заполните данные задания', style: TextStyle(fontSize: 12, color: C.text4)),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(l.t('new_assignment'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              Text(l.t('fill_assignment'), style: const TextStyle(fontSize: 12, color: C.text4)),
             ])),
             IconButton(icon: const Icon(CupertinoIcons.xmark), onPressed: () => Navigator.pop(ctx)),
           ]),
           const SizedBox(height: 24),
-          _fieldLabel2('НАЗВАНИЕ ЗАДАНИЯ *'),
-          TextField(controller: tc, decoration: const InputDecoration(hintText: 'Например: Контрольная работа по теме...')),
+          _fieldLabel2('${l.t('assignment_title')} *'),
+          TextField(controller: tc, decoration: InputDecoration(hintText: l.t('assignment_title_hint'))),
           const SizedBox(height: 16),
-          _fieldLabel2('ОПИСАНИЕ ЗАДАНИЯ'),
-          TextField(controller: dc, decoration: const InputDecoration(hintText: 'Подробное описание, требования...'), maxLines: 4),
+          _fieldLabel2(l.t('assignment_desc')),
+          TextField(controller: dc, decoration: InputDecoration(hintText: l.t('assignment_desc_hint')), maxLines: 4),
           const SizedBox(height: 16),
-          _fieldLabel2('МАКС. БАЛЛ'),
+          _fieldLabel2(l.t('max_score')),
           TextField(controller: sc, keyboardType: TextInputType.number, decoration: const InputDecoration(hintText: '100')),
           const SizedBox(height: 16),
-          _fieldLabel2('ДЕДЛАЙН'),
+          _fieldLabel2(l.t('deadline')),
           GestureDetector(onTap: () async {
             final d = await showDatePicker(context: ctx, initialDate: DateTime.now().add(const Duration(days: 7)), firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 365)));
             if (d != null && ctx.mounted) {
@@ -1150,26 +1154,26 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           }, child: Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(AppRadii.tile)),
             child: Row(children: [
-              Text(deadline != null ? '${deadline!.day.toString().padLeft(2, '0')}.${deadline!.month.toString().padLeft(2, '0')}.${deadline!.year} ${deadline!.hour.toString().padLeft(2, '0')}:${deadline!.minute.toString().padLeft(2, '0')}' : 'ДД.ММ.ГГГГ --:--', style: TextStyle(fontSize: 14, color: deadline != null ? null : C.text4)),
+              Text(deadline != null ? '${deadline!.day.toString().padLeft(2, '0')}.${deadline!.month.toString().padLeft(2, '0')}.${deadline!.year} ${deadline!.hour.toString().padLeft(2, '0')}:${deadline!.minute.toString().padLeft(2, '0')}' : l.t('deadline_placeholder'), style: TextStyle(fontSize: 14, color: deadline != null ? null : C.text4)),
               const Spacer(), const Icon(CupertinoIcons.calendar, size: 18, color: C.text4),
             ]))),
           const SizedBox(height: 20),
           // File attachments
           Row(children: [
-            Text('ПРИКРЕПЛЁННЫЕ ФАЙЛЫ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
+            Text(l.t('attached_files'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
             const Spacer(),
             GestureDetector(
               onTap: () async {
                 final result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
                 if (result != null) setS(() => attachedFiles.addAll(result.files));
               },
-              child: Text('+ Добавить', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
+              child: Text('+ ${l.t('add')}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
             ),
           ]),
           const SizedBox(height: 8),
           if (attachedFiles.isEmpty)
             Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(12)),
-              child: const Row(children: [Icon(CupertinoIcons.paperclip, size: 16, color: C.text4), SizedBox(width: 8), Text('Нет прикреплённых файлов', style: TextStyle(fontSize: 13, color: C.text4))]))
+              child: Row(children: [const Icon(CupertinoIcons.paperclip, size: 16, color: C.text4), const SizedBox(width: 8), Text(l.t('no_attached_files'), style: const TextStyle(fontSize: 13, color: C.text4))]))
           else
             ...attachedFiles.map((f) => Container(margin: const EdgeInsets.only(bottom: 6), padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(12)),
@@ -1189,8 +1193,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   child: Icon(CupertinoIcons.checkmark_circle, size: 18, color: Theme.of(context).colorScheme.primary)),
                 const SizedBox(width: 10),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [const Text('Эталонные решения', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)), const Spacer(), Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)), child: Text('ИИ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)))]),
-                  const Text('ИИ сравнит работы учеников с эталоном', style: TextStyle(fontSize: 11, color: C.text4)),
+                  Row(children: [Text(l.t('reference_solutions'), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)), const Spacer(), Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)), child: Text(l.t('graded_by_ai'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)))]),
+                  Text(l.t('reference_sub'), style: const TextStyle(fontSize: 11, color: C.text4)),
                 ])),
               ]),
               const SizedBox(height: 12),
@@ -1202,7 +1206,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 child: Column(children: [
                   Icon(CupertinoIcons.arrow_up_doc, size: 28, color: Theme.of(context).colorScheme.primary),
                   const SizedBox(height: 6),
-                  RichText(text: TextSpan(style: const TextStyle(fontSize: 13, color: C.text4), children: [const TextSpan(text: 'Нажмите или '), TextSpan(text: 'выберите файлы', style: TextStyle(fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary))])),
+                  Text(l.t('click_or_choose'), style: const TextStyle(fontSize: 13, color: C.text4)),
                   const Text('PDF, DOCX, DOC, PPTX, XLSX, TXT, MD', style: TextStyle(fontSize: 10, color: C.text4)),
                 ]))),
               if (referenceFiles.isNotEmpty) ...[
@@ -1215,13 +1219,13 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           const SizedBox(height: 20),
           // Criteria
           Row(children: [
-            Text('КРИТЕРИИ ОЦЕНИВАНИЯ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
+            Text(l.t('grading_criteria'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
             const Spacer(),
             GestureDetector(onTap: () => setS(() => criteria.add({'name': '', 'weight': 0, 'desc': ''})),
-              child: Text('+ Добавить', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary))),
+              child: Text('+ ${l.t('add')}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary))),
           ]),
           const SizedBox(height: 4),
-          Text('Сумма весов должна быть равна макс. баллу (${sc.text}/${sc.text})', style: const TextStyle(fontSize: 11, color: C.text4)),
+          Text('${l.t('criteria_sum_hint')} (${sc.text}/${sc.text})', style: const TextStyle(fontSize: 11, color: C.text4)),
           const SizedBox(height: 12),
           ...List.generate(criteria.length, (i) {
             final nameC = TextEditingController(text: criteria[i]['name']);
@@ -1233,21 +1237,21 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 Row(children: [
                   Text('${i + 1}', style: const TextStyle(fontSize: 12, color: C.text4)),
                   const SizedBox(width: 8),
-                  Expanded(child: TextField(controller: nameC, decoration: const InputDecoration(hintText: 'Название критерия', contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10)), onChanged: (v) => criteria[i]['name'] = v)),
+                  Expanded(child: TextField(controller: nameC, decoration: InputDecoration(hintText: l.t('criterion_name'), contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)), onChanged: (v) => criteria[i]['name'] = v)),
                   const SizedBox(width: 8),
                   SizedBox(width: 60, child: TextField(controller: weightC, keyboardType: TextInputType.number, textAlign: TextAlign.center, decoration: const InputDecoration(contentPadding: EdgeInsets.symmetric(vertical: 10)), onChanged: (v) => criteria[i]['weight'] = int.tryParse(v) ?? 0)),
                   const SizedBox(width: 4),
                   GestureDetector(onTap: () { if (criteria.length > 1) setS(() => criteria.removeAt(i)); }, child: const Icon(CupertinoIcons.xmark, size: 16, color: C.red)),
                 ]),
                 const SizedBox(height: 6),
-                TextField(controller: descC, decoration: const InputDecoration(hintText: 'Описание (необязательно)', contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10)), onChanged: (v) => criteria[i]['desc'] = v),
+                TextField(controller: descC, decoration: InputDecoration(hintText: l.t('criterion_desc'), contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)), onChanged: (v) => criteria[i]['desc'] = v),
               ]));
           }),
           const SizedBox(height: 24),
           Row(children: [
-            Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)), child: const Text('Отмена'))),
+            Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)), child: Text(l.t('cancel')))),
             const SizedBox(width: 12),
-            Expanded(child: ElevatedButton.icon(icon: const Icon(CupertinoIcons.plus, size: 16, color: Colors.white), label: const Text('Создать задание'),
+            Expanded(child: ElevatedButton.icon(icon: const Icon(CupertinoIcons.plus, size: 16, color: Colors.white), label: Text(l.t('create_assignment')),
               style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
               onPressed: () async {
                 if (tc.text.trim().isEmpty) return;
@@ -1265,7 +1269,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                           fileUrls.add('$url#${Uri.encodeComponent(pf.name)}');
                         }
                       } catch (e) {
-                        if (mounted) showToast(context, 'Ошибка загрузки ${pf.name}', error: true);
+                        if (mounted) showToast(context, '${l.t('upload_error')}: ${pf.name}', error: true);
                       }
                     }
                   }
@@ -1285,7 +1289,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   final maxScore = int.tryParse(sc.text) ?? 100;
                   final filteredCriteria = criteria.where((c) => c['name'].toString().isNotEmpty).toList();
                   final finalCriteria = filteredCriteria.isEmpty
-                      ? [{'name': 'Качество выполнения', 'weight': maxScore, 'description': ''}]
+                      ? [{'name': l.t('default_criterion'), 'weight': maxScore, 'description': ''}]
                       : filteredCriteria.map((c) => {'name': c['name'], 'weight': c['weight'], 'description': c['desc']}).toList();
 
                   await api.createAssignment({
@@ -1301,10 +1305,10 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   Navigator.pop(ctx);
                   _loadAssignments();
                   showToast(context, fileUrls.isNotEmpty
-                      ? 'Задание создано (${fileUrls.length} файл)'
-                      : 'Задание создано');
+                      ? '${l.t('assignment_created')} (${fileUrls.length} ${l.t('file')})'
+                      : l.t('assignment_created'));
                 } catch (e) {
-                  if (mounted && ctx.mounted) showToast(context, 'Ошибка: $e', error: true);
+                  if (mounted && ctx.mounted) showToast(context, '${l.t('error_generic')}: $e', error: true);
                 }
               })),
           ]),
@@ -1316,6 +1320,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
 
   // ── Edit assignment ──
   void _editAssignment(dynamic a) {
+    final l = context.read<L10n>();
     final rawDesc = a['description']?.toString() ?? '';
     // Показываем description БЕЗ встроенных URL (они хранятся там технически)
     final tc = TextEditingController(text: a['title'] ?? '');
@@ -1348,22 +1353,22 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               child: const Icon(CupertinoIcons.pencil, color: Color(0xFFF59E0B), size: 22)),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Редактировать задание', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+              Text(l.t('edit_assignment'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
               Text(a['title'] ?? '', style: const TextStyle(fontSize: 12, color: C.text4), overflow: TextOverflow.ellipsis),
             ])),
             IconButton(icon: const Icon(CupertinoIcons.xmark), onPressed: () => Navigator.pop(ctx)),
           ]),
           const SizedBox(height: 24),
-          _fieldLabel2('НАЗВАНИЕ *'),
-          TextField(controller: tc, decoration: const InputDecoration(hintText: 'Название задания')),
+          _fieldLabel2('${l.t('class_name')} *'),
+          TextField(controller: tc, decoration: InputDecoration(hintText: l.t('assignment_name_hint'))),
           const SizedBox(height: 16),
-          _fieldLabel2('ОПИСАНИЕ'),
-          TextField(controller: dc, decoration: const InputDecoration(hintText: 'Описание и требования...'), maxLines: 4),
+          _fieldLabel2(l.t('assignment_desc')),
+          TextField(controller: dc, decoration: InputDecoration(hintText: l.t('assignment_desc_hint')), maxLines: 4),
           const SizedBox(height: 16),
-          _fieldLabel2('МАКС. БАЛЛ'),
+          _fieldLabel2(l.t('max_score')),
           TextField(controller: sc, keyboardType: TextInputType.number, decoration: const InputDecoration(hintText: '100')),
           const SizedBox(height: 16),
-          _fieldLabel2('ДЕДЛАЙН'),
+          _fieldLabel2(l.t('deadline')),
           GestureDetector(onTap: () async {
             final d = await showDatePicker(context: ctx, initialDate: deadline ?? DateTime.now().add(const Duration(days: 7)), firstDate: DateTime.now().subtract(const Duration(days: 1)), lastDate: DateTime.now().add(const Duration(days: 365)));
             if (d != null && ctx.mounted) {
@@ -1373,16 +1378,16 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           }, child: Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(AppRadii.tile)),
             child: Row(children: [
-              Text(deadline != null ? '${deadline!.day.toString().padLeft(2,'0')}.${deadline!.month.toString().padLeft(2,'0')}.${deadline!.year} ${deadline!.hour.toString().padLeft(2,'0')}:${deadline!.minute.toString().padLeft(2,'0')}' : 'ДД.ММ.ГГГГ --:--', style: TextStyle(fontSize: 14, color: deadline != null ? null : C.text4)),
+              Text(deadline != null ? '${deadline!.day.toString().padLeft(2,'0')}.${deadline!.month.toString().padLeft(2,'0')}.${deadline!.year} ${deadline!.hour.toString().padLeft(2,'0')}:${deadline!.minute.toString().padLeft(2,'0')}' : l.t('deadline_placeholder'), style: TextStyle(fontSize: 14, color: deadline != null ? null : C.text4)),
               const Spacer(), const Icon(CupertinoIcons.calendar, size: 18, color: C.text4),
             ]))),
           const SizedBox(height: 20),
           // Existing files
           if (keepUrls.isNotEmpty) ...[
             Row(children: [
-              Text('ТЕКУЩИЕ ФАЙЛЫ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
+              Text(l.t('current_files'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
               const Spacer(),
-              const Text('нажмите × для удаления', style: TextStyle(fontSize: 11, color: C.text4)),
+              Text(l.t('tap_x_remove'), style: const TextStyle(fontSize: 11, color: C.text4)),
             ]),
             const SizedBox(height: 8),
             ...keepUrls.map((url) {
@@ -1399,14 +1404,14 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           ],
           // Add new files
           Row(children: [
-            Text('ДОБАВИТЬ ФАЙЛЫ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
+            Text(l.t('add_files_label'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
             const Spacer(),
             GestureDetector(
               onTap: () async {
                 final r = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
                 if (r != null) setS(() => newFiles.addAll(r.files));
               },
-              child: Text('+ Добавить', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
+              child: Text('+ ${l.t('add')}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
             ),
           ]),
           const SizedBox(height: 8),
@@ -1418,14 +1423,14 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               GestureDetector(onTap: () => setS(() => newFiles.remove(f)), child: const Icon(CupertinoIcons.xmark, size: 15, color: C.text4)),
             ])))
           else Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(12)),
-            child: const Row(children: [Icon(CupertinoIcons.paperclip, size: 15, color: C.text4), SizedBox(width: 8), Text('Нет новых файлов', style: TextStyle(fontSize: 13, color: C.text4))])),
+            child: Row(children: [const Icon(CupertinoIcons.paperclip, size: 15, color: C.text4), const SizedBox(width: 8), Text(l.t('no_new_files'), style: const TextStyle(fontSize: 13, color: C.text4))])),
           const SizedBox(height: 24),
           // Criteria
           Row(children: [
-            Text('КРИТЕРИИ ОЦЕНИВАНИЯ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
+            Text(l.t('grading_criteria'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
             const Spacer(),
             GestureDetector(onTap: () => setS(() => criteria.add({'name': '', 'weight': 0, 'desc': ''})),
-              child: Text('+ Добавить', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary))),
+              child: Text('+ ${l.t('add')}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary))),
           ]),
           const SizedBox(height: 12),
           ...List.generate(criteria.length, (i) {
@@ -1437,14 +1442,14 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               child: Column(children: [
                 Row(children: [
                   Text('${i+1}', style: const TextStyle(fontSize: 12, color: C.text4)), const SizedBox(width: 8),
-                  Expanded(child: TextField(controller: nameC, decoration: const InputDecoration(hintText: 'Критерий', contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10)), onChanged: (v) => criteria[i]['name'] = v)),
+                  Expanded(child: TextField(controller: nameC, decoration: InputDecoration(hintText: l.t('criterion_short'), contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)), onChanged: (v) => criteria[i]['name'] = v)),
                   const SizedBox(width: 8),
                   SizedBox(width: 60, child: TextField(controller: weightC, keyboardType: TextInputType.number, textAlign: TextAlign.center, decoration: const InputDecoration(contentPadding: EdgeInsets.symmetric(vertical: 10)), onChanged: (v) => criteria[i]['weight'] = int.tryParse(v) ?? 0)),
                   const SizedBox(width: 4),
                   GestureDetector(onTap: () { if (criteria.length > 1) setS(() => criteria.removeAt(i)); }, child: const Icon(CupertinoIcons.xmark, size: 16, color: C.red)),
                 ]),
                 const SizedBox(height: 6),
-                TextField(controller: descC, decoration: const InputDecoration(hintText: 'Описание критерия', contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10)), onChanged: (v) => criteria[i]['desc'] = v),
+                TextField(controller: descC, decoration: InputDecoration(hintText: l.t('criterion_desc'), contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)), onChanged: (v) => criteria[i]['desc'] = v),
               ]));
           }),
           const SizedBox(height: 20),
@@ -1463,11 +1468,11 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           ),
           const SizedBox(height: 24),
           Row(children: [
-            Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)), child: const Text('Отмена'))),
+            Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)), child: Text(l.t('cancel')))),
             const SizedBox(width: 12),
             Expanded(child: ElevatedButton.icon(
               icon: const Icon(CupertinoIcons.checkmark, size: 16, color: Colors.white),
-              label: const Text('Сохранить'),
+              label: Text(l.t('save')),
               style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
               onPressed: () async {
                 if (tc.text.trim().isEmpty) return;
@@ -1509,8 +1514,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     if (deadline != null) 'deadline': deadline!.toIso8601String(),
                   });
                   if (!mounted || !ctx.mounted) return;
-                  Navigator.pop(ctx); _loadAssignments(); showToast(context, 'Задание обновлено');
-                } catch (e) { if (mounted && ctx.mounted) showToast(context, 'Ошибка: $e', error: true); }
+                  Navigator.pop(ctx); _loadAssignments(); showToast(context, l.t('updated'));
+                } catch (e) { if (mounted && ctx.mounted) showToast(context, '${l.t('error_generic')}: $e', error: true); }
               },
             )),
           ]),
@@ -1647,6 +1652,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   }
 
   void _editClass() {
+    final l = context.read<L10n>();
     final meta = _meta;
     final tc = TextEditingController(text: _title), dc = TextEditingController(text: meta['description'] ?? ''), tn = TextEditingController(text: meta['teacher'] ?? '');
     // Existing cover may be either a legacy base64 data: URI or (new format,
@@ -1668,12 +1674,12 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: Icon(CupertinoIcons.pencil, color: Theme.of(context).colorScheme.primary, size: 22)),
             const SizedBox(width: 12),
-            const Expanded(child: Text('Редактировать класс', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800))),
+            Expanded(child: Text(l.t('edit_class'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800))),
             IconButton(icon: const Icon(CupertinoIcons.xmark), onPressed: () => Navigator.pop(ctx)),
           ]),
           const SizedBox(height: 24),
           // Cover image
-          _fieldLabel2('ОБЛОЖКА КЛАССА'),
+          _fieldLabel2(l.t('class_cover')),
           GestureDetector(
             onTap: () async {
               final picker = ImagePicker();
@@ -1700,24 +1706,24 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                     const Icon(CupertinoIcons.photo, color: Colors.white, size: 32),
                     const SizedBox(height: 6),
-                    Text((newCoverFile != null || (!coverRemoved && existingCover != null)) ? 'Нажмите для замены' : 'Выбрать обложку', style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                    Text((newCoverFile != null || (!coverRemoved && existingCover != null)) ? l.t('click_to_replace') : l.t('choose_cover'), style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
                   ])),
               ])),
           ),
           if (newCoverFile != null || (!coverRemoved && existingCover != null)) ...[
             const SizedBox(height: 8),
             GestureDetector(onTap: () => setS(() { newCoverFile = null; coverRemoved = true; }),
-              child: const Row(children: [Icon(CupertinoIcons.xmark, size: 14, color: C.red), SizedBox(width: 4), Text('Убрать обложку', style: TextStyle(fontSize: 12, color: C.red))])),
+              child: Row(children: [const Icon(CupertinoIcons.xmark, size: 14, color: C.red), const SizedBox(width: 4), Text(l.t('remove_cover'), style: const TextStyle(fontSize: 12, color: C.red))])),
           ],
           const SizedBox(height: 20),
-          _fieldLabel2('НАЗВАНИЕ *'),
-          TextField(controller: tc, decoration: const InputDecoration(hintText: 'Название класса')),
+          _fieldLabel2('${l.t('class_name')} *'),
+          TextField(controller: tc, decoration: InputDecoration(hintText: l.t('class_name_simple_hint'))),
           const SizedBox(height: 16),
-          _fieldLabel2('ОПИСАНИЕ'),
-          TextField(controller: dc, decoration: const InputDecoration(hintText: 'Описание класса'), maxLines: 3),
+          _fieldLabel2(l.t('class_desc')),
+          TextField(controller: dc, decoration: InputDecoration(hintText: l.t('class_desc_simple_hint')), maxLines: 3),
           const SizedBox(height: 16),
-          _fieldLabel2('ИМЯ УЧИТЕЛЯ'),
-          TextField(controller: tn, decoration: const InputDecoration(hintText: 'Отображаемое имя учителя')),
+          _fieldLabel2(l.t('teacher_name_label')),
+          TextField(controller: tn, decoration: InputDecoration(hintText: l.t('teacher_display_hint'))),
           // Cohort management (rotation + rollover) — creator/admin only, else 403.
           if (_canManageCohorts) ...[
           const SizedBox(height: 20),
@@ -1770,7 +1776,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           ],
           const SizedBox(height: 28),
           Row(children: [
-            Expanded(child: OutlinedButton(onPressed: saving ? null : () => Navigator.pop(ctx), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)), child: const Text('Отмена'))),
+            Expanded(child: OutlinedButton(onPressed: saving ? null : () => Navigator.pop(ctx), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)), child: Text(l.t('cancel')))),
             const SizedBox(width: 12),
             Expanded(child: ElevatedButton(
               style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
@@ -1808,14 +1814,14 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   // attached file's text over the network, which is slow and
                   // pointless for a metadata/cover edit.
                   _applyClassUpdate(updated);
-                  showToast(context, 'Класс обновлён');
+                  showToast(context, l.t('class_updated'));
                 } catch (_) {
-                  if (mounted && ctx.mounted) { showToast(context, 'Ошибка', error: true); setS(() => saving = false); }
+                  if (mounted && ctx.mounted) { showToast(context, l.t('error_generic'), error: true); setS(() => saving = false); }
                 }
               },
               child: saving
                   ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Text('Сохранить'),
+                  : Text(l.t('save')),
             )),
           ]),
           const SizedBox(height: 24),

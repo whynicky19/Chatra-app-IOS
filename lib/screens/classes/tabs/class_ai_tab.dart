@@ -1,13 +1,15 @@
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/l10n_provider.dart';
 import '../../../services/api_service.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/app_dialog.dart';
-import '../../../widgets/app_logo.dart';
+import '../../../widgets/toast.dart';
 import '../rag_documents_sheet.dart';
 
 class ClassAiTab extends StatefulWidget {
@@ -33,24 +35,23 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
   final _ctrl   = TextEditingController();
   final List<Map<String, String>> _msgs = [];
   bool _loading = false;
-  late final AnimationController _pulseCtrl;
   late final AnimationController _fadeCtrl;
   late final ScrollController _scrollCtrl;
   late final String _historyKey;
 
+  // Заголовки берутся из l10n по ключу — те же подсказки, что и на основном
+  // экране ИИ, переводятся вместе со всем приложением.
   static const _tips = [
-    {'icon': CupertinoIcons.book,         'title': 'Объясни материал',  'desc': 'Разбери тему простыми словами'},
-    {'icon': CupertinoIcons.lightbulb, 'title': 'Ключевые понятия',  'desc': 'Назови главные идеи курса'},
-    {'icon': CupertinoIcons.doc_text,       'title': 'Помощь с заданием', 'desc': 'Подскажи, с чего начать'},
-    {'icon': CupertinoIcons.exclamationmark_triangle,     'title': 'Частые ошибки',     'desc': 'Что чаще всего понимают неверно'},
+    {'icon': CupertinoIcons.book, 'key': 'tip_explain'},
+    {'icon': CupertinoIcons.lightbulb, 'key': 'tip_concepts'},
+    {'icon': CupertinoIcons.doc_text, 'key': 'tip_help'},
+    {'icon': CupertinoIcons.exclamationmark_triangle, 'key': 'tip_mistakes'},
   ];
 
   @override
   void initState() {
     super.initState();
     _scrollCtrl = ScrollController();
-    _pulseCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 2));
-    if (widget.isActive) _pulseCtrl.repeat(reverse: true);
     _fadeCtrl  = AnimationController(vsync: this, duration: const Duration(milliseconds: 600))..forward();
     final uid = context.read<AuthProvider>().userId?.toString() ?? 'anon';
     _historyKey = 'ai_chat_history_${widget.classId}_$uid';
@@ -58,19 +59,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
   }
 
   @override
-  void didUpdateWidget(ClassAiTab old) {
-    super.didUpdateWidget(old);
-    if (old.isActive != widget.isActive) {
-      if (widget.isActive) {
-        _pulseCtrl.repeat(reverse: true);
-      } else {
-        _pulseCtrl.stop();
-      }
-    }
-  }
-
-  @override
-  void dispose() { _scrollCtrl.dispose(); _pulseCtrl.dispose(); _fadeCtrl.dispose(); _ctrl.dispose(); super.dispose(); }
+  void dispose() { _scrollCtrl.dispose(); _fadeCtrl.dispose(); _ctrl.dispose(); super.dispose(); }
 
   Future<void> _loadHistory() async {
     // Локальный кэш (быстро/офлайн) → затем сервер (синхронно с сайтом).
@@ -121,13 +110,14 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
 
   Future<void> _clearHistory() async {
     final api = context.read<ApiService>();
+    final l = context.read<L10n>();
     final ok = await showConfirmDialog(context,
-      title: 'Очистить историю?',
-      message: 'Все сообщения этого чата будут удалены.',
+      title: l.t('clear_chat_q'),
+      message: l.t('clear_chat_msg'),
       icon: CupertinoIcons.trash,
       danger: true,
-      confirmText: 'Очистить',
-      cancelText: 'Отмена');
+      confirmText: l.t('clear'),
+      cancelText: l.t('cancel'));
     if (ok == true && mounted) {
       setState(() => _msgs.clear());
       try {
@@ -175,9 +165,9 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
         classId: widget.classId,
         lectureContext: widget.lectureContext.isNotEmpty ? widget.lectureContext : null,
       );
-      if (mounted) { setState(() => _msgs.add({'role': 'assistant', 'text': data['content'] ?? 'Нет ответа'})); _saveHistory(); _scrollToBottom(); }
+      if (mounted) { setState(() => _msgs.add({'role': 'assistant', 'text': data['content'] ?? context.read<L10n>().t('no_answer')})); _saveHistory(); _scrollToBottom(); }
     } catch (_) {
-      if (mounted) { setState(() => _msgs.add({'role': 'assistant', 'text': 'Ошибка соединения'})); _saveHistory(); _scrollToBottom(); }
+      if (mounted) { setState(() => _msgs.add({'role': 'assistant', 'text': context.read<L10n>().t('connection_error')})); _saveHistory(); _scrollToBottom(); }
     }
     if (mounted) setState(() => _loading = false);
   }
@@ -186,7 +176,6 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final surface = Theme.of(context).colorScheme.surface;
     final isDark  = Theme.of(context).brightness == Brightness.dark;
-    final hasText = _ctrl.text.trim().isNotEmpty;
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
@@ -195,90 +184,110 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
       Expanded(child: Stack(children: [
         _msgs.isEmpty ? _emptyState(isDark) : _messageList(isDark),
         if (widget.isTeacher) Positioned(
-          top: 8, right: _msgs.isNotEmpty ? 54 : 12,
-          child: GestureDetector(
-            onTap: () => showRagDocumentsSheet(context, classId: widget.classId),
-            child: Container(
-              width: 34, height: 34,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                shape: BoxShape.circle,
-                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.10), blurRadius: 8, offset: const Offset(0, 2))],
-              ),
-              child: Icon(CupertinoIcons.doc_text_search, size: 16, color: Theme.of(context).colorScheme.primary),
-            ),
+          top: 10, right: _msgs.isNotEmpty ? 60 : 14,
+          child: _headerButton(
+            icon: CupertinoIcons.doc_text_search,
+            color: Theme.of(context).colorScheme.primary,
+            onTap: () {
+              HapticFeedback.lightImpact();
+              showRagDocumentsSheet(context, classId: widget.classId);
+            },
           ),
         ),
         if (_msgs.isNotEmpty) Positioned(
-          top: 8, right: 12,
-          child: GestureDetector(
-            onTap: _clearHistory,
-            child: Container(
-              width: 34, height: 34,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                shape: BoxShape.circle,
-                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.10), blurRadius: 8, offset: const Offset(0, 2))],
-              ),
-              child: const Icon(CupertinoIcons.trash, size: 16, color: C.text4),
-            ),
+          top: 10, right: 14,
+          child: _headerButton(
+            icon: CupertinoIcons.trash,
+            color: Theme.of(context).colorScheme.primary,
+            onTap: () { HapticFeedback.lightImpact(); _clearHistory(); },
           ),
         ),
       ])),
 
       Container(
-        padding: EdgeInsets.fromLTRB(12, 9, 12, MediaQuery.of(context).padding.bottom + 9),
+        padding: EdgeInsets.fromLTRB(14, 10, 14, MediaQuery.of(context).padding.bottom + 10),
         decoration: BoxDecoration(
-          color: surface,
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.05), blurRadius: 12, offset: const Offset(0, -2))],
+          color: Theme.of(context).scaffoldBackgroundColor,
+          border: Border(top: BorderSide(color: adaptiveBorder(context).withValues(alpha: 0.5), width: 0.5)),
         ),
         child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-          Expanded(child: Container(
+          Expanded(child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            constraints: const BoxConstraints(minHeight: 46),
             decoration: BoxDecoration(
-              color: adaptiveSurface2(context),
+              color: surface,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: hasText ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.28) : Colors.transparent, width: 1.5),
+              boxShadow: softShadow(isDark),
             ),
             child: TextField(
               controller: _ctrl,
-              decoration: const InputDecoration(
-                hintText: 'Спросите об этом курсе...',
-                hintStyle: TextStyle(fontSize: 15, color: C.text4),
+              decoration: InputDecoration(
+                hintText: context.read<L10n>().t('ask_about_course'),
+                hintStyle: const TextStyle(fontSize: 15, color: C.text4),
                 border: InputBorder.none, enabledBorder: InputBorder.none, focusedBorder: InputBorder.none,
-                filled: false, contentPadding: EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+                filled: false, contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
               ),
               onSubmitted: (_) => _send(),
               maxLines: 4, minLines: 1,
-              onChanged: (_) => setState(() {}),
             ),
           )),
           const SizedBox(width: 10),
-          GestureDetector(
-            onTap: _send,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOutCubic,
-              width: 48, height: 48,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: _loading
-                      ? [surface, surface]
-                      : hasText
-                          ? [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary]
-                          : [Theme.of(context).colorScheme.primary.withValues(alpha: 0.55), Theme.of(context).colorScheme.secondary.withValues(alpha: 0.45)],
-                  begin: Alignment.topLeft, end: Alignment.bottomRight,
+          // Rebuilds only this button subtree on each keystroke (via the
+          // controller's own notifier), not the whole input bar or screen.
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: _ctrl,
+            builder: (context, value, _) {
+              final has = value.text.trim().isNotEmpty;
+              final active = has && !_loading;
+              return GestureDetector(
+                onTap: _send,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  width: 46, height: 46,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: active ? Theme.of(context).colorScheme.primary : surface,
+                    boxShadow: active
+                        ? primaryGlow(Theme.of(context).colorScheme.primary, opacity: 0.32)
+                        : softShadow(isDark),
+                  ),
+                  child: _loading
+                      ? Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Theme.of(context).colorScheme.primary)))
+                      : AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 180),
+                          switchInCurve: Curves.easeOutBack,
+                          switchOutCurve: Curves.easeIn,
+                          transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+                          child: Icon(
+                            CupertinoIcons.arrow_up,
+                            key: ValueKey(has),
+                            color: has ? Colors.white : C.text4,
+                            size: 21,
+                          ),
+                        ),
                 ),
-                boxShadow: hasText && !_loading ? [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.38), blurRadius: 14, offset: const Offset(0, 4))] : null,
-              ),
-              child: _loading
-                  ? Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Theme.of(context).colorScheme.primary)))
-                  : const Icon(CupertinoIcons.paperplane_fill, color: Colors.white, size: 20),
-            ),
+              );
+            },
           ),
         ]),
       ),
     ]));
+  }
+
+  Widget _headerButton({required IconData icon, required Color color, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 38, height: 38,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, color: color, size: 18),
+      ),
+    );
   }
 
   Widget _emptyState(bool isDark) {
@@ -291,41 +300,23 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
           child: ConstrainedBox(
             constraints: BoxConstraints(minHeight: constraints.maxHeight),
             child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              AnimatedBuilder(animation: _pulseCtrl, builder: (_, __) {
-                final v = _pulseCtrl.value;
-                return Stack(alignment: Alignment.center, children: [
-                  Container(width: 106, height: 106, decoration: BoxDecoration(shape: BoxShape.circle, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.04 + v * 0.04))),
-                  Container(width: 80, height: 80, decoration: BoxDecoration(shape: BoxShape.circle, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.07 + v * 0.04),
-                    boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10 + v * 0.06), blurRadius: 20)])),
-                  Container(width: 60, height: 60,
-                    decoration: BoxDecoration(color: isDark ? C.darkSurface : Colors.white, borderRadius: BorderRadius.circular(18),
-                      boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.18), blurRadius: 20, offset: const Offset(0, 5))]),
-                    padding: const EdgeInsets.all(12),
-                    child: const AppLogo(fit: BoxFit.contain)),
-                ]);
-              }),
-              const SizedBox(height: 14),
-              Text('Чат по курсу', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.5, color: adaptiveText1(context))),
+              Text(context.read<L10n>().t('course_chat'), style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.6, color: adaptiveText1(context))),
               const SizedBox(height: 6),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(16)),
                 child: Text(shortName, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w700)),
               ),
-              const SizedBox(height: 20),
-              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Expanded(child: Column(children: [
-                  _tipCard(_tips[0], isDark),
-                  const SizedBox(height: 12),
-                  _tipCard(_tips[2], isDark),
-                ])),
-                const SizedBox(width: 12),
-                Expanded(child: Column(children: [
-                  _tipCard(_tips[1], isDark),
-                  const SizedBox(height: 12),
-                  _tipCard(_tips[3], isDark),
-                ])),
-              ]),
+              const SizedBox(height: 24),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 440),
+                child: Column(children: [
+                  for (var i = 0; i < _tips.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 10),
+                    _suggestionRow(_tips[i], isDark, i),
+                  ],
+                ]),
+              ),
             ]),
           ),
         );
@@ -333,27 +324,42 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
     );
   }
 
-  Widget _tipCard(Map<String, dynamic> tip, bool isDark) {
-    return GestureDetector(
-      onTap: () => _send(tip['title'] as String),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark ? C.darkSurface : Colors.white,
-          borderRadius: BorderRadius.circular(AppRadii.card),
-          boxShadow: cardShadow(isDark),
-        ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Container(
-            width: 40, height: 40,
-            decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(12)),
-            child: Icon(tip['icon'] as IconData, size: 20, color: Theme.of(context).colorScheme.primary),
+  // Полноширинная строка-подсказка в стиле Apple: ровный столбик,
+  // короткий заголовок слева + тонкая стрелка справа.
+  Widget _suggestionRow(Map<String, dynamic> tip, bool isDark, int index) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: Duration(milliseconds: 320 + index * 70),
+      curve: Curves.easeOutCubic,
+      builder: (_, t, child) => Opacity(
+        opacity: t.clamp(0.0, 1.0),
+        child: Transform.translate(offset: Offset(0, 10 * (1 - t)), child: child),
+      ),
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          _send(context.read<L10n>().t(tip['key'] as String));
+        },
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+          decoration: BoxDecoration(
+            color: isDark ? C.darkSurface : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: adaptiveBorder(context).withValues(alpha: 0.6), width: 0.5),
+            boxShadow: softShadow(isDark),
           ),
-          const SizedBox(height: 14),
-          Text(tip['title'] as String, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: adaptiveText1(context), height: 1.2)),
-          const SizedBox(height: 6),
-          Text(tip['desc'] as String, style: const TextStyle(fontSize: 12, color: C.text4, height: 1.4)),
-        ]),
+          child: Row(children: [
+            Icon(tip['icon'] as IconData, size: 18, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(context.read<L10n>().t(tip['key'] as String),
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveText1(context), letterSpacing: -0.2)),
+            ),
+            const SizedBox(width: 12),
+            Icon(CupertinoIcons.arrow_up_left, size: 16, color: C.text4.withValues(alpha: 0.7)),
+          ]),
+        ),
       ),
     );
   }
@@ -380,12 +386,11 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
   }
 
   Widget _userBubble(String text) {
-    final now = DateTime.now();
-    final timeStr = '${now.hour.toString().padLeft(2,'0')}:${now.minute.toString().padLeft(2,'0')}';
     return Padding(
       padding: const EdgeInsets.only(bottom: 16, left: 48),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-        Container(
+      child: Align(
+        alignment: Alignment.centerRight,
+        child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
           decoration: BoxDecoration(
             gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary], begin: Alignment.topLeft, end: Alignment.bottomRight),
@@ -397,84 +402,53 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
           ),
           child: Text(text, style: const TextStyle(fontSize: 15, color: Colors.white, height: 1.5)),
         ),
-        const SizedBox(height: 4),
-        Row(mainAxisSize: MainAxisSize.min, children: [
-          Text(timeStr, style: const TextStyle(fontSize: 10, color: C.text4)),
-          const SizedBox(width: 4),
-          Icon(CupertinoIcons.checkmark_alt, size: 13, color: Theme.of(context).colorScheme.primary),
-        ]),
-      ]),
+      ),
     );
   }
 
   Widget _aiBubble(String text, bool isDark) => Padding(
-    padding: const EdgeInsets.only(bottom: 20, right: 24),
-    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Container(
-        width: 44, height: 44,
-        margin: const EdgeInsets.only(top: 2, right: 10),
-        decoration: BoxDecoration(
-          color: isDark ? C.darkSurface : Colors.white,
-          borderRadius: BorderRadius.circular(13),
-          border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2), width: 1.5),
-          boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10), blurRadius: 10, offset: const Offset(0, 2))],
-        ),
-        padding: const EdgeInsets.all(8),
-        child: const AppLogo(fit: BoxFit.contain),
-      ),
-      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Padding(padding: const EdgeInsets.only(left: 2, bottom: 5),
-          child: Text('Chatra AI', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 0.2))),
-        Container(
-          padding: const EdgeInsets.all(16),
+    padding: const EdgeInsets.only(bottom: 14, right: 52),
+    child: Align(
+      alignment: Alignment.centerLeft,
+      child: GestureDetector(
+        onLongPress: () {
+          HapticFeedback.mediumImpact();
+          Clipboard.setData(ClipboardData(text: text));
+          showToast(context, context.read<L10n>().t('copied'));
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: isDark ? C.darkSurface : Colors.white,
             borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(6), topRight: Radius.circular(20),
-              bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20),
+              topLeft: Radius.circular(20), topRight: Radius.circular(20),
+              bottomLeft: Radius.circular(6), bottomRight: Radius.circular(20),
             ),
-            border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: isDark ? 0.12 : 0.08)),
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.05), blurRadius: 12, offset: const Offset(0, 3))],
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.05), blurRadius: 12, offset: const Offset(0, 3))],
           ),
-          child: SelectableText(text, style: const TextStyle(fontSize: 15, height: 1.7, letterSpacing: 0.1)),
+          child: SelectableText(text, style: const TextStyle(fontSize: 15, height: 1.6, letterSpacing: 0.1)),
         ),
-      ])),
-    ]),
+      ),
+    ),
   );
 
   Widget _typingIndicator(bool isDark) => Padding(
-    padding: const EdgeInsets.only(bottom: 16, right: 24),
-    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Container(
-        width: 44, height: 44,
-        margin: const EdgeInsets.only(top: 2, right: 10),
+    padding: const EdgeInsets.only(bottom: 14, right: 52),
+    child: Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
         decoration: BoxDecoration(
           color: isDark ? C.darkSurface : Colors.white,
-          borderRadius: BorderRadius.circular(13),
-          border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2), width: 1.5),
-          boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10), blurRadius: 10)],
-        ),
-        padding: const EdgeInsets.all(8),
-        child: const AppLogo(fit: BoxFit.contain),
-      ),
-      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Padding(padding: const EdgeInsets.only(left: 2, bottom: 5),
-          child: Text('Chatra AI', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary))),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          decoration: BoxDecoration(
-            color: isDark ? C.darkSurface : Colors.white,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(6), topRight: Radius.circular(20),
-              bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20),
-            ),
-            border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: isDark ? 0.12 : 0.08)),
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04), blurRadius: 10)],
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20), topRight: Radius.circular(20),
+            bottomLeft: Radius.circular(6), bottomRight: Radius.circular(20),
           ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: List.generate(3, (i) => _ClassAiDot(delay: i * 180))),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04), blurRadius: 10)],
         ),
-      ]),
-    ]),
+        child: Row(mainAxisSize: MainAxisSize.min, children: List.generate(3, (i) => _ClassAiDot(delay: i * 180))),
+      ),
+    ),
   );
 }
 

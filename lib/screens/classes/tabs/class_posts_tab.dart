@@ -84,7 +84,7 @@ class ClassPostsTab extends StatelessWidget {
             Text(isLecture ? l.t('no_lectures') : l.t('no_materials'),
               style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: adaptiveText1(context))),
             const SizedBox(height: 6),
-            Text(isTeacher ? 'Добавьте первый материал' : 'Здесь появятся материалы курса',
+            Text(isTeacher ? l.t('add_first_material') : l.t('materials_appear_here'),
               style: const TextStyle(fontSize: 13, color: C.text4)),
           ])),
         ),
@@ -128,7 +128,7 @@ class ClassPostsTab extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(color: accentColor.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(6)),
-                    child: Text('${isLecture ? 'ЛЕКЦИЯ' : 'МАТЕРИАЛ'} $num',
+                    child: Text('${(isLecture ? l.t('lecture') : l.t('material')).toUpperCase()} $num',
                       style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: accentColor, letterSpacing: 0.6)),
                   ),
                   const SizedBox(height: 6),

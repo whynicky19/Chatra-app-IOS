@@ -82,7 +82,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         final b = jsonDecode(p['body']);
         if (b['type'] == 'class') {
           final cid = (p['id'] as num).toInt();
-          classNames[cid] = p['title']?.toString() ?? 'Класс';
+          classNames[cid] = p['title']?.toString() ?? context.read<L10n>().t('class_label');
           existingClassIds.add(cid);
         }
       } catch (_) {}
@@ -334,10 +334,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           ),
                           alignment: Alignment.centerRight,
                           padding: const EdgeInsets.only(right: 24),
-                          child: const Column(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(CupertinoIcons.trash, color: Colors.white, size: 24),
-                            SizedBox(height: 4),
-                            Text('Удалить', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+                          child: Column(mainAxisSize: MainAxisSize.min, children: [
+                            const Icon(CupertinoIcons.trash, color: Colors.white, size: 24),
+                            const SizedBox(height: 4),
+                            Text(l.t('delete'), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
                           ]),
                         ),
                         child: GestureDetector(

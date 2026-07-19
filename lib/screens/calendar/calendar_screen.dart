@@ -24,12 +24,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
   Map<int, dynamic> _submissionMap = {};
   bool _loading = true;
 
-  static const _monthNamesRU = [
-    'Январь','Февраль','Март','Апрель','Май','Июнь',
-    'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь',
-  ];
-  static const _weekDays = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
-
   @override
   void initState() {
     super.initState();
@@ -148,8 +142,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         )),
                         Text(
                           _deadlineMap.isEmpty
-                              ? 'Нет предстоящих дедлайнов'
-                              : 'Предстоящих заданий: ${_deadlineMap.values.fold<int>(0, (n, list) => n + list.length)}',
+                              ? l.t('no_upcoming_deadlines')
+                              : '${l.t('upcoming_tasks')}: ${_deadlineMap.values.fold<int>(0, (n, list) => n + list.length)}',
                           style: const TextStyle(fontSize: 13, color: C.text4),
                         ),
                       ])),
@@ -168,6 +162,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   // ── Mini-calendar ─────────────────────────────────────────────────────────────
 
   Widget _buildCalendar(bool isDark, DateTime today) {
+    final l = context.read<L10n>();
     final surface = Theme.of(context).colorScheme.surface;
     final daysInMonth = DateUtils.getDaysInMonth(_focusedMonth.year, _focusedMonth.month);
     final firstDay = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
@@ -187,7 +182,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           _navBtn(CupertinoIcons.chevron_left, () => setState(() =>
             _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month - 1))),
           Expanded(child: Text(
-            '${_monthNamesRU[_focusedMonth.month - 1]} ${_focusedMonth.year}',
+            '${l.t('months_full').split(',')[_focusedMonth.month - 1]} ${_focusedMonth.year}',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary),
           )),
@@ -195,7 +190,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month + 1))),
         ]),
         const SizedBox(height: 12),
-        Row(children: _weekDays.map((d) => Expanded(
+        Row(children: l.t('weekdays_short').split(',').map((d) => Expanded(
           child: Center(child: Text(d, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4))),
         )).toList()),
         const SizedBox(height: 8),
@@ -298,6 +293,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   // ── 7-day horizontal scroll ───────────────────────────────────────────────────
 
   Widget _build7DayScroll(DateTime today, bool isDark) {
+    final l = context.read<L10n>();
     return SizedBox(
       height: 88, // enough for text + number + optional badge without overflow
       child: ListView.builder(
@@ -310,7 +306,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           final items = _deadlineMap[key] ?? [];
           final count = items.length;
           final isSelected = key == _selectedDay;
-          final dayName = _weekDays[day.weekday - 1];
+          final dayName = l.t('weekdays_short').split(',')[day.weekday - 1];
           final allDone = count > 0 && items.every((a) {
             final s = _submissionStatus(a);
             return s == 'submitted' || s == 'graded';
@@ -374,11 +370,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
       for (final c in context.read<ClassesProvider>().classes)
         if (c['id'] != null) (c['id'] as num).toInt(): (c['title'] ?? '').toString(),
     };
-    final monthGen = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+    final monthGen = l.t('months_genitive').split(',');
     final dayLabel = _selectedDay == today
-        ? 'Сегодня'
+        ? l.t('notif_today')
         : _selectedDay == tomorrow
-            ? 'Завтра'
+            ? l.t('tomorrow')
             : '${_selectedDay.day} ${monthGen[_selectedDay.month - 1]}';
 
     if (items.isEmpty) {

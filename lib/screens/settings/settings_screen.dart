@@ -64,7 +64,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         ])), 0.0, 0.4),
 
         // ── Profile card ────────────────────────────────────────
-        _animated(const _SectionLabel('ПРОФИЛЬ'), 0.05, 0.45),
+        _animated(_SectionLabel(l.t('profile').toUpperCase()), 0.05, 0.45),
         const SizedBox(height: 8),
 
         _animated(Container(
@@ -114,12 +114,12 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                     color: C.amber.withValues(alpha: isDark ? 0.16 : 0.10),
                     borderRadius: BorderRadius.circular(AppRadii.chip),
                   ),
-                  child: const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Icon(CupertinoIcons.exclamationmark_triangle_fill, size: 15, color: C.amberDk),
-                    SizedBox(width: 8),
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Icon(CupertinoIcons.exclamationmark_triangle_fill, size: 15, color: C.amberDk),
+                    const SizedBox(width: 8),
                     Expanded(child: Text(
-                      'Ваше ФИО указано не на кириллице. Пожалуйста, обновите его ниже.',
-                      style: TextStyle(fontSize: 12, color: C.amberDk, fontWeight: FontWeight.w600, height: 1.4),
+                      l.t('fio_not_cyrillic_warn'),
+                      style: const TextStyle(fontSize: 12, color: C.amberDk, fontWeight: FontWeight.w600, height: 1.4),
                     )),
                   ]),
                 ),
@@ -136,11 +136,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                     decoration: BoxDecoration(
                       color: C.red.withValues(alpha: isDark ? 0.16 : 0.08),
                       borderRadius: BorderRadius.circular(AppRadii.chip)),
-                    child: const Row(children: [
-                      Icon(CupertinoIcons.xmark_circle, size: 14, color: C.red),
-                      SizedBox(width: 7),
-                      Expanded(child: Text('ФИО должно быть на кириллице (рус/каз)',
-                        style: TextStyle(fontSize: 12, color: C.red, fontWeight: FontWeight.w600))),
+                    child: Row(children: [
+                      const Icon(CupertinoIcons.xmark_circle, size: 14, color: C.red),
+                      const SizedBox(width: 7),
+                      Expanded(child: Text(l.t('name_cyrillic_only'),
+                        style: const TextStyle(fontSize: 12, color: C.red, fontWeight: FontWeight.w600))),
                     ]),
                   )),
               const SizedBox(height: 14),
@@ -178,7 +178,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         const SizedBox(height: 24),
 
         // ── Preferences section ─────────────────────────────────
-        _animated(const _SectionLabel('НАСТРОЙКИ'), 0.3, 0.65),
+        _animated(_SectionLabel(l.t('preferences').toUpperCase()), 0.3, 0.65),
         const SizedBox(height: 8),
 
         _animated(Container(
@@ -265,11 +265,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 const TelegramLogo(size: 32),
                 const SizedBox(width: 14),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Связаться с разработчиком',
+                  Text(l.t('contact_developer'),
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: adaptiveText1(context))),
                   const SizedBox(height: 1),
-                  const Text('Вопросы, ошибки и предложения',
-                    style: TextStyle(fontSize: 13, color: C.text4)),
+                  Text(l.t('contact_developer_sub'),
+                    style: const TextStyle(fontSize: 13, color: C.text4)),
                 ])),
                 const Icon(CupertinoIcons.chevron_right, size: 14, color: C.text4),
               ]),
@@ -298,12 +298,12 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           GestureDetector(
             onTap: () async {
               final ok = await showConfirmDialog(context,
-                title: 'Выйти из аккаунта?',
-                message: 'Вы будете перенаправлены на экран входа.',
+                title: '${l.t('logout')}?',
+                message: l.t('logout_confirm_msg'),
                 icon: CupertinoIcons.arrow_right_square,
                 danger: true,
-                confirmText: 'Выйти',
-                cancelText: 'Отмена');
+                confirmText: l.t('sign_out'),
+                cancelText: l.t('cancel'));
               if (ok == true && mounted) auth.logout();
             },
             child: Container(

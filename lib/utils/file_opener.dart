@@ -3,7 +3,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:dio/dio.dart' show DioException, Options;
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../providers/l10n_provider.dart';
 import '../services/api_service.dart';
 import '../widgets/toast.dart';
 
@@ -53,7 +55,7 @@ Future<void> openRemoteFile(BuildContext context, ApiService api, String url, St
     if (!context.mounted) return;
     closeDialog();
     if (e.response?.statusCode == 404) {
-      showToast(context, 'Файл не найден на сервере — возможно, он был удалён', error: true);
+      showToast(context, context.read<L10n>().t('file_not_found_server'), error: true);
       return;
     }
     try { await launchUrl(Uri.parse(cleanUrl), mode: LaunchMode.externalApplication); } catch (_) {}

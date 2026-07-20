@@ -3,6 +3,7 @@ import 'package:dio/dio.dart' show DioException;
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
+import '../utils/errors.dart';
 import 'auth_provider.dart';
 
 class ClassesProvider extends ChangeNotifier {
@@ -55,7 +56,8 @@ class ClassesProvider extends ChangeNotifier {
           .toList();
       posts = results[1];
     } catch (e) {
-      errorMessage = 'Не удалось загрузить данные: $e';
+      logError('ClassesProvider.load', e);
+      errorMessage = 'err_load_data';
     }
     loading = false;
     notifyListeners();
@@ -79,7 +81,8 @@ class ClassesProvider extends ChangeNotifier {
         joinedClassIds = list.map(int.parse).toSet();
         notifyListeners();
       } catch (e2) {
-        errorMessage = 'Ошибка загрузки сохранённых классов: $e2';
+        logError('ClassesProvider.loadSaved', e2);
+        errorMessage = 'err_load_saved_classes';
         notifyListeners();
       }
     }
@@ -94,7 +97,8 @@ class ClassesProvider extends ChangeNotifier {
         joinedClassIds.map((e) => e.toString()).toList(),
       );
     } catch (e) {
-      errorMessage = 'Ошибка сохранения списка классов: $e';
+      logError('ClassesProvider.save', e);
+      errorMessage = 'err_save_classes';
       notifyListeners();
     }
   }
@@ -107,7 +111,8 @@ class ClassesProvider extends ChangeNotifier {
       await _saveJoined();
     } catch (e) {
       joinedClassIds.remove(id);
-      errorMessage = 'Ошибка при вступлении в класс: $e';
+      logError('ClassesProvider.join', e);
+      errorMessage = 'err_join_class';
       notifyListeners();
     }
   }
@@ -120,7 +125,8 @@ class ClassesProvider extends ChangeNotifier {
       await _saveJoined();
     } catch (e) {
       joinedClassIds.add(id);
-      errorMessage = 'Ошибка при выходе из класса: $e';
+      logError('ClassesProvider.leave', e);
+      errorMessage = 'err_leave_class';
       notifyListeners();
     }
   }
@@ -146,11 +152,15 @@ class ClassesProvider extends ChangeNotifier {
       await _api.deleteClass(id);
     } on DioException catch (e) {
       final detail = (e.response?.data is Map) ? e.response?.data['detail'] : null;
-      errorMessage = detail?.toString() ?? 'Ошибка при удалении класса: ${e.message}';
+      logError('ClassesProvider.deleteClass', e);
+      // detail с бэкенда — либо машинный ключ (переведётся), либо готовый
+      // текст (l.t вернёт его как есть).
+      errorMessage = detail?.toString() ?? 'err_delete_class';
       notifyListeners();
       return false;
     } catch (e) {
-      errorMessage = 'Ошибка при удалении класса: $e';
+      logError('ClassesProvider.deleteClass', e);
+      errorMessage = 'err_delete_class';
       notifyListeners();
       return false;
     }
@@ -164,7 +174,8 @@ class ClassesProvider extends ChangeNotifier {
       await _api.createClass(name,
           description: description, teacher: teacher, period: period, coverImage: coverImage);
     } catch (e) {
-      errorMessage = 'Ошибка при создании класса: $e';
+      logError('ClassesProvider.createClass', e);
+      errorMessage = 'err_create_class';
       notifyListeners();
       rethrow;
     }
@@ -239,7 +250,8 @@ class ClassesProvider extends ChangeNotifier {
       // ValueNotifier notifies only the badge widget — not the class list.
       notifBadge.value = count;
     } catch (e) {
-      errorMessage = 'Не удалось загрузить уведомления: $e';
+      logError('ClassesProvider.loadNotifications', e);
+      errorMessage = 'err_load_notifications';
       notifyListeners();
     }
   }

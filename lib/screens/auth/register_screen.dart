@@ -290,13 +290,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 250),
                       curve: Curves.easeOut,
-                      height: 52,
+                      // minHeight: подпись не обрезается при крупном шрифте.
+                      constraints: const BoxConstraints(minHeight: 52),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
                         color: canSubmit || auth.isLoading ? primary : adaptiveSurface2(context),
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: canSubmit ? primaryGlow(primary, opacity: 0.34) : null,
                       ),
-                      child: Center(child: auth.isLoading
+                      child: Align(heightFactor: 1, child: auth.isLoading
                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
                         : Text(l.t('register_btn'), style: TextStyle(
                             fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.1,

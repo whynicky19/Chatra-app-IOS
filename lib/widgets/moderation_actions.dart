@@ -16,6 +16,7 @@ import 'toast.dart';
 Future<void> showReportSheet(
   BuildContext context, {
   required int reportedUserId,
+  String? userName,
   String? content,
   int? messageId,
 }) async {
@@ -49,6 +50,7 @@ Future<void> showReportSheet(
               Navigator.pop(ctx);
               await _submitReport(context,
                 reportedUserId: reportedUserId,
+                userName: userName,
                 reasonKey: r.$1,
                 content: content,
                 messageId: messageId);
@@ -78,6 +80,7 @@ Future<void> _submitReport(
   BuildContext context, {
   required int reportedUserId,
   required String reasonKey,
+  String? userName,
   String? content,
   int? messageId,
 }) async {
@@ -92,7 +95,7 @@ Future<void> _submitReport(
     content: content,
     messageId: messageId,
   );
-  await mod.block(reportedUserId);
+  await mod.block(reportedUserId, name: userName);
 
   // Отправка на сервер — жалоба попадает к админу. Ошибка (оффлайн) не мешает
   // UX: локальная запись и блок уже сработали.
@@ -110,7 +113,7 @@ Future<void> _submitReport(
 
 /// Спросить подтверждение и заблокировать пользователя. Возвращает true, если
 /// заблокировали.
-Future<bool> confirmAndBlock(BuildContext context, {required int userId}) async {
+Future<bool> confirmAndBlock(BuildContext context, {required int userId, String? userName}) async {
   final l = context.read<L10n>();
   final ok = await showConfirmDialog(context,
     title: l.t('block_user_q'),
@@ -120,7 +123,7 @@ Future<bool> confirmAndBlock(BuildContext context, {required int userId}) async 
     confirmText: l.t('block_user_action'),
     cancelText: l.t('cancel'));
   if (ok == true && context.mounted) {
-    await context.read<ModerationService>().block(userId);
+    await context.read<ModerationService>().block(userId, name: userName);
     if (context.mounted) showToast(context, l.t('user_blocked_toast'));
     return true;
   }

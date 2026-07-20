@@ -124,7 +124,7 @@ class _RagDocumentsSheetState extends State<_RagDocumentsSheet> {
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: SizedBox(width: double.infinity, height: 48, child: ElevatedButton.icon(
+          child: ConstrainedBox(constraints: const BoxConstraints(minWidth: double.infinity, minHeight: 48), child: ElevatedButton.icon(
             onPressed: _uploading ? null : _upload,
             icon: _uploading
                 ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))

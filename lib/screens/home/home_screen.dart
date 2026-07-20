@@ -146,7 +146,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   void _onProviderError() {
     final err = context.read<ClassesProvider>().errorMessage;
     if (err != null && mounted) {
-      showToast(context, err, error: true);
+      // errorMessage — ключ локализации; l.t() вернёт текст на языке
+      // пользователя, а незнакомую строку (detail с бэкенда) отдаст как есть.
+      showToast(context, context.read<L10n>().t(err), error: true);
       context.read<ClassesProvider>().clearError();
     }
   }
@@ -339,7 +341,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       final prov = context.read<ClassesProvider>();
                       final ok = await prov.deleteClass(id);
                       if (!context.mounted) return;
-                      showToast(context, ok ? context.read<L10n>().t('class_deleted') : (prov.errorMessage ?? context.read<L10n>().t('error')), error: !ok);
+                      showToast(context, ok
+                          ? context.read<L10n>().t('class_deleted')
+                          : context.read<L10n>().t(prov.errorMessage ?? 'error'), error: !ok);
                     },
                     onLeave: () async {
                       await context.read<ClassesProvider>().leaveClass(id);
@@ -529,7 +533,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     final prov = context.read<ClassesProvider>();
                     final done = await prov.deleteClass(id);
                     if (!mounted) return;
-                    showToast(context, done ? l.t('class_deleted') : (prov.errorMessage ?? l.t('error')), error: !done);
+                    showToast(context, done ? l.t('class_deleted') : l.t(prov.errorMessage ?? 'error'), error: !done);
                   }
                 },
               ),

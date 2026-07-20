@@ -98,7 +98,8 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
   void _onProviderError() {
     final err = context.read<ChatsProvider>().errorMessage;
     if (err != null && mounted) {
-      showToast(context, err, error: true);
+      // errorMessage — ключ локализации (см. ChatsProvider).
+      showToast(context, context.read<L10n>().t(err), error: true);
       context.read<ChatsProvider>().clearError();
     }
   }
@@ -142,6 +143,21 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
     for (final u in parts) {
       final id = (u['id'] as num?)?.toInt();
       if (id != null && id != myId) return id;
+    }
+    return null;
+  }
+
+  // Отображаемое имя по id — сохраняем его вместе с блокировкой, чтобы экран
+  // «Заблокированные» в настройках показывал имена, а не голые id.
+  String? _userName(int userId) {
+    final provider = context.read<ChatsProvider>();
+    for (final parts in provider.chatUsers.values) {
+      for (final u in parts) {
+        if ((u['id'] as num?)?.toInt() == userId) {
+          return (u['full_name'] ?? u['email']?.toString().split('@').first)
+              ?.toString();
+        }
+      }
     }
     return null;
   }
@@ -246,8 +262,12 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
                   final title = provider.chatTitle(c);
                   final blocked = mod.isBlocked(_chatPartnerId(provider, c));
                   final unread = !blocked && provider.hasUnread(id);
-                  final time = provider.chatTime(id);
-                  final preview = blocked ? l.t('you_blocked_user') : provider.lastPreview(id);
+                  // chatTime может вернуть ключ ('time_now'/'time_yesterday'); готовая
+                  // дата пройдёт через l.t() без изменений.
+                  final time = l.t(provider.chatTime(id));
+                  final preview = blocked
+                      ? l.t('you_blocked_user')
+                      : (provider.lastPreview(id) ?? l.t('no_messages'));
                   final initials = title.isNotEmpty ? title[0].toUpperCase() : '?';
 
                   return TweenAnimationBuilder<double>(
@@ -552,7 +572,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
           const SizedBox(height: 10),
           _modTile(ctx, CupertinoIcons.exclamationmark_octagon, l.t('report_user'), C.red, () {
             Navigator.pop(ctx);
-            showReportSheet(context, reportedUserId: partnerId);
+            showReportSheet(context, reportedUserId: partnerId, userName: _userName(partnerId));
           }),
           if (blocked)
             _modTile(ctx, CupertinoIcons.lock_open, l.t('unblock_user_action'), Theme.of(ctx).colorScheme.primary, () {
@@ -562,7 +582,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
           else
             _modTile(ctx, CupertinoIcons.nosign, l.t('block_user_action'), C.red, () {
               Navigator.pop(ctx);
-              confirmAndBlock(context, userId: partnerId);
+              confirmAndBlock(context, userId: partnerId, userName: _userName(partnerId));
             }),
         ]),
       )),
@@ -598,11 +618,11 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
           if (!isMe && senderId != null) ...[
             _modTile(ctx, CupertinoIcons.exclamationmark_octagon, l.t('report_message'), C.red, () {
               Navigator.pop(ctx);
-              showReportSheet(context, reportedUserId: senderId, content: content, messageId: messageId);
+              showReportSheet(context, reportedUserId: senderId, userName: _userName(senderId), content: content, messageId: messageId);
             }),
             _modTile(ctx, CupertinoIcons.nosign, l.t('block_user_action'), C.red, () {
               Navigator.pop(ctx);
-              confirmAndBlock(context, userId: senderId);
+              confirmAndBlock(context, userId: senderId, userName: _userName(senderId));
             }),
           ],
         ]),
@@ -689,7 +709,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
   Future<void> _uploadAndSend(int chatId, XFile img) async {
     final err = await context.read<ChatsProvider>().uploadAndSend(chatId, img.path, img.name);
     if (!mounted) return;
-    if (err != null) showToast(context, err, error: true);
+    if (err != null) showToast(context, context.read<L10n>().t(err), error: true);
   }
 
   // ── Message content renderer ──────────────────────────────────────────────────

@@ -160,12 +160,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
                 GestureDetector(
                   onTap: _busy ? null : (_codeSent ? _reset : _sendCode),
-                  child: AnimatedContainer(duration: const Duration(milliseconds: 200), height: 52,
+                  child: AnimatedContainer(duration: const Duration(milliseconds: 200),
+                    // minHeight: подпись не обрезается при крупном системном шрифте.
+                    constraints: const BoxConstraints(minHeight: 52),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
                       color: (_codeSent ? canReset : _emailValid) || _busy ? primary : adaptiveSurface2(context),
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: (_codeSent ? canReset : _emailValid) && !_busy ? primaryGlow(primary, opacity: 0.34) : null),
-                    child: Center(child: _busy
+                    child: Align(heightFactor: 1, child: _busy
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
                       : Text(_codeSent ? l.t('reset_btn') : l.t('send_code'),
                           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700,

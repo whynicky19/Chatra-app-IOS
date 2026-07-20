@@ -1,0 +1,10 @@
+# Скопируй в android/key.properties и подставь свои значения.
+# Сам key.properties и .jks НИКОГДА не коммитим.
+#
+# Создать keystore:
+#   keytool -genkey -v -keystore ~/chatra-release.jks \
+#     -keyalg RSA -keysize 2048 -validity 10000 -alias chatra
+storeFile=/Users/ТВОЙ_ЮЗЕР/chatra-release.jks
+storePassword=
+keyAlias=chatra
+keyPassword=

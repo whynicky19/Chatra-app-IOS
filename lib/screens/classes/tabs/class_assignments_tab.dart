@@ -836,7 +836,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             )),
           ],
           const SizedBox(height: 16),
-          SizedBox(width: double.infinity, height: 48, child: ElevatedButton(
+          ConstrainedBox(constraints: const BoxConstraints(minWidth: double.infinity, minHeight: 48), child: ElevatedButton(
             onPressed: busy ? null : () async {
               if (tc.text.trim().isEmpty && pickedFiles.isEmpty) {
                 showToast(context, l.t('add_text_or_files'), error: true);
@@ -910,7 +910,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             ),
           ]),
           const SizedBox(height: 10),
-          SizedBox(width: double.infinity, height: 48, child: ElevatedButton.icon(
+          ConstrainedBox(constraints: const BoxConstraints(minWidth: double.infinity, minHeight: 48), child: ElevatedButton.icon(
             icon: const Icon(CupertinoIcons.list_bullet, size: 18),
             label: Text(l.t('view_works')),
             onPressed: () => _viewSubs(a['id']),
@@ -1033,7 +1033,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                       ]))),
                   ],
                   const SizedBox(height: 16),
-                  SizedBox(width: double.infinity, height: 50, child: ElevatedButton(
+                  ConstrainedBox(constraints: const BoxConstraints(minWidth: double.infinity, minHeight: 50), child: ElevatedButton(
                     style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
                     onPressed: grading ? null : () async {
                       setS(() => grading = true);
@@ -1071,7 +1071,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                   }),
                 ] else ...[
                   const SizedBox(height: 20),
-                  SizedBox(width: double.infinity, height: 50, child: ElevatedButton(
+                  ConstrainedBox(constraints: const BoxConstraints(minWidth: double.infinity, minHeight: 50), child: ElevatedButton(
                     style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
                     onPressed: grading ? null : () async {
                       setS(() => grading = true);
@@ -1124,8 +1124,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               // Batch AI grading button
               if (pending > 0) ...[
                 const SizedBox(height: 14),
-                SizedBox(width: double.infinity, height: 50,
-                  child: ElevatedButton(
+                ConstrainedBox(constraints: const BoxConstraints(minWidth: double.infinity, minHeight: 50), child: ElevatedButton(
                     onPressed: gradingAll ? null : () async {
                       final ungraded = subs.where((s) => s['status'] != 'graded').toList();
                       setS(() { gradingAll = true; gradingDone = 0; gradingTotal = ungraded.length; });

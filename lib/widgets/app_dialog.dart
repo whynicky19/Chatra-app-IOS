@@ -107,12 +107,14 @@ class AppDialogActions extends StatelessWidget {
       Expanded(child: GestureDetector(
         onTap: busy ? null : onCancel,
         child: Container(
-          height: 46,
+          // minHeight: кнопка растёт под увеличенный системный шрифт.
+          constraints: const BoxConstraints(minHeight: 46),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             color: adaptiveSurface2(context),
             borderRadius: BorderRadius.circular(14),
           ),
-          child: Center(child: Text(cancelText,
+          child: Align(heightFactor: 1, child: Text(cancelText, textAlign: TextAlign.center,
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: adaptiveText1(context).withValues(alpha: 0.75)))),
         ),
       )),
@@ -121,15 +123,17 @@ class AppDialogActions extends StatelessWidget {
         onTap: enabled ? onConfirm : null,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          height: 46,
+          constraints: const BoxConstraints(minHeight: 46),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             color: enabled || busy ? accent : accent.withValues(alpha: 0.35),
             borderRadius: BorderRadius.circular(14),
             boxShadow: enabled ? primaryGlow(accent, opacity: 0.30) : null,
           ),
-          child: Center(child: busy
+          child: Align(heightFactor: 1, child: busy
             ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
-            : Text(confirmText, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white))),
+            : Text(confirmText, textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white))),
         ),
       )),
     ]);

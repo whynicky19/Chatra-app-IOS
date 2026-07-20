@@ -6,8 +6,10 @@ import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'services/api_service.dart';
+import 'services/crash_reporting.dart';
 import 'services/push_service.dart';
 import 'services/moderation_service.dart';
+import 'utils/errors.dart';
 import 'providers/auth_provider.dart';
 import 'providers/org_provider.dart';
 import 'providers/theme_provider.dart';
@@ -33,41 +35,110 @@ import 'screens/classes/archive_screen.dart';
 const String _kDevApiUrl = 'http://192.168.10.13:8000';
 
 /// Единый бэкенд для всех платформ — тот же, что у сайта (общая база).
-String _resolveBaseUrl() {
+///
+/// В release дефолта НЕТ: без --dart-define функция вернёт null, и приложение
+/// покажет явный экран ошибки конфигурации вместо белого экрана с висящими
+/// запросами в недоступную локалку. Именно так App Store ловил бы 2.1
+/// (App Completeness), если бы флаг забыли передать.
+String? _resolveBaseUrl() {
   // Прод-URL инжектится сборкой (принимаются оба имени: API_URL / API_BASE_URL):
   //   flutter build ipa --dart-define=API_URL=https://api.твойдомен
   const overrideUrl = String.fromEnvironment('API_URL');
   if (overrideUrl.isNotEmpty) return overrideUrl;
   const overrideUrl2 = String.fromEnvironment('API_BASE_URL');
   if (overrideUrl2.isNotEmpty) return overrideUrl2;
-  return _kDevApiUrl;
+  return kReleaseMode ? null : _kDevApiUrl;
+}
+
+/// Экран-заглушка для release-сборки без API_URL. Лучше явная диагностика,
+/// чем молчаливо нерабочее приложение.
+class _MisconfiguredApp extends StatelessWidget {
+  const _MisconfiguredApp();
+
+  @override
+  Widget build(BuildContext context) => const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          body: Center(
+            child: Padding(
+              padding: EdgeInsets.all(32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(CupertinoIcons.exclamationmark_triangle, size: 48),
+                  SizedBox(height: 16),
+                  Text(
+                    'Сборка без адреса сервера',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Пересобери с флагом:\n'
+                    'flutter build ipa --dart-define=API_URL=https://<домен>',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 13, height: 1.5),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
 }
 
 /// Глобальный ключ навигатора — нужен push-сервису, чтобы открывать нужный
 /// экран по тапу по уведомлению (в т.ч. из фонового/убитого состояния).
 final navigatorKey = GlobalKey<NavigatorState>();
 
-void main() async {
+// Всё приложение живёт внутри защищённой зоны: необработанные ошибки из
+// колбэков и таймеров попадают в Crashlytics, а не теряются молча.
+void main() => CrashReporting.runGuarded(_start);
+
+Future<void> _start() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
 
-  final api = ApiService(baseUrl: _resolveBaseUrl());
+  // Firebase (и следом Crashlytics) поднимаем как можно раньше — чтобы ошибки
+  // самого старта тоже фиксировались. Только мобильные платформы.
+  final isMobile = !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS);
+  if (isMobile) {
+    try {
+      await Firebase.initializeApp();
+    } catch (e) {
+      debugPrint('Firebase init error: $e');
+    }
+  }
+  await CrashReporting.init();
+
+  final resolvedBaseUrl = _resolveBaseUrl();
+  if (resolvedBaseUrl == null) {
+    runApp(const _MisconfiguredApp());
+    return;
+  }
+
+  final api = ApiService(baseUrl: resolvedBaseUrl);
   final auth = AuthProvider(api);
   final org = OrgProvider();
   final theme = ThemeProvider();
   final l10n = L10n();
   final classes = ClassesProvider(api, auth);
   final chats = ChatsProvider(api, auth);
-  final moderation = ModerationService();
+  final moderation = ModerationService(api);
 
   // UGC-модерация: блок-лист свой для каждого аккаунта. Перезагружаем его
   // только при реальной смене пользователя (логин/логаут/смена аккаунта).
   int? lastModUid = auth.userId;
   moderation.configure(auth.userId);
+  CrashReporting.setUser(auth.userId);
   auth.addListener(() {
     if (auth.userId != lastModUid) {
       lastModUid = auth.userId;
       moderation.configure(auth.userId);
+      // Чтобы в консоли Crashlytics было видно, у кого воспроизводится краш.
+      CrashReporting.setUser(auth.userId);
     }
   });
 
@@ -78,19 +149,16 @@ void main() async {
   // Push-уведомления: только мобильные платформы (Android/iOS). Инициализируем
   // ДО auth.init(), чтобы при холодном старте с живой сессией токен успел
   // зарегистрироваться (auth.init → onLogin). Любой сбой не мешает старту.
-  final isMobile = !kIsWeb &&
-      (defaultTargetPlatform == TargetPlatform.android ||
-          defaultTargetPlatform == TargetPlatform.iOS);
+  // Firebase.initializeApp() уже вызван выше (нужен Crashlytics).
   if (isMobile) {
     try {
-      await Firebase.initializeApp();
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
       final push = PushService(api, navigatorKey);
       await push.init();
       auth.onLogin = () => push.onAuthenticated();
       auth.onLogout = () => push.onLogout();
-    } catch (e) {
-      debugPrint('Push init error: $e');
+    } catch (e, st) {
+      logError('main.pushInit', e, st);
     }
   }
 
@@ -99,7 +167,7 @@ void main() async {
   // their default state and _AuthGate shows the splash until they settle).
   Future.wait([auth.init(), org.init(), theme.init(), l10n.init()])
       .catchError((Object e, StackTrace st) {
-    debugPrint('Initialization error: $e');
+    logError('main.init', e, st);
     return const <void>[];
   });
 
@@ -134,10 +202,19 @@ class ChatraApp extends StatelessWidget {
       // Тема меняется мгновенно: дефолтный 200мс-лерп ThemeData перестраивал
       // всё дерево ~12 кадров подряд и лагал.
       themeAnimationDuration: Duration.zero,
-      builder: (context, child) => GestureDetector(
-        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-        behavior: HitTestBehavior.translucent,
-        child: child!,
+      // Системный размер шрифта (iOS Dynamic Type / Android font size) теперь
+      // учитывается, но с потолком: до 1.3 вёрстка держится, выше — плотные
+      // карточки и кнопки начинают резать текст. 1.3 покрывает весь обычный
+      // диапазон Dynamic Type; обрезаются только accessibility-размеры (до 3.1),
+      // под которые пришлось бы перерисовывать все экраны.
+      builder: (context, child) => MediaQuery.withClampedTextScaling(
+        minScaleFactor: 1.0,
+        maxScaleFactor: 1.3,
+        child: GestureDetector(
+          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+          behavior: HitTestBehavior.translucent,
+          child: child!,
+        ),
       ),
       home: const _AuthGate(),
       onGenerateRoute: (s) {

@@ -7,7 +7,7 @@
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
-		<string>Chatra App</string>
+		<string>Chatra</string>
 		<key>CFBundleExecutable</key>
 		<string>$(EXECUTABLE_NAME)</string>
 		<key>CFBundleIdentifier</key>
@@ -53,38 +53,20 @@
 		<string>LaunchScreen</string>
 		<key>UIMainStoryboardFile</key>
 		<string>Main</string>
+		<!-- Только портрет: вёрстка под iPhone, и main.dart всё равно фиксирует
+		     портретную ориентацию через SystemChrome. Раньше здесь были заявлены
+		     landscape и iPad-ориентации, которых приложение не поддерживает. -->
 		<key>UISupportedInterfaceOrientations</key>
 		<array>
 			<string>UIInterfaceOrientationPortrait</string>
-			<string>UIInterfaceOrientationLandscapeLeft</string>
-			<string>UIInterfaceOrientationLandscapeRight</string>
-		</array>
-		<key>UISupportedInterfaceOrientations~ipad</key>
-		<array>
-			<string>UIInterfaceOrientationPortrait</string>
 			<string>UIInterfaceOrientationPortraitUpsideDown</string>
-			<string>UIInterfaceOrientationLandscapeLeft</string>
-			<string>UIInterfaceOrientationLandscapeRight</string>
 		</array>
 		<key>ITSAppUsesNonExemptEncryption</key>
 		<false/>
-		<key>NSAppTransportSecurity</key>
-		<dict>
-			<!-- Разрешает cleartext-HTTP только к локальной сети (.local и приватные
-			     диапазоны IP вроде 192.168.x.x) — для разработки на реальном
-			     устройстве против локального бэкенда. Публичный интернет остаётся
-			     под HTTPS (Apple такое исключение принимает). -->
-			<key>NSAllowsLocalNetworking</key>
-			<true/>
-			<key>NSExceptionDomains</key>
-			<dict>
-				<key>localhost</key>
-				<dict>
-					<key>NSExceptionAllowsInsecureHTTPLoads</key>
-					<true/>
-				</dict>
-			</dict>
-		</dict>
+		<!-- ATS-исключений нет: прод ходит только по HTTPS. Для локальной
+		     разработки против http://192.168.x.x временно верни сюда
+		     NSAllowsLocalNetworking, но НЕ коммить это в релизную сборку —
+		     Apple задаёт вопросы по любому ослаблению ATS. -->
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>Доступ к фото нужен, чтобы прикреплять изображения в чате</string>
 		<key>NSCameraUsageDescription</key>

@@ -227,7 +227,7 @@ class _CreateLectureSheetState extends State<_CreateLectureSheet> {
           ),
           const SizedBox(height: 24),
 
-          SizedBox(width: double.infinity, height: 50, child: ElevatedButton(
+          ConstrainedBox(constraints: const BoxConstraints(minWidth: double.infinity, minHeight: 50), child: ElevatedButton(
             onPressed: _canSubmit ? _submit : null,
             child: _submitting
                 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))

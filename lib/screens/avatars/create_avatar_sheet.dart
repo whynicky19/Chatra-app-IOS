@@ -263,7 +263,7 @@ class _CreateAvatarSheetState extends State<_CreateAvatarSheet> {
             child: ClipRRect(borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(value: _uploadProgress, minHeight: 5, color: primary, backgroundColor: primary.withValues(alpha: 0.12))),
           ),
-          SizedBox(width: double.infinity, height: 50, child: ElevatedButton(
+          ConstrainedBox(constraints: const BoxConstraints(minWidth: double.infinity, minHeight: 50), child: ElevatedButton(
             onPressed: _canSubmit ? _submit : null,
             child: _submitting
                 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))

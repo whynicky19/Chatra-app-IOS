@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../services/api_service.dart';
+import '../utils/errors.dart';
 import 'auth_provider.dart';
 
 // ── WebSocket manager ─────────────────────────────────────────────────────────
@@ -171,7 +172,8 @@ class ChatsProvider extends ChangeNotifier {
         lastSeenMsgId.addAll(map.map((k, v) => MapEntry(int.parse(k), v as int)));
       }
     } catch (e) {
-      errorMessage = 'Ошибка загрузки истории прочитанных: $e';
+      logError('ChatsProvider.loadSeenMsgIds', e);
+      errorMessage = 'err_load_read_history';
       notifyListeners();
     }
   }
@@ -185,7 +187,8 @@ class ChatsProvider extends ChangeNotifier {
         jsonEncode(lastSeenMsgId.map((k, v) => MapEntry('$k', v))),
       );
     } catch (e) {
-      errorMessage = 'Ошибка сохранения: $e';
+      logError('ChatsProvider.save', e);
+      errorMessage = 'err_save';
       notifyListeners();
     }
   }
@@ -205,20 +208,23 @@ class ChatsProvider extends ChangeNotifier {
             try {
               chatUsers[id] = await _api.getChatUsers(id);
             } catch (e) {
-              errorMessage = 'Ошибка загрузки участников чата: $e';
+              logError('ChatsProvider.loadChatUsers', e);
+              errorMessage = 'err_load_chat_members';
             }
           }(),
           () async {
             try {
               messages[id] = await _api.getMessages(id);
             } catch (e) {
-              errorMessage = 'Ошибка загрузки сообщений: $e';
+              logError('ChatsProvider.loadMessages', e);
+              errorMessage = 'err_load_messages';
             }
           }(),
         ]);
       }));
     } catch (e) {
-      errorMessage = 'Не удалось загрузить чаты: $e';
+      logError('ChatsProvider.loadChats', e);
+      errorMessage = 'err_load_chats';
     }
     loading = false;
     notifyListeners();
@@ -285,7 +291,8 @@ class ChatsProvider extends ChangeNotifier {
         await pollMessages();
       }
     } catch (e) {
-      errorMessage = 'Ошибка отправки сообщения: $e';
+      logError('ChatsProvider.sendMessage', e);
+      errorMessage = 'err_send_message';
       notifyListeners();
     }
   }
@@ -302,9 +309,10 @@ class ChatsProvider extends ChangeNotifier {
         if (!(_wsManager?.isConnected ?? false)) await pollMessages();
         return null;
       }
-      return 'Не удалось получить URL файла';
+      return 'err_file_url';
     } catch (e) {
-      return 'Ошибка загрузки: $e';
+      logError('ChatsProvider.uploadAndSend', e);
+      return 'err_upload';
     }
   }
 
@@ -325,7 +333,8 @@ class ChatsProvider extends ChangeNotifier {
       ).toList();
       notifyListeners();
     } catch (e) {
-      errorMessage = 'Ошибка поиска пользователей: $e';
+      logError('ChatsProvider.searchUsers', e);
+      errorMessage = 'err_search_users';
       notifyListeners();
     }
   }
@@ -353,7 +362,8 @@ class ChatsProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      errorMessage = 'Не удалось создать диалог: $e';
+      logError('ChatsProvider.createChat', e);
+      errorMessage = 'err_create_chat';
       notifyListeners();
       return false;
     }
@@ -369,7 +379,8 @@ class ChatsProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      errorMessage = 'Не удалось удалить чат: $e';
+      logError('ChatsProvider.deleteChat', e);
+      errorMessage = 'err_delete_chat';
       notifyListeners();
       return false;
     }
@@ -508,22 +519,25 @@ class ChatsProvider extends ChangeNotifier {
     return name.startsWith('Чат с ') ? name.substring(6) : name;
   }
 
-  String lastPreview(int id) {
+  /// null — сообщений нет; экран подставит локализованный текст.
+  String? lastPreview(int id) {
     final msgs = messages[id] ?? [];
-    if (msgs.isEmpty) return 'Нет сообщений';
+    if (msgs.isEmpty) return null;
     final content = msgs.last['content'] ?? '';
     return content.length > 45 ? '${content.substring(0, 45)}...' : content;
   }
 
+  /// Может вернуть ключ локализации ('time_now'/'time_yesterday') — экран
+  /// прогоняет результат через l.t(), готовые даты вернутся как есть.
   String chatTime(int id) {
     final msgs = messages[id] ?? [];
     if (msgs.isEmpty) return '';
     try {
       final d = DateTime.parse(msgs.last['created_at']);
       final now = DateTime.now();
-      if (now.difference(d).inMinutes < 1) return 'сейчас';
+      if (now.difference(d).inMinutes < 1) return 'time_now';
       if (now.difference(d).inHours < 24) return '${d.hour}:${d.minute.toString().padLeft(2, '0')}';
-      if (now.difference(d).inDays == 1) return 'вчера';
+      if (now.difference(d).inDays == 1) return 'time_yesterday';
       return '${d.day}.${d.month.toString().padLeft(2, '0')}';
     } catch (_) { return ''; }
   }

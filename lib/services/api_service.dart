@@ -14,7 +14,9 @@ class ApiService {
   // of each firing their own /auth/refresh (which would race and invalidate tokens).
   Future<String?>? _refreshing;
 
-  static const String defaultBaseUrl = 'http://localhost:8000';
+  // Адрес бэкенда задаётся только в main.dart (_resolveBaseUrl) — здесь дефолта
+  // нет намеренно, иначе release-сборка без --dart-define молча ушла бы
+  // на localhost вместо экрана ошибки конфигурации.
   static const _tokenKey = '_tk';
   static const _refreshKey = '_rtk';
 
@@ -27,9 +29,9 @@ class ApiService {
 
   String baseUrl;
 
-  ApiService({String? baseUrl}) : baseUrl = baseUrl ?? defaultBaseUrl {
+  ApiService({required this.baseUrl}) {
     _dio = Dio(BaseOptions(
-  baseUrl: this.baseUrl,
+  baseUrl: baseUrl,
   connectTimeout: const Duration(seconds: 15),
   receiveTimeout: const Duration(seconds: 15),
   headers: {
@@ -639,6 +641,18 @@ class ApiService {
       if (messageId != null) 'message_id': messageId,
     });
   }
+
+  // Блок-лист — серверная истина (таблица user_blocks): переживает
+  // переустановку и синхронизируется между устройствами.
+  // Возвращает [{user_id, name}, ...].
+  Future<List<dynamic>> getBlocks() async {
+    final response = await _dio.get('/blocks');
+    return response.data;
+  }
+
+  Future<void> blockUser(int userId) async => _dio.post('/blocks/$userId');
+
+  Future<void> unblockUserApi(int userId) async => _dio.delete('/blocks/$userId');
 
   // Админ: список жалоб (по умолчанию открытые) и пометка обработанной.
   Future<List<dynamic>> getReports({String? status}) async {

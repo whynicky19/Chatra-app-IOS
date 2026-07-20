@@ -493,72 +493,83 @@ class _AiInputBar extends StatelessWidget {
         color: Theme.of(context).scaffoldBackgroundColor,
         border: Border(top: BorderSide(color: adaptiveBorder(context).withValues(alpha: 0.5), width: 0.5)),
       ),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-        Expanded(
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOutCubic,
-            constraints: const BoxConstraints(minHeight: 46),
-            decoration: BoxDecoration(
-              color: surface,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: softShadow(isDark),
-            ),
-            child: TextField(
-              controller: ctrl,
-              decoration: InputDecoration(
-                hintText: hint,
-                hintStyle: const TextStyle(color: C.text4, fontSize: 15),
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                filled: false,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Expanded(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
+              constraints: const BoxConstraints(minHeight: 46),
+              decoration: BoxDecoration(
+                color: surface,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: softShadow(isDark),
               ),
-              onSubmitted: (_) => onSend(),
-              maxLines: 4,
-              minLines: 1,
+              child: TextField(
+                controller: ctrl,
+                decoration: InputDecoration(
+                  hintText: hint,
+                  hintStyle: const TextStyle(color: C.text4, fontSize: 15),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  filled: false,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+                ),
+                onSubmitted: (_) => onSend(),
+                maxLines: 4,
+                minLines: 1,
+              ),
             ),
           ),
-        ),
-        const SizedBox(width: 10),
-        // Rebuilds on each keystroke via the controller's own notifier — but only
-        // this button subtree, not the Container/TextField above it.
-        ValueListenableBuilder<TextEditingValue>(
-          valueListenable: ctrl,
-          builder: (context, value, _) {
-            final hasText = value.text.trim().isNotEmpty;
-            final active = hasText && !loading;
-            return GestureDetector(
-              onTap: onSend,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeOutCubic,
-                width: 46, height: 46,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: active ? Theme.of(context).colorScheme.primary : surface,
-                  boxShadow: active
-                      ? primaryGlow(Theme.of(context).colorScheme.primary, opacity: 0.32)
-                      : softShadow(isDark),
-                ),
-                child: loading
-                    ? Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Theme.of(context).colorScheme.primary)))
-                    : AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 180),
-                        switchInCurve: Curves.easeOutBack,
-                        switchOutCurve: Curves.easeIn,
-                        transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
-                        child: Icon(
-                          CupertinoIcons.arrow_up,
-                          key: ValueKey(hasText),
-                          color: hasText ? Colors.white : C.text4,
-                          size: 21,
+          const SizedBox(width: 10),
+          // Rebuilds on each keystroke via the controller's own notifier — but only
+          // this button subtree, not the Container/TextField above it.
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: ctrl,
+            builder: (context, value, _) {
+              final hasText = value.text.trim().isNotEmpty;
+              final active = hasText && !loading;
+              return GestureDetector(
+                onTap: onSend,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  width: 46, height: 46,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: active ? Theme.of(context).colorScheme.primary : surface,
+                    boxShadow: active
+                        ? primaryGlow(Theme.of(context).colorScheme.primary, opacity: 0.32)
+                        : softShadow(isDark),
+                  ),
+                  child: loading
+                      ? Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Theme.of(context).colorScheme.primary)))
+                      : AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 180),
+                          switchInCurve: Curves.easeOutBack,
+                          switchOutCurve: Curves.easeIn,
+                          transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+                          child: Icon(
+                            CupertinoIcons.arrow_up,
+                            key: ValueKey(hasText),
+                            color: hasText ? Colors.white : C.text4,
+                            size: 21,
+                          ),
                         ),
-                      ),
-              ),
-            );
-          },
+                ),
+              );
+            },
+          ),
+        ]),
+        // Дисклеймер о неточности ИИ — под полем ввода, виден всегда, а не
+        // только на пустом экране. Ожидаемый элемент для приложений с
+        // генеративными ответами.
+        const SizedBox(height: 8),
+        Text(
+          l.t('ai_disclaimer'),
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 11.5, color: C.text4, height: 1.3),
         ),
       ]),
     );

@@ -248,7 +248,9 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                   ),
                   const SizedBox(width: 10),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(next['title'] ?? '', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    // Две строки: названия вида «Лабораторная работа 5» в одну
+                    // строку не помещаются и обрезаются до «Лаборатор…».
+                    Text(next['title'] ?? '', style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, height: 1.25), maxLines: 2, overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 2),
                     Text('${l.t('remaining')}: $remaining', style: TextStyle(fontSize: 11, color: days <= 1 ? C.red : Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w500)),
                   ])),

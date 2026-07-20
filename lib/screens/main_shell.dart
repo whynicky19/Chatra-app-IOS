@@ -153,7 +153,6 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
                 : _OfflineBanner(
                     key: const ValueKey('offline'),
                     title: l.t('no_connection'),
-                    subtitle: l.t('checking_connection'),
                     onDismiss: () => setState(() => _bannerDismissed = true),
                   ),
           ),
@@ -279,14 +278,15 @@ class _LazyIndexedStackState extends State<_LazyIndexedStack> {
   }
 }
 
+/// Компактная «пилюля» в духе системных плашек iOS: по ширине содержимого,
+/// без плашки-ручки (это афорданс нижних шторок) и без крестика — смахивание
+/// вверх закрывает. Индикатор повторной попытки — родной CupertinoActivityIndicator.
 class _OfflineBanner extends StatelessWidget {
   final String title;
-  final String subtitle;
   final VoidCallback onDismiss;
   const _OfflineBanner({
     super.key,
     required this.title,
-    required this.subtitle,
     required this.onDismiss,
   });
 
@@ -295,8 +295,9 @@ class _OfflineBanner extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final topPad = MediaQuery.of(context).padding.top;
     final glass = isDark
-        ? Colors.white.withValues(alpha: 0.10)
-        : Colors.white.withValues(alpha: 0.72);
+        ? const Color(0xFF1C1C1E).withValues(alpha: 0.72)
+        : Colors.white.withValues(alpha: 0.80);
+
     return Padding(
       padding: EdgeInsets.fromLTRB(16, topPad + 8, 16, 0),
       child: GestureDetector(
@@ -304,138 +305,57 @@ class _OfflineBanner extends StatelessWidget {
         onVerticalDragEnd: (d) {
           if ((d.primaryVelocity ?? 0) < -80) onDismiss();
         },
-        child: Material(
-          color: Colors.transparent,
+        child: Center(
           child: DecoratedBox(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadii.card),
+              borderRadius: BorderRadius.circular(100),
               boxShadow: cardShadow(isDark),
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadii.card),
+              borderRadius: BorderRadius.circular(100),
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
                 child: Container(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 11),
+                  padding: const EdgeInsets.fromLTRB(14, 9, 14, 9),
                   decoration: BoxDecoration(
                     color: glass,
-                    borderRadius: BorderRadius.circular(AppRadii.card),
+                    borderRadius: BorderRadius.circular(100),
                     border: Border.all(
-                      color: C.red.withValues(alpha: isDark ? 0.32 : 0.20),
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.12)
+                          : Colors.black.withValues(alpha: 0.06),
                     ),
                   ),
-                  child: Column(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 34, height: 4,
-                        decoration: BoxDecoration(
-                          color: (isDark ? C.darkText2 : C.text3)
-                              .withValues(alpha: 0.35),
-                          borderRadius: BorderRadius.circular(2),
+                      const Icon(CupertinoIcons.wifi_slash,
+                          size: 15, color: C.red),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: adaptiveText1(context),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.2,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Row(children: [
-                        Container(
-                          width: 34, height: 34,
-                          decoration: BoxDecoration(
-                            color: C.red.withValues(alpha: isDark ? 0.22 : 0.14),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(CupertinoIcons.wifi_slash,
-                              size: 16, color: C.red),
-                        ),
-                        const SizedBox(width: 11),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                title,
-                                style: TextStyle(
-                                  color: adaptiveText1(context),
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: -0.2,
-                                ),
-                              ),
-                              const SizedBox(height: 1),
-                              Row(children: [
-                                _PulsingDot(),
-                                const SizedBox(width: 6),
-                                Text(
-                                  subtitle,
-                                  style: TextStyle(
-                                    color: isDark ? C.darkText2 : C.text3,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ]),
-                            ],
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: onDismiss,
-                          behavior: HitTestBehavior.opaque,
-                          child: Padding(
-                            padding: const EdgeInsets.all(4),
-                            child: Icon(
-                              CupertinoIcons.xmark,
-                              size: 15,
-                              color: (isDark ? C.darkText2 : C.text3),
-                            ),
-                          ),
-                        ),
-                      ]),
+                      const SizedBox(width: 9),
+                      CupertinoActivityIndicator(
+                        radius: 7,
+                        color: isDark ? C.darkText2 : C.text3,
+                      ),
                     ],
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PulsingDot extends StatefulWidget {
-  @override
-  State<_PulsingDot> createState() => _PulsingDotState();
-}
-
-class _PulsingDotState extends State<_PulsingDot>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c;
-
-  @override
-  void initState() {
-    super.initState();
-    _c = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: Tween<double>(begin: 0.35, end: 1.0).animate(
-        CurvedAnimation(parent: _c, curve: Curves.easeInOut),
-      ),
-      child: Container(
-        width: 6, height: 6,
-        decoration: const BoxDecoration(
-          color: C.red,
-          shape: BoxShape.circle,
         ),
       ),
     );

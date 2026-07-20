@@ -67,7 +67,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         orgType: orgType);
     if (!mounted) return;
     if (ok) {
-      showToast(context, context.read<L10n>().t('account_created'));
+      showToast(context,
+          context.read<L10n>().t(
+              auth.lastRegisterEmailSent ? 'account_created' : 'code_send_error'),
+          error: !auth.lastRegisterEmailSent);
       // Бэкенд уже выслал код подтверждения — ведём на его ввод (autoSend:false,
       // чтобы не слать второй раз). После подтверждения — авто-вход в MainShell.
       Navigator.of(context).push(MaterialPageRoute(builder: (_) =>

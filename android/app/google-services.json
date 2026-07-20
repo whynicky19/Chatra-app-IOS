@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "359415242145",
-    "project_id": "chatra-ecb15",
-    "storage_bucket": "chatra-ecb15.firebasestorage.app"
+    "project_number": "931212945702",
+    "project_id": "chatra-bd72f",
+    "storage_bucket": "chatra-bd72f.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:359415242145:android:09908de8be297aa2283fe0",
+        "mobilesdk_app_id": "1:931212945702:android:ad92107eea76d5948ab9e7",
         "android_client_info": {
-          "package_name": "com.example.chatra_app"
+          "package_name": "kz.chatra.app"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAA9bnA5tIQm61PE2sTbWDZ8kCbV9zeBq0"
+          "current_key": "AIzaSyDkbIQfxYvLydK8dcgpftEWa-gyT0cNO0E"
         }
       ],
       "services": {

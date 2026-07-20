@@ -1,0 +1,15 @@
+{
+  "Simulator Target Bundle": "kz.chatra.app",
+  "aps": {
+    "alert": {
+      "title": "Работа оценена",
+      "body": "«Тестовое задание» — 9/10"
+    },
+    "sound": "default"
+  },
+  "type": "grade",
+  "notif_key": "grade:1",
+  "submission_id": "1",
+  "assignment_id": "1",
+  "class_id": "1"
+}

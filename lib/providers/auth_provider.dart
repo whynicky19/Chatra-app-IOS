@@ -113,12 +113,21 @@ class AuthProvider extends ChangeNotifier {
 
   String? lastError;
 
+  /// false — аккаунт создан, но письмо с кодом не доставлено. Читать сразу
+  /// после успешного [register].
+  bool lastRegisterEmailSent = true;
+
   Future<bool> register(String email, String password, String role, {String? fullName, String orgType = 'university'}) async {
     _isLoading = true;
     lastError = null;
     notifyListeners();
     try {
-      await api.register(email, password, role, fullName: fullName, orgType: orgType);
+      final created = await api.register(email, password, role,
+          fullName: fullName, orgType: orgType);
+      // Аккаунт создан, но письмо с кодом не ушло (SMTP лежит / лимит
+      // провайдера). Регистрация считается успешной, экран подтверждения
+      // покажет предупреждение и предложит запросить код повторно.
+      lastRegisterEmailSent = created['email_sent'] != false;
       _isLoading = false;
       notifyListeners();
       return true;
@@ -226,10 +235,18 @@ class AuthProvider extends ChangeNotifier {
 
   /// Повторно шлёт код подтверждения. Возвращает dev_code (только в dev), либо ''.
   /// Кидает 'no_connection'/'code_send_error' как исключение-ключ при сбое.
-  Future<String?> resendVerification(String email, {String orgType = 'university'}) async {
+  /// null — сработал rate-limit (код слали недавно).
+  /// sent=false — письмо не ушло: SMTP недоступен ЛИБО аккаунта с таким email
+  /// нет (бэкенд намеренно не различает эти случаи, чтобы нельзя было
+  /// перебирать существующие аккаунты).
+  Future<({bool sent, String devCode})?> resendVerification(String email,
+      {String orgType = 'university'}) async {
     try {
       final resp = await api.resendVerification(email, orgType: orgType);
-      return (resp['dev_code'] ?? '').toString();
+      return (
+        sent: resp['sent'] == true,
+        devCode: (resp['dev_code'] ?? '').toString(),
+      );
     } on DioException catch (e) {
       if (e.response?.statusCode == 429) return null; // rate-limit — код уже слали недавно
       rethrow;

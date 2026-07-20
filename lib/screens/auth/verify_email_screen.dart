@@ -58,12 +58,18 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     final auth = context.read<AuthProvider>();
     final l = context.read<L10n>();
     try {
-      final devCode = await auth.resendVerification(widget.email, orgType: widget.orgType);
+      final res = await auth.resendVerification(widget.email, orgType: widget.orgType);
       if (!mounted) return;
       _startCooldown();
       // В dev-режиме бэкенд возвращает код — подставляем для удобства.
-      if (devCode != null && devCode.isNotEmpty) _code.text = devCode;
-      if (!initial) showToast(context, l.t('code_sent'));
+      if (res != null && res.devCode.isNotEmpty) _code.text = res.devCode;
+      if (res != null && !res.sent) {
+        // Раньше в этом случае показывалось «код отправлен», и пользователь
+        // ждал письмо, которого не будет.
+        showToast(context, l.t('code_send_error'), error: true);
+      } else if (!initial) {
+        showToast(context, l.t('code_sent'));
+      }
       setState(() {});
     } catch (_) {
       if (!mounted) return;

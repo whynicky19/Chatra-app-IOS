@@ -1,8 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/errors.dart';
+import '../../widgets/toast.dart';
 import '../../widgets/telegram_logo.dart';
 import '../legal/privacy_policy_screen.dart';
 import '../legal/terms_screen.dart';
@@ -71,7 +75,62 @@ class AboutSettingsScreen extends StatelessWidget {
             ]),
           ),
         ),
+        const SizedBox(height: 28),
+        // Версия — первое, что спрашивает поддержка. Тап копирует строку в
+        // буфер, чтобы её не переписывали руками.
+        const _VersionLabel(),
       ],
+    );
+  }
+}
+
+/// «Chatra 1.0.0 (1)» — версия и номер сборки из нативного бандла, а не из
+/// захардкоженной константы: так строка не разъедется с реальной сборкой.
+class _VersionLabel extends StatefulWidget {
+  const _VersionLabel();
+  @override State<_VersionLabel> createState() => _VersionLabelState();
+}
+
+class _VersionLabelState extends State<_VersionLabel> {
+  String? _version;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (!mounted) return;
+      // Только версия, без номера сборки: он нужен разработчику, а в интерфейсе
+      // выглядит техническим шумом.
+      setState(() => _version = info.version);
+    } catch (e) {
+      logError('AboutSettings.version', e);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.read<L10n>();
+    // Пока грузится — держим место, чтобы список не дёргался.
+    final text = _version == null ? '' : 'Chatra $_version';
+    return SizedBox(
+      height: 20,
+      child: Center(
+        child: GestureDetector(
+          onTap: _version == null
+              ? null
+              : () {
+                  Clipboard.setData(ClipboardData(text: text));
+                  showToast(context, l.t('copied'));
+                },
+          child: Text(text,
+              style: const TextStyle(fontSize: 12.5, color: C.text4)),
+        ),
+      ),
     );
   }
 }

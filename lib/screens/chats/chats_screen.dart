@@ -239,7 +239,12 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
             }).toList()))),
         const SizedBox(height: 8),
         // Chat list
-        Expanded(child: provider.loading
+        // Pull-to-refresh: обёрнут весь блок, включая скелетон и пустое
+        // состояние — потянуть, чтобы проверить новые чаты, логично и когда
+        // список пуст (_emptyState специально прокручиваемый).
+        Expanded(child: RefreshIndicator(
+          onRefresh: () => context.read<ChatsProvider>().loadChats(),
+          child: provider.loading
           ? ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 90),
               itemCount: 6,
@@ -267,7 +272,9 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
                   final time = l.t(provider.chatTime(id));
                   final preview = blocked
                       ? l.t('you_blocked_user')
-                      : (provider.lastPreview(id) ?? l.t('no_messages'));
+                      // lastPreview может вернуть ключ ('preview_photo' и т.п.);
+                      // обычный текст l.t() отдаст без изменений.
+                      : l.t(provider.lastPreview(id) ?? 'no_messages');
                   final initials = title.isNotEmpty ? title[0].toUpperCase() : '?';
 
                   return TweenAnimationBuilder<double>(
@@ -348,7 +355,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
                       ),
                     ),
                   );
-                })),
+                }))),
       ])),
     );
   }
@@ -358,7 +365,13 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
     // Scrollable so it can't overflow when the keyboard plus the search
     // results panel squeeze the remaining space (was: "bottom overflowed by
     // 61 pixels" while searching people with no chats yet).
-    return Center(child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+    //
+    // AlwaysScrollableScrollPhysics обязателен: содержимое короче экрана, и без
+    // него скролл не принимает жест — pull-to-refresh не сработал бы ровно в том
+    // случае, когда чатов нет и потянуть хочется больше всего.
+    return Center(child: SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
       Container(width: 80, height: 80, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
         child: Icon(CupertinoIcons.bubble_left, size: 36, color: Theme.of(context).colorScheme.primary)),
       const SizedBox(height: 16),
@@ -753,13 +766,16 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
     // Fall through to original renderer
     String fixedContent = content;
     try {
-      final api = context.read<ApiService>();
-      fixedContent = content
-          .replaceAll(RegExp(r'https?://localhost:\d+'), api.baseUrl)
-          .replaceAll(RegExp(r'https?://127\.0\.0\.1:\d+'), api.baseUrl);
+      fixedContent = context.read<ApiService>().fixUrlsInText(content);
     } catch (_) {}
 
-    final imgRegex = RegExp(r'https?://\S+\.(jpg|jpeg|png|gif|webp)', caseSensitive: false);
+    // Query-строка обязана попасть в ссылку: файлы отдаются по подписанному
+    // URL (?exp=...&sig=...), и без подписи сервер их не отдаёт. Раньше
+    // \S+\.(jpg) обрывался на расширении — картинка не грузилась, а хвост
+    // ?exp=...&sig=... печатался в сообщении как текст.
+    final imgRegex = RegExp(
+        r'https?://\S+?\.(jpg|jpeg|png|gif|webp)(\?\S*)?',
+        caseSensitive: false);
     final imgMatch = imgRegex.firstMatch(fixedContent);
     if (imgMatch != null) {
       final url = imgMatch.group(0)!;

@@ -301,8 +301,13 @@ class ChatsProvider extends ChangeNotifier {
     try {
       final result = await _api.uploadFile(filePath, fileName);
       var url = result['url'] ?? result['file_url'] ?? result['path'] ?? '';
-      if (url.isNotEmpty && !url.startsWith('http')) {
-        url = '${_api.baseUrl}${url.startsWith('/') ? '' : '/'}$url';
+      // В сообщение кладём ОТНОСИТЕЛЬНЫЙ путь. Бэкенд возвращает абсолютный
+      // адрес из APP_BASE_URL (по умолчанию http://localhost:8000) — такой
+      // ссылкой сообщение становится непереносимым: на телефоне и у других
+      // пользователей localhost не открывается. Абсолютным путь снова делает
+      // клиент при отрисовке, уже через актуальный baseUrl.
+      if (url.isNotEmpty) {
+        url = _api.toRelativeUploadUrl(url);
       }
       if (url.isNotEmpty) {
         await _api.sendMessage(chatId, url);
@@ -520,11 +525,29 @@ class ChatsProvider extends ChangeNotifier {
   }
 
   /// null — сообщений нет; экран подставит локализованный текст.
+  /// Превью последнего сообщения. Для вложений возвращает ключ локализации
+  /// ('preview_photo'/'preview_file') — иначе в списке чатов светилась бы
+  /// сырая ссылка на файл с подписью.
   String? lastPreview(int id) {
     final msgs = messages[id] ?? [];
     if (msgs.isEmpty) return null;
-    final content = msgs.last['content'] ?? '';
+    final String content = msgs.last['content'] ?? '';
+    final attachment = _attachmentPreviewKey(content);
+    if (attachment != null) return attachment;
     return content.length > 45 ? '${content.substring(0, 45)}...' : content;
+  }
+
+  // Сообщение целиком состоит из ссылки на загруженный файл?
+  static final _uploadRegex =
+      RegExp(r'^(https?://\S+|/)?/?uploads/\S+$', caseSensitive: false);
+  static final _imageExtRegex =
+      RegExp(r'\.(jpg|jpeg|png|gif|webp)(\?|$)', caseSensitive: false);
+
+  String? _attachmentPreviewKey(String content) {
+    final trimmed = content.trim();
+    if (trimmed.isEmpty || trimmed.contains(' ')) return null;
+    if (!_uploadRegex.hasMatch(trimmed)) return null;
+    return _imageExtRegex.hasMatch(trimmed) ? 'preview_photo' : 'preview_file';
   }
 
   /// Может вернуть ключ локализации ('time_now'/'time_yesterday') — экран

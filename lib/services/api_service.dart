@@ -1026,5 +1026,33 @@ class ApiService {
     return fixed;
   }
 
+  /// То же, что [fixUrl], но для произвольного ТЕКСТА со ссылками внутри
+  /// (содержимое сообщения, тело поста).
+  ///
+  /// Бэкенд строит ссылки на файлы из APP_BASE_URL, который по умолчанию равен
+  /// http://localhost:8000 — такой адрес сохраняется в сообщении и на телефоне
+  /// не открывается. Плюс сюда же подставляем baseUrl относительным путям
+  /// (/uploads/...), которые клиент теперь отправляет вместо абсолютных.
+  String fixUrlsInText(String text) {
+    if (text.isEmpty) return text;
+    var out = text
+        .replaceAll(RegExp(r'https?://localhost:\d+'), baseUrl)
+        .replaceAll(RegExp(r'https?://127\.0\.0\.1:\d+'), baseUrl);
+    // Относительный /uploads/... в начале строки или после пробела.
+    out = out.replaceAllMapped(
+      RegExp(r'(^|\s)(/uploads/\S+)'),
+      (m) => '${m[1]}$baseUrl${m[2]}',
+    );
+    return out;
+  }
+
+  /// Обратная операция: убрать origin, чтобы в БД лёг переносимый путь.
+  /// Абсолютный адрес привязан к машине, где крутился сервер, и ломается на
+  /// другом устройстве или после смены домена.
+  String toRelativeUploadUrl(String url) {
+    final m = RegExp(r'^https?://[^/]+(/.*)$').firstMatch(url);
+    return m != null ? m.group(1)! : url;
+  }
+
   String get wsBaseUrl => baseUrl.replaceFirst('http', 'ws');
 }

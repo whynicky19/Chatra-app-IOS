@@ -21,6 +21,7 @@ import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/auth/org_select_screen.dart';
 import 'screens/main_shell.dart';
+import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/classes/class_detail_screen.dart';
 import 'screens/classes/archive_screen.dart';
 
@@ -236,6 +237,8 @@ class _AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<_AuthGate> {
   bool _splashDone = false;
+  // null — флаг ещё не прочитан; держим splash, чтобы интро не мигнуло.
+  bool? _onboardingSeen;
 
   @override
   void initState() {
@@ -245,6 +248,9 @@ class _AuthGateState extends State<_AuthGate> {
     Future.delayed(const Duration(milliseconds: 400), () {
       if (mounted) setState(() => _splashDone = true);
     });
+    OnboardingScreen.isSeen().then((seen) {
+      if (mounted) setState(() => _onboardingSeen = seen);
+    });
   }
 
   @override
@@ -253,7 +259,21 @@ class _AuthGateState extends State<_AuthGate> {
     final org = context.watch<OrgProvider>();
 
     // Показываем splash пока: auth/org не загрузились ИЛИ минимальное время не прошло
-    if (!auth.initialized || !org.isInitialized || !_splashDone) return const _Splash();
+    if (!auth.initialized ||
+        !org.isInitialized ||
+        !_splashDone ||
+        _onboardingSeen == null) {
+      return const _Splash();
+    }
+
+    // Интро — самый первый экран, до выбора организации. Пользователю с живой
+    // сессией (переустановка с сохранённым токеном) его не показываем.
+    if (_onboardingSeen == false && !auth.isAuthenticated) {
+      return OnboardingScreen(
+        key: const ValueKey('onboarding'),
+        onDone: () => setState(() => _onboardingSeen = true),
+      );
+    }
 
     // Плавный переход от splash к контенту
     return AnimatedSwitcher(

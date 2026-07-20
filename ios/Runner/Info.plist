@@ -63,10 +63,20 @@
 		</array>
 		<key>ITSAppUsesNonExemptEncryption</key>
 		<false/>
-		<!-- ATS-исключений нет: прод ходит только по HTTPS. Для локальной
-		     разработки против http://192.168.x.x временно верни сюда
-		     NSAllowsLocalNetworking, но НЕ коммить это в релизную сборку —
-		     Apple задаёт вопросы по любому ослаблению ATS. -->
+		<!-- Единственное ATS-послабление: доступ к локальной сети (.local и
+		     приватные диапазоны вроде 192.168.x.x) — нужен, чтобы приложение на
+		     реальном телефоне ходило в локальный FastAPI при разработке.
+		     Публичный интернет остаётся под HTTPS.
+
+		     Это НЕ то исключение, за которое Apple требует объяснений:
+		     оправдание нужно для NSAllowsArbitraryLoads и
+		     NSExceptionAllowsInsecureHTTPLoads, а NSAllowsLocalNetworking
+		     ревью проходит спокойно. Прод всё равно работает по HTTPS. -->
+		<key>NSAppTransportSecurity</key>
+		<dict>
+			<key>NSAllowsLocalNetworking</key>
+			<true/>
+		</dict>
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>Доступ к фото нужен, чтобы прикреплять изображения в чате</string>
 		<key>NSCameraUsageDescription</key>

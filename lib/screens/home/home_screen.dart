@@ -173,7 +173,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return Scaffold(
       body: SafeArea(child: CustomScrollView(slivers: [
           CupertinoSliverRefreshControl(
-            onRefresh: () => context.read<ClassesProvider>().load(),
+            // Обновляем всё, что грузится при входе на экран: раньше здесь был
+            // только load(), поэтому потянуть за списком не освежало членство
+            // в классах и бейдж уведомлений.
+            onRefresh: () {
+              final p = context.read<ClassesProvider>();
+              return Future.wait([
+                p.load(),
+                p.loadJoined(),
+                p.loadNotifBadge(),
+              ]);
+            },
           ),
 
           // ── Header ──────────────────────────────────────────

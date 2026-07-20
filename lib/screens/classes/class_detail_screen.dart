@@ -685,8 +685,9 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       }
     } catch (_) {}
     final body = p['body'] ?? '';
-    final matches = RegExp(r'https?://[^\s"<>]+?\.(pdf|doc|docx|txt|png|jpg|jpeg|pptx?|xlsx?)(\?[^\s"<>]*)?', caseSensitive: false).allMatches(body);
-    return matches.map((m) => context.read<ApiService>().fixUrl(m.group(0)!)).toList();
+    return extractFileUrls(body)
+        .map((u) => context.read<ApiService>().fixUrl(u))
+        .toList();
   }
 
   /// Extract file URLs from plain text (keeps the original name as a #fragment)

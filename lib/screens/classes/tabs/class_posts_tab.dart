@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../providers/l10n_provider.dart';
 import '../../../services/api_service.dart';
 import '../../../theme/app_theme.dart';
+import '../class_detail_utils.dart';
 
 class ClassPostsTab extends StatelessWidget {
   final List<dynamic> posts;
@@ -57,8 +58,7 @@ class ClassPostsTab extends StatelessWidget {
         }
       } catch (_) {}
       final body = p['body'] ?? '';
-      final matches = RegExp(r'https?://[^\s"<>]+?\.(pdf|doc|docx|txt|png|jpg|jpeg|pptx?|xlsx?)(\?[^\s"<>]*)?', caseSensitive: false).allMatches(body);
-      return matches.map((m) => api.fixUrl(m.group(0)!)).toList();
+      return extractFileUrls(body).map(api.fixUrl).toList();
     }
 
     Widget iconBtn(IconData ic, VoidCallback onTap) => GestureDetector(

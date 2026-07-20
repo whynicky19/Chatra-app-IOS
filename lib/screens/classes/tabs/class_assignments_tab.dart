@@ -9,6 +9,7 @@ import '../../../services/api_service.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/app_dialog.dart';
 import '../../../widgets/toast.dart';
+import '../class_detail_utils.dart';
 
 /// AP-1: сбой аплоада вложения при сдаче. Кидается вместо молчаливого catch,
 /// чтобы прервать сдачу и не отправить работу с потерянными файлами.
@@ -77,11 +78,10 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
     try { final dt = DateTime.parse(d); return '${dt.day}.${dt.month.toString().padLeft(2, '0')}.${dt.year}'; } catch (_) { return d; }
   }
 
-  // Bare uploaded-file URL, optionally with #OriginalName fragment appended by the clients.
-  // Trailing lookahead pins the match to the token end so ".docx" can't be eaten as ".doc"+junk.
-  static final _fileUrlRe = RegExp(r'https?://[^\s"<>]+\.(pdf|docx?|txt|md|png|jpe?g|gif|webp|pptx?|xlsx?)(#[^\s"<>]*)?(?![^\s"<>])', caseSensitive: false);
+  // Разбор ссылок общий с постами и деталью класса — см. class_detail_utils.
+  static final _fileUrlRe = fileUrlRe;
   // Site-generated markdown attachment: "📎 [name](url)"
-  static final _mdFileRe = RegExp(r'📎\s*\[([^\]\n]+)\]\((https?://[^\s)]+)\)');
+  static final _mdFileRe = mdFileRe;
 
   String _fileDisplayName(String url) {
     try {

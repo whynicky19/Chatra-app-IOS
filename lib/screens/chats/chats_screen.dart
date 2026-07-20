@@ -16,6 +16,7 @@ import '../../widgets/app_dialog.dart';
 import '../../widgets/moderation_actions.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/toast.dart';
+import '../classes/class_detail_utils.dart' show trimUrlPunctuation;
 
 class ChatsScreen extends StatefulWidget {
   const ChatsScreen({super.key});
@@ -801,9 +802,11 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
     final urlRegex = RegExp(r'https?://\S+');
     final urlMatch = urlRegex.firstMatch(fixedContent);
     if (urlMatch != null) {
-      final url = urlMatch.group(0)!;
+      // \S+ захватывает и точку/скобку, приклеенную к ссылке в живой речи —
+      // срезаем, иначе ломается подпись upload-ссылки и просто внешние адреса.
+      final url = trimUrlPunctuation(urlMatch.group(0)!);
       final before = fixedContent.substring(0, urlMatch.start).trim();
-      final after = fixedContent.substring(urlMatch.end).trim();
+      final after = fixedContent.substring(urlMatch.start + url.length).trim();
       return Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         if (before.isNotEmpty) Text(before, style: TextStyle(fontSize: 15, color: isMe ? Colors.white : null)),
         Container(margin: const EdgeInsets.only(top: 6), padding: const EdgeInsets.all(10),

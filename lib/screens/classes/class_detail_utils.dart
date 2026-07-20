@@ -20,11 +20,14 @@ String fmtDate(String? d) {
   }
 }
 
-// Bare uploaded-file URL, optionally with #OriginalName fragment appended by the
-// clients. Trailing lookahead pins the match to the token end so ".docx" can't be
+// Bare uploaded-file URL in free text. Must tolerate the signed query the
+// backend appends (?exp=…&sig=…) — the previous pattern allowed only a
+// #fragment, so signed links were not recognised as attachments at all and were
+// left rendered as raw text. Extensions use the `x?` form so ".docx" can't be
 // eaten as ".doc"+junk.
 final RegExp fileUrlRe = RegExp(
-    r'https?://[^\s"<>]+\.(pdf|docx?|txt|md|png|jpe?g|gif|webp|pptx?|xlsx?)(#[^\s"<>]*)?(?![^\s"<>])',
+    r'https?://[^\s"<>]+?\.(pdf|docx?|pptx?|xlsx?|txt|md|csv|rtf|png|jpe?g|gif|webp|mp3|wav|m4a|webm|ogg|mp4)'
+    r'(\?[^\s"<>]*)?(#[^\s"<>]*)?',
     caseSensitive: false);
 // Site-generated markdown attachment: "📎 [name](url)"
 final RegExp mdFileRe = RegExp(r'📎\s*\[([^\]\n]+)\]\((https?://[^\s)]+)\)');
@@ -55,6 +58,30 @@ String cleanFileUrl(String url) {
   final idx = url.indexOf('#');
   return idx >= 0 ? url.substring(0, idx) : url;
 }
+
+/// Strips punctuation that prose glues onto the end of a URL: the closer of a
+/// markdown link or parenthetical, a sentence period, a list comma. Only
+/// *unbalanced* closing brackets go — a filename may legitimately contain "(1)".
+String trimUrlPunctuation(String url) {
+  var s = url;
+  while (s.isNotEmpty) {
+    final last = s[s.length - 1];
+    if (last == ')' || last == ']') {
+      final open = last == ')' ? '(' : '[';
+      if (open.allMatches(s).length >= last.allMatches(s).length) break;
+    } else if (!'.,;:!'.contains(last)) {
+      break;
+    }
+    s = s.substring(0, s.length - 1);
+  }
+  return s;
+}
+
+/// Every uploaded-file URL in [text], cleaned of trailing prose punctuation.
+List<String> extractFileUrls(String text) => fileUrlRe
+    .allMatches(text)
+    .map((m) => trimUrlPunctuation(m.group(0)!))
+    .toList();
 
 /// Stable cache key for a remote file.
 ///

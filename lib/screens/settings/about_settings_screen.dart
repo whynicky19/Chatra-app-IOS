@@ -9,6 +9,7 @@ import '../../utils/errors.dart';
 import '../../widgets/toast.dart';
 import '../../widgets/telegram_logo.dart';
 import '../legal/privacy_policy_screen.dart';
+import '../legal/terms_of_service_screen.dart';
 import '../legal/terms_screen.dart';
 import 'contact_screen.dart';
 import 'settings_shared.dart';
@@ -27,6 +28,15 @@ class AboutSettingsScreen extends StatelessWidget {
       title: l.t('about_section'),
       subtitle: l.t('about_section_sub'),
       children: [
+        SettingsActionCard(
+          icon: CupertinoIcons.doc_plaintext,
+          iconBg: primary,
+          title: l.t('tos_title'),
+          sub: l.t('tos_view'),
+          onTap: () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const TermsOfServiceScreen())),
+        ),
+        const SizedBox(height: 16),
         SettingsActionCard(
           icon: CupertinoIcons.checkmark_shield,
           iconBg: primary,

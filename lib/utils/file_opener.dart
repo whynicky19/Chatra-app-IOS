@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/l10n_provider.dart';
+import '../screens/classes/class_detail_utils.dart' show fileCacheKey;
 import '../services/api_service.dart';
 import '../widgets/toast.dart';
 
@@ -37,7 +38,7 @@ Future<void> openRemoteFile(BuildContext context, ApiService api, String url, St
   try {
     final dir = await getTemporaryDirectory();
     final safeName = name.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
-    final filePath = '${dir.path}/${cleanUrl.hashCode.toRadixString(16)}_$safeName';
+    final filePath = '${dir.path}/${fileCacheKey(cleanUrl)}_$safeName';
     final file = File(filePath);
 
     if (!await file.exists()) {
@@ -54,8 +55,16 @@ Future<void> openRemoteFile(BuildContext context, ApiService api, String url, St
   } on DioException catch (e) {
     if (!context.mounted) return;
     closeDialog();
-    if (e.response?.statusCode == 404) {
+    final code = e.response?.statusCode;
+    if (code == 404) {
       showToast(context, context.read<L10n>().t('file_not_found_server'), error: true);
+      return;
+    }
+    // 403 = подпись ссылки истекла (TTL суток) или побилась. В браузере юзер
+    // увидит только сырой JSON с ошибкой, поэтому говорим честно: нужно обновить
+    // экран, чтобы сервер выдал свежую подпись.
+    if (code == 403) {
+      showToast(context, context.read<L10n>().t('file_link_expired'), error: true);
       return;
     }
     try { await launchUrl(Uri.parse(cleanUrl), mode: LaunchMode.externalApplication); } catch (_) {}

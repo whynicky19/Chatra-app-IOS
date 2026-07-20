@@ -56,6 +56,20 @@ String cleanFileUrl(String url) {
   return idx >= 0 ? url.substring(0, idx) : url;
 }
 
+/// Stable cache key for a remote file.
+///
+/// Uploads carry a signed query (`?exp=…&sig=…`) that the backend regenerates on
+/// every JSON response, so hashing the full URL yields a different key each time:
+/// the temp copy is never reused and a fresh duplicate piles up on every open.
+/// Only the path identifies the file — upload names are UUIDs and immutable.
+String fileCacheKey(String url) {
+  try {
+    return Uri.parse(url).path.hashCode.toRadixString(16);
+  } catch (_) {
+    return cleanFileUrl(url).split('?').first.hashCode.toRadixString(16);
+  }
+}
+
 /// Fullscreen, pinch-to-zoom image viewer (tap anywhere to dismiss).
 void showImageViewer(BuildContext ctx, String url, String name) {
   showDialog(

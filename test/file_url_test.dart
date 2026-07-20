@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:chatra_app/services/api_service.dart';
 import 'package:chatra_app/providers/chats_provider.dart';
 import 'package:chatra_app/providers/auth_provider.dart';
+import 'package:chatra_app/screens/classes/class_detail_utils.dart';
 
 /// Ссылки на файлы приходят подписанными (?exp=...&sig=...) и с абсолютным
 /// адресом сервера из APP_BASE_URL (по умолчанию localhost). И то и другое
@@ -134,6 +135,30 @@ void main() {
     test('текст со ссылкой внутри не считается вложением', () {
       put('глянь /uploads/x.jpg');
       expect(p.lastPreview(1), 'глянь /uploads/x.jpg');
+    });
+  });
+
+  // Бэкенд переподписывает ссылки в каждом JSON-ответе, поэтому exp/sig у одного
+  // и того же файла меняются от запроса к запросу. Ключ кэша обязан это
+  // игнорировать — иначе скачанная копия никогда не переиспользуется и каждое
+  // открытие плодит новый файл во временной папке.
+  group('ключ кэша файла', () {
+    test('не зависит от подписи', () {
+      const a = 'http://localhost:8000/uploads/abc.pdf?exp=1784636643&sig=7c0baf4b';
+      const b = 'http://localhost:8000/uploads/abc.pdf?exp=1784636645&sig=a85957dd';
+      expect(fileCacheKey(a), fileCacheKey(b));
+    });
+
+    test('не зависит от #fragment с исходным именем', () {
+      const a = 'http://localhost:8000/uploads/abc.pdf?exp=1&sig=x';
+      const b = 'http://localhost:8000/uploads/abc.pdf?exp=2&sig=y#Отчёт по практике.pdf';
+      expect(fileCacheKey(a), fileCacheKey(b));
+    });
+
+    test('разные файлы получают разные ключи', () {
+      const a = 'http://localhost:8000/uploads/abc.pdf?exp=1&sig=x';
+      const b = 'http://localhost:8000/uploads/def.pdf?exp=1&sig=x';
+      expect(fileCacheKey(a), isNot(fileCacheKey(b)));
     });
   });
 }

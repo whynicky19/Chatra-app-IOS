@@ -368,7 +368,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     try {
       final dir = await getTemporaryDirectory();
       final safeFileName = name.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
-      final filePath = '${dir.path}/${cleanUrl.hashCode.toRadixString(16)}_$safeFileName';
+      final filePath = '${dir.path}/${fileCacheKey(cleanUrl)}_$safeFileName';
       final file = File(filePath);
 
       // Use cached version if it exists
@@ -406,8 +406,15 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       // 404 means the file is gone from the server — the browser fallback
       // would only show an error page (or the ngrok interstitial), so report
       // it honestly instead.
-      if (e.response?.statusCode == 404) {
+      final code = e.response?.statusCode;
+      if (code == 404) {
         showToast(context, l.t('file_not_found_server'), error: true);
+        return;
+      }
+      // 403 = подпись ссылки истекла (TTL суток) или побилась; браузер покажет
+      // лишь сырой JSON, поэтому просим обновить экран за свежей подписью.
+      if (code == 403) {
+        showToast(context, l.t('file_link_expired'), error: true);
         return;
       }
       try { await launchUrl(Uri.parse(cleanUrl), mode: LaunchMode.externalApplication); } catch (_) {}

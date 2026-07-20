@@ -36,7 +36,7 @@ class ClassAvatarTab extends StatefulWidget {
 class _ClassAvatarTabState extends State<ClassAvatarTab> {
   bool _dataLoadTriggered = false;
   bool _loading = true;
-  TeacherAvatar? _avatar; // only meaningful for the teacher
+  TeacherAvatar? _avatar;
   List<AvatarLecture> _lectures = [];
   Timer? _pollTimer;
 
@@ -123,7 +123,6 @@ class _ClassAvatarTabState extends State<ClassAvatarTab> {
     if (ok == true && mounted) _loadAll();
   }
 
-  // Удалять может владелец лекции или админ (это же правило на бэке).
   bool _canDeleteLecture(AvatarLecture lec) {
     final auth = context.read<AuthProvider>();
     return auth.isAdmin || (widget.isTeacher && lec.createdBy == auth.userId);
@@ -285,7 +284,6 @@ class _ClassAvatarTabState extends State<ClassAvatarTab> {
   }
 }
 
-/// Teacher-only banner shown when no avatar has been created yet.
 class _CreateAvatarBanner extends StatelessWidget {
   final VoidCallback onTap;
   const _CreateAvatarBanner({required this.onTap});
@@ -327,9 +325,6 @@ class _CreateAvatarBanner extends StatelessWidget {
   }
 }
 
-/// Compact "avatar profile" card for teachers whose avatar was approved:
-/// photo, display name and an "active" pill, plus the primary CTA to create
-/// a new lecture. Gives the tab a face instead of a bare button.
 class _ApprovedAvatarCard extends StatelessWidget {
   final TeacherAvatar avatar;
   final Color primary;
@@ -470,10 +465,6 @@ class _LectureCard extends StatelessWidget {
               else if (lecture.isReady)
                 Icon(CupertinoIcons.chevron_right, size: 16, color: C.text4.withValues(alpha: 0.6)),
             ]),
-            // Ready cards already read as playable (play tile + chevron) — a
-            // status chip would just repeat that. Non-ready states keep the
-            // chip, and generation shows a live progress strip so the teacher
-            // can see the pipeline is actually working.
             if (!lecture.isReady) ...[
               const SizedBox(height: 11),
               Row(children: [

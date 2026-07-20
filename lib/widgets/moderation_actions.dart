@@ -8,11 +8,6 @@ import '../theme/app_theme.dart';
 import 'app_dialog.dart';
 import 'toast.dart';
 
-/// UGC-модерация (App Store Guideline 1.2): жалоба на пользователя/сообщение
-/// и блокировка. Жалоба уходит на сервер (эндпоинт POST /reports, где её видит
-/// админ), записывается в локальный журнал и автоматически блокирует нарушителя
-/// (чтобы контент сразу пропал у жалобщика).
-
 Future<void> showReportSheet(
   BuildContext context, {
   required int reportedUserId,
@@ -88,7 +83,6 @@ Future<void> _submitReport(
   final l = context.read<L10n>();
   final api = context.read<ApiService>();
 
-  // Локальный журнал (на случай оффлайна) + сразу блокируем нарушителя.
   await mod.recordReport(
     reportedUserId: reportedUserId,
     reason: reasonKey,
@@ -97,8 +91,6 @@ Future<void> _submitReport(
   );
   await mod.block(reportedUserId, name: userName);
 
-  // Отправка на сервер — жалоба попадает к админу. Ошибка (оффлайн) не мешает
-  // UX: локальная запись и блок уже сработали.
   try {
     await api.createReport(
       reportedUserId: reportedUserId,
@@ -111,8 +103,6 @@ Future<void> _submitReport(
   if (context.mounted) showToast(context, l.t('report_sent'));
 }
 
-/// Спросить подтверждение и заблокировать пользователя. Возвращает true, если
-/// заблокировали.
 Future<bool> confirmAndBlock(BuildContext context, {required int userId, String? userName}) async {
   final l = context.read<L10n>();
   final ok = await showConfirmDialog(context,

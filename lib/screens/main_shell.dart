@@ -28,10 +28,10 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
   late AnimationController _navAnim;
 
   bool _isOnline = true;
-  bool _bannerDismissed = false; // юзер смахнул баннер вручную
+  bool _bannerDismissed = false;
   StreamSubscription<List<ConnectivityResult>>? _connectSub;
   Timer? _offlineDebounce;
-  Timer? _recheckTimer; // пока оффлайн — периодически перепроверяем сеть
+  Timer? _recheckTimer;
 
   @override
   void initState() {
@@ -44,12 +44,6 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
     _connectSub = Connectivity().onConnectivityChanged.listen(_applyConnectivity);
   }
 
-  // connectivity_plus can briefly report `none` (or an empty list) right after a
-  // screen (re)mounts — e.g. logging into a second account tears down and rebuilds
-  // MainShell — even when the network is perfectly fine. To avoid a false
-  // "no connection" banner: treat an empty result as online, flip to ONLINE
-  // immediately, but only flip to OFFLINE if it stays offline for a few seconds
-  // (a transient `none` is cancelled before the banner ever shows).
   void _applyConnectivity(List<ConnectivityResult> results) {
     final online = results.isEmpty || results.any((v) => v != ConnectivityResult.none);
     _offlineDebounce?.cancel();
@@ -75,9 +69,6 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
     }
   }
 
-  // Поток onConnectivityChanged иногда «пропускает» возврат сети (особенно в
-  // эмуляторе), из-за чего баннер зависал. Пока мы оффлайн — сами опрашиваем
-  // connectivity раз в 2 сек, так что при возврате интернета баннер уходит сам.
   void _startRecheck() {
     _recheckTimer?.cancel();
     _recheckTimer = Timer.periodic(const Duration(seconds: 2), (_) {
@@ -128,19 +119,12 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: Stack(children: [
-        // Ленивый IndexedStack: экран строится только при первом заходе на
-        // вкладку (быстрый старт — не инициализируем все 5 экранов разом),
-        // после этого остаётся смонтированным (state сохраняется), но
-        // скрытые экраны offstage — без GPU-затрат.
         Positioned.fill(
           child: _LazyIndexedStack(
             index: _idx,
             children: screens,
           ),
         ),
-        // Баннер всегда в дереве — переключаем banner↔пусто через
-        // AnimatedSwitcher, поэтому карточка плавно съезжает сверху при
-        // появлении и так же плавно уезжает вверх при восстановлении сети.
         Positioned(
           top: 0, left: 0, right: 0,
           child: AnimatedSwitcher(
@@ -174,12 +158,6 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
                   ),
           ),
         ),
-        // Нижний navbar — Liquid Glass через пакет, но БЕЗ тяжёлого realtime-
-        // capture морф-капсулы (.withImpeller держал непрерывный захват экрана
-        // каждый кадр → фризы при скролле). Обычный LiquidGlassBottomNavBar =
-        // одна стеклянная ленза (рефракция как у BackdropFilter, только при
-        // перерисовке) + лёгкий скользящий хайлайт выбора. Вид тот же, нагрузка
-        // кратно ниже.
         Positioned(
           left: 16, right: 16, bottom: 16,
           child: RepaintBoundary(
@@ -205,8 +183,6 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
                     width: constraints.maxWidth,
                     height: 64,
                     itemPadding: 6,
-                    // Стекло бара: приглушённое краевое свечение + лёгкий тинт
-                    // (читаемость), subtle blur.
                     style: LiquidGlassStyle(
                       shape: const LiquidGlassShape.roundedRectangle(
                         cornerRadius: 32,
@@ -229,7 +205,6 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
                         chromaticAberration: 0.0,
                       ),
                     ),
-                    // Иконки: активная — контрастный акцент, неактивные приглушены.
                     itemStyle: LiquidGlassNavItemStyle(
                       selectedColor: Theme.of(context).colorScheme.primary,
                       unselectedColor: isDark
@@ -240,7 +215,6 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
                       selectedFontWeight: FontWeight.w700,
                       unselectedFontWeight: FontWeight.w500,
                     ),
-                    // Лёгкий скользящий хайлайт выбора (без capture-пайплайна).
                     pillStyle: LiquidGlassNavPillStyle(
                       mode: LiquidGlassPillMode.none,
                       animated: true,
@@ -265,9 +239,6 @@ class _NavItem {
   _NavItem(this.inactive, this.active, this.label);
 }
 
-// ─────────────────────────────────────────────────────────
-//  Lazy IndexedStack — строит вкладку при первом открытии
-// ─────────────────────────────────────────────────────────
 class _LazyIndexedStack extends StatefulWidget {
   final int index;
   final List<Widget> children;
@@ -290,7 +261,6 @@ class _LazyIndexedStackState extends State<_LazyIndexedStack> {
   @override
   void didUpdateWidget(_LazyIndexedStack old) {
     super.didUpdateWidget(old);
-    // Список вкладок может измениться (например, появилась вкладка админа)
     if (widget.children.length != _built.length) {
       _built = List.filled(widget.children.length, false);
     }
@@ -309,9 +279,6 @@ class _LazyIndexedStackState extends State<_LazyIndexedStack> {
   }
 }
 
-// ─────────────────────────────────────────────────────────
-//  Offline Banner
-// ─────────────────────────────────────────────────────────
 class _OfflineBanner extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -327,10 +294,6 @@ class _OfflineBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final topPad = MediaQuery.of(context).padding.top;
-    // A calm liquid-glass pill instead of a harsh full-bleed red bar — matches
-    // the app's nav-bar language (frosted blur, soft shadow, subtle red accent).
-    // Slide/fade in-and-out is driven by the parent AnimatedSwitcher; a swipe-up
-    // gesture dismisses it manually (onDismiss triggers the same exit animation).
     final glass = isDark
         ? Colors.white.withValues(alpha: 0.10)
         : Colors.white.withValues(alpha: 0.72);
@@ -338,7 +301,6 @@ class _OfflineBanner extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(16, topPad + 8, 16, 0),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        // Смахивание вверх — скрыть; вниз игнорируем.
         onVerticalDragEnd: (d) {
           if ((d.primaryVelocity ?? 0) < -80) onDismiss();
         },
@@ -365,7 +327,6 @@ class _OfflineBanner extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Grabber — намёк, что окно можно смахнуть вверх.
                       Container(
                         width: 34, height: 4,
                         decoration: BoxDecoration(
@@ -415,7 +376,6 @@ class _OfflineBanner extends StatelessWidget {
                             ],
                           ),
                         ),
-                        // Явная кнопка-крестик для тех, кто не догадается про свайп.
                         GestureDetector(
                           onTap: onDismiss,
                           behavior: HitTestBehavior.opaque,
@@ -441,7 +401,6 @@ class _OfflineBanner extends StatelessWidget {
   }
 }
 
-// Мягко пульсирующая точка рядом с «Проверяем подключение…» — живой индикатор.
 class _PulsingDot extends StatefulWidget {
   @override
   State<_PulsingDot> createState() => _PulsingDotState();

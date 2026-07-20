@@ -22,8 +22,6 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
   final List<Map<String, String>> _msgs = [];
   bool _loading = false;
 
-  // История хранится отдельно для каждого аккаунта и переживает
-  // выход: ключ содержит id пользователя и при logout не удаляется.
   static const _legacyHistoryKey = 'ai_chat_history_v1';
   String _historyKey = _legacyHistoryKey;
 
@@ -36,8 +34,6 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _restoreHistory() async {
-    // Сначала показываем локальный кэш (быстро/офлайн), затем синхронизируем
-    // с сервером — история одинакова в приложении и на сайте.
     final local = await _loadLocal();
     if (mounted && local.isNotEmpty) {
       setState(() { _msgs..clear()..addAll(local); });
@@ -50,7 +46,6 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
     try {
       final prefs = await SharedPreferences.getInstance();
       var raw = prefs.getString(_historyKey);
-      // Миграция: история, сохранённая до разделения по аккаунтам.
       if ((raw == null || raw.isEmpty) && prefs.containsKey(_legacyHistoryKey)) {
         raw = prefs.getString(_legacyHistoryKey);
         if (raw != null && raw.isNotEmpty) await prefs.setString(_historyKey, raw);
@@ -66,8 +61,6 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
     }
   }
 
-  // Серверная история → _msgs. Если на сервере пусто, а локально что-то есть —
-  // разово заливаем локальную историю (миграция) и берём ответ сервера.
   Future<void> _syncFromServer(List<Map<String, String>> local) async {
     try {
       final api = context.read<ApiService>();
@@ -87,7 +80,6 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
       _saveHistory();
       _scrollDown();
     } catch (_) {
-      // офлайн — остаёмся на локальном кэше
     }
   }
 
@@ -111,7 +103,6 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
     SharedPreferences.getInstance().then((prefs) {
       try { prefs.remove(_historyKey); } catch (_) {}
     }).catchError((_) {});
-    // Очистка и на сервере — чтобы не «воскресло» на другом устройстве.
     try { context.read<ApiService>().clearAiHistory(); } catch (_) {}
   }
 
@@ -222,7 +213,6 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
                 : _messageList(isDark),
           ),
         ),
-        // Input bar is its own widget — rebuilds independently on keystrokes
         _AiInputBar(ctrl: _ctrl, loading: _loading, onSend: _send),
       ]),
     );
@@ -313,8 +303,6 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
     });
   }
 
-  // Полноширинная строка-подсказка: одинаковая ширина, ровный столбик,
-  // короткий текст слева + тонкая стрелка справа (стиль Apple/ChatGPT).
   Widget _suggestionRow(Map<String, dynamic> tip, bool isDark, int index) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
@@ -466,10 +454,6 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Input bar — isolated widget; keystrokes rebuild ONLY the send button (via a
-// ValueListenableBuilder on the controller), not the whole bar or screen.
-// ─────────────────────────────────────────────────────────────────────────────
 class _AiInputBar extends StatelessWidget {
   final TextEditingController ctrl;
   final bool loading;
@@ -523,8 +507,6 @@ class _AiInputBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          // Rebuilds on each keystroke via the controller's own notifier — but only
-          // this button subtree, not the Container/TextField above it.
           ValueListenableBuilder<TextEditingValue>(
             valueListenable: ctrl,
             builder: (context, value, _) {
@@ -562,9 +544,6 @@ class _AiInputBar extends StatelessWidget {
             },
           ),
         ]),
-        // Дисклеймер о неточности ИИ — под полем ввода, виден всегда, а не
-        // только на пустом экране. Ожидаемый элемент для приложений с
-        // генеративными ответами.
         const SizedBox(height: 8),
         Text(
           l.t('ai_disclaimer'),
@@ -576,9 +555,6 @@ class _AiInputBar extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Typing indicator dot
-// ─────────────────────────────────────────────────────────────────────────────
 class _Dot extends StatefulWidget {
   final int delay;
   const _Dot({required this.delay});

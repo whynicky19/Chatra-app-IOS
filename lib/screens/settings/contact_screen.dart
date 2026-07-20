@@ -8,21 +8,14 @@ import '../../theme/app_theme.dart';
 import '../../widgets/telegram_logo.dart';
 import '../../widgets/toast.dart';
 
-/// Ссылка на Telegram разработчика. Меняется только здесь — из неё выводятся
-/// и подпись на странице, и deep link в приложение.
-/// Подходит и обычный профиль (t.me/username), и инвайт (t.me/+AbCd123).
 const String kDeveloperTelegramUrl = 'https://t.me/nickyuii';
 
-/// Публичный @username из ссылки — null для инвайт-ссылок (t.me/+...) и любых
-/// других форм, которые нельзя открыть через tg://resolve.
 String? get _telegramHandle {
   final path = Uri.parse(kDeveloperTelegramUrl).pathSegments;
   if (path.length != 1) return null;
   return RegExp(r'^[A-Za-z0-9_]{5,32}$').hasMatch(path.first) ? path.first : null;
 }
 
-/// Что показываем в карточке: «@username», а для инвайт-ссылок — сама ссылка
-/// без схемы (t.me/+AbCd123).
 String get _telegramLabel {
   final handle = _telegramHandle;
   if (handle != null) return '@$handle';
@@ -32,9 +25,6 @@ String get _telegramLabel {
 
 const _telegramBlue = Color(0xFF229ED9);
 
-/// Страница «Связаться с разработчиком»: ведёт из настроек, единственное
-/// действие — открыть личку в Telegram (fallback на t.me в браузере, если
-/// приложение не установлено).
 class ContactScreen extends StatefulWidget {
   const ContactScreen({super.key});
   @override State<ContactScreen> createState() => _ContactScreenState();
@@ -65,8 +55,6 @@ class _ContactScreenState extends State<ContactScreen> with SingleTickerProvider
 
   Future<void> _openTelegram() async {
     HapticFeedback.lightImpact();
-    // tg:// открывает нативное приложение; если его нет (или ссылка — инвайт,
-    // который через resolve не открыть) — сама ссылка в браузере.
     final handle = _telegramHandle;
     for (final uri in [
       if (handle != null) Uri.parse('tg://resolve?domain=$handle'),
@@ -91,7 +79,6 @@ class _ContactScreenState extends State<ContactScreen> with SingleTickerProvider
         bottom: false,
         child: ListView(padding: const EdgeInsets.fromLTRB(16, 6, 16, 40), children: [
 
-          // ── Back ────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.only(left: 4, bottom: 4),
             child: Row(children: [
@@ -103,7 +90,6 @@ class _ContactScreenState extends State<ContactScreen> with SingleTickerProvider
             ]),
           ),
 
-          // ── Hero ────────────────────────────────────────────────
           _animated(Padding(
             padding: const EdgeInsets.fromLTRB(4, 8, 4, 28),
             child: Column(children: [
@@ -127,7 +113,6 @@ class _ContactScreenState extends State<ContactScreen> with SingleTickerProvider
             ]),
           ), 0.0, 0.5),
 
-          // ── Telegram card ───────────────────────────────────────
           _animated(Container(
             decoration: BoxDecoration(
               color: surface,
@@ -148,7 +133,6 @@ class _ContactScreenState extends State<ContactScreen> with SingleTickerProvider
               ]),
               const SizedBox(height: 16),
 
-              // Primary action
               GestureDetector(
                 onTap: _openTelegram,
                 child: Container(
@@ -158,8 +142,6 @@ class _ContactScreenState extends State<ContactScreen> with SingleTickerProvider
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: primaryGlow(_telegramBlue, opacity: 0.30),
                   ),
-                  // Без иконки: белый самолётик рядом с настоящим логотипом
-                  // читался бы как второй, «ненастоящий» знак Telegram.
                   child: Center(child: Text(l.t('write_telegram'),
                     style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white))),
                 ),

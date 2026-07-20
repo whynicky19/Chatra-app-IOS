@@ -8,9 +8,6 @@ import '../../theme/app_theme.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/toast.dart';
 
-/// Teacher-only "AI documents" bottom sheet — upload/list/delete files the
-/// AI assistant is grounded on for this class (RAG knowledge base), mirroring
-/// the site's document manager.
 void showRagDocumentsSheet(BuildContext context, {required int classId}) {
   showModalBottomSheet(
     context: context,

@@ -6,15 +6,15 @@ class C {
   static const teal    = Color(0xFF00B1C9);
   static const tealDk  = Color(0xFF009AAF);
   static const tealLt  = Color(0xFFE6F9FB);
-  // ── Light mode neutrals (iOS HIG) ──────────────────────────
-  static const bg      = Color(0xFFF2F2F7);   // systemGroupedBackground
+
+  static const bg      = Color(0xFFF2F2F7);
   static const surface = Colors.white;
-  static const surface2 = Color(0xFFE5E5EA);  // secondarySystemFill
-  static const border  = Color(0xFFD1D1D6);   // separator
-  static const text1   = Color(0xFF1C1C1E);   // label
-  static const text2   = Color(0xFF3A3A3C);   // secondaryLabel
-  static const text3   = Color(0xFF6C6C70);   // tertiaryLabel
-  static const text4   = Color(0xFF8E8E93);   // quaternaryLabel
+  static const surface2 = Color(0xFFE5E5EA);
+  static const border  = Color(0xFFD1D1D6);
+  static const text1   = Color(0xFF1C1C1E);
+  static const text2   = Color(0xFF3A3A3C);
+  static const text3   = Color(0xFF6C6C70);
+  static const text4   = Color(0xFF8E8E93);
   static const red     = Color(0xFFDC2626);
   static const redLt   = Color(0xFFFEE2E2);
   static const redLight  = redLt;
@@ -25,35 +25,26 @@ class C {
   static const tealLight = tealLt;
   static const yellowLt  = Color(0xFFFEF9C3);
 
-  // ── Dark mode neutrals (iOS HIG) ───────────────────────────
-  static const darkBg      = Color(0xFF000000);   // systemBackground dark
-  static const darkSurface  = Color(0xFF1C1C1E);  // secondarySystemBackground dark
-  static const darkSurface2 = Color(0xFF2C2C2E);  // tertiarySystemBackground dark
-  static const darkBorder   = Color(0xFF38383A);  // separator dark
-  static const darkText1    = Color(0xFFFFFFFF);  // label dark
-  static const darkText2    = Color(0xFFAEAEB2);  // secondaryLabel dark
+  static const darkBg      = Color(0xFF000000);
+  static const darkSurface  = Color(0xFF1C1C1E);
+  static const darkSurface2 = Color(0xFF2C2C2E);
+  static const darkBorder   = Color(0xFF38383A);
+  static const darkText1    = Color(0xFFFFFFFF);
+  static const darkText2    = Color(0xFFAEAEB2);
   static const darkTealLt   = Color(0xFF0A2228);
 
-  // School / amber palette
   static const amber      = Color(0xFFF59E0B);
   static const amberDk    = Color(0xFFD97706);
   static const amberLt    = Color(0xFFFEF3C7);
   static const darkAmberLt = Color(0xFF2A1F00);
 }
 
-// ── Corner-radius scale ────────────────────────────────────
-// One small, consistent set of radii (iOS-style concentric corners) instead of
-// ad-hoc 8/10/13/16 values scattered per widget.
-//   card — outer surfaces (class cards, sheets, big containers)
-//   tile — square icon buttons / medium controls
-//   chip — small pills, badges, code tags
 class AppRadii {
   static const double card = 20;
   static const double tile = 14;
   static const double chip = 10;
 }
 
-// ── Shadow helpers ─────────────────────────────────────────
 List<BoxShadow> cardShadow(bool isDark) => [
   BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.28 : 0.07), blurRadius: 20, offset: const Offset(0, 6)),
   BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.12 : 0.03), blurRadius: 4,  offset: const Offset(0, 1)),
@@ -71,7 +62,6 @@ List<BoxShadow> softShadow(bool isDark) => [
   BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.04), blurRadius: 12, offset: const Offset(0, 3)),
 ];
 
-// ── Adaptive helpers ───────────────────────────────────────
 Color adaptiveSurface2(BuildContext context) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
   return isDark ? C.darkSurface2 : C.surface2;
@@ -96,7 +86,6 @@ Color adaptiveText1(BuildContext context) {
   return isDark ? C.darkText1 : C.text1;
 }
 
-// ── Theme internals ────────────────────────────────────────
 const _r16 = BorderRadius.all(Radius.circular(16));
 
 InputDecorationTheme _input(Color fill, Color focus) => InputDecorationTheme(

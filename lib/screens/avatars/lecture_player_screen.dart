@@ -27,8 +27,6 @@ class _LecturePlayerScreenState extends State<LecturePlayerScreen> {
 
   int _slideIndex = 0;
   bool _showingSummary = false;
-  // YouTube-style chrome toggle in landscape: tap on the slide hides the
-  // header/progress/controls, tap again brings them back.
   bool _chromeVisible = true;
 
   final AudioPlayer _audio = AudioPlayer();
@@ -40,24 +38,13 @@ class _LecturePlayerScreenState extends State<LecturePlayerScreen> {
   bool _isPlaying = false;
   bool _isSpeaking = false;
   Duration _duration = Duration.zero;
-  final Map<int, double> _slideProgress = {}; // 0..1 per slide index, 1 = fully watched
+  final Map<int, double> _slideProgress = {};
 
-  // Guards against the classic "skips a slide" race: if the natural
-  // completion handler and a manual prev/next tap both try to advance at
-  // once, the delayed auto-advance re-reads a `_slideIndex` that a manual
-  // tap already moved on, and ends up jumping one slide further than
-  // intended. Every navigation bumps `_navGen`; a stale in-flight call
-  // (whether the delayed auto-advance or a superseded manual tap) detects
-  // the mismatch and quietly bails instead of racing. Unlike a persistent
-  // "is navigating" boolean, this can never get stuck and permanently
-  // disable the controls — each call is independent.
   int _navGen = 0;
 
   @override
   void initState() {
     super.initState();
-    // The rest of the app is portrait-locked (main.dart); the player allows
-    // rotating to landscape so the presentation can use the full screen.
     SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     _load();
     _playerStateSub = _audio.playerStateStream.listen(_onPlayerState);
@@ -99,7 +86,6 @@ class _LecturePlayerScreenState extends State<LecturePlayerScreen> {
       setState(() => _introVideo = controller);
       if (_slideIndex == 0) controller.play();
     } catch (_) {
-      // Fall back silently to photo/placeholder.
     }
   }
 
@@ -120,8 +106,6 @@ class _LecturePlayerScreenState extends State<LecturePlayerScreen> {
     final startGen = _navGen;
     setState(() => _slideProgress[startIndex] = 1.0);
     await Future.delayed(const Duration(milliseconds: 600));
-    // Bail if a manual tap (or another auto-advance) already moved us on
-    // while we were waiting — advancing now would skip past it.
     if (!mounted || _navGen != startGen || _slideIndex != startIndex) return;
     final slides = _full?.slides ?? [];
     if (startIndex < slides.length - 1) {
@@ -146,10 +130,6 @@ class _LecturePlayerScreenState extends State<LecturePlayerScreen> {
   Future<void> _goToSlide(int index, {bool autoplay = false}) async {
     final slides = _full?.slides ?? [];
     if (index < 0 || index >= slides.length) return;
-    // Bumping the generation immediately invalidates any in-flight call
-    // (a stale auto-advance or a superseded double-tap) without needing a
-    // persistent "is navigating" flag that could get stuck and disable the
-    // controls forever — the latest call always wins, older ones just bail.
     final myGen = ++_navGen;
     await _audio.stop();
     if (!mounted || myGen != _navGen) return;
@@ -170,11 +150,6 @@ class _LecturePlayerScreenState extends State<LecturePlayerScreen> {
       await _audio.pause();
       return;
     }
-    // A track that reached the end reports ProcessingState.completed, not
-    // idle — calling play() on it is a no-op (just_audio resumes "from that
-    // position", i.e. the very end), which made the play button look dead
-    // right after a slide finished. Reload/replay the slide from the start
-    // in that case instead of blindly calling play().
     final state = _audio.processingState;
     if (state == ProcessingState.idle || state == ProcessingState.completed) {
       await _playCurrentSlide(autoplay: true);
@@ -185,7 +160,6 @@ class _LecturePlayerScreenState extends State<LecturePlayerScreen> {
 
   @override
   void dispose() {
-    // Restore the app-wide portrait lock from main.dart.
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
     _playerStateSub?.cancel();
     _positionSub?.cancel();
@@ -221,9 +195,6 @@ class _LecturePlayerScreenState extends State<LecturePlayerScreen> {
     final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
 
     if (isLandscape) {
-      // Landscape: the slide takes the whole screen, chrome floats on top of
-      // it and the narration panel is dropped — this mode exists to see the
-      // presentation, the text is available in portrait.
       return Scaffold(
         backgroundColor: Colors.black,
         body: SafeArea(
@@ -235,9 +206,6 @@ class _LecturePlayerScreenState extends State<LecturePlayerScreen> {
                 child: Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: _buildSlideView(l, slide)),
               ),
             ),
-            // Scrims keep the white chrome readable over light slides.
-            // IgnorePointer while hidden so invisible buttons can't be tapped
-            // and taps fall through to the toggle above.
             Positioned(top: 0, left: 0, right: 0, child: IgnorePointer(
               ignoring: !_chromeVisible,
               child: AnimatedOpacity(
@@ -437,9 +405,6 @@ class _LecturePlayerScreenState extends State<LecturePlayerScreen> {
           onPressed: () => setState(() => _showingSummary = false),
         ),
       ),
-      // SafeArea keeps the notch/rounded corners (especially in landscape)
-      // from covering the text; extra horizontal padding on top of that so
-      // lines don't hug the screen edges.
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(28, 20, 28, 32),
@@ -489,11 +454,6 @@ class _SpeakingDotsState extends State<_SpeakingDots> with SingleTickerProviderS
   }
 }
 
-/// Minimal, self-contained markdown renderer for AI-generated summaries.
-/// Supports #/##/### headers, **bold** spans and "- " list items. No HTML,
-/// no external markdown package — avoids pulling in a dependency for a
-/// narrow use case and any injection surface that comes with v-html-style
-/// rendering.
 List<Widget> renderSimpleMarkdown(String text, BuildContext context) {
   final widgets = <Widget>[];
   final lines = text.split('\n');
@@ -524,11 +484,6 @@ List<Widget> renderSimpleMarkdown(String text, BuildContext context) {
   return widgets;
 }
 
-/// Renders a line with **bold** spans as rich text; plain text otherwise.
-/// Uses Text.rich (not a bare RichText) so it inherits the ambient
-/// DefaultTextStyle color — a bare RichText defaults to black and was
-/// rendering invisible on the player's dark background whenever a line
-/// contained "**".
 Widget _boldRichText(String line, TextStyle base) {
   final parts = line.split('**');
   if (parts.length == 1) return Text(line, style: base);

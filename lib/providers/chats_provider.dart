@@ -8,10 +8,6 @@ import '../services/api_service.dart';
 import '../utils/errors.dart';
 import 'auth_provider.dart';
 
-// ── WebSocket manager ─────────────────────────────────────────────────────────
-// Owns a single chat WS connection. Handles reconnect with exponential backoff.
-// Calls [onFallbackNeeded] after 3 failed connection attempts without ever
-// succeeding — meaning the server doesn't speak WS on that endpoint.
 class _ChatWsManager {
   final String? Function() urlBuilder;
   final void Function(Map<String, dynamic>) onMessage;
@@ -25,7 +21,6 @@ class _ChatWsManager {
   bool _isConnected = false;
   bool _everConnected = false;
   int _failCount = 0;
-  // Guard so that both ready.catchError and stream.onDone don't double-fire.
   bool _handlingDisconnect = false;
 
   bool get isConnected => _isConnected;
@@ -45,7 +40,6 @@ class _ChatWsManager {
 
     final wsUrl = urlBuilder();
     if (wsUrl == null) {
-      // No token yet (e.g. between refreshes) — retry shortly instead of failing out.
       _reconnectTimer = Timer(const Duration(seconds: 3), connect);
       return;
     }
@@ -56,7 +50,6 @@ class _ChatWsManager {
       _sub = _channel!.stream.listen(
         (raw) {
           if (_disposed) return;
-          // First data proves the connection is alive.
           if (!_isConnected) {
             _isConnected = true;
             _everConnected = true;
@@ -72,14 +65,12 @@ class _ChatWsManager {
         cancelOnError: false,
       );
 
-      // ready completes after the HTTP→WS upgrade handshake.
       _channel!.ready.then((_) {
         if (_disposed) return;
         _isConnected = true;
         _everConnected = true;
         _failCount = 0;
       }).catchError((Object _) { _onDisconnect(); });
-
     } catch (_) {
       _onDisconnect();
     }
@@ -91,13 +82,11 @@ class _ChatWsManager {
     _isConnected = false;
     _failCount++;
 
-    // Never connected after 3 tries → server doesn't support WS → use polling.
     if (!_everConnected && _failCount >= 3) {
       onFallbackNeeded();
       return;
     }
 
-    // Exponential backoff: 3 s, 6 s, 12 s, 24 s, 30 s (cap).
     final delaySec = min(3 * (1 << (_failCount - 1).clamp(0, 4)), 30);
     _reconnectTimer = Timer(Duration(seconds: delaySec), connect);
   }
@@ -117,7 +106,6 @@ class _ChatWsManager {
   }
 }
 
-// ── Provider ──────────────────────────────────────────────────────────────────
 class ChatsProvider extends ChangeNotifier {
   final ApiService _api;
   final AuthProvider _auth;
@@ -127,26 +115,20 @@ class ChatsProvider extends ChangeNotifier {
   Map<int, List<dynamic>> chatUsers = {};
   int? activeChatId;
   bool loading = true;
-  // Set by the host screen: true while the chats tab is on-screen and the app
-  // is foregrounded — background polling is skipped otherwise.
   bool isScreenVisible = true;
   List<dynamic> searchResults = [];
   final Map<int, int> lastSeenMsgId = {};
   String? errorMessage;
 
-  // WS state
   _ChatWsManager? _wsManager;
   Timer? _fallbackPoller;
 
-  // Typing: userId → last-seen timestamp. Cleared after 3 s of silence.
   final Map<int, DateTime> _typingTimestamps = {};
   Timer? _typingCleaner;
 
   bool get someoneIsTyping => _typingTimestamps.isNotEmpty;
 
   ChatsProvider(this._api, this._auth);
-
-  // ── Lifecycle ───────────────────────────────────────────────────────────────
 
   @override
   void dispose() {
@@ -159,8 +141,6 @@ class ChatsProvider extends ChangeNotifier {
   void clearError() {
     errorMessage = null;
   }
-
-  // ── Seen-message persistence ─────────────────────────────────────────────────
 
   Future<void> loadSeenMsgIds() async {
     try {
@@ -193,14 +173,11 @@ class ChatsProvider extends ChangeNotifier {
     }
   }
 
-  // ── Data loading ─────────────────────────────────────────────────────────────
-
   Future<void> loadChats() async {
     loading = true;
     notifyListeners();
     try {
       chats = await _api.getChats();
-      // Load users + messages for all chats in parallel instead of sequentially.
       await Future.wait(chats.map((c) async {
         final id = (c['id'] as num).toInt();
         await Future.wait([
@@ -230,20 +207,12 @@ class ChatsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Used by the screen's background timer for unread-badge updates.
-  // Skips the active chat when WS is handling it live.
   Future<void> pollMessages() async {
     if (!isScreenVisible) return;
-    // Background polling errors (e.g. offline) are swallowed — surfacing them
-    // as toasts would spam the user for a poll they didn't trigger.
-    // Notify at most ONCE per cycle, and only if something actually changed —
-    // the old code fired notifyListeners() per chat every 10 s unconditionally,
-    // rebuilding the whole chats screen N times even when no new messages came.
     bool changed = false;
     try {
       for (final c in chats) {
         final id = (c['id'] as num).toInt();
-        // Skip the chat that WS is already streaming.
         if (id == activeChatId && (_wsManager?.isConnected ?? false)) continue;
         try {
           final fresh = await _api.getMessages(id);
@@ -257,7 +226,6 @@ class ChatsProvider extends ChangeNotifier {
     if (changed) notifyListeners();
   }
 
-  // Cheap change check: different count, or a different last-message id.
   bool _messagesDiffer(List<dynamic>? a, List<dynamic> b) {
     if (a == null) return b.isNotEmpty;
     if (a.length != b.length) return true;
@@ -267,14 +235,11 @@ class ChatsProvider extends ChangeNotifier {
     return aLast != bLast;
   }
 
-  // ── Messaging ─────────────────────────────────────────────────────────────────
-
   Future<void> sendMessage(String content) async {
     if (activeChatId == null) return;
     final chatId = activeChatId!;
     try {
       final response = await _api.sendMessage(chatId, content);
-      // Optimistic local insert — the WS echo deduplicates by id.
       final msgId = (response['id'] as num?)?.toInt();
       if (msgId != null) {
         final msgs = List<dynamic>.from(messages[chatId] ?? []);
@@ -286,7 +251,6 @@ class ChatsProvider extends ChangeNotifier {
           notifyListeners();
         }
       }
-      // Fallback poll only when WS is not live.
       if (!(_wsManager?.isConnected ?? false)) {
         await pollMessages();
       }
@@ -301,11 +265,6 @@ class ChatsProvider extends ChangeNotifier {
     try {
       final result = await _api.uploadFile(filePath, fileName);
       var url = result['url'] ?? result['file_url'] ?? result['path'] ?? '';
-      // В сообщение кладём ОТНОСИТЕЛЬНЫЙ путь. Бэкенд возвращает абсолютный
-      // адрес из APP_BASE_URL (по умолчанию http://localhost:8000) — такой
-      // ссылкой сообщение становится непереносимым: на телефоне и у других
-      // пользователей localhost не открывается. Абсолютным путь снова делает
-      // клиент при отрисовке, уже через актуальный baseUrl.
       if (url.isNotEmpty) {
         url = _api.toRelativeUploadUrl(url);
       }
@@ -320,8 +279,6 @@ class ChatsProvider extends ChangeNotifier {
       return 'err_upload';
     }
   }
-
-  // ── User search / DM ─────────────────────────────────────────────────────────
 
   Future<void> searchUsers(String q) async {
     if (q.trim().isEmpty) {
@@ -391,8 +348,6 @@ class ChatsProvider extends ChangeNotifier {
     }
   }
 
-  // ── Active-chat management ────────────────────────────────────────────────────
-
   void setActiveChatId(int? id) {
     if (activeChatId == id) return;
     if (id == null) {
@@ -414,8 +369,6 @@ class ChatsProvider extends ChangeNotifier {
     saveSeenMsgIds();
   }
 
-  // ── WebSocket internals ───────────────────────────────────────────────────────
-
   void _connectWs(int chatId) {
     _disconnectWs();
     _stopFallbackPoller();
@@ -425,7 +378,6 @@ class ChatsProvider extends ChangeNotifier {
       urlBuilder: () {
         final token = _api.token;
         if (token == null) return null;
-        // Роут бэкенда — /ws/{chat_id} (см. websocket.py), не /ws/chat/{id}
         return '${_api.wsBaseUrl}/ws/$chatId?token=$token';
       },
       onMessage: (data) => _handleWsMessage(chatId, data),
@@ -475,13 +427,9 @@ class ChatsProvider extends ChangeNotifier {
     });
   }
 
-  // ── Typing ────────────────────────────────────────────────────────────────────
-
   void sendTyping() {
     _wsManager?.send({'type': 'typing'});
   }
-
-  // ── Fallback polling ──────────────────────────────────────────────────────────
 
   void _startFallbackPoller(int chatId) {
     _fallbackPoller?.cancel();
@@ -494,8 +442,6 @@ class ChatsProvider extends ChangeNotifier {
     _fallbackPoller?.cancel();
     _fallbackPoller = null;
   }
-
-  // ── Computed getters ──────────────────────────────────────────────────────────
 
   List<dynamic> get sortedChats {
     final sorted = List<dynamic>.from(chats);
@@ -524,10 +470,6 @@ class ChatsProvider extends ChangeNotifier {
     return name.startsWith('Чат с ') ? name.substring(6) : name;
   }
 
-  /// null — сообщений нет; экран подставит локализованный текст.
-  /// Превью последнего сообщения. Для вложений возвращает ключ локализации
-  /// ('preview_photo'/'preview_file') — иначе в списке чатов светилась бы
-  /// сырая ссылка на файл с подписью.
   String? lastPreview(int id) {
     final msgs = messages[id] ?? [];
     if (msgs.isEmpty) return null;
@@ -537,7 +479,6 @@ class ChatsProvider extends ChangeNotifier {
     return content.length > 45 ? '${content.substring(0, 45)}...' : content;
   }
 
-  // Сообщение целиком состоит из ссылки на загруженный файл?
   static final _uploadRegex =
       RegExp(r'^(https?://\S+|/)?/?uploads/\S+$', caseSensitive: false);
   static final _imageExtRegex =
@@ -550,8 +491,6 @@ class ChatsProvider extends ChangeNotifier {
     return _imageExtRegex.hasMatch(trimmed) ? 'preview_photo' : 'preview_file';
   }
 
-  /// Может вернуть ключ локализации ('time_now'/'time_yesterday') — экран
-  /// прогоняет результат через l.t(), готовые даты вернутся как есть.
   String chatTime(int id) {
     final msgs = messages[id] ?? [];
     if (msgs.isEmpty) return '';

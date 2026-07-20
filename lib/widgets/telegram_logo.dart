@@ -1,11 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-/// Официальный логотип Telegram (синий круг с белым самолётиком).
-///
-/// Путь — стандартный 24×24 глиф: он рисует круг, а самолётик остаётся
-/// «дыркой» за счёт обратного направления обхода. Поэтому под ним лежит белый
-/// круг — сквозь дырку видно именно его, а сам путь залит фирменным градиентом.
 class TelegramLogo extends StatelessWidget {
   final double size;
   const TelegramLogo({super.key, this.size = 24});

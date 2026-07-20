@@ -5,17 +5,10 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'api_service.dart';
 
-/// Обработчик фоновых/убитых FCM-сообщений. Должен быть top-level функцией
-/// (запускается в отдельном изоляте). Само уведомление в фоне рисует система
-/// (в payload есть notification-блок), поэтому тут ничего показывать не нужно.
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // no-op: системный трей уже показал уведомление.
 }
 
-/// Инкапсулирует push-уведомления: инициализация FCM, разрешения, показ
-/// уведомлений в foreground и навигация по тапу. Регистрация токена на бэкенде
-/// привязана к сессии (после логина — register, при выходе — unregister).
 class PushService {
   PushService(this.api, this.navigatorKey);
 
@@ -32,16 +25,13 @@ class PushService {
   bool _isAuthed = false;
   String? _lastSyncedToken;
 
-  /// Инициализация один раз при старте приложения (после Firebase.initializeApp).
-  /// Не запрашивает регистрацию на бэкенде — это делает [onAuthenticated].
   Future<void> init() async {
     if (_initialized) return;
     _initialized = true;
 
-    // Локальный плагин для показа уведомлений, пока приложение открыто.
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosInit = DarwinInitializationSettings(
-      requestAlertPermission: false, // разрешение просим через FirebaseMessaging
+      requestAlertPermission: false,
       requestBadgePermission: false,
       requestSoundPermission: false,
     );
@@ -53,7 +43,7 @@ class PushService {
       },
     );
 
-    // Канал Android (важно для heads-up на 8.0+); совпадает с манифестом.
+    // Канал должен совпадать с манифестом, иначе heads-up на Android 8+ не показывается.
     await _local
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
@@ -64,34 +54,26 @@ class PushService {
           importance: Importance.high,
         ));
 
-    // Foreground: FCM не рисует трей сам — показываем через local notifications.
     FirebaseMessaging.onMessage.listen(_showForeground);
 
-    // Тап по уведомлению, когда приложение в фоне (но живо).
     FirebaseMessaging.onMessageOpenedApp.listen((m) => _routeByType(m.data));
 
-    // Приложение запущено тапом по уведомлению из убитого состояния.
     final initial = await _fm.getInitialMessage();
     if (initial != null) {
-      // Небольшая задержка — дать дереву навигации подняться.
       Future.delayed(const Duration(milliseconds: 800),
           () => _routeByType(initial.data));
     }
 
-    // Обновление токена — пересинхронизируем, если пользователь залогинен.
     _fm.onTokenRefresh.listen((t) {
       _lastSyncedToken = null;
       if (_isAuthed) _syncToken(t);
     });
   }
 
-  /// Вызывать после успешного входа/восстановления сессии: спросить разрешение
-  /// и зарегистрировать текущий токен на бэкенде.
   Future<void> onAuthenticated() async {
     _isAuthed = true;
     try {
       await _fm.requestPermission(alert: true, badge: true, sound: true);
-      // iOS: без APNs-токена getToken() кинет — глотаем (нет платного аккаунта).
       final token = await _fm.getToken();
       if (token != null) await _syncToken(token);
     } catch (e) {
@@ -99,7 +81,6 @@ class PushService {
     }
   }
 
-  /// Вызывать при выходе: снять токен с сервера, чтобы чужие пуши не приходили.
   Future<void> onLogout() async {
     _isAuthed = false;
     try {
@@ -151,8 +132,6 @@ class PushService {
     );
   }
 
-  // ── Навигация по тапу ──────────────────────────────────────────────────────
-
   void _routeByType(Map<String, dynamic> data) {
     final nav = navigatorKey.currentState;
     if (nav == null) return;
@@ -165,14 +144,11 @@ class PushService {
         if (classId != null) nav.pushNamed('/class', arguments: classId);
         break;
       case 'message':
-        // Точный чат открыть сложнее (нужен таб-навигатор); открываем класс,
-        // если он передан, иначе оставляем пользователя на текущем экране.
         if (classId != null) nav.pushNamed('/class', arguments: classId);
         break;
     }
   }
 
-  // FCM data — плоская Map<String,String>; кодируем в query-строку для payload.
   String _encodePayload(Map<String, dynamic> data) => data.entries
       .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent('${e.value}')}')
       .join('&');

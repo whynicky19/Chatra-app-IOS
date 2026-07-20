@@ -9,15 +9,9 @@ import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/image_cache.dart';
 
-// Отдельная страница архива (как в WhatsApp): классы, где ученик состоит только
-// в архивных потоках (прошлые учебные годы, read-only). Убраны с главного экрана
-// в общем списке; сюда ведёт строка-вход «Архив». Карточки — те же обложки, что
-// и на главной, но приглушены (desaturate), чтобы визуально читаться как архив
-// и совпадать со стилем архива на сайте.
 class ArchiveScreen extends StatelessWidget {
   const ArchiveScreen({super.key});
 
-  // Те же градиенты, что на главном экране, — карточки выглядят единообразно.
   static const _grads = [
     [Color(0xFF006475), Color(0xFF009AAF)],
     [Color(0xFF0C4A6E), Color(0xFF0369A1)],
@@ -37,7 +31,6 @@ class ArchiveScreen extends StatelessWidget {
       body: SafeArea(
         bottom: false,
         child: CustomScrollView(slivers: [
-          // ── Apple-style large title ──
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(8, 6, 16, 0),
@@ -165,9 +158,6 @@ class _ArchiveCard extends StatelessWidget {
     required this.onTap,
   });
 
-  // Матрица частичной десатурации (насыщенность ~0.6, строки дают в сумме 1 —
-  // яркость сохраняется). Карточка читается как архивная, но обложка узнаётся;
-  // аналог grayscale(.4) на сайте. Коэффициенты яркости — Rec.709.
   static const List<double> _muted = [
     0.685, 0.286, 0.029, 0, 0,
     0.085, 0.886, 0.029, 0, 0,
@@ -195,7 +185,6 @@ class _ArchiveCard extends StatelessWidget {
             boxShadow: cardShadow(isDark),
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            // Muted cover
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
               child: SizedBox(
@@ -235,7 +224,6 @@ class _ArchiveCard extends StatelessWidget {
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Row(children: [
-                      // "Archived" pill
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(

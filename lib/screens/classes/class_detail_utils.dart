@@ -2,14 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-// Pure helpers extracted from class_detail_screen.dart — no widget state, so
-// they live here as top-level functions to keep the screen file focused.
-
-/// Strips the '[LECTURE][id] ' / '[HW][id] ' prefix from a post title.
 String cleanPostTitle(String t) =>
     t.replaceFirst(RegExp(r'^\[(LECTURE|HW)\]\[\d+\]\s*'), '').trim();
 
-/// Formats an ISO date string as dd.mm.yyyy (falls back to the raw string).
 String fmtDate(String? d) {
   if (d == null) return '';
   try {
@@ -20,19 +15,13 @@ String fmtDate(String? d) {
   }
 }
 
-// Bare uploaded-file URL in free text. Must tolerate the signed query the
-// backend appends (?exp=…&sig=…) — the previous pattern allowed only a
-// #fragment, so signed links were not recognised as attachments at all and were
-// left rendered as raw text. Extensions use the `x?` form so ".docx" can't be
-// eaten as ".doc"+junk.
+// Обязана понимать подпись ?exp=&sig= — иначе подписанные ссылки не видны как вложения.
 final RegExp fileUrlRe = RegExp(
     r'https?://[^\s"<>]+?\.(pdf|docx?|pptx?|xlsx?|txt|md|csv|rtf|png|jpe?g|gif|webp|mp3|wav|m4a|webm|ogg|mp4)'
     r'(\?[^\s"<>]*)?(#[^\s"<>]*)?',
     caseSensitive: false);
-// Site-generated markdown attachment: "📎 [name](url)"
 final RegExp mdFileRe = RegExp(r'📎\s*\[([^\]\n]+)\]\((https?://[^\s)]+)\)');
 
-/// Removes raw file URLs from content for cleaner display.
 String cleanContent(String content) {
   return content
       .replaceAll(mdFileRe, '')
@@ -41,8 +30,6 @@ String cleanContent(String content) {
       .trim();
 }
 
-/// Human-readable filename: uses the URL fragment (#OriginalName.pdf) if present,
-/// otherwise falls back to the last path segment (which may be a UUID).
 String fileDisplayName(String url) {
   try {
     final uri = Uri.parse(url);
@@ -53,15 +40,12 @@ String fileDisplayName(String url) {
   }
 }
 
-/// Strips the #fragment from a URL before passing it to launchUrl or fetching.
 String cleanFileUrl(String url) {
   final idx = url.indexOf('#');
   return idx >= 0 ? url.substring(0, idx) : url;
 }
 
-/// Strips punctuation that prose glues onto the end of a URL: the closer of a
-/// markdown link or parenthetical, a sentence period, a list comma. Only
-/// *unbalanced* closing brackets go — a filename may legitimately contain "(1)".
+// Срезает только непарные скобки: иначе ) из markdown уезжает в sig и ломает подпись (403).
 String trimUrlPunctuation(String url) {
   var s = url;
   while (s.isNotEmpty) {
@@ -77,18 +61,12 @@ String trimUrlPunctuation(String url) {
   return s;
 }
 
-/// Every uploaded-file URL in [text], cleaned of trailing prose punctuation.
 List<String> extractFileUrls(String text) => fileUrlRe
     .allMatches(text)
     .map((m) => trimUrlPunctuation(m.group(0)!))
     .toList();
 
-/// Stable cache key for a remote file.
-///
-/// Uploads carry a signed query (`?exp=…&sig=…`) that the backend regenerates on
-/// every JSON response, so hashing the full URL yields a different key each time:
-/// the temp copy is never reused and a fresh duplicate piles up on every open.
-/// Only the path identifies the file — upload names are UUIDs and immutable.
+// Ключ строго от path: подпись меняется в каждом ответе, иначе кэш мёртв и temp растёт.
 String fileCacheKey(String url) {
   try {
     return Uri.parse(url).path.hashCode.toRadixString(16);
@@ -97,7 +75,6 @@ String fileCacheKey(String url) {
   }
 }
 
-/// Fullscreen, pinch-to-zoom image viewer (tap anywhere to dismiss).
 void showImageViewer(BuildContext ctx, String url, String name) {
   showDialog(
     context: ctx,

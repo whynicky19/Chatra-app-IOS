@@ -34,7 +34,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
   int _avatarsPendingCount = 0;
   bool _reportsTabActive = false;
   int _reportsOpenCount = 0;
-  // AI usage filter/pagination — mirrors the site's aiFilterClass + page/page_size.
   int? _aiFilterClassId;
   int _aiLogPage      = 1;
   int _aiLogTotal     = 0;
@@ -58,18 +57,11 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
 
   Timer? _searchDebounce;
 
-  // Memoized tab bodies: an unrelated parent setState (tab badge, another tab's
-  // data, the avatars callback) returns the SAME cached instance, so Flutter
-  // skips rebuilding that tab's subtree and its aggregations. A tab is rebuilt
-  // only when its own inputs change (data identity/length, filters, loading,
-  // theme, language) — see the signatures below.
   Widget? _usersTabCache, _aiTabCache, _classesTabCache;
   String _usersTabSig = '', _aiTabSig = '', _classesTabSig = '';
 
   @override void dispose() { _searchDebounce?.cancel(); _tabCtrl.dispose(); super.dispose(); }
 
-  // The three loads are independent — run them in parallel so each tab appears
-  // as its own data arrives instead of waiting for the previous request.
   Future<void> _initAll() async {
     await Future.wait([_load(), _loadClasses(), _loadAi()]);
   }
@@ -89,7 +81,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     _allClassPosts = classes
         .map((c) => {...c as Map<String, dynamic>, 'title': c['name'], 'teacher_name': c['teacher'], 'user_id': c['created_by']})
         .toList();
-    // Fetch real members for each class in parallel
     final results = await Future.wait(_allClassPosts.map((c) async {
       final id = (c['id'] as num?)?.toInt();
       if (id == null) return const MapEntry(0, <dynamic>[]);
@@ -119,8 +110,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     if (mounted) setState(() => _aiLoading = false);
   }
 
-  // Total tokens matches the site's aiFilterClass behavior: unfiltered sums
-  // the per-class summary; filtered shows just that class's total.
   void _recomputeTotalTokens() {
     if (_aiFilterClassId == null) {
       _totalTokens = 0;
@@ -210,7 +199,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     return _classMembers[classId] ?? [];
   }
 
-  // ─────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final l        = context.watch<L10n>();
@@ -219,8 +207,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     final primary  = Theme.of(context).colorScheme.primary;
     final teachers = _users.where((u) => u['role'] == 'teacher').length;
     final students = _users.where((u) => u['role'] == 'student').length;
-    // Shared theme+language part of each tab's memo signature — a brightness,
-    // primary-color or locale change invalidates all cached tab bodies.
     final tabSig = '$isDark|$primary|${l.lang}';
 
     return Scaffold(
@@ -228,7 +214,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
       body: SafeArea(child: NestedScrollView(
         headerSliverBuilder: (ctx, _) => [
           SliverToBoxAdapter(child: Column(children: [
-            // ── Title + Add button ─────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 14),
               child: Row(children: [
@@ -260,7 +245,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                 ),
               ]),
             ),
-            // ── Stats row (scrolls away) ───────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: Row(children: [
@@ -273,7 +257,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             ),
           ])),
         ],
-        // ── Tabs + content stay pinned ──────────────────────
         body: Column(children: [
           Container(
             margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -342,11 +325,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     );
   }
 
-  // ── Tab memoization ──────────────────────────────────────
-  // [tl] is a common theme+language signature so a dark/light or locale switch
-  // still rebuilds every tab. Data lists are reassigned wholesale on load (so
-  // identityHashCode detects reloads); _aiLogs is the exception — _loadMoreAiLogs
-  // mutates it in place, hence its length is part of the signature too.
   Widget _memoUsersTab(String tl) {
     final sig = 'u|$_loading|${identityHashCode(_users)}|$_search|$tl';
     if (sig != _usersTabSig || _usersTabCache == null) {
@@ -378,7 +356,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     return _classesTabCache!;
   }
 
-  // ── Users tab ────────────────────────────────────────────
   Widget _usersTab() {
     final l       = context.read<L10n>();
     final isDark  = Theme.of(context).brightness == Brightness.dark;
@@ -394,9 +371,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               child: Icon(CupertinoIcons.search, size: 18, color: C.text4)),
             contentPadding: const EdgeInsets.symmetric(vertical: 12),
           ),
-          // Debounced: the field stays responsive, but filtering (which rebuilds
-          // the whole admin screen, incl. the AI/classes tabs) fires only after a
-          // short pause instead of on every keystroke.
           onChanged: (v) {
             _searchDebounce?.cancel();
             _searchDebounce = Timer(const Duration(milliseconds: 250), () {
@@ -434,7 +408,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                       boxShadow: softShadow(isDark),
                     ),
                     child: Row(children: [
-                      // Avatar
                       Container(
                         width: 46, height: 46,
                         decoration: BoxDecoration(
@@ -480,7 +453,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     ]);
   }
 
-  // ── AI tab ───────────────────────────────────────────────
   Widget _aiTab() {
     final l       = context.read<L10n>();
     final surface = Theme.of(context).colorScheme.surface;
@@ -500,7 +472,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
       onRefresh: _loadAi,
       child: ListView(padding: const EdgeInsets.fromLTRB(16, 8, 16, 90), children: [
 
-        // Total tokens card
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -534,8 +505,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
         ),
         const SizedBox(height: 16),
 
-        // Class filter — like aiFilterClass on the site: filters both the
-        // total-tokens card (via _recomputeTotalTokens) and the log below.
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(children: [
@@ -557,7 +526,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
         ),
         const SizedBox(height: 20),
 
-        // By class
         if (_aiFilterClassId == null && _aiSummary.isNotEmpty) ...[
           _SectionLabel(l.t('by_classes')),
           const SizedBox(height: 8),
@@ -598,7 +566,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           const SizedBox(height: 20),
         ],
 
-        // By user
         if (userSummary.isNotEmpty) ...[
           _SectionLabel(l.t('by_users')),
           const SizedBox(height: 8),
@@ -644,14 +611,12 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           const SizedBox(height: 20),
         ],
 
-        // Log table
         if (_aiLogs.isNotEmpty) ...[
           _SectionLabel('${l.t('detail_log')} (${_aiLogs.length}/$_aiLogTotal)'),
           const SizedBox(height: 8),
           Container(
             decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(16), boxShadow: softShadow(isDark)),
             child: Column(children: [
-              // Header row
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
                 child: Row(children: [
@@ -736,7 +701,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     );
   }
 
-  // ── Classes tab ──────────────────────────────────────────
   Widget _classesTab() {
     final l       = context.read<L10n>();
     final isDark  = Theme.of(context).brightness == Brightness.dark;
@@ -785,7 +749,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                 margin: const EdgeInsets.only(bottom: 14),
                 decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(AppRadii.card), boxShadow: cardShadow(isDark)),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  // Cover
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                     child: SizedBox(height: 128, width: double.infinity,
@@ -806,13 +769,11 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                         )),
                       ])),
                   ),
-                  // Info
                   Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: adaptiveText1(context)), maxLines: 2, overflow: TextOverflow.ellipsis),
                     if (description.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 3),
                       child: Text(description, style: const TextStyle(fontSize: 13, color: C.text4), maxLines: 1, overflow: TextOverflow.ellipsis)),
                     const SizedBox(height: 10),
-                    // Creator row
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
                       decoration: BoxDecoration(color: primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(12)),
@@ -839,7 +800,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                         Text(teacherName, style: const TextStyle(fontSize: 12, color: C.text4)),
                       ])),
                     const SizedBox(height: 10),
-                    // Students preview
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       decoration: BoxDecoration(
@@ -880,7 +840,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     );
   }
 
-  // ── Students bottom sheet ─────────────────────────────────
   void _showStudentsSheet(int classId, String className, dynamic coverImg, int colorIdx) {
     final l       = context.read<L10n>();
     final isDark  = Theme.of(context).brightness == Brightness.dark;
@@ -908,11 +867,9 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           return DraggableScrollableSheet(
             expand: false, initialChildSize: 0.65, maxChildSize: 0.92,
             builder: (ctx, sc) => Column(children: [
-              // Handle
               Container(width: 36, height: 4, margin: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2))),
 
-              // Header
               Padding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 14), child: Row(children: [
                 ClipRRect(borderRadius: BorderRadius.circular(12),
                   child: SizedBox(width: 52, height: 52, child: _classCover(coverImg, colorIdx, classId: classId))),
@@ -950,7 +907,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
 
               Divider(height: 1, color: C.border.withValues(alpha: 0.5)),
 
-              // List
               Expanded(child: members.isEmpty
                 ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
                     const Icon(CupertinoIcons.person_2, size: 52, color: C.text4),
@@ -1029,7 +985,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     );
   }
 
-  // ── Вернуть ранее состоявшего студента (из архивных потоков) ──────────────
   void _showRejoinableSheet(int classId, String className, Future<void> Function() onChanged) {
     final l = context.read<L10n>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -1191,7 +1146,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     }
   }
 
-  // ── User actions sheet (roles, block, delete) ─────────────
   void _showUserActionsSheet(dynamic u) {
     final l       = context.read<L10n>();
     final isSelf  = u['id'] == context.read<AuthProvider>().userId;
@@ -1262,7 +1216,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             Center(child: Container(width: 36, height: 4, margin: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(color: adaptiveBorder(ctx), borderRadius: BorderRadius.circular(2)))),
 
-            // Header: avatar + name + email
             Row(children: [
               Container(width: 50, height: 50,
                 decoration: BoxDecoration(
@@ -1288,7 +1241,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             ]),
             const SizedBox(height: 18),
 
-            // Role selector
             _SectionLabel(l.t('role')),
             const SizedBox(height: 8),
             Row(children: [
@@ -1300,7 +1252,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             ]),
             const SizedBox(height: 18),
 
-            // Actions
             _SectionLabel(l.t('actions_label')),
             const SizedBox(height: 8),
             actionTile(
@@ -1355,7 +1306,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     );
   }
 
-  // ── Create user dialog ────────────────────────────────────
   void _showCreateDialog() {
     final emailCtrl = TextEditingController(), pwCtrl = TextEditingController();
     String role = 'student';
@@ -1477,8 +1427,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
   }
 }
 
-// ── Reusable widgets ──────────────────────────────────────────────────────────
-
 class _StatCard extends StatelessWidget {
   final IconData icon;
   final String value, label;
@@ -1495,8 +1443,6 @@ class _StatCard extends StatelessWidget {
       boxShadow: softShadow(isDark),
     ),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      // White glyph on a coloured gradient tile with a soft glow — matches the
-      // premium tile language used on the home/auth screens.
       Container(
         width: 38, height: 38,
         decoration: BoxDecoration(

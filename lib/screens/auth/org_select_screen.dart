@@ -35,7 +35,6 @@ class _OrgSelectScreenState extends State<OrgSelectScreen> {
     await context.read<OrgProvider>().select(picked);
   }
 
-  // Ступенчатое появление: каждый блок чуть позже предыдущего.
   Widget _reveal(int step, Widget child) {
     if (MediaQuery.of(context).disableAnimations) return child;
     return TweenAnimationBuilder<double>(
@@ -56,7 +55,6 @@ class _OrgSelectScreenState extends State<OrgSelectScreen> {
     return Scaffold(
       backgroundColor: isDark ? C.darkBg : C.bg,
       body: Stack(children: [
-        // Едва заметное цветное «дыхание» по углам: выбранный цвет проступает сильнее.
         AmbientGlow(
           alignment: Alignment.topLeft,
           color: C.teal,
@@ -74,11 +72,9 @@ class _OrgSelectScreenState extends State<OrgSelectScreen> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Column(mainAxisSize: MainAxisSize.min, children: [
-                // Логотип, «примеряет» цвет выбранной организации
                 _reveal(1, SizedBox(
                   width: 108, height: 108,
                   child: Stack(alignment: Alignment.center, children: [
-                    // Мягкое свечение позади знака
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 450),
                       curve: Curves.easeOutCubic,
@@ -147,7 +143,6 @@ class _OrgSelectScreenState extends State<OrgSelectScreen> {
             ),
           ))),
 
-          // Кнопка «Продолжить» — liquid glass, прижата к низу
           _reveal(5, Padding(
             padding: const EdgeInsets.fromLTRB(24, 4, 24, 20),
             child: ConstrainedBox(
@@ -172,7 +167,6 @@ class _OrgSelectScreenState extends State<OrgSelectScreen> {
   }
 }
 
-// ── Кнопка «Продолжить» на движке liquid_glass_easy ──────────────────────────
 class _GlassButton extends StatelessWidget {
   final bool active;
   final Color accent;
@@ -201,7 +195,6 @@ class _GlassButton extends StatelessWidget {
         style: LiquidGlassStyle(
           shape: const LiquidGlassShape.roundedRectangle(cornerRadius: 16),
           appearance: LiquidGlassAppearance(
-            // Активная — наливается акцентом сквозь стекло, неактивная — нейтральное стекло.
             color: active
                 ? accent.withValues(alpha: 0.88)
                 : (isDark ? Colors.white.withValues(alpha: 0.06) : Colors.white.withValues(alpha: 0.5)),
@@ -218,7 +211,6 @@ class _GlassButton extends StatelessWidget {
   }
 }
 
-// ── Карточка выбора организации ──────────────────────────────────────────────
 class _OrgCard extends StatefulWidget {
   final String title;
   final String subtitle;
@@ -294,7 +286,6 @@ class _OrgCardState extends State<_OrgCard> {
               const SizedBox(height: 2),
               Text(widget.subtitle, style: const TextStyle(fontSize: 13, color: C.text4)),
             ])),
-            // Радио-отметка в стиле списков iOS
             AnimatedContainer(
               duration: const Duration(milliseconds: 240),
               curve: Curves.easeOutCubic,

@@ -6,12 +6,6 @@ import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/toast.dart';
 
-/// Общие для настроек виджеты: карточка-действие, каркас вложенного экрана и
-/// модалки пароля/удаления. Вынесены сюда, потому что настройки разбиты на
-/// разделы («Аккаунт и безопасность», «О приложении») и всё это нужно и на
-/// главном экране, и во вложенных.
-
-// ── Карточка-действие (иконка + заголовок + подпись + шеврон) ────────────────
 class SettingsActionCard extends StatelessWidget {
   final IconData icon;
   final Color iconBg;
@@ -63,7 +57,6 @@ class SettingsActionCard extends StatelessWidget {
   }
 }
 
-// ── Каркас вложенного экрана настроек (шапка с «назад» + список) ─────────────
 class SettingsSubScreen extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -109,8 +102,6 @@ class SettingsSubScreen extends StatelessWidget {
   }
 }
 
-// ── Открытие модалок (вызывается из разделов настроек) ───────────────────────
-
 Future<void> openChangePassword(BuildContext context) async {
   final l = context.read<L10n>();
   final result = await showModalBottomSheet<bool>(
@@ -136,13 +127,11 @@ Future<void> openDeleteAccount(BuildContext context) async {
   if (!context.mounted) return;
   if (err == null) {
     showToast(context, l.t('account_deleted'));
-    // AuthProvider уже очистил токен и user → _AuthGate уведёт на вход.
   } else {
     showToast(context, l.t(err), error: true);
   }
 }
 
-// ── Модалка смены пароля ────────────────────────────────────────────────────
 class ChangePasswordSheet extends StatefulWidget {
   const ChangePasswordSheet({super.key});
   @override State<ChangePasswordSheet> createState() => _ChangePasswordSheetState();
@@ -204,7 +193,6 @@ class _ChangePasswordSheetState extends State<ChangePasswordSheet> {
   }
 }
 
-// ── Модалка удаления аккаунта ───────────────────────────────────────────────
 class DeleteAccountSheet extends StatefulWidget {
   const DeleteAccountSheet({super.key});
   @override State<DeleteAccountSheet> createState() => _DeleteAccountSheetState();
@@ -257,7 +245,6 @@ class _DeleteAccountSheetState extends State<DeleteAccountSheet> {
   }
 }
 
-// Общий каркас модалки: закруглённый лист, ручка, иконка, заголовок.
 class SheetScaffold extends StatelessWidget {
   final String title;
   final IconData icon;
@@ -357,8 +344,6 @@ class SheetButton extends StatelessWidget {
       onTap: enabled ? onTap : null,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        // minHeight, а не height: при увеличенном системном шрифте кнопка
-        // растёт вместе с подписью вместо того, чтобы её обрезать.
         constraints: const BoxConstraints(minHeight: 52),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(

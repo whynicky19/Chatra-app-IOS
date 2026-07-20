@@ -4,12 +4,8 @@ import 'package:provider/provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
 
-/// Дата последнего изменения политики. Обновляй при правках текста.
 const String _kPrivacyUpdated = '19.07.2026';
 
-/// Политика конфиденциальности. Реальные разделы (что собираем, зачем, кому
-/// передаём, права, дети, контакты) — требование App Store для метаданных и
-/// экрана в приложении. Оформление в стиле приложения (карточки + иконки).
 class PrivacyPolicyScreen extends StatelessWidget {
   const PrivacyPolicyScreen({super.key});
 
@@ -33,7 +29,6 @@ class PrivacyPolicyScreen extends StatelessWidget {
       body: SafeArea(
         bottom: false,
         child: Column(children: [
-          // ── Back + title ──────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(6, 6, 16, 4),
             child: Row(children: [
@@ -49,7 +44,6 @@ class PrivacyPolicyScreen extends StatelessWidget {
           Expanded(child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
             children: [
-              // Hero
               Container(
                 width: 56, height: 56,
                 decoration: BoxDecoration(
@@ -66,7 +60,6 @@ class PrivacyPolicyScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 15, height: 1.55, color: adaptiveText1(context))),
               const SizedBox(height: 20),
 
-              // Sections
               for (final s in _sections) ...[
                 _card(context, isDark, primary, s.$1, l.t(s.$2), l.t(s.$3)),
                 const SizedBox(height: 12),

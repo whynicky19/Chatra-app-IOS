@@ -10,10 +10,6 @@ import '../screens/classes/class_detail_utils.dart' show fileCacheKey;
 import '../services/api_service.dart';
 import '../widgets/toast.dart';
 
-/// Downloads a remote file to the temp dir and opens it with the native
-/// viewer. Shows a modal spinner while downloading, reuses a cached copy,
-/// reports a missing file honestly instead of dumping the user into the
-/// browser (where ngrok's interstitial would greet them).
 Future<void> openRemoteFile(BuildContext context, ApiService api, String url, String name) async {
   final cleanUrl = url.split('#').first;
 
@@ -60,9 +56,7 @@ Future<void> openRemoteFile(BuildContext context, ApiService api, String url, St
       showToast(context, context.read<L10n>().t('file_not_found_server'), error: true);
       return;
     }
-    // 403 = подпись ссылки истекла (TTL суток) или побилась. В браузере юзер
-    // увидит только сырой JSON с ошибкой, поэтому говорим честно: нужно обновить
-    // экран, чтобы сервер выдал свежую подпись.
+    // 403 = подпись истекла; в браузере юзер увидит сырой JSON, поэтому говорим честно.
     if (code == 403) {
       showToast(context, context.read<L10n>().t('file_link_expired'), error: true);
       return;

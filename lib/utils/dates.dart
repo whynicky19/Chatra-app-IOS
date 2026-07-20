@@ -1,9 +1,3 @@
-/// Formats a backend timestamp as local "dd.MM.yyyy HH:mm".
-///
-/// The backend stores naive UTC (`datetime.utcnow()`), so its ISO strings
-/// carry no timezone marker. `DateTime.parse` would treat them as local time
-/// and the shown time would be off by the UTC offset — appending 'Z' first
-/// makes the UTC origin explicit, then we convert to the device timezone.
 String fmtDateTimeLocal(String iso) {
   if (iso.isEmpty) return '';
   try {

@@ -26,16 +26,12 @@ class ChatsScreen extends StatefulWidget {
 class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin, WidgetsBindingObserver {
   final _searchCtrl = TextEditingController();
   final _msgCtrl = TextEditingController();
-  // Background timer: refreshes unread badges for the chat list.
-  // Runs at 10 s; WS handles the open-chat stream in real time.
   Timer? _bgPoller;
   Timer? _searchDebounce;
   late AnimationController _listAnim;
   late AnimationController _replyAnim;
   final ScrollController _chatScrollCtrl = ScrollController();
-  // Throttle: send typing event at most once per 2 s.
   DateTime? _lastTypingSent;
-  // Reply state
   Map<String, dynamic>? _replyTo;
 
   static const _avatarColors = [
@@ -63,8 +59,6 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
     _startBgPoller();
   }
 
-  // Background poll for unread counts while browsing the chat list.
-  // Skips the WS-active chat automatically inside pollMessages().
   void _startBgPoller() {
     _bgPoller?.cancel();
     _bgPoller = Timer.periodic(const Duration(seconds: 10), (_) {
@@ -99,7 +93,6 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
   void _onProviderError() {
     final err = context.read<ChatsProvider>().errorMessage;
     if (err != null && mounted) {
-      // errorMessage — ключ локализации (см. ChatsProvider).
       showToast(context, context.read<L10n>().t(err), error: true);
       context.read<ChatsProvider>().clearError();
     }
@@ -118,7 +111,6 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
     });
   }
 
-  // Throttled: sends a typing WS event at most once every 2 s.
   void _onMsgChanged(String _) {
     final now = DateTime.now();
     if (_lastTypingSent == null ||
@@ -135,9 +127,6 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
     return _buildChatList(provider);
   }
 
-  // ── Chat list ─────────────────────────────────────────────────────────────────
-
-  // id собеседника для 1-на-1 чата (null, если участники ещё не загружены).
   int? _chatPartnerId(ChatsProvider p, dynamic chat) {
     final myId = context.read<AuthProvider>().userId;
     final parts = p.chatUsers[chat['id']] ?? [];
@@ -148,8 +137,6 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
     return null;
   }
 
-  // Отображаемое имя по id — сохраняем его вместе с блокировкой, чтобы экран
-  // «Заблокированные» в настройках показывал имена, а не голые id.
   String? _userName(int userId) {
     final provider = context.read<ChatsProvider>();
     for (final parts in provider.chatUsers.values) {
@@ -168,15 +155,11 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
     final mod = context.watch<ModerationService>();
     final surface = Theme.of(context).colorScheme.surface;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    // UGC: чаты с заблокированными НЕ прячем — оставляем в списке, просто
-    // помечаем и скрываем их последнее сообщение. Разблокировать можно внутри
-    // чата (плашка) или из меню.
     final sorted = provider.sortedChats;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(child: Column(children: [
-        // Header
         Padding(padding: const EdgeInsets.fromLTRB(20, 24, 20, 0), child: Row(children: [
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(l.t('messages_title'), style: TextStyle(fontSize: 34, fontWeight: FontWeight.w700, color: adaptiveText1(context), letterSpacing: -0.4)),
@@ -184,7 +167,6 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
           ])),
         ])),
         const SizedBox(height: 14),
-        // Search bar — iOS style pill
         Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Container(
           height: 38,
           decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
@@ -214,7 +196,6 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
             )),
           ]),
         )),
-        // Search results
         if (provider.searchResults.isNotEmpty) Container(
           constraints: const BoxConstraints(maxHeight: 220),
           margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -239,10 +220,6 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
               );
             }).toList()))),
         const SizedBox(height: 8),
-        // Chat list
-        // Pull-to-refresh: обёрнут весь блок, включая скелетон и пустое
-        // состояние — потянуть, чтобы проверить новые чаты, логично и когда
-        // список пуст (_emptyState специально прокручиваемый).
         Expanded(child: RefreshIndicator(
           onRefresh: () => context.read<ChatsProvider>().loadChats(),
           child: provider.loading
@@ -268,13 +245,9 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
                   final title = provider.chatTitle(c);
                   final blocked = mod.isBlocked(_chatPartnerId(provider, c));
                   final unread = !blocked && provider.hasUnread(id);
-                  // chatTime может вернуть ключ ('time_now'/'time_yesterday'); готовая
-                  // дата пройдёт через l.t() без изменений.
                   final time = l.t(provider.chatTime(id));
                   final preview = blocked
                       ? l.t('you_blocked_user')
-                      // lastPreview может вернуть ключ ('preview_photo' и т.п.);
-                      // обычный текст l.t() отдаст без изменений.
                       : l.t(provider.lastPreview(id) ?? 'no_messages');
                   final initials = title.isNotEmpty ? title[0].toUpperCase() : '?';
 
@@ -363,13 +336,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
 
   Widget _emptyState() {
     final l = context.read<L10n>();
-    // Scrollable so it can't overflow when the keyboard plus the search
-    // results panel squeeze the remaining space (was: "bottom overflowed by
-    // 61 pixels" while searching people with no chats yet).
-    //
-    // AlwaysScrollableScrollPhysics обязателен: содержимое короче экрана, и без
-    // него скролл не принимает жест — pull-to-refresh не сработал бы ровно в том
-    // случае, когда чатов нет и потянуть хочется больше всего.
+    // AlwaysScrollableScrollPhysics обязателен: без него pull-to-refresh мёртв на пустом списке.
     return Center(child: SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -382,8 +349,6 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
     ])));
   }
 
-  // ── Chat view ─────────────────────────────────────────────────────────────────
-
   Widget _buildChatView(ChatsProvider provider) {
     final l = context.watch<L10n>();
     final mod = context.watch<ModerationService>();
@@ -394,7 +359,6 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
     final title = provider.chatTitle(chat);
     final color = _avatarColors[(provider.activeChatId ?? 0) % _avatarColors.length];
 
-    // UGC: id собеседника — из участников чата, иначе из его сообщений.
     final participants = provider.chatUsers[provider.activeChatId] ?? [];
     int? partnerId = participants
         .where((u) => (u['id'] as num?)?.toInt() != auth.userId)
@@ -405,7 +369,6 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
         .firstWhere((id) => id != null && id != auth.userId, orElse: () => null);
     final partnerBlocked = mod.isBlocked(partnerId);
 
-    // Сообщения заблокированных пользователей не показываем.
     final msgs = mod.blockedIds.isEmpty
         ? allMsgs
         : allMsgs.where((m) => !mod.isBlocked((m['user_id'] as num?)?.toInt())).toList();
@@ -441,12 +404,10 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800), overflow: TextOverflow.ellipsis),
-                  // Typing sub-label in the app bar
                   if (provider.someoneIsTyping)
                     Text(context.read<L10n>().t('typing_indicator'), style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w500)),
                 ],
               )),
-              // UGC-модерация: пожаловаться / (раз)блокировать собеседника.
               if (partnerId != null)
                 IconButton(
                   icon: const Icon(CupertinoIcons.ellipsis, size: 20),
@@ -457,7 +418,6 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
         ),
       ),
       body: Column(children: [
-        // Message list
         Expanded(child: msgs.isEmpty
           ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
               Icon(CupertinoIcons.smiley, size: 48, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4)),
@@ -514,7 +474,6 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
                 );
               })),
 
-        // Typing indicator bubble — slides in/out smoothly
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 280),
           switchInCurve: Curves.easeOutCubic,
@@ -528,14 +487,12 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
               : const SizedBox.shrink(key: ValueKey('no_typing')),
         ),
 
-        // Reply preview
         if (_replyTo != null) _ReplyPreview(
           message: _replyTo!,
           animation: _replyAnim,
           onCancel: () => setState(() { _replyTo = null; }),
         ),
 
-        // UGC: если собеседник заблокирован — вместо ввода показываем плашку.
         if (partnerBlocked)
           Container(
             width: double.infinity,
@@ -558,7 +515,6 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
             ]),
           )
         else
-          // Input bar — reactive stateful widget (animated border + send button)
           _ChatInputBar(
             ctrl: _msgCtrl,
             onSend: _send,
@@ -568,8 +524,6 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
       ]),
     );
   }
-
-  // ── UGC moderation menus ──────────────────────────────────────────────────
 
   void _showChatModerationMenu(int partnerId, bool blocked) {
     final l = context.read<L10n>();
@@ -628,7 +582,6 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
             Navigator.pop(ctx);
             setState(() { _replyTo = m; _replyAnim.forward(from: 0); });
           }),
-          // Жалоба/блок — только для чужих сообщений.
           if (!isMe && senderId != null) ...[
             _modTile(ctx, CupertinoIcons.exclamationmark_octagon, l.t('report_message'), C.red, () {
               Navigator.pop(ctx);
@@ -674,8 +627,6 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
     if (!mounted) return;
     _scrollToBottom(animated: true);
   }
-
-  // ── Photo menu ────────────────────────────────────────────────────────────────
 
   void _showPhotoMenu(BuildContext context, int chatId) {
     showModalBottomSheet(
@@ -726,14 +677,11 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
     if (err != null) showToast(context, context.read<L10n>().t(err), error: true);
   }
 
-  // ── Message content renderer ──────────────────────────────────────────────────
-
   Widget _buildMessageContent(String content, bool isMe) {
-    // Parse quote prefix "> sender: text\n\nmain"
     if (content.startsWith('> ')) {
       final nlIdx = content.indexOf('\n\n');
       if (nlIdx > 0) {
-        final quoteLine = content.substring(2, nlIdx); // "sender: text"
+        final quoteLine = content.substring(2, nlIdx);
         final mainText = content.substring(nlIdx + 2).trim();
         final colonIdx = quoteLine.indexOf(': ');
         final senderName = colonIdx > 0 ? quoteLine.substring(0, colonIdx) : '';
@@ -742,7 +690,6 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            // Quote block
             Container(
               padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
               decoration: BoxDecoration(
@@ -758,22 +705,16 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
               ]),
             ),
             const SizedBox(height: 6),
-            // Main text
             Text(mainText, style: TextStyle(fontSize: 15, color: isMe ? Colors.white : null, height: 1.4)),
           ]),
         );
       }
     }
-    // Fall through to original renderer
     String fixedContent = content;
     try {
       fixedContent = context.read<ApiService>().fixUrlsInText(content);
     } catch (_) {}
 
-    // Query-строка обязана попасть в ссылку: файлы отдаются по подписанному
-    // URL (?exp=...&sig=...), и без подписи сервер их не отдаёт. Раньше
-    // \S+\.(jpg) обрывался на расширении — картинка не грузилась, а хвост
-    // ?exp=...&sig=... печатался в сообщении как текст.
     final imgRegex = RegExp(
         r'https?://\S+?\.(jpg|jpeg|png|gif|webp)(\?\S*)?',
         caseSensitive: false);
@@ -802,8 +743,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
     final urlRegex = RegExp(r'https?://\S+');
     final urlMatch = urlRegex.firstMatch(fixedContent);
     if (urlMatch != null) {
-      // \S+ захватывает и точку/скобку, приклеенную к ссылке в живой речи —
-      // срезаем, иначе ломается подпись upload-ссылки и просто внешние адреса.
+      // \S+ цепляет точку/скобку из речи — без тримминга ломается подпись ссылки.
       final url = trimUrlPunctuation(urlMatch.group(0)!);
       final before = fixedContent.substring(0, urlMatch.start).trim();
       final after = fixedContent.substring(urlMatch.start + url.length).trim();
@@ -826,8 +766,6 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
       child: Text(fixedContent, style: TextStyle(fontSize: 15, color: isMe ? Colors.white : null, height: 1.4)));
   }
 }
-
-// ── Chat input bar — isolated widget so keystrokes don't rebuild message list ──
 
 class _ChatInputBar extends StatefulWidget {
   final TextEditingController ctrl;
@@ -966,8 +904,6 @@ class _ChatInputBarState extends State<_ChatInputBar> {
   }
 }
 
-// ── Typing indicator bubble ───────────────────────────────────────────────────
-
 class _TypingBubble extends StatefulWidget {
   const _TypingBubble({super.key});
   @override State<_TypingBubble> createState() => _TypingBubbleState();
@@ -1011,9 +947,8 @@ class _TypingBubbleState extends State<_TypingBubble> with SingleTickerProviderS
             builder: (_, __) => Row(
               mainAxisSize: MainAxisSize.min,
               children: List.generate(3, (i) {
-                // Each dot peaks at a different phase (0, 0.33, 0.66 of the cycle).
                 final phase = (_ctrl.value - i / 3.0) % 1.0;
-                final brightness = (sin(phase * 2 * pi) + 1) / 2; // 0..1
+                final brightness = (sin(phase * 2 * pi) + 1) / 2;
                 return Container(
                   width: 7, height: 7,
                   margin: const EdgeInsets.symmetric(horizontal: 2.5),
@@ -1030,8 +965,6 @@ class _TypingBubbleState extends State<_TypingBubble> with SingleTickerProviderS
     );
   }
 }
-
-// ── Swipeable message wrapper ─────────────────────────────────────────────────
 
 class _SwipeableMessage extends StatefulWidget {
   final Widget child;
@@ -1095,7 +1028,6 @@ class _SwipeableMessageState extends State<_SwipeableMessage>
     if (_dx > 60) {
       widget.onReply();
     }
-    // Spring back
     _springAnim = Tween<double>(begin: _dx, end: 0).animate(
       CurvedAnimation(parent: _springCtrl, curve: Curves.elasticOut),
     );
@@ -1110,7 +1042,6 @@ class _SwipeableMessageState extends State<_SwipeableMessage>
       onHorizontalDragUpdate: _onDragUpdate,
       onHorizontalDragEnd: _onDragEnd,
       child: Stack(children: [
-        // Reply icon (left side)
         if (_dx > 40)
           Positioned(
             left: 8,
@@ -1131,7 +1062,6 @@ class _SwipeableMessageState extends State<_SwipeableMessage>
               ),
             ),
           ),
-        // Message bubble
         Transform.translate(
           offset: Offset(_dx, 0),
           child: widget.child,
@@ -1140,8 +1070,6 @@ class _SwipeableMessageState extends State<_SwipeableMessage>
     );
   }
 }
-
-// ── Reply preview ─────────────────────────────────────────────────────────────
 
 class _ReplyPreview extends StatelessWidget {
   final Map<String, dynamic> message;

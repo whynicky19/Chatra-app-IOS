@@ -2,9 +2,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-/// Общая обёртка для диалогов приложения: затемнение + scale/fade-анимация.
-/// Контент оборачивается в Material, чтобы внутри работали любые
-/// материальные виджеты (TextField, Dropdown и т.д.).
 Future<T?> showAppDialog<T>(
   BuildContext context, {
   required WidgetBuilder builder,
@@ -27,7 +24,6 @@ Future<T?> showAppDialog<T>(
   );
 }
 
-/// Карточка диалога: скруглённая, с тенью, ограниченная по ширине.
 class AppDialogCard extends StatelessWidget {
   final Widget child;
   const AppDialogCard({super.key, required this.child});
@@ -36,7 +32,6 @@ class AppDialogCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return AnimatedPadding(
-      // Как у стандартного Dialog: приподнимаем карточку над клавиатурой.
       padding: MediaQuery.of(context).viewInsets + const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
       duration: const Duration(milliseconds: 150),
       curve: Curves.easeOut,
@@ -63,7 +58,6 @@ class AppDialogCard extends StatelessWidget {
   }
 }
 
-/// Круглая иконка-шапка диалога.
 class AppDialogIcon extends StatelessWidget {
   final IconData icon;
   final Color color;
@@ -80,7 +74,6 @@ class AppDialogIcon extends StatelessWidget {
   );
 }
 
-/// Пара кнопок «Отмена / Действие» в стиле приложения.
 class AppDialogActions extends StatelessWidget {
   final String cancelText;
   final String confirmText;
@@ -107,7 +100,6 @@ class AppDialogActions extends StatelessWidget {
       Expanded(child: GestureDetector(
         onTap: busy ? null : onCancel,
         child: Container(
-          // minHeight: кнопка растёт под увеличенный системный шрифт.
           constraints: const BoxConstraints(minHeight: 46),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
@@ -140,8 +132,6 @@ class AppDialogActions extends StatelessWidget {
   }
 }
 
-/// Диалог подтверждения: иконка, заголовок, описание, две кнопки.
-/// Возвращает true при подтверждении.
 Future<bool?> showConfirmDialog(
   BuildContext context, {
   required String title,
@@ -177,8 +167,6 @@ Future<bool?> showConfirmDialog(
   });
 }
 
-/// Диалог с текстовым полем (например, причина отклонения).
-/// Возвращает введённый текст при подтверждении, иначе null.
 Future<String?> showInputDialog(
   BuildContext context, {
   required String title,
@@ -221,7 +209,6 @@ Future<String?> showInputDialog(
       ),
     ]));
   }).whenComplete(() {
-    // Отложенный dispose: контроллер ещё нужен кадру закрытия.
     Future.delayed(const Duration(seconds: 1), ctrl.dispose);
   });
 }

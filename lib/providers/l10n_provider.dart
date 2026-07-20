@@ -23,7 +23,6 @@ class L10n extends ChangeNotifier {
 
   static const _strings = {
     'RU': {
-      // ── Home / Classes ──
       'classes': 'Классы',
       'classes_sub': 'Управляйте обучением и открывайте новые горизонты',
       'create_class': 'Создать класс',
@@ -48,7 +47,6 @@ class L10n extends ChangeNotifier {
       'enter_6_chars': 'Введите 6 символов',
       'class_code': 'Код',
 
-      // ── Class detail ──
       'lectures': 'Лекции',
       'materials': 'Материалы',
       'assignments': 'Задания',
@@ -105,7 +103,6 @@ class L10n extends ChangeNotifier {
       'create': 'Создать',
       'save': 'Сохранить',
 
-      // ── Assignments & Feedback ──
       'new_assignment': 'Новое задание',
       'fill_assignment': 'Заполните данные задания',
       'assignment_title': 'НАЗВАНИЕ ЗАДАНИЯ',
@@ -156,7 +153,6 @@ class L10n extends ChangeNotifier {
       'your_answer': 'Ваш ответ',
       'overdue_warn': 'Дедлайн истёк — работа будет помечена как просроченная',
       'ai_checking': 'ИИ проверяет вашу работу...',
-      // Панель проверки работ преподавателем
       'task_badge': 'ЗАДАНИЕ',
       'description': 'Описание',
       'show': 'Показать',
@@ -189,7 +185,6 @@ class L10n extends ChangeNotifier {
       'bulk_grading': 'Проверяю',
       'bulk_done': 'ИИ проверил работ',
 
-      // ── Chats ──
       'chats': 'Чаты',
       'messages_title': 'Сообщения',
       'your_conversations': 'Ваши переписки',
@@ -203,7 +198,6 @@ class L10n extends ChangeNotifier {
       'online': 'В сети',
       'upload_error': 'Ошибка загрузки',
 
-      // ── Settings ──
       'settings': 'Настройки',
       'settings_sub': 'Управляйте профилем и настройками',
       'profile': 'Профиль',
@@ -227,7 +221,6 @@ class L10n extends ChangeNotifier {
       'role_teacher': 'Преподаватель',
       'role_student': 'Студент',
 
-      // ── Admin ──
       'admin': 'Панель Админа',
       'admin_sub': 'Управление пользователями',
       'users': 'Пользователи',
@@ -252,7 +245,6 @@ class L10n extends ChangeNotifier {
       'block': 'Заблокировать',
       'unblock': 'Разблокировать',
       'user': 'Пользователь',
-      // ── Ошибки (провайдеры кладут в errorMessage ключ, не готовый текст) ──
       'err_load_data': 'Не удалось загрузить данные',
       'err_load_saved_classes': 'Не удалось загрузить сохранённые классы',
       'err_save_classes': 'Не удалось сохранить список классов',
@@ -270,7 +262,6 @@ class L10n extends ChangeNotifier {
       'err_search_users': 'Не удалось выполнить поиск',
       'err_create_chat': 'Не удалось создать диалог',
       'err_delete_chat': 'Не удалось удалить чат',
-      // ── Онбординг ──
       'onb_skip': 'Пропустить',
       'onb_next': 'Далее',
       'onb_start': 'Начать',
@@ -301,7 +292,6 @@ class L10n extends ChangeNotifier {
       'created': 'Создано',
       'general_label': 'Общий',
 
-      // ── AI ──
       'ai_assistant': 'ИИ-ассистент',
       'ai_ask_anything': 'Спросите что угодно',
       'send_msg': 'Написать сообщение...',
@@ -316,9 +306,7 @@ class L10n extends ChangeNotifier {
       'no_answer': 'Нет ответа',
       'ask_about_materials': 'Спрашивайте по материалам курса',
 
-      // ── Auth ──
       'welcome': 'Добро пожаловать',
-      // ── Org select ──
       'org_brand_line': 'в Chatra',
       'org_subtitle': 'Выберите тип организации —\nоформление настроится под него.',
       'org_university': 'Университет',
@@ -341,7 +329,6 @@ class L10n extends ChangeNotifier {
       'wrong_creds': 'Неверный email или пароль',
       'login_rate_limited': 'Слишком много попыток. Подождите минуту',
       'account_blocked': 'Аккаунт заблокирован. Обратитесь к администратору',
-      // ── Смена пароля ──
       'change_password': 'Сменить пароль',
       'change_password_sub': 'Обновите пароль от аккаунта',
       'current_password': 'Текущий пароль',
@@ -350,7 +337,6 @@ class L10n extends ChangeNotifier {
       'password_changed': 'Пароль изменён',
       'wrong_current_password': 'Неверный текущий пароль',
       'change_password_error': 'Не удалось сменить пароль',
-      // ── Удаление аккаунта ──
       'delete_account': 'Удалить аккаунт',
       'delete_account_sub': 'Безвозвратно удалить аккаунт и данные',
       'delete_account_warning': 'Аккаунт и все связанные данные будут удалены безвозвратно. Это действие нельзя отменить.',
@@ -358,7 +344,6 @@ class L10n extends ChangeNotifier {
       'confirm_password': 'Подтвердите паролем',
       'account_deleted': 'Аккаунт удалён',
       'delete_account_error': 'Не удалось удалить аккаунт',
-      // ── Верификация email ──
       'forgot_password_link': 'Забыли пароль?',
       'verify_email': 'Подтвердите email',
       'verify_email_sub': 'Введите 6-значный код из письма',
@@ -372,7 +357,6 @@ class L10n extends ChangeNotifier {
       'invalid_code': 'Неверный или просроченный код',
       'verify_error': 'Не удалось подтвердить. Попробуйте снова',
       'code_send_error': 'Не удалось отправить код',
-      // ── Восстановление пароля ──
       'forgot_title': 'Восстановление пароля',
       'forgot_sub': 'Введите email — пришлём код для сброса',
       'send_code': 'Отправить код',
@@ -390,14 +374,12 @@ class L10n extends ChangeNotifier {
       'email_taken': 'Этот email уже зарегистрирован',
       'register_error': 'Ошибка регистрации. Попробуйте снова',
 
-      // ── Nav ──
       'nav_classes': 'Классы',
       'nav_chats': 'Чаты',
       'nav_ai': 'ИИ',
       'nav_admin': 'Админ',
       'nav_settings': 'Настройки',
 
-      // ── Notifications ──
       'notifications': 'Уведомления',
       'notif_unread': 'непрочитанных',
       'all_read': 'Всё прочитано',
@@ -410,7 +392,6 @@ class L10n extends ChangeNotifier {
       'notif_deadline': 'Скоро дедлайн',
       'notif_graded': 'Задание проверено',
 
-      // ── Admin additions ──
       'by_classes': 'ПО КЛАССАМ',
       'by_users': 'ПО ПОЛЬЗОВАТЕЛЯМ (ФИО)',
       'detail_log': 'ДЕТАЛЬНЫЙ ЛОГ',
@@ -432,7 +413,6 @@ class L10n extends ChangeNotifier {
       'all_submitted': 'Всё сдано!',
       'my_rating': 'МОЙ РЕЙТИНГ',
       'remaining': 'Осталось',
-      // AP-2: локализация экрана заданий/сдачи
       'months_short': 'ЯНВ,ФЕВ,МАР,АПР,МАЙ,ИЮН,ИЮЛ,АВГ,СЕН,ОКТ,НОЯ,ДЕК',
       'days_short': 'дн.',
       'create_first_assignment': 'Создайте первое задание',
@@ -440,7 +420,6 @@ class L10n extends ChangeNotifier {
       'work_text_hint': 'Текст работы или ссылка (необязательно)...',
       'retract_resubmit': 'Отозвать и сдать заново',
       'submission_retracted': 'Сдача отозвана — можно отправить заново',
-      // AP-3: осмысленные ошибки сдачи
       'upload_failed': 'Не удалось загрузить файлы. Проверьте связь и попробуйте снова.',
       'already_submitted': 'Вы уже сдали это задание',
       'archived_submit': 'Ваш учебный год в архиве — сдача недоступна',
@@ -451,7 +430,6 @@ class L10n extends ChangeNotifier {
       'class_created': 'Класс создан',
       'class_deleted': 'Удалено',
 
-      // ── Calendar ──
       'deadlines': 'Дедлайны',
       'no_deadlines': 'Дедлайнов нет',
       'cal_legend_due': 'есть задание',
@@ -459,7 +437,6 @@ class L10n extends ChangeNotifier {
       'cal_legend_done': 'всё сдано',
       'upcoming_7_days': 'Ближайшие 7 дней',
 
-      // ── Search ──
       'search': 'Поиск',
       'recent_searches': 'Недавние поиски',
       'search_empty': 'Ничего не нашлось по',
@@ -469,7 +446,6 @@ class L10n extends ChangeNotifier {
       'section_chats': 'ЧАТЫ',
       'show_more': 'Ещё',
 
-      // ── Context menu ──
       'copy_code': 'Скопировать код',
       'share_class': 'Поделиться',
       'pin_class': 'Закрепить',
@@ -478,22 +454,18 @@ class L10n extends ChangeNotifier {
       'confirm_delete_hint': 'Введите название класса для подтверждения',
       'drag_hint': 'Удерживай карточку чтобы изменить порядок',
 
-      // ── Reply ──
       'reply_to': 'Ответить',
 
-      // ── Misc ──
       'file': 'файл',
       'files': 'файлов',
       'yes': 'Да',
       'no': 'Нет',
 
-      // ── Join dialog ──
       'join_class_title': 'Войти в класс по коду',
       'join_class_hint': 'Введите 6-значный код класса, который вам дал преподаватель',
       'join_enter_class': 'Войти в класс',
       'enter_teacher_code': 'Введите код от преподавателя',
 
-      // ── Create class dialog ──
       'create_class_title': 'Создать класс',
       'class_name_required': 'НАЗВАНИЕ КЛАССА *',
       'class_name_hint': 'Например: Математика 10А',
@@ -505,17 +477,14 @@ class L10n extends ChangeNotifier {
       'click_to_upload': 'Нажмите для загрузки',
       'leave_btn': 'Покинуть',
 
-      // ── Chats ──
       'gallery': 'Галерея',
       'camera': 'Камера',
       'typing_indicator': 'печатает...',
 
-      // ── Connectivity ──
       'no_connection': 'Нет соединения с интернетом',
       'checking_connection': 'Проверяем подключение…',
       'swipe_up_hide': 'Смахните вверх, чтобы скрыть',
 
-      // ── Class detail extras ──
       'add_first_material': 'Добавьте первый материал',
       'materials_appear_here': 'Здесь появятся материалы курса',
       'opening_file': 'Открытие файла',
@@ -583,7 +552,6 @@ class L10n extends ChangeNotifier {
       'months_full': 'Январь,Февраль,Март,Апрель,Май,Июнь,Июль,Август,Сентябрь,Октябрь,Ноябрь,Декабрь',
       'months_genitive': 'января,февраля,марта,апреля,мая,июня,июля,августа,сентября,октября,ноября,декабря',
       'weekdays_short': 'Пн,Вт,Ср,Чт,Пт,Сб,Вс',
-      // ── UGC-модерация (App Store Guideline 1.2) ──
       'terms_title': 'Правила сообщества',
       'terms_body': 'Chatra — образовательная платформа. Используя приложение, вы соглашаетесь не публиковать оскорбительный, незаконный или неприемлемый контент, в том числе:\n\n•  оскорбления, травлю и угрозы;\n•  разжигание ненависти и дискриминацию;\n•  насилие, сексуальный или порнографический контент;\n•  спам, мошенничество и вредоносные ссылки;\n•  контент, нарушающий закон или права других людей.\n\nДействует нулевая терпимость к такому поведению. Вы можете пожаловаться на любое сообщение или пользователя и заблокировать пользователя. Жалобы рассматриваются в течение 24 часов; нарушители удаляются с платформы.',
       'terms_agree': 'Я принимаю Правила сообщества',
@@ -608,7 +576,6 @@ class L10n extends ChangeNotifier {
       'report_sent': 'Жалоба отправлена. Спасибо, мы её рассмотрим.',
       'report_auto_block_note': 'Пользователь также будет заблокирован.',
       'copy_action': 'Копировать',
-      // ── Политика конфиденциальности ──
       'pp_title': 'Политика конфиденциальности',
       'pp_view': 'Как мы обрабатываем ваши данные',
       'pp_updated_label': 'Обновлено',
@@ -627,7 +594,6 @@ class L10n extends ChangeNotifier {
       'pp_children_body': 'Приложение предназначено для учёбы. Если вы младше возраста самостоятельного согласия в вашей стране, пользуйтесь им под присмотром родителей или учебного заведения.',
       'pp_contact_title': 'Изменения и контакты',
       'pp_contact_body': 'Если политика изменится, актуальная версия всегда будет в приложении. Остались вопросы — напишите нам через раздел «Связаться с разработчиком».',
-      // ── Админ: жалобы ──
       'reports_tab': 'Жалобы',
       'no_reports': 'Жалоб нет',
       'report_on_label': 'На кого',
@@ -665,7 +631,6 @@ class L10n extends ChangeNotifier {
       'status_overdue_sheet': 'Просрочено',
       'status_new_sheet': 'Новое',
 
-      // ── AI avatar ──
       'avatar': 'Аватар',
       'avatar_lectures': 'Лекции аватара',
       'create_avatar': 'Создать аватара',
@@ -745,7 +710,6 @@ class L10n extends ChangeNotifier {
       'characters_label': 'символов',
       'class_label': 'Класс',
 
-      // ── AI usage / RAG / variants / grading (site parity) ──
       'ai_unlimited_on': 'Безлимитный ИИ: выключить',
       'ai_unlimited_off': 'Безлимитный ИИ: включить',
       'ai_documents': 'Документы AI',
@@ -771,7 +735,6 @@ class L10n extends ChangeNotifier {
       'delete_submission': 'Удалить сдачу',
       'delete_submission_confirm': 'Удалить сдачу студента?',
 
-      // ── Cohorts / Archive / Rollover ──
       'archive': 'Архив',
       'archived_badge': 'Архив',
       'archive_empty': 'Архив пуст',
@@ -813,7 +776,6 @@ class L10n extends ChangeNotifier {
       'assignments_count': 'заданий',
     },
     'KZ': {
-      // ── Home / Classes ──
       'classes': 'Сыныптар',
       'classes_sub': 'Оқуды басқарыңыз және жаңа білім ашыңыз',
       'create_class': 'Сынып құру',
@@ -838,7 +800,6 @@ class L10n extends ChangeNotifier {
       'enter_6_chars': '6 таңба енгізіңіз',
       'class_code': 'Код',
 
-      // ── Class detail ──
       'lectures': 'Дәрістер',
       'materials': 'Материалдар',
       'assignments': 'Тапсырмалар',
@@ -895,7 +856,6 @@ class L10n extends ChangeNotifier {
       'create': 'Құру',
       'save': 'Сақтау',
 
-      // ── Assignments & Feedback ──
       'new_assignment': 'Жаңа тапсырма',
       'fill_assignment': 'Тапсырма деректерін толтырыңыз',
       'assignment_title': 'ТАПСЫРМА АТАУЫ',
@@ -946,7 +906,6 @@ class L10n extends ChangeNotifier {
       'your_answer': 'Сіздің жауабыңыз',
       'overdue_warn': 'Мерзім өтті — жұмыс кешіктірілген деп белгіленеді',
       'ai_checking': 'ЖИ жұмысыңызды тексеруде...',
-      // Мұғалімнің жұмыстарды тексеру панелі
       'task_badge': 'ТАПСЫРМА',
       'description': 'Сипаттама',
       'show': 'Көрсету',
@@ -979,7 +938,6 @@ class L10n extends ChangeNotifier {
       'bulk_grading': 'Тексеруде',
       'bulk_done': 'ЖИ жұмыстарды тексерді',
 
-      // ── Chats ──
       'chats': 'Чаттар',
       'messages_title': 'Хабарлар',
       'your_conversations': 'Сіздің чаттарыңыз',
@@ -993,7 +951,6 @@ class L10n extends ChangeNotifier {
       'online': 'Желіде',
       'upload_error': 'Жүктеу қатесі',
 
-      // ── Settings ──
       'settings': 'Баптаулар',
       'settings_sub': 'Профильді және баптауларды басқарыңыз',
       'profile': 'Профиль',
@@ -1017,7 +974,6 @@ class L10n extends ChangeNotifier {
       'role_teacher': 'Оқытушы',
       'role_student': 'Студент',
 
-      // ── Admin ──
       'admin': 'Админ-панель',
       'admin_sub': 'Пайдаланушыларды басқару',
       'users': 'Пайдаланушылар',
@@ -1042,7 +998,6 @@ class L10n extends ChangeNotifier {
       'block': 'Бұғаттау',
       'unblock': 'Бұғаттан шығару',
       'user': 'Пайдаланушы',
-      // ── Қателер ──
       'err_load_data': 'Деректерді жүктеу мүмкін болмады',
       'err_load_saved_classes': 'Сақталған сыныптарды жүктеу мүмкін болмады',
       'err_save_classes': 'Сыныптар тізімін сақтау мүмкін болмады',
@@ -1060,7 +1015,6 @@ class L10n extends ChangeNotifier {
       'err_search_users': 'Іздеуді орындау мүмкін болмады',
       'err_create_chat': 'Диалог құру мүмкін болмады',
       'err_delete_chat': 'Чатты жою мүмкін болмады',
-      // ── Онбординг ──
       'onb_skip': 'Өткізіп жіберу',
       'onb_next': 'Әрі қарай',
       'onb_start': 'Бастау',
@@ -1091,7 +1045,6 @@ class L10n extends ChangeNotifier {
       'created': 'Құрылды',
       'general_label': 'Жалпы',
 
-      // ── AI ──
       'ai_assistant': 'ЖИ-ассистент',
       'ai_ask_anything': 'Кез келген нәрсе сұраңыз',
       'send_msg': 'Хабарлама жазу...',
@@ -1106,9 +1059,7 @@ class L10n extends ChangeNotifier {
       'no_answer': 'Жауап жоқ',
       'ask_about_materials': 'Курс материалдары бойынша сұраңыз',
 
-      // ── Auth ──
       'welcome': 'Қош келдіңіз',
-      // ── Org select ──
       'org_brand_line': 'Chatra-ға',
       'org_subtitle': 'Ұйым түрін таңдаңыз —\nсыртқы көрінісі соған бейімделеді.',
       'org_university': 'Университет',
@@ -1131,7 +1082,6 @@ class L10n extends ChangeNotifier {
       'wrong_creds': 'Қате email немесе құпия сөз',
       'login_rate_limited': 'Тым көп әрекет. Бір минут күтіңіз',
       'account_blocked': 'Аккаунт бұғатталған. Әкімшіге хабарласыңыз',
-      // ── Құпия сөзді өзгерту ──
       'change_password': 'Құпия сөзді өзгерту',
       'change_password_sub': 'Аккаунт құпия сөзін жаңартыңыз',
       'current_password': 'Ағымдағы құпия сөз',
@@ -1140,7 +1090,6 @@ class L10n extends ChangeNotifier {
       'password_changed': 'Құпия сөз өзгертілді',
       'wrong_current_password': 'Ағымдағы құпия сөз қате',
       'change_password_error': 'Құпия сөзді өзгерту мүмкін болмады',
-      // ── Аккаунтты жою ──
       'delete_account': 'Аккаунтты жою',
       'delete_account_sub': 'Аккаунт пен деректерді біржола жою',
       'delete_account_warning': 'Аккаунт пен барлық байланысты деректер біржола жойылады. Бұл әрекетті қайтару мүмкін емес.',
@@ -1148,7 +1097,6 @@ class L10n extends ChangeNotifier {
       'confirm_password': 'Құпия сөзбен растаңыз',
       'account_deleted': 'Аккаунт жойылды',
       'delete_account_error': 'Аккаунтты жою мүмкін болмады',
-      // ── Email растау ──
       'forgot_password_link': 'Құпия сөзді ұмыттыңыз ба?',
       'verify_email': 'Email растаңыз',
       'verify_email_sub': 'Хаттағы 6 таңбалы кодты енгізіңіз',
@@ -1162,7 +1110,6 @@ class L10n extends ChangeNotifier {
       'invalid_code': 'Код қате немесе мерзімі өткен',
       'verify_error': 'Растау мүмкін болмады. Қайталаңыз',
       'code_send_error': 'Код жіберілмеді',
-      // ── Құпия сөзді қалпына келтіру ──
       'forgot_title': 'Құпия сөзді қалпына келтіру',
       'forgot_sub': 'Email енгізіңіз — қалпына келтіру кодын жібереміз',
       'send_code': 'Код жіберу',
@@ -1180,14 +1127,12 @@ class L10n extends ChangeNotifier {
       'email_taken': 'Бұл email тіркелген',
       'register_error': 'Тіркелу қатесі. Қайтадан көріңіз',
 
-      // ── Nav ──
       'nav_classes': 'Сыныптар',
       'nav_chats': 'Чаттар',
       'nav_ai': 'ЖИ',
       'nav_admin': 'Админ',
       'nav_settings': 'Баптау',
 
-      // ── Notifications ──
       'notifications': 'Хабарландырулар',
       'notif_unread': 'оқылмаған',
       'all_read': 'Барлығы оқылды',
@@ -1200,7 +1145,6 @@ class L10n extends ChangeNotifier {
       'notif_deadline': 'Дедлайн жақын',
       'notif_graded': 'Тапсырма бағаланды',
 
-      // ── Admin additions ──
       'by_classes': 'СЫНЫПТАР БОЙЫНША',
       'by_users': 'ПАЙДАЛАНУШЫЛАР (АТЫ)',
       'detail_log': 'ТОЛЫҚ ЖУРНАЛ',
@@ -1222,7 +1166,6 @@ class L10n extends ChangeNotifier {
       'all_submitted': 'Барлығы тапсырылды!',
       'my_rating': 'МЕНІҢ РЕЙТИНГІМ',
       'remaining': 'Қалды',
-      // AP-2: тапсырмалар/тапсыру экранының локализациясы
       'months_short': 'ҚАҢ,АҚП,НАУ,СӘУ,МАМ,МАУ,ШІЛ,ТАМ,ҚЫР,ҚАЗ,ҚАР,ЖЕЛ',
       'days_short': 'күн',
       'create_first_assignment': 'Алғашқы тапсырманы жасаңыз',
@@ -1230,7 +1173,6 @@ class L10n extends ChangeNotifier {
       'work_text_hint': 'Жұмыс мәтіні немесе сілтеме (міндетті емес)...',
       'retract_resubmit': 'Қайтарып, қайта тапсыру',
       'submission_retracted': 'Тапсыру қайтарылды — қайта тапсыруға болады',
-      // AP-3: тапсыру қателерінің мағыналы мәтіні
       'upload_failed': 'Файлдарды жүктеу мүмкін болмады. Байланысты тексеріп, қайталаңыз.',
       'already_submitted': 'Сіз бұл тапсырманы тапсырып қойдыңыз',
       'archived_submit': 'Оқу жылыңыз мұрағатта — тапсыру қолжетімсіз',
@@ -1241,7 +1183,6 @@ class L10n extends ChangeNotifier {
       'class_created': 'Сынып жасалды',
       'class_deleted': 'Жойылды',
 
-      // ── Calendar ──
       'deadlines': 'Дедлайндар',
       'no_deadlines': 'Дедлайндар жоқ',
       'cal_legend_due': 'тапсырма бар',
@@ -1249,7 +1190,6 @@ class L10n extends ChangeNotifier {
       'cal_legend_done': 'бәрі тапсырылды',
       'upcoming_7_days': 'Келесі 7 күн',
 
-      // ── Search ──
       'search': 'Іздеу',
       'recent_searches': 'Соңғы іздеулер',
       'search_empty': 'Ештеңе табылмады',
@@ -1259,7 +1199,6 @@ class L10n extends ChangeNotifier {
       'section_chats': 'ЧАТТАР',
       'show_more': 'Тағы',
 
-      // ── Context menu ──
       'copy_code': 'Кодты көшіру',
       'share_class': 'Бөлісу',
       'pin_class': 'Бекіту',
@@ -1268,22 +1207,18 @@ class L10n extends ChangeNotifier {
       'confirm_delete_hint': 'Растау үшін сынып атауын енгізіңіз',
       'drag_hint': 'Ретін өзгерту үшін картаны ұстаңыз',
 
-      // ── Reply ──
       'reply_to': 'Жауап беру',
 
-      // ── Misc ──
       'file': 'файл',
       'files': 'файл',
       'yes': 'Иә',
       'no': 'Жоқ',
 
-      // ── Join dialog ──
       'join_class_title': 'Кодпен сыныпқа кіру',
       'join_class_hint': 'Мұғалімнен алған 6 таңбалы кодты енгізіңіз',
       'join_enter_class': 'Сыныпқа кіру',
       'enter_teacher_code': 'Мұғалімнен кодты енгізіңіз',
 
-      // ── Create class dialog ──
       'create_class_title': 'Сынып құру',
       'class_name_required': 'СЫНЫП АТАУЫ *',
       'class_name_hint': 'Мысалы: Математика 10А',
@@ -1295,17 +1230,14 @@ class L10n extends ChangeNotifier {
       'click_to_upload': 'Жүктеу үшін басыңыз',
       'leave_btn': 'Шығу',
 
-      // ── Chats ──
       'gallery': 'Галерея',
       'camera': 'Камера',
       'typing_indicator': 'жазуда...',
 
-      // ── Connectivity ──
       'no_connection': 'Интернет байланысы жоқ',
       'checking_connection': 'Байланыс тексерілуде…',
       'swipe_up_hide': 'Жасыру үшін жоғары сырғытыңыз',
 
-      // ── Class detail extras ──
       'add_first_material': 'Бірінші материалды қосыңыз',
       'materials_appear_here': 'Курс материалдары осында пайда болады',
       'opening_file': 'Файлды ашу',
@@ -1373,7 +1305,6 @@ class L10n extends ChangeNotifier {
       'months_full': 'Қаңтар,Ақпан,Наурыз,Сәуір,Мамыр,Маусым,Шілде,Тамыз,Қыркүйек,Қазан,Қараша,Желтоқсан',
       'months_genitive': 'қаңтар,ақпан,наурыз,сәуір,мамыр,маусым,шілде,тамыз,қыркүйек,қазан,қараша,желтоқсан',
       'weekdays_short': 'Дс,Сс,Ср,Бс,Жм,Сб,Жс',
-      // ── UGC-модерация (App Store Guideline 1.2) ──
       'terms_title': 'Қоғамдастық ережелері',
       'terms_body': 'Chatra — білім беру платформасы. Қосымшаны пайдалана отырып, сіз қорлайтын, заңсыз немесе қолайсыз мазмұнды жарияламауға келісесіз, соның ішінде:\n\n•  қорлау, қудалау және қоқан-лоққы;\n•  өшпенділік пен кемсітушілік;\n•  зорлық-зомбылық, сексуалдық немесе порнографиялық мазмұн;\n•  спам, алаяқтық және зиянды сілтемелер;\n•  заңды немесе басқалардың құқығын бұзатын мазмұн.\n\nМұндай әрекетке мүлдем төзбеушілік қолданылады. Кез келген хабарламаға немесе пайдаланушыға шағымдануға және пайдаланушыны бұғаттауға болады. Шағымдар 24 сағат ішінде қаралады; бұзушылар платформадан жойылады.',
       'terms_agree': 'Мен қоғамдастық ережелерін қабылдаймын',
@@ -1398,7 +1329,6 @@ class L10n extends ChangeNotifier {
       'report_sent': 'Шағым жіберілді. Рақмет, қараймыз.',
       'report_auto_block_note': 'Пайдаланушы да бұғатталады.',
       'copy_action': 'Көшіру',
-      // ── Құпиялылық саясаты ──
       'pp_title': 'Құпиялылық саясаты',
       'pp_view': 'Деректеріңізді қалай өңдейміз',
       'pp_updated_label': 'Жаңартылды',
@@ -1417,7 +1347,6 @@ class L10n extends ChangeNotifier {
       'pp_children_body': 'Қосымша оқуға арналған. Егер сіз еліңізде дербес келісім жасына толмаған болсаңыз, оны ата-ананың немесе оқу орнының қарауымен пайдаланыңыз.',
       'pp_contact_title': 'Өзгерістер мен байланыс',
       'pp_contact_body': 'Саясат өзгерсе, өзекті нұсқасы әрқашан қосымшада болады. Сұрақтарыңыз болса — «Әзірлеушімен байланысу» бөлімі арқылы жазыңыз.',
-      // ── Админ: шағымдар ──
       'reports_tab': 'Шағымдар',
       'no_reports': 'Шағымдар жоқ',
       'report_on_label': 'Кімге',
@@ -1455,7 +1384,6 @@ class L10n extends ChangeNotifier {
       'status_overdue_sheet': 'Мерзімі өтті',
       'status_new_sheet': 'Жаңа',
 
-      // ── AI avatar ──
       'avatar': 'Аватар',
       'avatar_lectures': 'Аватар дәрістері',
       'create_avatar': 'Аватар құру',
@@ -1535,7 +1463,6 @@ class L10n extends ChangeNotifier {
       'characters_label': 'таңба',
       'class_label': 'Сынып',
 
-      // ── AI usage / RAG / variants / grading (site parity) ──
       'ai_unlimited_on': 'Шексіз ЖИ: өшіру',
       'ai_unlimited_off': 'Шексіз ЖИ: қосу',
       'ai_documents': 'ЖИ құжаттары',
@@ -1561,7 +1488,6 @@ class L10n extends ChangeNotifier {
       'delete_submission': 'Тапсыруды жою',
       'delete_submission_confirm': 'Студент тапсыруын жою?',
 
-      // ── Cohorts / Archive / Rollover ──
       'archive': 'Мұрағат',
       'archived_badge': 'Мұрағат',
       'archive_empty': 'Мұрағат бос',
@@ -1603,7 +1529,6 @@ class L10n extends ChangeNotifier {
       'assignments_count': 'тапсырма',
     },
     'EN': {
-      // ── Home / Classes ──
       'classes': 'Classes',
       'classes_sub': 'Manage your learning and explore new horizons',
       'create_class': 'Create Class',
@@ -1628,7 +1553,6 @@ class L10n extends ChangeNotifier {
       'enter_6_chars': 'Enter 6 characters',
       'class_code': 'Code',
 
-      // ── Class detail ──
       'lectures': 'Lectures',
       'materials': 'Materials',
       'assignments': 'Assignments',
@@ -1685,7 +1609,6 @@ class L10n extends ChangeNotifier {
       'create': 'Create',
       'save': 'Save',
 
-      // ── Assignments & Feedback ──
       'new_assignment': 'New Assignment',
       'fill_assignment': 'Fill in assignment details',
       'assignment_title': 'ASSIGNMENT TITLE',
@@ -1736,7 +1659,6 @@ class L10n extends ChangeNotifier {
       'your_answer': 'Your answer',
       'overdue_warn': 'Deadline passed — work will be marked as late',
       'ai_checking': 'AI is reviewing your work...',
-      // Teacher grading panel
       'task_badge': 'ASSIGNMENT',
       'description': 'Description',
       'show': 'Show',
@@ -1769,7 +1691,6 @@ class L10n extends ChangeNotifier {
       'bulk_grading': 'Grading',
       'bulk_done': 'AI graded submissions',
 
-      // ── Chats ──
       'chats': 'Chats',
       'messages_title': 'Messages',
       'your_conversations': 'Your conversations',
@@ -1783,7 +1704,6 @@ class L10n extends ChangeNotifier {
       'online': 'Online',
       'upload_error': 'Upload error',
 
-      // ── Settings ──
       'settings': 'Settings',
       'settings_sub': 'Manage your profile and preferences',
       'profile': 'Profile',
@@ -1807,7 +1727,6 @@ class L10n extends ChangeNotifier {
       'role_teacher': 'Teacher',
       'role_student': 'Student',
 
-      // ── Admin ──
       'admin': 'Admin Panel',
       'admin_sub': 'User management',
       'users': 'Users',
@@ -1832,7 +1751,6 @@ class L10n extends ChangeNotifier {
       'block': 'Block',
       'unblock': 'Unblock',
       'user': 'User',
-      // ── Errors ──
       'err_load_data': 'Couldn\u2019t load data',
       'err_load_saved_classes': 'Couldn\u2019t load saved classes',
       'err_save_classes': 'Couldn\u2019t save the class list',
@@ -1850,7 +1768,6 @@ class L10n extends ChangeNotifier {
       'err_search_users': 'Search failed',
       'err_create_chat': 'Couldn\u2019t start the conversation',
       'err_delete_chat': 'Couldn\u2019t delete the chat',
-      // ── Onboarding ──
       'onb_skip': 'Skip',
       'onb_next': 'Next',
       'onb_start': 'Get started',
@@ -1881,7 +1798,6 @@ class L10n extends ChangeNotifier {
       'created': 'Created',
       'general_label': 'General',
 
-      // ── AI ──
       'ai_assistant': 'AI Assistant',
       'ai_ask_anything': 'Ask anything',
       'send_msg': 'Type a message...',
@@ -1896,9 +1812,7 @@ class L10n extends ChangeNotifier {
       'no_answer': 'No answer',
       'ask_about_materials': 'Ask about course materials',
 
-      // ── Auth ──
       'welcome': 'Welcome',
-      // ── Org select ──
       'org_brand_line': 'to Chatra',
       'org_subtitle': 'Choose your organization type —\nthe interface will adapt to it.',
       'org_university': 'University',
@@ -1921,7 +1835,6 @@ class L10n extends ChangeNotifier {
       'wrong_creds': 'Wrong email or password',
       'login_rate_limited': 'Too many attempts. Wait a minute',
       'account_blocked': 'Account blocked. Contact your administrator',
-      // ── Change password ──
       'change_password': 'Change password',
       'change_password_sub': 'Update your account password',
       'current_password': 'Current password',
@@ -1930,7 +1843,6 @@ class L10n extends ChangeNotifier {
       'password_changed': 'Password changed',
       'wrong_current_password': 'Wrong current password',
       'change_password_error': 'Could not change password',
-      // ── Delete account ──
       'delete_account': 'Delete account',
       'delete_account_sub': 'Permanently delete account and data',
       'delete_account_warning': 'Your account and all related data will be permanently deleted. This action cannot be undone.',
@@ -1938,7 +1850,6 @@ class L10n extends ChangeNotifier {
       'confirm_password': 'Confirm with password',
       'account_deleted': 'Account deleted',
       'delete_account_error': 'Could not delete account',
-      // ── Email verification ──
       'forgot_password_link': 'Forgot password?',
       'verify_email': 'Verify your email',
       'verify_email_sub': 'Enter the 6-digit code from the email',
@@ -1952,7 +1863,6 @@ class L10n extends ChangeNotifier {
       'invalid_code': 'Invalid or expired code',
       'verify_error': 'Could not verify. Try again',
       'code_send_error': 'Could not send code',
-      // ── Password reset ──
       'forgot_title': 'Reset password',
       'forgot_sub': 'Enter your email — we will send a reset code',
       'send_code': 'Send code',
@@ -1970,14 +1880,12 @@ class L10n extends ChangeNotifier {
       'email_taken': 'This email is already registered',
       'register_error': 'Registration error. Try again',
 
-      // ── Nav ──
       'nav_classes': 'Classes',
       'nav_chats': 'Chats',
       'nav_ai': 'AI',
       'nav_admin': 'Admin',
       'nav_settings': 'Settings',
 
-      // ── Notifications ──
       'notifications': 'Notifications',
       'notif_unread': 'unread',
       'all_read': 'All read',
@@ -1990,7 +1898,6 @@ class L10n extends ChangeNotifier {
       'notif_deadline': 'Deadline Soon',
       'notif_graded': 'Assignment Graded',
 
-      // ── Admin additions ──
       'by_classes': 'BY CLASS',
       'by_users': 'BY USERS (NAME)',
       'detail_log': 'DETAILED LOG',
@@ -2012,7 +1919,6 @@ class L10n extends ChangeNotifier {
       'all_submitted': 'All submitted!',
       'my_rating': 'MY RATING',
       'remaining': 'Remaining',
-      // AP-2: assignments/submission screen localization
       'months_short': 'JAN,FEB,MAR,APR,MAY,JUN,JUL,AUG,SEP,OCT,NOV,DEC',
       'days_short': 'd',
       'create_first_assignment': 'Create the first assignment',
@@ -2020,7 +1926,6 @@ class L10n extends ChangeNotifier {
       'work_text_hint': 'Answer text or link (optional)...',
       'retract_resubmit': 'Retract and resubmit',
       'submission_retracted': 'Submission retracted — you can submit again',
-      // AP-3: meaningful submission errors
       'upload_failed': 'Failed to upload files. Check your connection and try again.',
       'already_submitted': 'You already submitted this assignment',
       'archived_submit': 'Your academic year is archived — submitting is disabled',
@@ -2031,7 +1936,6 @@ class L10n extends ChangeNotifier {
       'class_created': 'Class created',
       'class_deleted': 'Deleted',
 
-      // ── Calendar ──
       'deadlines': 'Deadlines',
       'no_deadlines': 'No deadlines',
       'cal_legend_due': 'assignment due',
@@ -2039,7 +1943,6 @@ class L10n extends ChangeNotifier {
       'cal_legend_done': 'all submitted',
       'upcoming_7_days': 'Next 7 days',
 
-      // ── Search ──
       'search': 'Search',
       'recent_searches': 'Recent searches',
       'search_empty': 'Nothing found for',
@@ -2049,7 +1952,6 @@ class L10n extends ChangeNotifier {
       'section_chats': 'CHATS',
       'show_more': 'More',
 
-      // ── Context menu ──
       'copy_code': 'Copy code',
       'share_class': 'Share',
       'pin_class': 'Pin',
@@ -2058,22 +1960,18 @@ class L10n extends ChangeNotifier {
       'confirm_delete_hint': 'Enter class name to confirm',
       'drag_hint': 'Hold a card to reorder',
 
-      // ── Reply ──
       'reply_to': 'Reply',
 
-      // ── Misc ──
       'file': 'file',
       'files': 'files',
       'yes': 'Yes',
       'no': 'No',
 
-      // ── Join dialog ──
       'join_class_title': 'Join Class by Code',
       'join_class_hint': 'Enter the 6-digit code your teacher gave you',
       'join_enter_class': 'Join Class',
       'enter_teacher_code': 'Enter code from teacher',
 
-      // ── Create class dialog ──
       'create_class_title': 'Create Class',
       'class_name_required': 'CLASS NAME *',
       'class_name_hint': 'E.g.: Mathematics 10A',
@@ -2085,17 +1983,14 @@ class L10n extends ChangeNotifier {
       'click_to_upload': 'Tap to upload',
       'leave_btn': 'Leave',
 
-      // ── Chats ──
       'gallery': 'Gallery',
       'camera': 'Camera',
       'typing_indicator': 'typing...',
 
-      // ── Connectivity ──
       'no_connection': 'No internet connection',
       'checking_connection': 'Checking connection…',
       'swipe_up_hide': 'Swipe up to hide',
 
-      // ── Class detail extras ──
       'add_first_material': 'Add the first material',
       'materials_appear_here': 'Course materials will appear here',
       'opening_file': 'Opening file',
@@ -2163,7 +2058,6 @@ class L10n extends ChangeNotifier {
       'months_full': 'January,February,March,April,May,June,July,August,September,October,November,December',
       'months_genitive': 'January,February,March,April,May,June,July,August,September,October,November,December',
       'weekdays_short': 'Mon,Tue,Wed,Thu,Fri,Sat,Sun',
-      // ── UGC moderation (App Store Guideline 1.2) ──
       'terms_title': 'Community Guidelines',
       'terms_body': 'Chatra is an educational platform. By using the app you agree not to post abusive, illegal or objectionable content, including:\n\n•  insults, harassment and threats;\n•  hate speech and discrimination;\n•  violence, sexual or pornographic content;\n•  spam, fraud and malicious links;\n•  content that breaks the law or the rights of others.\n\nThere is zero tolerance for such behavior. You can report any message or user and block a user. Reports are reviewed within 24 hours; violators are removed from the platform.',
       'terms_agree': 'I accept the Community Guidelines',
@@ -2188,7 +2082,6 @@ class L10n extends ChangeNotifier {
       'report_sent': 'Report sent. Thank you, we will review it.',
       'report_auto_block_note': 'The user will also be blocked.',
       'copy_action': 'Copy',
-      // ── Privacy Policy ──
       'pp_title': 'Privacy Policy',
       'pp_view': 'How we handle your data',
       'pp_updated_label': 'Updated',
@@ -2207,7 +2100,6 @@ class L10n extends ChangeNotifier {
       'pp_children_body': 'The app is intended for learning. If you are below the age of self-consent in your country, use it under the supervision of a parent or your educational institution.',
       'pp_contact_title': 'Changes and contact',
       'pp_contact_body': 'If the policy changes, the current version is always in the app. Any questions — contact us via "Contact the developer".',
-      // ── Admin: reports ──
       'reports_tab': 'Reports',
       'no_reports': 'No reports',
       'report_on_label': 'Reported',
@@ -2245,7 +2137,6 @@ class L10n extends ChangeNotifier {
       'status_overdue_sheet': 'Overdue',
       'status_new_sheet': 'New',
 
-      // ── AI avatar ──
       'avatar': 'Avatar',
       'avatar_lectures': 'Avatar lectures',
       'create_avatar': 'Create Avatar',
@@ -2325,7 +2216,6 @@ class L10n extends ChangeNotifier {
       'characters_label': 'characters',
       'class_label': 'Class',
 
-      // ── AI usage / RAG / variants / grading (site parity) ──
       'ai_unlimited_on': 'Unlimited AI: turn off',
       'ai_unlimited_off': 'Unlimited AI: turn on',
       'ai_documents': 'AI Documents',
@@ -2351,7 +2241,6 @@ class L10n extends ChangeNotifier {
       'delete_submission': 'Delete submission',
       'delete_submission_confirm': 'Delete student submission?',
 
-      // ── Cohorts / Archive / Rollover ──
       'archive': 'Archive',
       'archived_badge': 'Archived',
       'archive_empty': 'Archive is empty',

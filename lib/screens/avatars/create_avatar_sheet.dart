@@ -13,8 +13,6 @@ import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/toast.dart';
 
-/// Opens the "Create AI avatar" bottom sheet. Returns true if an avatar
-/// request was successfully submitted (caller should refresh its state).
 Future<bool?> showCreateAvatarSheet(BuildContext context) {
   return showModalBottomSheet<bool>(
     context: context,
@@ -35,7 +33,6 @@ class _CreateAvatarSheetState extends State<_CreateAvatarSheet> {
   final _nameCtrl = TextEditingController();
   XFile? _photo;
 
-  // 0 = record from mic, 1 = upload file
   int _voiceMode = 0;
   String? _recordedPath;
   PlatformFile? _uploadedVoiceFile;
@@ -187,7 +184,6 @@ class _CreateAvatarSheetState extends State<_CreateAvatarSheet> {
           ]),
           const SizedBox(height: 16),
 
-          // Info banner
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(AppRadii.tile)),

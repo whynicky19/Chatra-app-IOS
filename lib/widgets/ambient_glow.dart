@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Мягкое цветное свечение в углу экрана — фоновая атмосфера
-/// стартовых экранов (выбор организации, вход, регистрация).
 class AmbientGlow extends StatelessWidget {
   final Alignment alignment;
   final Color color;

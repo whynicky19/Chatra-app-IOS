@@ -44,7 +44,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   Map<String, String> _fileTexts = {};
   String _cachedLectureContext = '';
   List<String> _cachedLectureImageUrls = [];
-  // Cached derived data — computed once in _load() instead of jsonDecode on every getter access.
   Map<String, dynamic> _classData = {};
   Map<String, dynamic> _meta = {};
   String _title = '';
@@ -52,20 +51,12 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   List<dynamic> _materials = [];
   bool _loading = true, _loadingAsg = false, _aiTabActive = false, _avatarTabActive = false;
   bool _coverPrecached = false;
-  // Cached cover header widget — see build() for why it is memoized.
   Widget? _headerCache;
   String _headerSig = '';
-  // Populated lazily by ClassAvatarTab once it first loads — null means "not known yet".
   int? _avatarLectureCount;
-  // Cohorts (academic years) of this class — for viewing past years.
-  // _selectedCohortId == null means the active cohort (current year).
   List<dynamic> _cohorts = [];
   int? _selectedCohortId;
 
-  // Cohort management (rotation toggle, rollover, past-year selector) is
-  // restricted server-side to the class creator (or an admin) — the cohorts
-  // router returns 403 for other teachers. Mirror that in the UI so we never
-  // show controls that would 403.
   bool get _canManageCohorts {
     final auth = context.read<AuthProvider>();
     if (!auth.isTeacher) return false;
@@ -106,8 +97,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       final rawUrl = clsData['cover_image'];
       if (rawUrl != null && rawUrl.toString().isNotEmpty && !rawUrl.toString().startsWith('data:')) {
         final url = context.read<ApiService>().fixUrl(rawUrl.toString());
-        // Prime the SAME resized entry the cover widget uses (memCacheWidth: 800),
-        // otherwise precache would decode a second, full-resolution bitmap.
         precacheImage(
           ResizeImage(
             CachedNetworkImageProvider(url, cacheKey: 'class_cover_${widget.classId}'),
@@ -123,10 +112,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     if (!mounted) return;
     final api = context.read<ApiService>();
     final isTeacher = context.read<AuthProvider>().isTeacher;
-    // Class metadata, posts (lectures/materials) and rating are independent — fetch in parallel.
     final results = await Future.wait([
       api.getClass(widget.classId).catchError((_) => _classData),
-      // Server-side filtered: only this class's posts, not the whole org's.
       api.getPosts(classId: widget.classId).catchError((_) => _posts),
       isTeacher
           ? Future<Map<String, dynamic>>.value(_rating)
@@ -138,27 +125,19 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     _recomputeDerived();
     if (mounted) setState(() => _loading = false);
     _loadFileTexts();
-    // Only the creator/admin may list cohorts (others get 403).
     if (_canManageCohorts) _loadCohorts();
   }
 
-  // Bust the cached cover after it changes. The cover widgets use a stable
-  // cacheKey (so the image survives ngrok host changes between sessions), which
-  // means a new upload would otherwise keep serving the old cached bitmap.
   Future<void> _evictCoverCache(String? newUrl) async {
     try {
       final fixed = (newUrl != null && newUrl.isNotEmpty)
           ? context.read<ApiService>().fixUrl(newUrl) : '';
       await CachedNetworkImage.evictFromCache(fixed, cacheKey: 'class_cover_${widget.classId}');
     } catch (_) {}
-    // Drop decoded copies held in memory (base + the memCacheWidth:800 variant)
-    // so the cover re-resolves the new file. Blunt, but this is a rare action.
     PaintingBinding.instance.imageCache.clear();
     PaintingBinding.instance.imageCache.clearLiveImages();
   }
 
-  // Apply a class edit from the server response without a full _load(): patches
-  // local derived data and the shared ClassesProvider cache (home card).
   void _applyClassUpdate(Map<String, dynamic> updated) {
     if (mounted) {
       setState(() {
@@ -169,8 +148,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     context.read<ClassesProvider>().patchCachedClass(widget.classId, updated);
   }
 
-  // Teacher-only: cohorts for the "past years" selector. Silent on failure so a
-  // backend without the cohorts endpoint just shows no selector.
   Future<void> _loadCohorts() async {
     try {
       final cohorts = await context.read<ApiService>().getClassCohorts(widget.classId);
@@ -179,8 +156,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     } catch (_) {}
   }
 
-  // Parses post bodies once (after data arrives) and caches the results so that
-  // build()/getters don't run jsonDecode on every access.
   void _recomputeDerived() {
     _lectures = _posts.where((p) => (p['title'] ?? '').startsWith('[LECTURE][${widget.classId}]')).toList();
     _materials = _posts.where((p) => (p['title'] ?? '').startsWith('[HW][${widget.classId}]')).toList();
@@ -190,7 +165,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   }
 
   void _recomputeAiContext() {
-    // Lecture context for AI
     final all = [..._lectures, ..._materials].take(12);
     final parts = <String>[];
     for (final p in all) {
@@ -227,7 +201,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     }
     _cachedLectureContext = parts.join('\n\n');
 
-    // Image URLs for AI
     final allPosts = [..._lectures, ..._materials];
     final urls = <String>[];
     for (final p in allPosts) {
@@ -259,8 +232,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       }
     }
 
-    // Fetch file texts with a bounded concurrency of 3 so we don't fire a
-    // request for every attached file at once (can be dozens).
     const maxConcurrent = 3;
     for (var i = 0; i < filePairs.length; i += maxConcurrent) {
       final chunk = filePairs.skip(i).take(maxConcurrent);
@@ -288,8 +259,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     if (!mounted) return; setState(() => _loadingAsg = true);
     final api = context.read<ApiService>();
     final isTeacher = context.read<AuthProvider>().isTeacher;
-    // Assignments and my submissions are independent — fetch in parallel
-    // instead of the old sequential two-step.
     await Future.wait([
       () async { try { _assignments = await api.getAssignments(classId: widget.classId); } catch (_) {} }(),
       () async { if (!isTeacher) { try { _mySubs = await api.getMySubmissions(); } catch (_) {} } }(),
@@ -297,9 +266,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     if (mounted) setState(() => _loadingAsg = false);
   }
 
-
-  // Fixed (non-scrollable) tab with a FittedBox around the label so with 5
-  // tabs on a narrow screen the text shrinks to fit instead of being cut off.
   Widget _tabItem(IconData icon, String label) {
     return Tab(
       height: 58,
@@ -311,26 +277,21 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     );
   }
 
-  // Downloads the file and opens it with the native viewer (PDF, Word, Excel, images, etc.)
   Future<void> _openFileViewer(BuildContext ctx, String url, String name) async {
     final l = context.read<L10n>();
     final cleanUrl = cleanFileUrl(url);
     final ext = name.split('.').last.toLowerCase();
 
-    // Images — show in-app full-screen gallery
     final imageExts = {'jpg', 'jpeg', 'png', 'gif', 'webp'};
     if (imageExts.contains(ext)) {
       showImageViewer(ctx, cleanUrl, name);
       return;
     }
 
-    // Show download progress dialog
     var progress = 0.0;
     var cancelled = false;
     var dialogClosed = false;
     final cancelToken = CancelToken();
-    // Captured from the dialog's StatefulBuilder so onReceiveProgress can
-    // actually repaint the progress bar.
     StateSetter? setDialog;
     showCupertinoDialog(
       context: ctx,
@@ -371,7 +332,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       final filePath = '${dir.path}/${fileCacheKey(cleanUrl)}_$safeFileName';
       final file = File(filePath);
 
-      // Use cached version if it exists
       if (!await file.exists()) {
         if (!mounted || cancelled) return;
         final api = context.read<ApiService>();
@@ -382,7 +342,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           onReceiveProgress: (received, total) {
             if (total > 0) {
               progress = received / total;
-              // Repaint the dialog's progress bar (guard against updates after close).
               if (!dialogClosed) setDialog?.call(() {});
             }
           },
@@ -396,23 +355,18 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
 
       final result = await OpenFile.open(filePath);
       if (result.type != ResultType.done && mounted) {
-        // Fallback to browser if native open fails
         await launchUrl(Uri.parse(cleanUrl), mode: LaunchMode.externalApplication);
       }
     } on DioException catch (e) {
       if (!mounted || cancelled) return;
       dialogClosed = true;
       Navigator.pop(context);
-      // 404 means the file is gone from the server — the browser fallback
-      // would only show an error page (or the ngrok interstitial), so report
-      // it honestly instead.
       final code = e.response?.statusCode;
       if (code == 404) {
         showToast(context, l.t('file_not_found_server'), error: true);
         return;
       }
-      // 403 = подпись ссылки истекла (TTL суток) или побилась; браузер покажет
-      // лишь сырой JSON, поэтому просим обновить экран за свежей подписью.
+      // 403 = подпись истекла; в браузере юзер увидит сырой JSON, поэтому говорим честно.
       if (code == 403) {
         showToast(context, l.t('file_link_expired'), error: true);
         return;
@@ -434,13 +388,9 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surfaceColor = Theme.of(context).colorScheme.surface;
 
-    // Use ClassesProvider data immediately (available before _load() completes)
-    // so CachedNetworkImage mounts during the page-push animation, not after.
     final clsData = context.read<ClassesProvider>().allClasses
         .firstWhere((c) => c['id'] == widget.classId, orElse: () => <String, dynamic>{});
 
-    // Archived-for-user: the student is only in archived cohorts of this class →
-    // read-only (no submitting, no AI chat). Teachers are never archived.
     final isArchivedForUser =
         (meta['is_archived_for_user'] == true) || (clsData['is_archived_for_user'] == true);
     final viewOnly = isArchivedForUser && !auth.isTeacher;
@@ -452,10 +402,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     final displayTitle = (_title.isNotEmpty ? _title : (clsData['title'] ?? '')).toString();
     final displayDesc = (meta['description'] ?? clsData['description'] ?? '').toString();
 
-    // Memoize the cover header so that setState from tab switching (_aiTabActive)
-    // and from _load()/_loadFileTexts() does not rebuild the SliverAppBar (which
-    // would remount the cover image and cause a flicker). Only rebuild it when one
-    // of its actual inputs changes.
     final inviteCode = (meta['invite_code'] as String?) ?? '';
     final headerSig = '$displayTitle|$displayDesc|${coverImg?.toString() ?? ''}|'
         '${auth.isTeacher}|$inviteCode|$isArchivedForUser|${l.t('class_code')}|${l.t('code_copied')}|${l.t('archived_badge')}|${l.t('regenerate_code')}';
@@ -485,7 +431,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           _headerCache!,
         ],
         body: Column(children: [
-          // ── TabBar + teacher action buttons ────────────────────────────────
           Container(
             decoration: BoxDecoration(
               color: surfaceColor,
@@ -512,7 +457,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     _avatarLectureCount != null ? '${l.t('avatar')} ($_avatarLectureCount)' : l.t('avatar')),
                 ],
               ),
-              // Cohort (academic-year) selector — creator/admin viewing past years.
               if (_canManageCohorts && _cohorts.length > 1) _cohortSelector(l),
               if (auth.isTeacher) AnimatedBuilder(animation: _tabCtrl, builder: (ctx, _) {
                 if (_tabCtrl.index == 3 || _tabCtrl.index == 4) return const SizedBox.shrink();
@@ -549,7 +493,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               }),
             ]),
           ),
-          // ── Tab content ─────────────────────────────────────────────────────
           Expanded(child: _loading
             ? ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -603,7 +546,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     final l = context.read<L10n>();
     final tc = TextEditingController(text: cleanPostTitle(p['title'] ?? ''));
     final cc = TextEditingController(text: (() { try { return jsonDecode(p['body'])['content'] ?? ''; } catch (_) { return p['body'] ?? ''; } })());
-    // Preserve existing files from the body
     final Map<String, dynamic> existingBody = (() { try { return jsonDecode(p['body']) as Map<String, dynamic>; } catch (_) { return <String, dynamic>{}; } })();
     final List<dynamic> existingFiles = existingBody['files'] is List ? existingBody['files'] as List : [];
 
@@ -690,7 +632,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
         .toList();
   }
 
-  /// Extract file URLs from plain text (keeps the original name as a #fragment)
   List<String> _extractFilesFromText(String text) {
     final api = context.read<ApiService>();
     final result = <String>[];
@@ -708,10 +649,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     return result;
   }
 
-
-  // ── Cohort selector (teacher, past academic years) ──
   Widget _cohortSelector(L10n l) {
-    // Active cohort maps to the null selection (getSubmissions without cohort_id).
     final activeCohort = _cohorts.firstWhere(
       (c) => c['status'] == 'active',
       orElse: () => null,
@@ -752,9 +690,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               child: DropdownButton<int?>(
                 isExpanded: true,
                 isDense: true,
-                // Must always match one of the items (all non-null cohort ids).
-                // Fall back to the newest cohort when there is no active one
-                // (all archived) — otherwise a null value would assert.
                 value: _selectedCohortId ?? activeId ?? (_cohorts.first['id'] as num).toInt(),
                 icon: Icon(CupertinoIcons.chevron_down, size: 14,
                     color: isViewingPast ? primary : C.text4),
@@ -769,8 +704,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 ],
                 onChanged: (v) {
                   HapticFeedback.selectionClick();
-                  // Normalize the active cohort back to null so downstream calls
-                  // hit the active-cohort code path (no cohort_id query param).
                   setState(() => _selectedCohortId = (v == activeId) ? null : v);
                 },
               ),
@@ -781,10 +714,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     );
   }
 
-  // ── AI Chat tab ──
   Widget _aiTab(bool viewOnly) {
-    // Archived students get a read-only class — AI chat is hidden behind a notice
-    // (the backend does not gate it, so this is a client-side guard).
     if (viewOnly) {
       final l = context.read<L10n>();
       return Center(
@@ -812,7 +742,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     );
   }
 
-  // ── Show post detail ──
   void _showPost(dynamic p, String type, int num) {
     String content = '';
     try { final b = jsonDecode(p['body']); content = b['content'] ?? b['description'] ?? ''; }
@@ -840,7 +769,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           ),
           clipBehavior: Clip.antiAlias,
           child: Column(children: [
-            // ── Colored header strip ──────────────────────
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -850,7 +778,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               ),
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                // Handle + close row
                 Row(children: [
                   Expanded(child: Center(child: Container(
                     width: 36, height: 4,
@@ -866,7 +793,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   ),
                 ]),
                 const SizedBox(height: 14),
-                // Type badge
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.22), borderRadius: BorderRadius.circular(8)),
@@ -876,14 +802,12 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   ),
                 ),
                 const SizedBox(height: 10),
-                // Title
                 Text(
                   cleanPostTitle(p['title'] ?? ''),
                   style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white, height: 1.25, letterSpacing: -0.3),
                   maxLines: 3, overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 12),
-                // Meta row
                 Row(children: [
                   const Icon(CupertinoIcons.calendar, size: 12, color: Colors.white60),
                   const SizedBox(width: 5),
@@ -900,12 +824,10 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               ]),
             ),
 
-            // ── Scrollable content ────────────────────────
             Expanded(child: ListView(
               controller: sc,
               padding: const EdgeInsets.fromLTRB(20, 22, 20, 32),
               children: [
-                // Content text
                 if (cleanText.isNotEmpty) ...[
                   Row(children: [
                     Container(width: 3, height: 18, decoration: BoxDecoration(color: accent, borderRadius: BorderRadius.circular(2))),
@@ -925,7 +847,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   const SizedBox(height: 24),
                 ],
 
-                // Files
                 if (files.isNotEmpty) ...[
                   Row(children: [
                     Container(width: 3, height: 18, decoration: BoxDecoration(color: accent, borderRadius: BorderRadius.circular(2))),
@@ -938,7 +859,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     final name = fileDisplayName(f);
                     final ext  = name.split('.').last.toLowerCase();
 
-                    // File type config
                     final fileConfig = _fileTypeConfig(ext);
                     final fileIcon  = fileConfig['icon'] as IconData;
                     final fileColor = fileConfig['color'] as Color;
@@ -961,7 +881,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                             boxShadow: [BoxShadow(color: fileColor.withValues(alpha: isDark ? 0.04 : 0.07), blurRadius: 10, offset: const Offset(0, 3))],
                           ),
                           child: Row(children: [
-                            // File type badge
                             Container(
                               width: 46, height: 46,
                               decoration: BoxDecoration(color: fileBg, borderRadius: BorderRadius.circular(12)),
@@ -989,7 +908,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   }),
                 ],
 
-                // Empty — no content and no files
                 if (cleanText.isEmpty && files.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 40),
@@ -1030,7 +948,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     }
   }
 
-  // ── FAB menu ──
   void _showAddMenu() {
     final l = context.read<L10n>();
     String type = 'lecture';
@@ -1043,7 +960,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Container(width: 40, height: 4, decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2))),
           const SizedBox(height: 16),
-          // Header
           Row(children: [
             Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: Icon(CupertinoIcons.book, color: Theme.of(context).colorScheme.primary, size: 22)),
@@ -1055,7 +971,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             IconButton(icon: const Icon(CupertinoIcons.xmark), onPressed: () => Navigator.pop(ctx)),
           ]),
           const SizedBox(height: 20),
-          // Type toggle
           Container(decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(AppRadii.tile)),
             child: Row(children: [
               Expanded(child: GestureDetector(onTap: () => setS(() => type = 'lecture'),
@@ -1072,7 +987,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           _fieldLabel2(type == 'lecture' ? l.t('lecture_content') : l.t('material_content')),
           TextField(controller: cc, decoration: InputDecoration(hintText: l.t('content_body_hint')), maxLines: 4),
           const SizedBox(height: 20),
-          // File upload
           _fieldLabel2(l.t('attach_files')),
           GestureDetector(onTap: () async {
             final result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
@@ -1166,7 +1080,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               const Spacer(), const Icon(CupertinoIcons.calendar, size: 18, color: C.text4),
             ]))),
           const SizedBox(height: 20),
-          // File attachments
           Row(children: [
             Text(l.t('attached_files'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
             const Spacer(),
@@ -1193,7 +1106,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   child: const Icon(CupertinoIcons.xmark, size: 14, color: C.text4)),
               ]))),
           const SizedBox(height: 20),
-          // Reference solution
           Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.04), borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15))),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
@@ -1225,7 +1137,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               ],
             ])),
           const SizedBox(height: 20),
-          // Criteria
           Row(children: [
             Text(l.t('grading_criteria'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
             const Spacer(),
@@ -1266,7 +1177,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 try {
                   final api = context.read<ApiService>();
 
-                  // Upload attached files с явной обработкой ошибок
                   final fileUrls = <String>[];
                   for (final pf in [...attachedFiles, ...referenceFiles]) {
                     if (pf.path != null) {
@@ -1283,10 +1193,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   }
 
                   if (!mounted) return;
-                  // Нормализуем URL: localhost → реальный сервер
                   final fixedUrls = fileUrls.map(context.read<ApiService>().fixUrl).toList();
 
-                  // Встраиваем URL файлов в description (бэкенд не сохраняет file_urls)
                   final baseDesc = dc.text.trim();
                   final descWithFiles = fixedUrls.isEmpty
                       ? baseDesc
@@ -1326,23 +1234,19 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
 
   Widget _fieldLabel2(String s) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(s, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)));
 
-  // ── Edit assignment ──
   void _editAssignment(dynamic a) {
     final l = context.read<L10n>();
     final rawDesc = a['description']?.toString() ?? '';
-    // Показываем description БЕЗ встроенных URL (они хранятся там технически)
     final tc = TextEditingController(text: a['title'] ?? '');
     final dc = TextEditingController(text: cleanContent(rawDesc));
     final sc = TextEditingController(text: '${a['max_score'] ?? 100}');
     DateTime? deadline;
     try { if (a['deadline'] != null) deadline = DateTime.parse(a['deadline']); } catch (_) {}
 
-    // Извлекаем существующие URL из description (бэкенд хранит там)
     final existingUrls = _extractFilesFromText(rawDesc);
     List<String> keepUrls = List<String>.from(existingUrls);
     List<PlatformFile> newFiles = [];
 
-    // Parse existing criteria
     List<Map<String, dynamic>> criteria = [];
     try {
       final raw = jsonDecode(a['criteria'] ?? '[]');
@@ -1390,7 +1294,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               const Spacer(), const Icon(CupertinoIcons.calendar, size: 18, color: C.text4),
             ]))),
           const SizedBox(height: 20),
-          // Existing files
           if (keepUrls.isNotEmpty) ...[
             Row(children: [
               Text(l.t('current_files'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
@@ -1410,7 +1313,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             }),
             const SizedBox(height: 12),
           ],
-          // Add new files
           Row(children: [
             Text(l.t('add_files_label'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
             const Spacer(),
@@ -1433,7 +1335,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           else Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(12)),
             child: Row(children: [const Icon(CupertinoIcons.paperclip, size: 15, color: C.text4), const SizedBox(width: 8), Text(l.t('no_new_files'), style: const TextStyle(fontSize: 13, color: C.text4))])),
           const SizedBox(height: 24),
-          // Criteria
           Row(children: [
             Text(l.t('grading_criteria'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
             const Spacer(),
@@ -1497,13 +1398,10 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     }
                   }
                   if (!mounted) return;
-                  // Фиксируем URL (localhost → реальный сервер) и объединяем
                   final fixedNewUrls = uploadedUrls.map(context.read<ApiService>().fixUrl).toList();
                   final fixedKeepUrls = keepUrls.map(context.read<ApiService>().fixUrl).toList();
                   final allUrls = [...fixedKeepUrls, ...fixedNewUrls];
 
-                  // Встраиваем URL файлов в description (бэкенд не сохраняет file_urls)
-                  // Сначала очищаем description от старых встроенных URL, потом добавляем новые
                   final cleanDesc = cleanContent(dc.text.trim());
                   final descWithFiles = allUrls.isEmpty
                       ? cleanDesc
@@ -1533,11 +1431,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     ).then((_) { tc.dispose(); dc.dispose(); sc.dispose(); });
   }
 
-  // ── Assignment variants (site parity) ──────────────────────────────────────
   void _showVariantsSheet(int assignmentId) {
     final l = context.read<L10n>();
-    // Declared OUTSIDE the StatefulBuilder callback so they survive setS()
-    // rebuilds — locals declared inside the callback get reset on every call.
     List<dynamic>? variants;
     bool adding = false;
     final variantTitleC = TextEditingController();
@@ -1663,9 +1558,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     final l = context.read<L10n>();
     final meta = _meta;
     final tc = TextEditingController(text: _title), dc = TextEditingController(text: meta['description'] ?? ''), tn = TextEditingController(text: meta['teacher'] ?? '');
-    // Existing cover may be either a legacy base64 data: URI or (new format,
-    // matching the site) a plain upload URL — keep reading both, but any
-    // NEWLY picked photo is uploaded as a file and stored as a URL only.
     final String? existingCover = meta['cover_image'];
     XFile? newCoverFile;
     bool coverRemoved = false;
@@ -1677,7 +1569,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => DraggableScrollableSheet(expand: false, initialChildSize: 0.85, maxChildSize: 0.95,
         builder: (ctx, scroll) => ListView(controller: scroll, padding: const EdgeInsets.all(24), children: [
-          // Header
           Row(children: [
             Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: Icon(CupertinoIcons.pencil, color: Theme.of(context).colorScheme.primary, size: 22)),
@@ -1686,7 +1577,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             IconButton(icon: const Icon(CupertinoIcons.xmark), onPressed: () => Navigator.pop(ctx)),
           ]),
           const SizedBox(height: 24),
-          // Cover image
           _fieldLabel2(l.t('class_cover')),
           GestureDetector(
             onTap: () async {
@@ -1709,7 +1599,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   CachedNetworkImage(imageUrl: context.read<ApiService>().fixUrl(existingCover), fit: BoxFit.cover, memCacheWidth: 800, fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero, placeholder: (_, __) => const SizedBox.shrink(), errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [const Color(0xFF006475), Theme.of(context).colorScheme.primary]))))
                 else
                   Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [const Color(0xFF006475), Theme.of(context).colorScheme.primary], begin: Alignment.topLeft, end: Alignment.bottomRight))),
-                // Overlay
                 Container(color: Colors.black.withValues(alpha: 0.3),
                   child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                     const Icon(CupertinoIcons.photo, color: Colors.white, size: 32),
@@ -1732,10 +1621,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           const SizedBox(height: 16),
           _fieldLabel2(l.t('teacher_name_label')),
           TextField(controller: tn, decoration: InputDecoration(hintText: l.t('teacher_display_hint'))),
-          // Cohort management (rotation + rollover) — creator/admin only, else 403.
           if (_canManageCohorts) ...[
           const SizedBox(height: 20),
-          // Yearly rotation — enrolls the class in the annual rollover flow.
           Container(
             decoration: BoxDecoration(
               color: adaptiveSurface2(context),
@@ -1812,15 +1699,9 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                         widget.classId, rotationYearly ? 'yearly' : 'manual');
                   }
                   if (!mounted || !ctx.mounted) return;
-                  // The cover uses a stable cacheKey (survives ngrok host changes),
-                  // so a NEW cover would keep serving the OLD cached bitmap. Bust it.
                   if (coverChanged) await _evictCoverCache(coverImage);
                   if (!mounted || !ctx.mounted) return;
                   Navigator.pop(ctx);
-                  // Patch local + provider caches from the server response instead
-                  // of a full _load() — that refetches posts, rating AND every
-                  // attached file's text over the network, which is slow and
-                  // pointless for a metadata/cover edit.
                   _applyClassUpdate(updated);
                   showToast(context, l.t('class_updated'));
                 } catch (_) {
@@ -1841,4 +1722,3 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     super.dispose();
   }
 }
-

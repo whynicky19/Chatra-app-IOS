@@ -7,20 +7,12 @@ import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/errors.dart';
 
-/// Вступительные экраны для нового пользователя.
-///
-/// Показываются один раз, до выбора организации и входа — то есть до того, как
-/// известна роль. Поэтому текст про продукт в целом, а не про конкретную роль:
-/// подсказки под студента/преподавателя уместнее в пустых состояниях уже
-/// внутри приложения.
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback onDone;
   const OnboardingScreen({super.key, required this.onDone});
 
   static const _seenKey = 'onboarding_seen_v1';
 
-  /// Видел ли пользователь интро. При ошибке чтения считаем, что видел —
-  /// лучше не показать интро, чем застрять на нём при сбое хранилища.
   static Future<bool> isSeen() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -86,7 +78,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return Scaffold(
       body: SafeArea(
         child: Column(children: [
-          // «Пропустить» — обязательный выход: заставлять листать интро нельзя.
+          // «Пропустить» — обязательный выход из интро.
           Align(
             alignment: Alignment.centerRight,
             child: Padding(
@@ -109,7 +101,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               },
             ),
           ),
-          // Индикатор страниц
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -134,7 +125,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               onTap: () => _next(pages.length),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                // minHeight, чтобы подпись не резалась при крупном системном шрифте.
                 constraints: const BoxConstraints(minHeight: 52),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 width: double.infinity,

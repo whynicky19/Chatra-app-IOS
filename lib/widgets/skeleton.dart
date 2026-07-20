@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-// ── SkeletonBox ───────────────────────────────────────────────────────────────
-// Shimmering placeholder. Uses its own AnimationController so it works
-// stand-alone without any parent setup.
 class SkeletonBox extends StatefulWidget {
   final double width;
   final double height;
@@ -42,16 +39,12 @@ class _SkeletonBoxState extends State<SkeletonBox>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    // base: the skeleton body colour; highlight: the shimmer flash.
     final base = isDark ? C.darkSurface2 : const Color(0xFFE2E9EC);
     final highlight = isDark ? const Color(0xFF1F3540) : Colors.white;
 
     return AnimatedBuilder(
       animation: _ctrl,
       builder: (_, __) {
-        // spotX sweeps from -2 to +2 in Alignment space.
-        // Alignment(-1,0) = left widget edge; Alignment(1,0) = right edge.
-        // Values outside ±1 sit off the widget, so the shimmer enters and exits smoothly.
         final spotX = -2.0 + 4.0 * _ctrl.value;
         return Container(
           width: widget.width,
@@ -70,8 +63,6 @@ class _SkeletonBoxState extends State<SkeletonBox>
   }
 }
 
-// ── Skeleton class card ───────────────────────────────────────────────────────
-// Mirrors the shape of a real class card in HomeScreen.
 class SkeletonClassCard extends StatelessWidget {
   const SkeletonClassCard({super.key});
 
@@ -88,26 +79,21 @@ class SkeletonClassCard extends StatelessWidget {
         boxShadow: cardShadow(isDark),
       ),
       child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Cover image placeholder
         ClipRRect(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           child: SkeletonBox(width: double.infinity, height: 168, borderRadius: 0),
         ),
-        // Info section
         Padding(
           padding: EdgeInsets.fromLTRB(16, 14, 16, 14),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            // Title line
             SkeletonBox(width: 190, height: 16, borderRadius: 8),
             SizedBox(height: 10),
-            // Meta chips
             Row(children: [
               SkeletonBox(width: 62, height: 22, borderRadius: 8),
               SizedBox(width: 6),
               SkeletonBox(width: 90, height: 22, borderRadius: 8),
             ]),
             SizedBox(height: 14),
-            // Footer: open button + action button
             Row(children: [
               SkeletonBox(width: 86, height: 32, borderRadius: 10),
               Spacer(),
@@ -120,8 +106,6 @@ class SkeletonClassCard extends StatelessWidget {
   }
 }
 
-// ── Skeleton chat row ─────────────────────────────────────────────────────────
-// Mirrors the shape of a real chat list item in ChatsScreen.
 class SkeletonChatRow extends StatelessWidget {
   const SkeletonChatRow({super.key});
 
@@ -139,20 +123,16 @@ class SkeletonChatRow extends StatelessWidget {
         boxShadow: softShadow(isDark),
       ),
       child: const Row(children: [
-        // Avatar circle
         SkeletonBox(width: 52, height: 52, borderRadius: 26),
         SizedBox(width: 14),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              // Chat title
               Expanded(child: SkeletonBox(width: double.infinity, height: 14, borderRadius: 7)),
               SizedBox(width: 40),
-              // Timestamp
               SkeletonBox(width: 32, height: 10, borderRadius: 5),
             ]),
             SizedBox(height: 8),
-            // Preview text
             SkeletonBox(width: 150, height: 11, borderRadius: 5),
           ]),
         ),

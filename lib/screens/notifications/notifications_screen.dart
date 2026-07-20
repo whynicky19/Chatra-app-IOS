@@ -13,7 +13,7 @@ import '../classes/class_detail_screen.dart';
 enum _NType { newAssignment, deadline, grade }
 
 class _Notif {
-  final String key; // unique key for dismissal tracking
+  final String key;
   final _NType type;
   final String title;
   final String body;
@@ -34,7 +34,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override void initState() { super.initState(); _load(); }
 
-  // notif_key -> {read, dismissed}: серверное состояние (синхронно с сайтом).
   Map<String, Map<String, bool>> _states = {};
 
   bool _isRead(String key) => _states[key]?['read'] == true;
@@ -74,7 +73,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         }
     };
 
-    // Build class name map from posts and collect existing class IDs
     final classNames = <int, String>{};
     final existingClassIds = <int>{};
     for (final p in posts) {
@@ -88,24 +86,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       } catch (_) {}
     }
 
-    // Remove deleted classes from joined set so we don't show stale notifications
     final activeJoinedIds = joinedIds.intersection(existingClassIds);
 
-    // Keep only assignments from existing classes (filters out orphaned assignments)
     allAssignments = allAssignments.where(
       (a) => existingClassIds.contains((a['class_id'] as num?)?.toInt()),
     ).toList();
 
     final l = context.read<L10n>();
 
-    // ── Grade notifications ──
     for (final sub in mySubs) {
       if (sub['status'] != 'graded' || sub['grade'] == null) continue;
       final subId = (sub['id'] as num?)?.toInt() ?? 0;
       final aId = (sub['assignment_id'] as num?)?.toInt();
       final assignment = aId != null ? allAssignments.firstWhere((a) => a['id'] == aId, orElse: () => null) : null;
       final cid = (assignment?['class_id'] as num?)?.toInt();
-      // Skip if the class was deleted
       if (cid != null && !existingClassIds.contains(cid)) continue;
       final nKey = 'grade:$subId';
       if (_isDismissed(nKey)) continue;
@@ -122,7 +116,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       ));
     }
 
-    // ── Assignment notifications (only for joined AND existing classes) ──
     final filtered = activeJoinedIds.isEmpty
         ? <dynamic>[]
         : allAssignments.where((a) => activeJoinedIds.contains((a['class_id'] as num?)?.toInt())).toList();
@@ -136,7 +129,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       final deadline = a['deadline'] != null ? DateTime.tryParse(a['deadline']) : null;
       final sub = mySubs.firstWhere((s) => s['assignment_id'] == aId, orElse: () => null);
 
-      // New assignment (last 7 days)
       if (createdAt != null && now.difference(createdAt).inDays <= 7) {
         final nKey = 'assignment:$aId';
         if (!_isDismissed(nKey)) {
@@ -152,7 +144,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         }
       }
 
-      // Deadline reminder (within 48 h, not submitted)
       if (deadline != null && deadline.isAfter(now) && deadline.difference(now).inHours <= 48 && sub == null) {
         final nKey = 'deadline:$aId';
         if (!_isDismissed(nKey)) {
@@ -171,12 +162,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       }
     }
 
-    // Persist cleaned joined list (remove deleted classes)
     if (activeJoinedIds.length < joinedIds.length) {
       await prefs.setStringList('joined_classes_$uid', activeJoinedIds.map((id) => '$id').toList());
     }
 
-    // Sort: unread first, then by date desc
     notifs.sort((a, b) {
       if (a.isRead != b.isRead) return a.isRead ? 1 : -1;
       return b.date.compareTo(a.date);
@@ -184,11 +173,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     if (mounted) setState(() { _notifs = notifs; _loading = false; });
 
-    // Открытие экрана = «просмотрено»: помечаем прочитанными на сервере
-    // непрочитанные уведомления, влияющие на бейдж (задания и оценки; дедлайны —
-    // напоминания, в счётчик не входят). Так красная точка гаснет после
-    // просмотра и статус синхронизируется с сайтом. Текущий вид оставляет
-    // подсветку «непрочитано» — она уйдёт при следующем открытии.
     final toMark = notifs
         .where((n) => n.type != _NType.deadline && !_isRead(n.key))
         .map((n) => n.key)
@@ -201,7 +185,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
-  // Отметить прочитанным на сервере (синхронно с сайтом) + локально.
   void _markRead(String nKey) {
     if (_isRead(nKey)) return;
     setState(() {
@@ -222,20 +205,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     try { await context.read<ApiService>().setNotifState(nKey, dismissed: true); } catch (_) {}
   }
 
-  // Groups notifications into recency buckets (today / yesterday / this week /
-  // earlier). Order inside each bucket is preserved from _notifs (unread-first,
-  // then date-desc). Returns a flat list of section-title Strings interleaved
-  // with _Notif items, ready for a single ListView.builder.
   List<Object> _grouped(L10n l) {
     final now = DateTime.now();
     final todayStart = DateTime(now.year, now.month, now.day);
     final yesterdayStart = todayStart.subtract(const Duration(days: 1));
     final weekStart = todayStart.subtract(const Duration(days: 7));
     int bucketOf(DateTime d) {
-      if (!d.isBefore(todayStart)) return 0;      // today (or an imminent future deadline)
-      if (!d.isBefore(yesterdayStart)) return 1;  // yesterday
-      if (!d.isBefore(weekStart)) return 2;       // earlier this week
-      return 3;                                   // older
+      if (!d.isBefore(todayStart)) return 0;
+      if (!d.isBefore(yesterdayStart)) return 1;
+      if (!d.isBefore(weekStart)) return 2;
+      return 3;
     }
     final buckets = <int, List<_Notif>>{};
     for (final n in _notifs) {
@@ -273,7 +252,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(child: Column(children: [
-        // Header
         Padding(padding: const EdgeInsets.fromLTRB(20, 20, 20, 16), child: Row(children: [
           GestureDetector(onTap: () => Navigator.pop(context),
             child: Container(width: 40, height: 40, decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
@@ -289,7 +267,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               child: const Icon(CupertinoIcons.refresh, size: 18, color: C.text4))),
         ])),
 
-        // Content
         Expanded(child: _loading
           ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary, strokeWidth: 2.5))
           : _notifs.isEmpty
@@ -361,8 +338,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               final c = cfg['color'] as Color;
                               return Container(width: 44, height: 44,
                                 decoration: BoxDecoration(
-                                  // Unread: white glyph on a coloured gradient tile with a
-                                  // soft glow. Read: quiet tinted tile.
                                   gradient: n.isRead ? null : LinearGradient(
                                     colors: [c.withValues(alpha: 0.85), c],
                                     begin: Alignment.topLeft, end: Alignment.bottomRight),

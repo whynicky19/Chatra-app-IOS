@@ -11,16 +11,11 @@ import '../../../widgets/app_dialog.dart';
 import '../../../widgets/toast.dart';
 import '../class_detail_utils.dart';
 
-/// AP-1: сбой аплоада вложения при сдаче. Кидается вместо молчаливого catch,
-/// чтобы прервать сдачу и не отправить работу с потерянными файлами.
 class _UploadFailure implements Exception {
   final String fileName;
   _UploadFailure(this.fileName);
 }
 
-/// AP-3: единый маппинг ошибок сдачи в локализованный текст (как в join-флоу).
-/// 409 — уже сдано; 403/no_active_cohort — архивный/неактивный поток; сбой
-/// аплоада — своя строка; иначе backend-detail либо общий текст.
 String _submitErrorText(L10n l, Object e) {
   if (e is _UploadFailure) return l.t('upload_failed');
   if (e is DioException) {
@@ -41,9 +36,7 @@ class ClassAssignmentsTab extends StatefulWidget {
   final bool isTeacher;
   final int classId;
   final bool isLoading;
-  // Read-only mode for students in an archived cohort: no submitting.
   final bool viewOnly;
-  // Teacher viewing a past cohort's submissions; null = active cohort.
   final int? cohortId;
   final VoidCallback onRefresh;
   final void Function(dynamic a) onEditAssignment;
@@ -78,9 +71,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
     try { final dt = DateTime.parse(d); return '${dt.day}.${dt.month.toString().padLeft(2, '0')}.${dt.year}'; } catch (_) { return d; }
   }
 
-  // Разбор ссылок общий с постами и деталью класса — см. class_detail_utils.
   static final _fileUrlRe = fileUrlRe;
-  // Site-generated markdown attachment: "📎 [name](url)"
   static final _mdFileRe = mdFileRe;
 
   String _fileDisplayName(String url) {
@@ -103,7 +94,6 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
     final api = context.read<ApiService>();
     final result = <String>[];
     final seen = <String>{};
-    // Markdown attachments carry the original name in the label — keep it as a #fragment
     for (final m in _mdFileRe.allMatches(text)) {
       var url = m.group(2)!;
       if (!url.contains('#')) url = '$url#${Uri.encodeComponent(m.group(1)!)}';
@@ -280,7 +270,6 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
         Text(widget.isTeacher ? l.t('create_first_assignment') : l.t('no_assignments_yet'),
           style: const TextStyle(fontSize: 13, color: C.text4)),
       ]))),
-      // Pre-compute lookup map once — avoids O(N×M) linear scans per card
       ...() {
         final subMap = <int, dynamic>{};
         for (final s in widget.mySubs) {
@@ -846,8 +835,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               try {
                 final api = context.read<ApiService>();
                 final fileUrls = <String>[];
-                // AP-1: любой сбой аплоада прерывает сдачу — иначе работа уходила
-                // с неполными file_urls, а студент видел «Работа отправлена!».
+                // Сбой аплоада обязан прервать сдачу: иначе уходят неполные file_urls под «Работа отправлена!».
                 for (final pf in pickedFiles) {
                   if (pf.path == null) continue;
                   final res = await api.uploadFile(pf.path!, pf.name);
@@ -865,8 +853,6 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                   widget.onRefresh();
                 }
               } catch (e) {
-                // AP-3: показываем осмысленную причину (уже сдано / архивный
-                // поток / сбой аплоада), а не общий «Ошибка отправки».
                 if (mounted && ctx.mounted) showToast(context, _submitErrorText(l, e), error: true);
               }
               if (ctx.mounted) setS(() => busy = false);
@@ -942,7 +928,6 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
           int gradingDone = 0;
           int gradingTotal = 0;
           return StatefulBuilder(builder: (ctx, setS) => DraggableScrollableSheet(expand: false, initialChildSize: 0.85, maxChildSize: 0.95, builder: (ctx, sc) {
-            // Recomputed on every rebuild so stats stay fresh after batch grading
             final graded = subs.where((s) => s['status'] == 'graded').length;
             final pending = subs.length - graded;
             if (selectedSub != null) {
@@ -1121,7 +1106,6 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 const SizedBox(width: 8),
                 _statBox('$pending', l.t('pending'), C.red),
               ]),
-              // Batch AI grading button
               if (pending > 0) ...[
                 const SizedBox(height: 14),
                 ConstrainedBox(constraints: const BoxConstraints(minWidth: double.infinity, minHeight: 50), child: ElevatedButton(
@@ -1194,7 +1178,6 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
     } catch (_) { showToast(context, l.t('error_loading'), error: true); }
   }
 
-  // ── Manual grading + submission delete (site parity) ────────────────────────
   Widget _manualGradeAndDeleteRow(BuildContext ctx, dynamic sub, void Function(dynamic updated) onGraded, VoidCallback onDeleted) {
     final l = context.read<L10n>();
     return Row(children: [

@@ -26,7 +26,6 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    // Разлогин по причине (напр. блокировка аккаунта) — показываем один раз.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final reason = context.read<AuthProvider>().consumeSessionEndReason();
@@ -44,13 +43,10 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     setState(() { _error = null; _busy = true; });
     final orgType = context.read<OrgProvider>().orgTypeString;
-    // null = успех, иначе ключ L10n (wrong_creds / login_rate_limited /
-    // account_blocked / email_not_verified / no_connection).
     final errKey = await context.read<AuthProvider>().login(_email.text.trim(), _pw.text, orgType: orgType);
     if (!mounted) return;
     setState(() => _busy = false);
     if (errKey == 'email_not_verified') {
-      // Email не подтверждён — уводим на ввод кода (там сразу вышлем свежий).
       Navigator.of(context).push(MaterialPageRoute(builder: (_) =>
         VerifyEmailScreen(email: _email.text.trim(), orgType: orgType, autoSend: true)));
       return;
@@ -64,7 +60,6 @@ class _LoginScreenState extends State<LoginScreen> {
       ForgotPasswordScreen(orgType: orgType, initialEmail: _email.text.trim().isEmpty ? null : _email.text.trim())));
   }
 
-  // Ступенчатое появление — как на экране выбора организации.
   Widget _reveal(int step, Widget child) {
     if (MediaQuery.of(context).disableAnimations) return child;
     return TweenAnimationBuilder<double>(
@@ -90,7 +85,6 @@ class _LoginScreenState extends State<LoginScreen> {
         AmbientGlow(alignment: Alignment.bottomRight, color: primary, opacity: isDark ? 0.08 : 0.05),
 
         SafeArea(child: Stack(children: [
-          // Назад → выбор организации
           Positioned(top: 8, left: 16, child: _BackButton(onTap: () => context.read<OrgProvider>().clear())),
 
           Center(child: SingleChildScrollView(
@@ -165,7 +159,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ])),
 
-                // Ошибка
                 AnimatedSize(
                   duration: const Duration(milliseconds: 220),
                   curve: Curves.easeOut,
@@ -193,7 +186,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     onTap: _busy ? null : _submit,
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
-                      // minHeight: подпись не обрезается при крупном шрифте.
                       constraints: const BoxConstraints(minHeight: 52),
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
@@ -228,7 +220,6 @@ class _LoginScreenState extends State<LoginScreen> {
     child: Text(s, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: C.text3)));
 }
 
-// Круглая кнопка «назад» в стиле iOS — на светлом фоне, а не на градиенте.
 class _BackButton extends StatelessWidget {
   final VoidCallback onTap;
   const _BackButton({required this.onTap});

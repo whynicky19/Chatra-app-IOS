@@ -44,7 +44,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     _headerCtrl.forward();
     final provider = _classesProvider;
     provider.addListener(_onProviderError);
-    // loadJoined (reads SharedPreferences) and load (fetches posts) are independent — run in parallel.
     provider.loadJoined();
     provider.load();
     provider.loadNotifBadge();
@@ -102,7 +101,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   List<Map<String, dynamic>> get _sortedClasses {
     final provider = context.read<ClassesProvider>();
-    // Active cohorts only — archived classes live in a separate collapsed block.
     final all = provider.activeClasses;
     final pinned = all.where((c) => _pinnedIds.contains(c['id'] as int)).toList();
     final regular = all.where((c) => !_pinnedIds.contains(c['id'] as int)).toList();
@@ -119,12 +117,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return [...pinned, ...regular];
   }
 
-  // onReorderItem passes newIndex already adjusted for the removed item at
-  // oldIndex, so no manual `newIndex -= 1` is needed (unlike the old onReorder).
   void _onReorderItem(int oldIndex, int newIndex) {
     final classes = _sortedClasses;
     final pinnedCount = _pinnedIds.length;
-    // Prevent mixing pinned/regular zones
     final isOldPinned = oldIndex < pinnedCount;
     final isNewPinned = newIndex < pinnedCount;
     if (isOldPinned != isNewPinned) {
@@ -146,8 +141,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   void _onProviderError() {
     final err = context.read<ClassesProvider>().errorMessage;
     if (err != null && mounted) {
-      // errorMessage — ключ локализации; l.t() вернёт текст на языке
-      // пользователя, а незнакомую строку (detail с бэкенда) отдаст как есть.
       showToast(context, context.read<L10n>().t(err), error: true);
       context.read<ClassesProvider>().clearError();
     }
@@ -173,9 +166,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return Scaffold(
       body: SafeArea(child: CustomScrollView(slivers: [
           CupertinoSliverRefreshControl(
-            // Обновляем всё, что грузится при входе на экран: раньше здесь был
-            // только load(), поэтому потянуть за списком не освежало членство
-            // в классах и бейдж уведомлений.
             onRefresh: () {
               final p = context.read<ClassesProvider>();
               return Future.wait([
@@ -186,7 +176,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             },
           ),
 
-          // ── Header ──────────────────────────────────────────
           SliverToBoxAdapter(child: AnimatedBuilder(
             animation: _headerAnim,
             builder: (_, child) => Opacity(
@@ -197,7 +186,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             padding: const EdgeInsets.fromLTRB(22, 24, 22, 18),
             child: Row(children: [
               Expanded(child: Text(l.t('classes'), style: TextStyle(
-                // iOS large title: 34 / bold / tracking −0.4 (matches theme's displayLarge).
                 fontSize: 34, fontWeight: FontWeight.w700,
                 color: adaptiveText1(context), letterSpacing: -0.4, height: 1.1,
               ))),
@@ -228,10 +216,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   },
                   child: Stack(children: [
                     _HeaderBtn(icon: CupertinoIcons.bell, onTap: null, isDark: isDark),
-                    // The badge listens to its OWN notifier (ClassesProvider.notifBadge),
-                    // so refreshing the unread count repaints just this 9×9 dot instead
-                    // of rebuilding the whole class list. Positioned stays the direct
-                    // Stack child so top/right still apply.
                     Positioned(top: 7, right: 7, child: ValueListenableBuilder<int>(
                       valueListenable: context.read<ClassesProvider>().notifBadge,
                       builder: (context, count, _) => count > 0
@@ -260,13 +244,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ]),
           ))),
 
-          // ── Class cards ──────────────────────────────────────
-          // Only show skeletons on the FIRST load (empty cache). On a reload
-          // (e.g. after creating a class, load() flips loading=true), keep the
-          // existing reorderable list mounted instead of tearing it down and
-          // rebuilding — swapping the list out mid-flight deactivates its
-          // Theme-dependent _ClassCard items and trips the framework's
-          // `_dependents.isEmpty` assertion.
           if (provider.loading && provider.classes.isEmpty)
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 90),
@@ -284,7 +261,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           else if (provider.classes.isEmpty)
             SliverFillRemaining(child: _EmptyState(isTeacher: auth.isTeacher, onCreate: _showCreateClass, onJoin: _showJoinDialog))
           else ...[
-            // Drag hint banner
             if (_showDragHint)
               SliverToBoxAdapter(child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -307,7 +283,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 ),
               )),
             Builder(builder: (context) {
-              // Cache once — getter runs filter+sort, don't call per itemBuilder
               final sortedClasses = _sortedClasses;
               return SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
@@ -373,7 +348,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             }),
           ],
 
-          // ── Archive: entry row (WhatsApp-style) → separate ArchiveScreen ──
           if (provider.archivedClasses.isNotEmpty)
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -388,7 +362,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ),
             ),
 
-          // "Add subject" card — students only
           if (!auth.isTeacher && !provider.loading && provider.classes.isNotEmpty)
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 90),
@@ -450,9 +423,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       pageBuilder: (_, __, ___) => const SizedBox(),
       transitionBuilder: (ctx, anim, __, ___) {
         return Stack(children: [
-          // Backdrop dismiss
           GestureDetector(onTap: () => Navigator.pop(ctx)),
-          // Menu
           Center(child: ScaleTransition(
             scale: Tween<double>(begin: 0.8, end: 1.0).animate(
               CurvedAnimation(parent: anim, curve: Curves.easeOutBack)),
@@ -558,7 +529,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     Navigator.push(context, MaterialPageRoute(builder: (_) => const CalendarScreen()));
   }
 
-  // ── Join dialog ──────────────────────────────────────────────────────────────
   void _showJoinDialog() {
     final provider = context.read<ClassesProvider>();
     final api = context.read<ApiService>();
@@ -566,7 +536,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final controllers = List.generate(6, (_) => TextEditingController());
     final focusNodes  = List.generate(6, (_) => FocusNode());
     bool busy = false;
-    // Live "does this code exist" preview, backed by a real (non-joining) lookup.
     Timer? lookupDebounce;
     bool lookingUp = false;
     Map<String, dynamic>? foundClass;
@@ -722,9 +691,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     final detail = (e is DioException && e.response?.data is Map)
                         ? e.response?.data['detail']
                         : null;
-                    // 409 no_active_cohort — у класса нет активного учебного года.
-                    // 403 archived_rejoin_blocked — ученик уже был в классе, его
-                    // поток в архиве; вернуть доступ может только преподаватель.
                     final String key = detail == 'no_active_cohort'
                         ? 'no_active_cohort'
                         : detail == 'archived_rejoin_blocked'
@@ -747,18 +713,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     });
   }
 
-  // ── Create class dialog ──────────────────────────────────────────────────────
   void _showCreateClass() {
     final provider = context.read<ClassesProvider>();
     final l = context.read<L10n>();
     final nameC = TextEditingController(), descC = TextEditingController(),
           teacherC = TextEditingController(), periodC = TextEditingController();
-    // Local preview only (XFile path) — the actual upload happens on submit,
-    // same as the site: the class stores a file URL, not a base64 blob.
     XFile? coverFile;
     bool submitting = false;
-    // Reload the home list only AFTER the dialog route is fully gone (see the
-    // `.then` below). Doing it inline still races the dialog's exit animation.
     bool created = false;
     Map<String, dynamic>? createdClass;
     showDialog(context: context, barrierDismissible: false,
@@ -805,12 +766,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       final res = await api.uploadFile(coverFile!.path, coverFile!.name);
                       coverUrl = (res['url'] ?? res['file_url'] ?? res['path'])?.toString();
                     }
-                    // Create the class WITHOUT reloading the list here. Reloading
-                    // fires notifyListeners() (rebuilding the home class list) while
-                    // this dialog route is still mounted/animating out; that overlap
-                    // of a list rebuild with the dialog teardown trips the framework's
-                    // `_dependents.isEmpty` assertion (red screen). So: POST → close
-                    // the dialog → reload only in the route's `.then`, once it's gone.
                     final createdCls = await api.createClass(nameC.text.trim(),
                         description: descC.text.trim(),
                         teacher: teacherC.text.trim(),
@@ -840,10 +795,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       descC.dispose();
       teacherC.dispose();
       periodC.dispose();
-      // Route is fully closed now — safe to rebuild the list without racing the
-      // dialog teardown. Show the new class instantly from the POST response,
-      // then reconcile server-computed fields (invite_code, etc.) in the
-      // background so the user never waits on the full reload.
       if (created && mounted) {
         if (createdClass != null) provider.addCreatedClass(createdClass!);
         provider.load();
@@ -854,8 +805,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Widget _fl3(String s) => Padding(padding: const EdgeInsets.only(bottom: 8),
     child: Text(s, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)));
 }
-
-// ── Class Context Menu ────────────────────────────────────────────────────────
 
 class _ClassContextMenu extends StatelessWidget {
   final Map<String, dynamic> cls;
@@ -909,7 +858,6 @@ class _ClassContextMenu extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadii.card),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
 
-            // ── Cover header ──
             SizedBox(height: 110, width: double.infinity,
               child: Stack(fit: StackFit.expand, children: [
                 coverImg != null && coverImg.toString().startsWith('data:')
@@ -929,7 +877,6 @@ class _ClassContextMenu extends StatelessWidget {
               ]),
             ),
 
-            // ── Code chip ──
             if (code.isNotEmpty) Padding(
               padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
               child: Row(children: [
@@ -951,7 +898,6 @@ class _ClassContextMenu extends StatelessWidget {
               ]),
             ),
 
-            // ── Actions ──
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
               child: Column(children: [
@@ -977,7 +923,6 @@ class _ClassContextMenu extends StatelessWidget {
               ]),
             ),
 
-            // ── Danger zone ──
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
               child: _ActionRow(
@@ -1064,11 +1009,6 @@ class _ActionRow extends StatelessWidget {
   }
 }
 
-
-// ── Archive Entry ─────────────────────────────────────────────────────────────
-// WhatsApp-style row on the home screen: opens the separate ArchiveScreen with
-// classes the student is only enrolled in via archived cohorts (read-only).
-
 class _ArchiveEntry extends StatelessWidget {
   final int count;
   final VoidCallback onTap;
@@ -1094,7 +1034,6 @@ class _ArchiveEntry extends StatelessWidget {
           ),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(children: [
-            // Rounded icon tile
             Container(
               width: 42, height: 42,
               decoration: BoxDecoration(
@@ -1137,10 +1076,6 @@ class _ArchiveEntry extends StatelessWidget {
     );
   }
 }
-
-// ── Class Card ────────────────────────────────────────────────────────────────
-// Extracted into its own StatelessWidget so it is NOT rebuilt when the parent
-// HomeScreen rebuilds during SliverReorderableList drag operations.
 
 class _ClassCard extends StatelessWidget {
   final Map<String, dynamic> cls;
@@ -1206,12 +1141,10 @@ class _ClassCard extends StatelessWidget {
             boxShadow: cardShadow(isDark),
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            // Cover image
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
               child: SizedBox(height: 168, width: double.infinity,
                 child: Stack(fit: StackFit.expand, children: [
-                  // Always-visible gradient — prevents grey flash when image remounts
                   Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight))),
                   if (coverImg != null)
                     coverImg.toString().startsWith('data:')
@@ -1226,21 +1159,15 @@ class _ClassCard extends StatelessWidget {
                             cacheKey: 'class_cover_$id',
                             fit: BoxFit.cover,
                             width: double.infinity,
-                            // Decode the cover at ~card resolution instead of full
-                            // upload size (up to 1200px). Same memCacheWidth as the
-                            // detail-screen cover (same cacheKey) → they share one
-                            // decoded bitmap in memory instead of two.
                             memCacheWidth: 800,
                             fadeInDuration: Duration.zero,
                             fadeOutDuration: Duration.zero,
                           ),
-                  // Bottom gradient
                   Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                     begin: Alignment.topCenter, end: Alignment.bottomCenter,
                     stops: const [0.5, 1.0],
                     colors: [Colors.transparent, Colors.black.withValues(alpha: 0.45)],
                   )))),
-                  // Teacher code chip
                   if (isTeacher && (cls['invite_code'] as String? ?? '').isNotEmpty)
                     Positioned(top: 10, left: 10, child: GestureDetector(
                       onTap: onCopyCode,
@@ -1253,17 +1180,14 @@ class _ClassCard extends StatelessWidget {
                           Text(cls['invite_code'] as String, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 2)),
                         ]),
                       ))),
-                  // Pin icon
                   if (isPinned)
                     const Positioned(top: 10, right: 10, child: Icon(CupertinoIcons.pin_fill, color: Colors.white, size: 18)),
-                  // Drag handle
                   Positioned(bottom: 8, right: 8,
                     child: ReorderableDragStartListener(
                       index: index,
                       child: SizedBox(width: 44, height: 44,
                         child: Center(child: Icon(CupertinoIcons.line_horizontal_3, size: 20, color: Colors.white.withValues(alpha: 0.5)))),
                     )),
-                  // Lesson count badge
                   Positioned(bottom: 10, left: 12,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
@@ -1277,7 +1201,6 @@ class _ClassCard extends StatelessWidget {
                 ]),
               ),
             ),
-            // Info section
             Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(cls['title'] ?? '', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: adaptiveText1(context), height: 1.2), maxLines: 2, overflow: TextOverflow.ellipsis),
               const SizedBox(height: 8),
@@ -1329,8 +1252,6 @@ class _ClassCard extends StatelessWidget {
     );
   }
 }
-
-// ── Reusable widgets ──────────────────────────────────────────────────────────
 
 class _HeaderBtn extends StatelessWidget {
   final IconData icon;
@@ -1445,4 +1366,3 @@ class _EmptyState extends StatelessWidget {
     ));
   }
 }
-

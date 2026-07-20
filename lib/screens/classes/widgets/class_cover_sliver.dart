@@ -6,13 +6,11 @@ import '../../../theme/app_theme.dart';
 import '../../../utils/image_cache.dart';
 import '../../../widgets/toast.dart';
 
-/// Collapsing cover header for the class detail screen. Fully driven by its
-/// constructor — holds no state — so it lives in its own file.
 class ClassCoverSliver extends StatelessWidget {
   final int classId;
   final String title;
   final String desc;
-  final dynamic coverImg; // fixed http(s) URL, a data: URI, or null
+  final dynamic coverImg;
   final bool isTeacher;
   final String inviteCode;
   final bool isArchived;
@@ -55,8 +53,6 @@ class ClassCoverSliver extends StatelessWidget {
         cacheKey: 'class_cover_$classId',
         fit: BoxFit.cover,
         alignment: Alignment.topCenter,
-        // Matches the home card's memCacheWidth (same cacheKey) so both screens
-        // reuse one decoded bitmap rather than decoding the full upload twice.
         memCacheWidth: 800,
         fadeInDuration: Duration.zero,
         fadeOutDuration: Duration.zero,
@@ -97,12 +93,9 @@ class ClassCoverSliver extends StatelessWidget {
       ],
       flexibleSpace: LayoutBuilder(builder: (context, constraints) {
         final topPad = MediaQuery.of(context).padding.top;
-        // settle: 1 = fully expanded, 0 = collapsed to the toolbar.
         final settle = ((constraints.maxHeight - kToolbarHeight - topPad) /
                 (220 - kToolbarHeight))
             .clamp(0.0, 1.0);
-        // Collapsed title only fades in over the last ~30% of the collapse, so
-        // the big cover title and the pinned toolbar title never both show.
         final collapsedTitleOpacity = ((0.3 - settle) / 0.3).clamp(0.0, 1.0);
         return FlexibleSpaceBar(
         collapseMode: CollapseMode.pin,
@@ -118,7 +111,6 @@ class ClassCoverSliver extends StatelessWidget {
             stops: [0.0, 0.4, 1.0],
             colors: [Colors.black38, Colors.transparent, Colors.black54],
           ))),
-          // Pinned toolbar title — appears centered only once collapsed.
           if (collapsedTitleOpacity > 0)
             Positioned(top: topPad, left: 56, right: 56, height: kToolbarHeight,
               child: Opacity(opacity: collapsedTitleOpacity, child: Center(

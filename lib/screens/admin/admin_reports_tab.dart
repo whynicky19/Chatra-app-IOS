@@ -7,8 +7,6 @@ import '../../theme/app_theme.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/toast.dart';
 
-/// Админ-вкладка «Жалобы» (UGC-модерация). Показывает жалобы пользователей
-/// (POST /reports), позволяет пометить обработанной и заблокировать нарушителя.
 class AdminReportsTab extends StatefulWidget {
   final bool isActive;
   final void Function(int openCount) onOpenCountChanged;
@@ -148,7 +146,6 @@ class _AdminReportsTabState extends State<AdminReportsTab> {
         boxShadow: cardShadow(isDark),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Reason + status
         Row(children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

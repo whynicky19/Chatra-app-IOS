@@ -3,18 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_service.dart';
 
-/// UGC-модерация (App Store Guideline 1.2): пользователь может заблокировать
-/// другого пользователя и пожаловаться на контент.
-///
-/// Источник истины по блок-листу — сервер (таблица user_blocks): он переживает
-/// переустановку и синхронизируется между устройствами. Локальный кэш в
-/// SharedPreferences остаётся для мгновенной отрисовки и работы оффлайн, а
-/// изменения, сделанные без сети, копятся в очереди и досылаются при следующей
-/// синхронизации.
-///
-/// Жалобы теперь уходят на сервер (POST /reports) и видны админу; разработчик
-/// обязан реагировать на них в течение 24 часов (требование Apple). Этот адрес
-/// оставлен как общий контакт поддержки/модерации (в самом флоу жалоб не участвует).
 const String kModerationEmail = 'chatra.support@gmail.com';
 
 class ModerationService extends ChangeNotifier {
@@ -22,11 +10,7 @@ class ModerationService extends ChangeNotifier {
 
   final ApiService _api;
 
-  /// id → отображаемое имя. Локальное зеркало серверного блок-листа: держим
-  /// имена рядом с id, чтобы экран «Заблокированные» рисовался мгновенно и
-  /// работал оффлайн.
   Map<int, String> _blocked = {};
-  /// Операции, не доехавшие до сервера (оффлайн). Досылаются при следующем sync.
   Set<int> _pendingBlock = {};
   Set<int> _pendingUnblock = {};
 
@@ -38,8 +22,6 @@ class ModerationService extends ChangeNotifier {
   Map<int, String> get blockedUsers => Map.unmodifiable(_blocked);
   bool isBlocked(int? userId) => userId != null && _blocked.containsKey(userId);
 
-  /// Загрузить блок-лист для конкретного аккаунта (вызывать при старте и после
-  /// логина/смены пользователя): сперва кэш, затем синхронизация с сервером.
   Future<void> configure(int? uid) async {
     final suffix = uid?.toString() ?? 'anon';
     _blockedKey = 'blocked_users_v2_$suffix';
@@ -50,8 +32,6 @@ class ModerationService extends ChangeNotifier {
       _blocked = _decode(prefs.getString(_blockedKey));
       _loadPending(prefs.getString(_pendingKey));
       if (_blocked.isEmpty) {
-        // Миграция с v1 (просто список id, без имён). Такие блокировки ещё
-        // нигде не зарегистрированы на сервере — ставим их в очередь на отправку.
         final legacy = prefs.getString('blocked_users_v1_$suffix');
         if (legacy != null && legacy.isNotEmpty) {
           _blocked = {
@@ -71,8 +51,6 @@ class ModerationService extends ChangeNotifier {
     if (uid != null) await syncFromServer();
   }
 
-  /// Досылает отложенные операции и подтягивает серверный список.
-  /// Оффлайн — тихо выходим, локальный кэш остаётся актуальным для UI.
   Future<void> syncFromServer() async {
     try {
       for (final id in _pendingBlock.toList()) {
@@ -92,7 +70,6 @@ class ModerationService extends ChangeNotifier {
       await _persistBlocked();
       notifyListeners();
     } catch (_) {
-      // Нет сети / сервер недоступен — работаем на кэше, повторим позже.
     }
   }
 
@@ -121,9 +98,7 @@ class ModerationService extends ChangeNotifier {
 
   Future<void> block(int userId, {String? name}) async {
     final existing = _blocked[userId];
-    // Не затираем уже сохранённое имя пустым, если блок повторный.
     final resolved = (name != null && name.isNotEmpty) ? name : (existing ?? '');
-    // Оптимистично: контент нарушителя должен пропасть сразу, не дожидаясь сети.
     _blocked[userId] = resolved;
     _pendingUnblock.remove(userId);
     notifyListeners();
@@ -132,7 +107,6 @@ class ModerationService extends ChangeNotifier {
       await _api.blockUser(userId);
       _pendingBlock.remove(userId);
     } catch (_) {
-      // Оффлайн — дошлём при следующей синхронизации, блок уже виден локально.
       _pendingBlock.add(userId);
     }
     await _persistBlocked();
@@ -164,8 +138,6 @@ class ModerationService extends ChangeNotifier {
     } catch (_) {}
   }
 
-  /// Записать жалобу локально (журнал на устройстве). Отправка модератору идёт
-  /// отдельно (email); локальная запись — на случай оффлайна и для истории.
   Future<void> recordReport({
     required int reportedUserId,
     required String reason,

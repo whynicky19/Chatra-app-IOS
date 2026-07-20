@@ -27,7 +27,7 @@ class _AdminAvatarsTabState extends State<AdminAvatarsTab> with SingleTickerProv
 
   bool _loadingAvatars = true;
   List<TeacherAvatar> _avatars = [];
-  String _avatarFilter = 'all'; // all | pending | approved | rejected
+  String _avatarFilter = 'all';
 
   bool _loadingLectures = true;
   List<AvatarLecture> _lectures = [];
@@ -365,7 +365,6 @@ class _AdminLectureCard extends StatelessWidget {
         const SizedBox(height: 6),
         Text('${l.t('estimated_cost')}: ~\$${lecture.estimatedCostUsd.toStringAsFixed(2)} (${lecture.estimatedChars} ${l.t('characters_label')})',
           style: const TextStyle(fontSize: 12, color: C.text4)),
-        // The attached presentation — the admin reviews it before approving.
         if (lecture.sourceFileUrl != null) ...[
           const SizedBox(height: 10),
           GestureDetector(

@@ -18,9 +18,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   DateTime _focusedMonth = DateTime.now();
   DateTime _selectedDay = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
 
-  // key = day with no time; value = list of assignments whose deadline is on that day
   Map<DateTime, List<dynamic>> _deadlineMap = {};
-  // assignment_id → submission (for students)
   Map<int, dynamic> _submissionMap = {};
   bool _loading = true;
 
@@ -37,7 +35,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
 
-      // Fetch active class IDs from the provider (already filtered for this user)
       final activeClassIds = context.read<ClassesProvider>()
           .classes
           .map((c) => (c['id'] as num).toInt())
@@ -53,20 +50,17 @@ class _CalendarScreenState extends State<CalendarScreen> {
       final allAssignments = results[0];
       final submissions = (isStudent && results.length > 1) ? results[1] : <dynamic>[];
 
-      // Keep only assignments that belong to currently active classes
       final assignments = allAssignments.where((a) {
         final classId = (a['class_id'] as num?)?.toInt();
         return classId != null && activeClassIds.contains(classId);
       }).toList();
 
-      // Build submission map: assignment_id → submission
       final subMap = <int, dynamic>{};
       for (final s in submissions) {
         final aid = (s['assignment_id'] as num?)?.toInt();
         if (aid != null) subMap[aid] = s;
       }
 
-      // Build deadline map — only include future/today deadlines
       final map = <DateTime, List<dynamic>>{};
       for (final a in assignments) {
         final dueStr = a['deadline'] as String?;
@@ -92,7 +86,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
   List<dynamic> _getForDay(DateTime day) =>
       _deadlineMap[DateTime(day.year, day.month, day.day)] ?? [];
 
-  // Returns 'submitted', 'graded', or null
   String? _submissionStatus(dynamic assignment) {
     final id = (assignment['id'] as num?)?.toInt();
     if (id == null) return null;
@@ -118,7 +111,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       await _load();
                     },
                   ),
-                  // ── Header ──
                   SliverToBoxAdapter(child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 16, 22, 12),
                     child: Row(children: [
@@ -159,8 +151,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  // ── Mini-calendar ─────────────────────────────────────────────────────────────
-
   Widget _buildCalendar(bool isDark, DateTime today) {
     final l = context.read<L10n>();
     final surface = Theme.of(context).colorScheme.surface;
@@ -177,7 +167,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
         boxShadow: cardShadow(isDark),
       ),
       child: Column(children: [
-        // Month nav
         Row(children: [
           _navBtn(CupertinoIcons.chevron_left, () => setState(() =>
             _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month - 1))),
@@ -207,7 +196,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
               final isSelected = day == _selectedDay;
               final isToday = day == today;
 
-              // Dot color: green if all submitted, red if multiple, teal if one
               Color? dotColor;
               if (deadlines.isNotEmpty) {
                 final allDone = deadlines.every((a) {
@@ -290,12 +278,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
     ),
   );
 
-  // ── 7-day horizontal scroll ───────────────────────────────────────────────────
-
   Widget _build7DayScroll(DateTime today, bool isDark) {
     final l = context.read<L10n>();
     return SizedBox(
-      height: 88, // enough for text + number + optional badge without overflow
+      height: 88,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -360,8 +346,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  // ── Assignment list for selected day ──────────────────────────────────────────
-
   Widget _buildDayList(bool isDark, DateTime today) {
     final l = context.watch<L10n>();
     final items = _getForDay(_selectedDay);
@@ -415,7 +399,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
           final isSubmitted = status == 'submitted' || status == 'graded';
           final classId = (a['class_id'] as num?)?.toInt();
 
-          // Background color logic
           Color bg;
           if (isSubmitted) {
             bg = isDark ? C.green.withValues(alpha: 0.15) : C.greenLt;
@@ -442,8 +425,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 boxShadow: cardShadow(isDark),
               ),
               child: Row(children: [
-                // Status tile — a checkmark for submitted work, a clock for a
-                // still-open deadline. Replaces the old thin accent bar.
                 Container(
                   width: 42, height: 42,
                   decoration: BoxDecoration(

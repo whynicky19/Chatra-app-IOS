@@ -6,8 +6,6 @@ import '../../theme/app_theme.dart';
 import 'blocked_users_screen.dart';
 import 'settings_shared.dart';
 
-/// Раздел «Аккаунт и безопасность»: смена пароля, блок-лист, удаление аккаунта.
-/// Раньше всё это лежало плоским списком на главном экране настроек.
 class SecuritySettingsScreen extends StatelessWidget {
   const SecuritySettingsScreen({super.key});
 
@@ -37,7 +35,6 @@ class SecuritySettingsScreen extends StatelessWidget {
             MaterialPageRoute(builder: (_) => const BlockedUsersScreen())),
         ),
         const SizedBox(height: 16),
-        // Удаление аккаунта — деструктивное, поэтому в конце и красным.
         SettingsActionCard(
           icon: CupertinoIcons.trash,
           iconBg: C.red,

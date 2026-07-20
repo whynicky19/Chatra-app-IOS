@@ -2,14 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-/// Лёгкий переключатель в стиле нативного iOS.
-///
-/// Ранее использовал `liquid_glass_easy` (LiquidGlassToggle), но тот держит
-/// непрерывный realtime-захват экрана каждый кадр — постоянная GPU-нагрузка.
-/// Здесь оптика собрана из дешёвых слоёв (градиенты + тени + тонкая кромка),
-/// без блюра и без захвата: почти нулевая стоимость, вид — как системный тумблер.
-/// Стеклянность выражена деликатной кромкой и внутренним бликом, чуть заметнее
-/// только в момент переключения.
 class CupertinoLiquidSwitch extends StatefulWidget {
   final bool value;
   final ValueChanged<bool> onChanged;
@@ -29,12 +21,11 @@ class CupertinoLiquidSwitch extends StatefulWidget {
 class _CupertinoLiquidSwitchState extends State<CupertinoLiquidSwitch>
     with SingleTickerProviderStateMixin {
   late final AnimationController _c;
-  late final Animation<double> _t; // 0 = off, 1 = on
+  late final Animation<double> _t;
   bool _pressed = false;
 
-  // Нативные пропорции iOS: 51×31, «палец» 27, отступ 2.
   static const double _w = 51, _h = 31, _pad = 2;
-  double get _thumb => _h - _pad * 2; // 27
+  double get _thumb => _h - _pad * 2;
 
   @override
   void initState() {
@@ -77,7 +68,6 @@ class _CupertinoLiquidSwitchState extends State<CupertinoLiquidSwitch>
         animation: _t,
         builder: (context, _) {
           final t = _t.value;
-          // Блик заметнее лишь в движении (0 в покое, максимум в середине).
           final moving = math.sin(math.pi * t);
           final track = Color.lerp(offTrack, accent, t)!;
 
@@ -85,7 +75,6 @@ class _CupertinoLiquidSwitchState extends State<CupertinoLiquidSwitch>
             width: _w,
             height: _h,
             child: Stack(children: [
-              // ── Трек: плоский матовый цвет ──
               Container(
                 width: _w,
                 height: _h,
@@ -114,7 +103,6 @@ class _CupertinoLiquidSwitchState extends State<CupertinoLiquidSwitch>
                 ),
               ),
 
-              // ── «Палец»: непрозрачный белый диск ──
               Positioned(
                 top: _pad,
                 left: _pad + (_w - _h) * t,

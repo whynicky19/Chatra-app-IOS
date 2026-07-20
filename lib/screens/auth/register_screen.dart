@@ -23,7 +23,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _pw     = TextEditingController();
   bool _showPw = false;
   bool _submitted = false;
-  // UGC Guideline 1.2: регистрация только после принятия правил сообщества.
   bool _agreedTerms = false;
 
   @override
@@ -71,20 +70,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
           context.read<L10n>().t(
               auth.lastRegisterEmailSent ? 'account_created' : 'code_send_error'),
           error: !auth.lastRegisterEmailSent);
-      // Бэкенд уже выслал код подтверждения — ведём на его ввод (autoSend:false,
-      // чтобы не слать второй раз). После подтверждения — авто-вход в MainShell.
       Navigator.of(context).push(MaterialPageRoute(builder: (_) =>
         VerifyEmailScreen(email: email, orgType: orgType, autoSend: false)));
       setState(() => _submitted = false);
     } else {
       setState(() => _submitted = false);
       final l = context.read<L10n>();
-      // AP-2: lastError теперь ключ L10n (email_taken / register_error).
       showToast(context, l.t(auth.lastError ?? 'register_error'), error: true);
     }
   }
 
-  // Ступенчатое появление — как на экране выбора организации.
   Widget _reveal(int step, Widget child) {
     if (MediaQuery.of(context).disableAnimations) return child;
     return TweenAnimationBuilder<double>(
@@ -96,7 +91,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // Мягкая плашка-подсказка под полем (жёлтая — совет, красная — ошибка).
   Widget _hint(String text, {bool error = false}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final color  = error ? C.red : C.amberDk;
@@ -168,7 +162,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 28),
 
                 _reveal(2, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  // ФИО
                   _fieldLabel(l.t('full_name_label')),
                   TextField(
                     controller: _name,
@@ -185,7 +178,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     _hint(l.t('name_cyrillic_only'), error: true),
                   const SizedBox(height: 14),
 
-                  // Email
                   _fieldLabel('Email'),
                   TextField(
                     controller: _email,
@@ -200,7 +192,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 14),
 
-                  // Пароль
                   _fieldLabel(l.t('password_label')),
                   TextField(
                     controller: _pw,
@@ -251,7 +242,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ])),
                 const SizedBox(height: 20),
 
-                // UGC Guideline 1.2 — принятие правил сообщества до регистрации.
                 _reveal(3, Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
                   GestureDetector(
                     onTap: () => setState(() => _agreedTerms = !_agreedTerms),
@@ -293,7 +283,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 250),
                       curve: Curves.easeOut,
-                      // minHeight: подпись не обрезается при крупном шрифте.
                       constraints: const BoxConstraints(minHeight: 52),
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
@@ -330,7 +319,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     child: Text(s, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: C.text3)));
 }
 
-// Круглая кнопка «назад» в стиле iOS.
 class _BackButton extends StatelessWidget {
   final VoidCallback onTap;
   const _BackButton({required this.onTap});

@@ -6,9 +6,6 @@ import '../../services/moderation_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/moderation_actions.dart';
 
-/// Список заблокированных пользователей с возможностью разблокировать.
-/// App Store Guideline 1.2 требует, чтобы блокировка была не только доступна,
-/// но и обратима — до этого экрана метод unblock() нигде не вызывался.
 class BlockedUsersScreen extends StatelessWidget {
   const BlockedUsersScreen({super.key});
 

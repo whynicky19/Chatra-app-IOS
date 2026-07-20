@@ -13,10 +13,6 @@ import '../legal/terms_screen.dart';
 import 'contact_screen.dart';
 import 'settings_shared.dart';
 
-/// Раздел «О приложении»: правовые документы и связь с разработчиком.
-/// Правила сообщества и политика конфиденциальности обязаны быть доступны из
-/// приложения (App Store Guideline 1.2 / 5.1.1), поэтому раздел не прячем
-/// глубже одного уровня.
 class AboutSettingsScreen extends StatelessWidget {
   const AboutSettingsScreen({super.key});
 
@@ -49,8 +45,6 @@ class AboutSettingsScreen extends StatelessWidget {
             MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
         ),
         const SizedBox(height: 16),
-        // Связь с разработчиком — с фирменной иконкой Telegram, поэтому
-        // собственная карточка, а не SettingsActionCard.
         GestureDetector(
           onTap: () => Navigator.push(context,
             MaterialPageRoute(builder: (_) => const ContactScreen())),
@@ -76,16 +70,12 @@ class AboutSettingsScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 28),
-        // Версия — первое, что спрашивает поддержка. Тап копирует строку в
-        // буфер, чтобы её не переписывали руками.
         const _VersionLabel(),
       ],
     );
   }
 }
 
-/// «Chatra 1.0.0 (1)» — версия и номер сборки из нативного бандла, а не из
-/// захардкоженной константы: так строка не разъедется с реальной сборкой.
 class _VersionLabel extends StatefulWidget {
   const _VersionLabel();
   @override State<_VersionLabel> createState() => _VersionLabelState();
@@ -104,8 +94,6 @@ class _VersionLabelState extends State<_VersionLabel> {
     try {
       final info = await PackageInfo.fromPlatform();
       if (!mounted) return;
-      // Только версия, без номера сборки: он нужен разработчику, а в интерфейсе
-      // выглядит техническим шумом.
       setState(() => _version = info.version);
     } catch (e) {
       logError('AboutSettings.version', e);
@@ -115,7 +103,6 @@ class _VersionLabelState extends State<_VersionLabel> {
   @override
   Widget build(BuildContext context) {
     final l = context.read<L10n>();
-    // Пока грузится — держим место, чтобы список не дёргался.
     final text = _version == null ? '' : 'Chatra $_version';
     return SizedBox(
       height: 20,

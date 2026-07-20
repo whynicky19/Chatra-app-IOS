@@ -25,25 +25,10 @@ import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/classes/class_detail_screen.dart';
 import 'screens/classes/archive_screen.dart';
 
-/// Дефолт для локальной разработки. Сейчас — LAN-IP этого Mac, чтобы приложение
-/// на реальном телефоне (в той же Wi-Fi) достучалось до локального FastAPI без
-/// лишних флагов. Для симулятора/macOS/web этот же адрес тоже работает.
-/// Если IP Mac поменяется (другая сеть) — обнови значение здесь.
-///
-/// ⚠️ ДЛЯ РЕЛИЗА / App Store так собирать НЕЛЬЗЯ: нужен задеплоенный прод-домен
-/// с валидным HTTPS. Передавай его сборке:
-///   flutter build ipa --dart-define=API_URL=https://api.твойдомен
+// Только для разработки. Для релиза: --dart-define=API_URL=https://прод-домен
 const String _kDevApiUrl = 'http://192.168.10.13:8000';
 
-/// Единый бэкенд для всех платформ — тот же, что у сайта (общая база).
-///
-/// В release дефолта НЕТ: без --dart-define функция вернёт null, и приложение
-/// покажет явный экран ошибки конфигурации вместо белого экрана с висящими
-/// запросами в недоступную локалку. Именно так App Store ловил бы 2.1
-/// (App Completeness), если бы флаг забыли передать.
 String? _resolveBaseUrl() {
-  // Прод-URL инжектится сборкой (принимаются оба имени: API_URL / API_BASE_URL):
-  //   flutter build ipa --dart-define=API_URL=https://api.твойдомен
   const overrideUrl = String.fromEnvironment('API_URL');
   if (overrideUrl.isNotEmpty) return overrideUrl;
   const overrideUrl2 = String.fromEnvironment('API_BASE_URL');
@@ -51,8 +36,6 @@ String? _resolveBaseUrl() {
   return kReleaseMode ? null : _kDevApiUrl;
 }
 
-/// Экран-заглушка для release-сборки без API_URL. Лучше явная диагностика,
-/// чем молчаливо нерабочее приложение.
 class _MisconfiguredApp extends StatelessWidget {
   const _MisconfiguredApp();
 
@@ -88,20 +71,14 @@ class _MisconfiguredApp extends StatelessWidget {
       );
 }
 
-/// Глобальный ключ навигатора — нужен push-сервису, чтобы открывать нужный
-/// экран по тапу по уведомлению (в т.ч. из фонового/убитого состояния).
 final navigatorKey = GlobalKey<NavigatorState>();
 
-// Всё приложение живёт внутри защищённой зоны: необработанные ошибки из
-// колбэков и таймеров попадают в Crashlytics, а не теряются молча.
 void main() => CrashReporting.runGuarded(_start);
 
 Future<void> _start() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
 
-  // Firebase (и следом Crashlytics) поднимаем как можно раньше — чтобы ошибки
-  // самого старта тоже фиксировались. Только мобильные платформы.
   final isMobile = !kIsWeb &&
       (defaultTargetPlatform == TargetPlatform.android ||
           defaultTargetPlatform == TargetPlatform.iOS);
@@ -129,8 +106,6 @@ Future<void> _start() async {
   final chats = ChatsProvider(api, auth);
   final moderation = ModerationService(api);
 
-  // UGC-модерация: блок-лист свой для каждого аккаунта. Перезагружаем его
-  // только при реальной смене пользователя (логин/логаут/смена аккаунта).
   int? lastModUid = auth.userId;
   moderation.configure(auth.userId);
   CrashReporting.setUser(auth.userId);
@@ -138,19 +113,13 @@ Future<void> _start() async {
     if (auth.userId != lastModUid) {
       lastModUid = auth.userId;
       moderation.configure(auth.userId);
-      // Чтобы в консоли Crashlytics было видно, у кого воспроизводится краш.
       CrashReporting.setUser(auth.userId);
     }
   });
 
   api.onUnauthorized = () => auth.logout();
-  // Заблокированный админом аккаунт — разлогин с причиной для сообщения на входе.
   api.onAccountBlocked = () => auth.logout(reason: 'account_blocked');
 
-  // Push-уведомления: только мобильные платформы (Android/iOS). Инициализируем
-  // ДО auth.init(), чтобы при холодном старте с живой сессией токен успел
-  // зарегистрироваться (auth.init → onLogin). Любой сбой не мешает старту.
-  // Firebase.initializeApp() уже вызван выше (нужен Crashlytics).
   if (isMobile) {
     try {
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
@@ -163,9 +132,6 @@ Future<void> _start() async {
     }
   }
 
-  // Kick off initialization but never let a failing init() bubble up as an
-  // unhandled async error — the app must still start (providers fall back to
-  // their default state and _AuthGate shows the splash until they settle).
   Future.wait([auth.init(), org.init(), theme.init(), l10n.init()])
       .catchError((Object e, StackTrace st) {
     logError('main.init', e, st);
@@ -200,14 +166,7 @@ class ChatraApp extends StatelessWidget {
       theme:     isSchool ? AppTheme.lightSchool : AppTheme.light,
       darkTheme: isSchool ? AppTheme.darkSchool  : AppTheme.dark,
       themeMode: themeMode,
-      // Тема меняется мгновенно: дефолтный 200мс-лерп ThemeData перестраивал
-      // всё дерево ~12 кадров подряд и лагал.
       themeAnimationDuration: Duration.zero,
-      // Системный размер шрифта (iOS Dynamic Type / Android font size) теперь
-      // учитывается, но с потолком: до 1.3 вёрстка держится, выше — плотные
-      // карточки и кнопки начинают резать текст. 1.3 покрывает весь обычный
-      // диапазон Dynamic Type; обрезаются только accessibility-размеры (до 3.1),
-      // под которые пришлось бы перерисовывать все экраны.
       builder: (context, child) => MediaQuery.withClampedTextScaling(
         minScaleFactor: 1.0,
         maxScaleFactor: 1.3,
@@ -237,14 +196,11 @@ class _AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<_AuthGate> {
   bool _splashDone = false;
-  // null — флаг ещё не прочитан; держим splash, чтобы интро не мигнуло.
   bool? _onboardingSeen;
 
   @override
   void initState() {
     super.initState();
-    // Короткая брендинг-пауза; дольше держать пользователя незачем —
-    // обычно auth/org инициализируются быстрее.
     Future.delayed(const Duration(milliseconds: 400), () {
       if (mounted) setState(() => _splashDone = true);
     });
@@ -258,7 +214,6 @@ class _AuthGateState extends State<_AuthGate> {
     final auth = context.watch<AuthProvider>();
     final org = context.watch<OrgProvider>();
 
-    // Показываем splash пока: auth/org не загрузились ИЛИ минимальное время не прошло
     if (!auth.initialized ||
         !org.isInitialized ||
         !_splashDone ||
@@ -266,8 +221,6 @@ class _AuthGateState extends State<_AuthGate> {
       return const _Splash();
     }
 
-    // Интро — самый первый экран, до выбора организации. Пользователю с живой
-    // сессией (переустановка с сохранённым токеном) его не показываем.
     if (_onboardingSeen == false && !auth.isAuthenticated) {
       return OnboardingScreen(
         key: const ValueKey('onboarding'),
@@ -275,7 +228,6 @@ class _AuthGateState extends State<_AuthGate> {
       );
     }
 
-    // Плавный переход от splash к контенту
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 500),
       switchInCurve: Curves.easeOut,
@@ -288,7 +240,6 @@ class _AuthGateState extends State<_AuthGate> {
   }
 }
 
-// Отдельный Navigator только для auth экранов
 class _AuthNavigator extends StatefulWidget {
   const _AuthNavigator({super.key});
   @override
@@ -329,12 +280,10 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
   void initState() {
     super.initState();
     _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1150));
-    // Логотип: мягкое появление с лёгким overshoot (премиальный iOS-feel).
     _logoFade = CurvedAnimation(parent: _c, curve: const Interval(0.0, 0.5, curve: Curves.easeOut));
     _logoScale = Tween<double>(begin: 0.8, end: 1.0).animate(
       CurvedAnimation(parent: _c, curve: const Interval(0.0, 0.7, curve: Curves.easeOutBack)),
     );
-    // Вордмарк — следом, чуть выезжает снизу.
     _textFade = CurvedAnimation(parent: _c, curve: const Interval(0.35, 0.85, curve: Curves.easeOut));
     _textSlide = Tween<Offset>(begin: const Offset(0, 0.4), end: Offset.zero).animate(
       CurvedAnimation(parent: _c, curve: const Interval(0.35, 1.0, curve: Curves.easeOutCubic)),
@@ -360,7 +309,6 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
       backgroundColor: bg,
       body: Stack(
         children: [
-          // Едва заметный брендовый градиент по фону — глубина без пестроты.
           DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -380,7 +328,6 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Логотип с мягким брендовым свечением за ним.
                   FadeTransition(
                     opacity: _logoFade,
                     child: ScaleTransition(
@@ -388,7 +335,6 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
                       child: SizedBox(
                         width: 168, height: 168,
                         child: Stack(alignment: Alignment.center, children: [
-                          // Radial glow
                           DecoratedBox(
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
@@ -426,7 +372,6 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  // Вордмарк — монохромный (Apple-style), плотный трекинг.
                   FadeTransition(
                     opacity: _textFade,
                     child: SlideTransition(
@@ -451,7 +396,6 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
               ),
             ),
           ),
-          // Индикатор загрузки — внизу, деликатный (Cupertino).
           Positioned(
             left: 0, right: 0, bottom: 54,
             child: FadeTransition(

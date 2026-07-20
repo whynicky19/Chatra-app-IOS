@@ -10,8 +10,6 @@ import '../../widgets/ambient_glow.dart';
 import '../../widgets/app_logo.dart';
 import '../../widgets/toast.dart';
 
-/// Восстановление пароля: шаг 1 — ввод email и запрос кода; шаг 2 — ввод кода
-/// и нового пароля. При успехе выполняется авто-вход.
 class ForgotPasswordScreen extends StatefulWidget {
   final String orgType;
   final String? initialEmail;
@@ -50,7 +48,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           .forgotPassword(_email.text.trim(), orgType: widget.orgType);
       if (!mounted) return;
       setState(() { _codeSent = true; _busy = false; });
-      if (devCode.isNotEmpty) _code.text = devCode; // dev-режим
+      if (devCode.isNotEmpty) _code.text = devCode;
       showToast(context, l.t('code_sent'));
     } catch (_) {
       if (!mounted) return;
@@ -67,7 +65,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (!mounted) return;
     if (err == null) {
       showToast(context, l.t('password_reset_success'));
-      Navigator.of(context).popUntil((r) => r.isFirst); // авто-вход → MainShell
+      Navigator.of(context).popUntil((r) => r.isFirst);
     } else {
       setState(() { _busy = false; _error = l.t(err); });
     }
@@ -161,7 +159,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 GestureDetector(
                   onTap: _busy ? null : (_codeSent ? _reset : _sendCode),
                   child: AnimatedContainer(duration: const Duration(milliseconds: 200),
-                    // minHeight: подпись не обрезается при крупном системном шрифте.
                     constraints: const BoxConstraints(minHeight: 52),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(

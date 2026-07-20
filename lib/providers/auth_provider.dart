@@ -7,8 +7,6 @@ class AuthProvider extends ChangeNotifier {
 
   AuthProvider(this.api);
 
-  // Хуки push-уведомлений: регистрация FCM-токена при появлении сессии и снятие
-  // при выходе. Задаются в main.dart, чтобы провайдер не зависел от плагина FCM.
   Future<void> Function()? onLogin;
   Future<void> Function()? onLogout;
 
@@ -41,8 +39,6 @@ class AuthProvider extends ChangeNotifier {
     return email.isNotEmpty ? email[0].toUpperCase() : '?';
   }
 
-  // Причина завершения сессии (например 'account_blocked') — экран входа
-  // покажет её один раз через consumeSessionEndReason().
   String? _sessionEndReason;
   String? consumeSessionEndReason() {
     final r = _sessionEndReason;
@@ -57,26 +53,19 @@ class AuthProvider extends ChangeNotifier {
         _user = await api.me();
         if (_user != null) onLogin?.call();
       } on DioException catch (e) {
-        // Токен стираем ТОЛЬКО если он реально невалиден (401/403 отдаёт
-        // интерсептор после неудачного refresh). При сетевой ошибке/таймауте/5xx
-        // (e.response == null или >=500) токен оставляем: иначе запуск офлайн
-        // разлогинивал бы пользователя без причины. me() остаётся null —
-        // приложение поднимется, когда сеть вернётся (refreshUser).
+        // Токен стираем только на 401/403. На сети/5xx оставляем, иначе офлайн-запуск разлогинивает.
         final status = e.response?.statusCode ?? 0;
         if (status == 401 || status == 403) {
           await api.clearToken();
           _user = null;
         }
       } catch (_) {
-        // Непредвиденная (не Dio) ошибка — консервативно оставляем сессию.
       }
     }
     _initialized = true;
     notifyListeners();
   }
 
-  /// Возвращает null при успехе, иначе — ключ L10n для показа на экране входа
-  /// ('wrong_creds' / 'login_rate_limited' / 'account_blocked' / 'no_connection').
   Future<String?> login(String email, String password, {String orgType = 'university'}) async {
     _isLoading = true;
     notifyListeners();
@@ -97,11 +86,8 @@ class AuthProvider extends ChangeNotifier {
       final status = e.response?.statusCode ?? 0;
       final detail = (e.response?.data is Map) ? e.response!.data['detail'] : null;
       if (status == 429) return 'login_rate_limited';
-      // Оба — 403, но ведут в разные места: не подтверждён email → экран кода,
-      // заблокирован админом → сообщение.
       if (status == 403 && detail == 'email_not_verified') return 'email_not_verified';
       if (status == 403) return 'account_blocked';
-      // Нет ответа сервера — сеть/таймаут (не путать с неверным паролем).
       if (e.response == null) return 'no_connection';
       return 'wrong_creds';
     } catch (_) {
@@ -113,8 +99,6 @@ class AuthProvider extends ChangeNotifier {
 
   String? lastError;
 
-  /// false — аккаунт создан, но письмо с кодом не доставлено. Читать сразу
-  /// после успешного [register].
   bool lastRegisterEmailSent = true;
 
   Future<bool> register(String email, String password, String role, {String? fullName, String orgType = 'university'}) async {
@@ -124,17 +108,12 @@ class AuthProvider extends ChangeNotifier {
     try {
       final created = await api.register(email, password, role,
           fullName: fullName, orgType: orgType);
-      // Аккаунт создан, но письмо с кодом не ушло (SMTP лежит / лимит
-      // провайдера). Регистрация считается успешной, экран подтверждения
-      // покажет предупреждение и предложит запросить код повторно.
       lastRegisterEmailSent = created['email_sent'] != false;
       _isLoading = false;
       notifyListeners();
       return true;
     } catch (e) {
       _isLoading = false;
-      // AP-2: храним семантический КЛЮЧ ошибки, а не русский текст — экран
-      // регистрации переводит его через L10n (kk/en больше не видят русский).
       final statusCode = (e is DioException) ? e.response?.statusCode : null;
       lastError = (statusCode == 409) ? 'email_taken' : 'register_error';
       notifyListeners();
@@ -153,8 +132,7 @@ class AuthProvider extends ChangeNotifier {
   bool _loggingOut = false;
 
   Future<void> logout({String? reason}) async {
-    // Защита от повторного входа: интерсептор при 401 зовёт onUnauthorized→logout,
-    // а сам logout шлёт запросы — без гварда получался бесконечный каскад.
+    // Гвард обязателен: logout шлёт запросы, 401 зовёт logout — без него бесконечный каскад.
     if (_loggingOut) return;
     _loggingOut = true;
     try {
@@ -165,10 +143,6 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> _performLogout({String? reason}) async {
-    // Серверный отзыв токенов (best-effort) до локальной очистки, пока токен
-    // ещё в памяти. Не выполняем при forced-logout (reason задан) — там токен
-    // уже недействителен/очищен интерсептором, лишний запрос бессмыслен.
-    // Снимаем FCM-токен, пока access-токен ещё в памяти (best-effort).
     await onLogout?.call();
     if (reason == null) await api.logoutServer();
     await api.clearToken();
@@ -177,7 +151,6 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Меняет пароль. Возвращает null при успехе, иначе ключ L10n ошибки.
   Future<String?> changePassword(String currentPassword, String newPassword) async {
     try {
       await api.changePassword(currentPassword, newPassword);
@@ -193,7 +166,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Удаляет аккаунт (подтверждение паролем). null при успехе, иначе ключ ошибки.
   Future<String?> deleteAccount(String password) async {
     try {
       await api.deleteAccount(password);
@@ -212,10 +184,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // ── Верификация email / восстановление пароля ───────────────────────────────
-
-  /// Подтверждает email кодом и авто-входит (устанавливает _user). null при
-  /// успехе, иначе ключ L10n ('invalid_code' / 'no_connection' / 'verify_error').
   Future<String?> verifyEmail(String email, String code, {String orgType = 'university'}) async {
     try {
       await api.verifyEmail(email, code, orgType: orgType);
@@ -233,12 +201,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Повторно шлёт код подтверждения. Возвращает dev_code (только в dev), либо ''.
-  /// Кидает 'no_connection'/'code_send_error' как исключение-ключ при сбое.
-  /// null — сработал rate-limit (код слали недавно).
-  /// sent=false — письмо не ушло: SMTP недоступен ЛИБО аккаунта с таким email
-  /// нет (бэкенд намеренно не различает эти случаи, чтобы нельзя было
-  /// перебирать существующие аккаунты).
   Future<({bool sent, String devCode})?> resendVerification(String email,
       {String orgType = 'university'}) async {
     try {
@@ -248,18 +210,16 @@ class AuthProvider extends ChangeNotifier {
         devCode: (resp['dev_code'] ?? '').toString(),
       );
     } on DioException catch (e) {
-      if (e.response?.statusCode == 429) return null; // rate-limit — код уже слали недавно
+      if (e.response?.statusCode == 429) return null;
       rethrow;
     }
   }
 
-  /// Запрашивает код сброса пароля. Возвращает dev_code (только в dev), либо ''.
   Future<String> forgotPassword(String email, {String orgType = 'university'}) async {
     final resp = await api.forgotPassword(email, orgType: orgType);
     return (resp['dev_code'] ?? '').toString();
   }
 
-  /// Сбрасывает пароль по коду и авто-входит. null при успехе, иначе ключ L10n.
   Future<String?> resetPassword(String email, String code, String newPassword,
       {String orgType = 'university'}) async {
     try {

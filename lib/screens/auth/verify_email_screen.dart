@@ -11,13 +11,9 @@ import '../../widgets/ambient_glow.dart';
 import '../../widgets/app_logo.dart';
 import '../../widgets/toast.dart';
 
-/// Экран ввода 6-значного кода подтверждения email. Открывается после
-/// регистрации и при попытке входа с неподтверждённым email.
 class VerifyEmailScreen extends StatefulWidget {
   final String email;
   final String orgType;
-  // true — прислать код при открытии (путь из логина); false — код уже выслан
-  // (путь из регистрации), только показать экран.
   final bool autoSend;
   const VerifyEmailScreen({super.key, required this.email, required this.orgType, this.autoSend = false});
 
@@ -61,11 +57,8 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
       final res = await auth.resendVerification(widget.email, orgType: widget.orgType);
       if (!mounted) return;
       _startCooldown();
-      // В dev-режиме бэкенд возвращает код — подставляем для удобства.
       if (res != null && res.devCode.isNotEmpty) _code.text = res.devCode;
       if (res != null && !res.sent) {
-        // Раньше в этом случае показывалось «код отправлен», и пользователь
-        // ждал письмо, которого не будет.
         showToast(context, l.t('code_send_error'), error: true);
       } else if (!initial) {
         showToast(context, l.t('code_sent'));
@@ -86,8 +79,6 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     if (!mounted) return;
     if (err == null) {
       showToast(context, l.t('email_verified'));
-      // Авто-вход выполнен (auth._user установлен) — возвращаемся к корню,
-      // _AuthGate покажет MainShell.
       Navigator.of(context).popUntil((r) => r.isFirst);
     } else {
       setState(() { _busy = false; _error = l.t(err); });
@@ -156,7 +147,6 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                 GestureDetector(
                   onTap: _busy ? null : _verify,
                   child: AnimatedContainer(duration: const Duration(milliseconds: 200),
-                    // minHeight: подпись не обрезается при крупном системном шрифте.
                     constraints: const BoxConstraints(minHeight: 52),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(color: primary, borderRadius: BorderRadius.circular(16),

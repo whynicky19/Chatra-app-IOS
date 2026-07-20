@@ -55,7 +55,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     return Scaffold(
       body: SafeArea(child: ListView(padding: const EdgeInsets.fromLTRB(16, 24, 16, 100), children: [
 
-        // ── Page title ──────────────────────────────────────────
         _animated(Padding(padding: const EdgeInsets.fromLTRB(4, 0, 4, 28), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(l.t('settings'),
             style: TextStyle(fontSize: 34, fontWeight: FontWeight.w700,
@@ -64,7 +63,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           Text(l.t('settings_sub'), style: const TextStyle(fontSize: 14, color: C.text4)),
         ])), 0.0, 0.4),
 
-        // ── Profile card ────────────────────────────────────────
         _animated(_SectionLabel(l.t('profile').toUpperCase()), 0.05, 0.45),
         const SizedBox(height: 8),
 
@@ -72,7 +70,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(18), boxShadow: cardShadow(isDark)),
           clipBehavior: Clip.antiAlias,
           child: Column(children: [
-            // Banner + avatar
             Stack(clipBehavior: Clip.none, children: [
               Container(height: 72, decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -106,7 +103,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               ]),
               const SizedBox(height: 2),
               Text(auth.email, style: const TextStyle(fontSize: 13, color: C.text4)),
-              // Cyrillic warning
               if (auth.fullName.isNotEmpty && !_isCyrillicName(auth.fullName)) ...[
                 const SizedBox(height: 12),
                 Container(
@@ -178,7 +174,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
         const SizedBox(height: 24),
 
-        // ── Preferences section ─────────────────────────────────
         _animated(_SectionLabel(l.t('preferences').toUpperCase()), 0.3, 0.65),
         const SizedBox(height: 8),
 
@@ -198,7 +193,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
         const SizedBox(height: 16),
 
-        // ── Language section ────────────────────────────────────
         _animated(Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(18), boxShadow: cardShadow(isDark)),
@@ -250,9 +244,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
         const SizedBox(height: 16),
 
-        // ── Разделы ─────────────────────────────────────────────
-        // Плоский список из семи карточек развалился на два раздела: здесь
-        // только входы, содержимое — в *_settings_screen.dart.
         _animated(_SectionLabel(l.t('sections').toUpperCase()), 0.46, 0.84),
         const SizedBox(height: 10),
 
@@ -282,7 +273,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
         const SizedBox(height: 16),
 
-        // ── Logout ──────────────────────────────────────────────
         _animated(
           GestureDetector(
             onTap: () async {

@@ -4,9 +4,6 @@ import 'package:provider/provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
 
-/// Правила сообщества / EULA с нулевой терпимостью к неприемлемому контенту.
-/// Требование App Store Guideline 1.2 для приложений с пользовательским
-/// контентом. Открывается при регистрации и из настроек.
 class TermsScreen extends StatelessWidget {
   const TermsScreen({super.key});
 

@@ -7,8 +7,6 @@ import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/toast.dart';
 
-/// Opens the "Create avatar lecture" bottom sheet. Returns true if a lecture
-/// was successfully submitted (caller should refresh its lecture list).
 Future<bool?> showCreateLectureSheet(BuildContext context, {required int classId}) {
   return showModalBottomSheet<bool>(
     context: context,

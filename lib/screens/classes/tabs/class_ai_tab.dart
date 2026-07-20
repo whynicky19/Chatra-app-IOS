@@ -39,8 +39,6 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
   late final ScrollController _scrollCtrl;
   late final String _historyKey;
 
-  // Заголовки берутся из l10n по ключу — те же подсказки, что и на основном
-  // экране ИИ, переводятся вместе со всем приложением.
   static const _tips = [
     {'icon': CupertinoIcons.book, 'key': 'tip_explain'},
     {'icon': CupertinoIcons.lightbulb, 'key': 'tip_concepts'},
@@ -62,7 +60,6 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
   void dispose() { _scrollCtrl.dispose(); _fadeCtrl.dispose(); _ctrl.dispose(); super.dispose(); }
 
   Future<void> _loadHistory() async {
-    // Локальный кэш (быстро/офлайн) → затем сервер (синхронно с сайтом).
     final local = await _loadLocal();
     if (mounted && local.isNotEmpty) {
       setState(() { _msgs..clear()..addAll(local); });
@@ -233,8 +230,6 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
             ),
           )),
           const SizedBox(width: 10),
-          // Rebuilds only this button subtree on each keystroke (via the
-          // controller's own notifier), not the whole input bar or screen.
           ValueListenableBuilder<TextEditingValue>(
             valueListenable: _ctrl,
             builder: (context, value, _) {
@@ -324,8 +319,6 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
     );
   }
 
-  // Полноширинная строка-подсказка в стиле Apple: ровный столбик,
-  // короткий заголовок слева + тонкая стрелка справа.
   Widget _suggestionRow(Map<String, dynamic> tip, bool isDark, int index) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),

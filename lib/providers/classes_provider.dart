@@ -13,13 +13,7 @@ class ClassesProvider extends ChangeNotifier {
   List<dynamic> posts = [];
   List<Map<String, dynamic>> _cachedAllClasses = [];
   Set<int> joinedClassIds = {};
-  // Классы, где студент состоит только в архивных потоках. Признак приходит
-  // из GET /classes/ (там он считается per-student); /classes/all его не
-  // отдаёт, поэтому храним отдельно, а не читаем c['is_archived_for_user'].
   Set<int> archivedClassIds = {};
-  // Unread notification badge kept in its OWN notifier so updating it does not
-  // fire the ChangeNotifier's general listeners — i.e. refreshing the badge no
-  // longer rebuilds the whole home class list. Read it via [notifBadge].
   final ValueNotifier<int> notifBadge = ValueNotifier<int>(0);
   int get unreadNotifCount => notifBadge.value;
   bool loading = true;
@@ -31,16 +25,11 @@ class ClassesProvider extends ChangeNotifier {
     errorMessage = null;
   }
 
-  // The real Class API uses `name`/`teacher`/`created_by`; the rest of the UI
-  // still reads the legacy Post-shaped keys (`title`/`teacher_name`/`user_id`).
-  // Normalize once here instead of touching every call site.
   Map<String, dynamic> _normalizeClass(Map<String, dynamic> c) => {
         ...c,
         'title': c['name'],
         'teacher_name': c['teacher'],
         'user_id': c['created_by'],
-        // Cohort fields — default safely so the UI keeps working against a
-        // backend that predates the cohorts change (regular active-cohort flow).
         'rotation_mode': c['rotation_mode'] ?? 'manual',
         'is_archived_for_user': c['is_archived_for_user'] ?? false,
       };
@@ -131,9 +120,6 @@ class ClassesProvider extends ChangeNotifier {
     }
   }
 
-  /// Joins a class by its invite code via the real backend lookup (no more
-  /// local guessing of a class's code from its id). Returns the joined class
-  /// (normalized) on success.
   Future<Map<String, dynamic>> joinByCode(String code) async {
     final cls = await _api.joinByCode(code);
     final id = (cls['id'] as num).toInt();
@@ -144,17 +130,12 @@ class ClassesProvider extends ChangeNotifier {
     return _normalizeClass(cls);
   }
 
-  /// Возвращает true при успехе. При ошибке кладёт человекочитаемый текст
-  /// (detail с бэкенда, если есть) в [errorMessage], чтобы UI мог его показать
-  /// вместо ложного «удалено».
   Future<bool> deleteClass(int id) async {
     try {
       await _api.deleteClass(id);
     } on DioException catch (e) {
       final detail = (e.response?.data is Map) ? e.response?.data['detail'] : null;
       logError('ClassesProvider.deleteClass', e);
-      // detail с бэкенда — либо машинный ключ (переведётся), либо готовый
-      // текст (l.t вернёт его как есть).
       errorMessage = detail?.toString() ?? 'err_delete_class';
       notifyListeners();
       return false;
@@ -182,8 +163,6 @@ class ClassesProvider extends ChangeNotifier {
     await load();
   }
 
-  /// Optimistically insert a just-created class into the cached list so it shows
-  /// instantly, without waiting for a full [load] round-trip. Idempotent.
   void addCreatedClass(Map<String, dynamic> raw) {
     final normalized = _normalizeClass(raw);
     final id = (normalized['id'] as num?)?.toInt();
@@ -194,8 +173,6 @@ class ClassesProvider extends ChangeNotifier {
     }
   }
 
-  /// Merge server-returned fields into a cached class in place (e.g. after an
-  /// edit) so the home card reflects the new title/cover without a full reload.
   void patchCachedClass(int id, Map<String, dynamic> raw) {
     final idx = _cachedAllClasses.indexWhere((c) => (c['id'] as num?)?.toInt() == id);
     if (idx < 0) return;
@@ -206,9 +183,6 @@ class ClassesProvider extends ChangeNotifier {
   Future<void> loadNotifBadge() async {
     if (_auth.isTeacher) return;
     try {
-      // Состояние уведомлений — серверная истина (канонические ключи
-      // '{kind}:{ref_id}'), чтобы бейдж совпадал с сайтом. read/dismissed
-      // прочитанное скрывает из счётчика.
       List<dynamic> subs = [];
       List<dynamic> assignments = [];
       List<dynamic> states = [];
@@ -229,14 +203,12 @@ class ClassesProvider extends ChangeNotifier {
         return st == null || (st['read'] != true && st['dismissed'] != true);
       }
 
-      // Unread grade notifications
       int count = subs.where((s) =>
         s['status'] == 'graded' &&
         s['grade'] != null &&
         unread('grade:${(s['id'] as num?)?.toInt()}'),
       ).length;
 
-      // Unread new-assignment notifications (from joined classes, last 7 days)
       final now = DateTime.now();
       for (final a in assignments) {
         final aId  = (a['id'] as num?)?.toInt() ?? 0;
@@ -247,7 +219,6 @@ class ClassesProvider extends ChangeNotifier {
         if (createdAt != null && now.difference(createdAt).inDays <= 7) count++;
       }
 
-      // ValueNotifier notifies only the badge widget — not the class list.
       notifBadge.value = count;
     } catch (e) {
       logError('ClassesProvider.loadNotifications', e);
@@ -271,9 +242,6 @@ class ClassesProvider extends ChangeNotifier {
     return allClasses.where((c) => joinedClassIds.contains(c['id'] as int)).toList();
   }
 
-  // Classes the user is only in via archived cohorts — shown read-only in a
-  // collapsed "Archive" section. Teachers/admins never see their classes as
-  // archived (is_archived_for_user is a student-membership flag).
   bool _isArchived(Map<String, dynamic> c) =>
       !_auth.isTeacher && !_auth.isAdmin && archivedClassIds.contains(c['id'] as int);
 

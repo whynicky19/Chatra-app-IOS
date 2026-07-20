@@ -7,9 +7,6 @@ import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/toast.dart';
 
-/// "New academic year" flow (teacher, rotation_mode='yearly' classes).
-/// Step 0 — pick classes + academic year + semester start, confirm rollover.
-/// Step 1 — review the drafted (shifted) deadlines, edit dates, publish all.
 class RolloverScreen extends StatefulWidget {
   const RolloverScreen({super.key});
   @override
@@ -27,7 +24,6 @@ class _RolloverScreenState extends State<RolloverScreen> {
   String? _yearError;
   DateTime? _startDate;
 
-  // Step 1 — cohorts created by the rollover and their draft deadlines.
   final List<_RolledCohort> _rolled = [];
 
   @override
@@ -58,7 +54,6 @@ class _RolloverScreenState extends State<RolloverScreen> {
     if (mounted) setState(() => _loading = false);
   }
 
-  // Suggest the next academic year and a Sept-1 start based on the current cohorts.
   void _prefillYearAndDate(List<dynamic> items) {
     if (items.isEmpty) return;
     final current = (items.first['academic_year'] ?? '').toString();
@@ -96,7 +91,6 @@ class _RolloverScreenState extends State<RolloverScreen> {
       );
       if (!mounted) return;
 
-      // Collect the freshly created cohorts to review their draft deadlines.
       _rolled.clear();
       for (final r in results) {
         final status = (r['status'] ?? '').toString();
@@ -240,7 +234,6 @@ class _RolloverScreenState extends State<RolloverScreen> {
     );
   }
 
-  // ── Step 0 — preview + form ──
   Widget _previewStep(L10n l) {
     final primary = Theme.of(context).colorScheme.primary;
     if (_preview.isEmpty) {
@@ -264,7 +257,6 @@ class _RolloverScreenState extends State<RolloverScreen> {
           children: [
             for (final p in _preview) _previewCard(l, p),
             const SizedBox(height: 16),
-            // Academic-year field
             _label(l.t('academic_year')),
             TextField(
               controller: _yearCtrl,
@@ -276,7 +268,6 @@ class _RolloverScreenState extends State<RolloverScreen> {
               keyboardType: TextInputType.datetime,
             ),
             const SizedBox(height: 16),
-            // Semester start date
             _label(l.t('semester_start_date')),
             GestureDetector(
               onTap: () async {
@@ -337,7 +328,6 @@ class _RolloverScreenState extends State<RolloverScreen> {
                 color: checked ? primary.withValues(alpha: 0.5) : adaptiveBorder(context)),
           ),
           child: Row(children: [
-            // Checkbox
             Container(
               width: 24, height: 24,
               decoration: BoxDecoration(
@@ -369,7 +359,6 @@ class _RolloverScreenState extends State<RolloverScreen> {
     );
   }
 
-  // ── Step 1 — deadline review ──
   Widget _deadlinesStep(L10n l) {
     return Column(children: [
       Expanded(

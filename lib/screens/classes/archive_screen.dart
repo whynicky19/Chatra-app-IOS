@@ -206,6 +206,7 @@ class _ArchiveCard extends StatelessWidget {
                           : CachedNetworkImage(
                               imageUrl: context.read<ApiService>().fixUrl(coverImg.toString()),
                               cacheKey: 'class_cover_$id',
+                              memCacheWidth: 640,
                               fit: BoxFit.cover, width: double.infinity,
                               fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero,
                             ),

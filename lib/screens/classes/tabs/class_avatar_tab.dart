@@ -357,7 +357,7 @@ class _ApprovedAvatarCard extends StatelessWidget {
             padding: const EdgeInsets.all(2),
             child: ClipOval(
               child: avatar.photoUrl != null
-                  ? CachedNetworkImage(imageUrl: avatar.photoUrl!, fit: BoxFit.cover,
+                  ? CachedNetworkImage(imageUrl: avatar.photoUrl!, memCacheWidth: 200, fit: BoxFit.cover,
                       errorWidget: (_, __, ___) => const Icon(CupertinoIcons.person_fill, color: Colors.white))
                   : Container(color: Colors.white.withValues(alpha: 0.15), child: const Icon(CupertinoIcons.person_fill, color: Colors.white)),
             ),

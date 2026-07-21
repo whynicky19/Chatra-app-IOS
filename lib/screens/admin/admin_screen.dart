@@ -1119,7 +1119,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           ? Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, gaplessPlayback: true, cacheWidth: 640)
           : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors)));
     }
-    return CachedNetworkImage(imageUrl: coverImg.toString(), cacheKey: classId != null ? 'class_cover_$classId' : null, fit: BoxFit.cover, width: double.infinity,
+    return CachedNetworkImage(imageUrl: coverImg.toString(), cacheKey: classId != null ? 'class_cover_$classId' : null, memCacheWidth: 640, fit: BoxFit.cover, width: double.infinity,
       fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero,
       placeholder: (_, __) => const SizedBox.shrink(),
       errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))));

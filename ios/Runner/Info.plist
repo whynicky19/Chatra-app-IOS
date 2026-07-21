@@ -72,6 +72,8 @@
 		     оправдание нужно для NSAllowsArbitraryLoads и
 		     NSExceptionAllowsInsecureHTTPLoads, а NSAllowsLocalNetworking
 		     ревью проходит спокойно. Прод всё равно работает по HTTPS. -->
+		<key>NSLocalNetworkUsageDescription</key>
+		<string>Доступ к локальной сети нужен для подключения к дев-серверу при разработке</string>
 		<key>NSAppTransportSecurity</key>
 		<dict>
 			<key>NSAllowsLocalNetworking</key>

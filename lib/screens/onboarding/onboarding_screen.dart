@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/errors.dart';
+import '../../widgets/ambient_glow.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback onDone;
@@ -68,138 +69,397 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final l = context.watch<L10n>();
     final primary = Theme.of(context).colorScheme.primary;
 
-    final pages = <(IconData, String, String)>[
-      (CupertinoIcons.book_fill, 'onb_1_title', 'onb_1_body'),
-      (CupertinoIcons.chat_bubble_2_fill, 'onb_2_title', 'onb_2_body'),
-      (CupertinoIcons.sparkles, 'onb_3_title', 'onb_3_body'),
+    // Вместо иконок — мини-мокапы реального интерфейса приложения.
+    final pages = <(Widget, String, String, String)>[
+      (const _ClassMock(), 'onb_1_tag', 'onb_1_title', 'onb_1_body'),
+      (const _ChatMock(), 'onb_2_tag', 'onb_2_title', 'onb_2_body'),
+      (const _AiMock(), 'onb_3_tag', 'onb_3_title', 'onb_3_body'),
     ];
     final isLast = _page == pages.length - 1;
 
     return Scaffold(
-      body: SafeArea(
-        child: Column(children: [
-          // «Пропустить» — обязательный выход из интро.
-          Align(
-            alignment: Alignment.centerRight,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(0, 8, 12, 0),
-              child: TextButton(
-                onPressed: _finish,
-                child: Text(l.t('onb_skip'),
-                    style: const TextStyle(fontSize: 14.5, color: C.text4)),
+      body: Stack(children: [
+        // Мягкое фирменное свечение — как на экране входа.
+        AmbientGlow(
+          alignment: const Alignment(0, -0.7),
+          color: primary.withValues(alpha: 0.12),
+          opacity: 1,
+        ),
+        SafeArea(
+          child: Column(children: [
+            // «Пропустить» — обязательный выход из интро.
+            Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(0, 8, 12, 0),
+                child: TextButton(
+                  onPressed: _finish,
+                  child: Text(l.t('onb_skip'),
+                      style: const TextStyle(fontSize: 14.5, color: C.text4)),
+                ),
               ),
             ),
-          ),
-          Expanded(
-            child: PageView.builder(
-              controller: _controller,
-              itemCount: pages.length,
-              onPageChanged: (i) => setState(() => _page = i),
-              itemBuilder: (_, i) {
-                final (icon, titleKey, bodyKey) = pages[i];
-                return _Page(icon: icon, title: l.t(titleKey), body: l.t(bodyKey));
-              },
+            Expanded(
+              child: PageView.builder(
+                controller: _controller,
+                itemCount: pages.length,
+                onPageChanged: (i) => setState(() => _page = i),
+                itemBuilder: (_, i) {
+                  final (mock, tagKey, titleKey, bodyKey) = pages[i];
+                  return _Page(
+                    mock: mock,
+                    tag: l.t(tagKey),
+                    title: l.t(titleKey),
+                    body: l.t(bodyKey),
+                  );
+                },
+              ),
             ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              for (var i = 0; i < pages.length; i++)
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeOut,
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: i == _page ? 22 : 7,
-                  height: 7,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (var i = 0; i < pages.length; i++)
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOut,
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: i == _page ? 22 : 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: i == _page ? primary : C.text4.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 28),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              child: GestureDetector(
+                onTap: () => _next(pages.length),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  constraints: const BoxConstraints(minHeight: 52),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  width: double.infinity,
                   decoration: BoxDecoration(
-                    color: i == _page ? primary : C.text4.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(4),
+                    color: primary,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: primaryGlow(primary, opacity: 0.34),
                   ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 28),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-            child: GestureDetector(
-              onTap: () => _next(pages.length),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                constraints: const BoxConstraints(minHeight: 52),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: primary,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: primaryGlow(primary, opacity: 0.34),
-                ),
-                child: Align(
-                  heightFactor: 1,
-                  child: Text(
-                    isLast ? l.t('onb_start') : l.t('onb_next'),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white),
+                  child: Align(
+                    heightFactor: 1,
+                    child: Text(
+                      isLast ? l.t('onb_start') : l.t('onb_next'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ]),
-      ),
+          ]),
+        ),
+      ]),
     );
   }
 }
 
 class _Page extends StatelessWidget {
-  final IconData icon;
+  final Widget mock;
+  final String tag;
   final String title;
   final String body;
-  const _Page({required this.icon, required this.title, required this.body});
+  const _Page({
+    required this.mock,
+    required this.tag,
+    required this.title,
+    required this.body,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(28, 8, 28, 16),
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0, end: 1),
+        duration: const Duration(milliseconds: 450),
+        curve: Curves.easeOutCubic,
+        builder: (_, t, child) => Opacity(
+          opacity: t,
+          child: Transform.translate(offset: Offset(0, 14 * (1 - t)), child: child),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(height: 12),
+            mock,
+            const SizedBox(height: 40),
+            Text(tag.toUpperCase(),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.6,
+                    color: primary)),
+            const SizedBox(height: 10),
+            Text(title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.w800,
+                    height: 1.15,
+                    letterSpacing: -0.8,
+                    color: adaptiveText1(context))),
+            const SizedBox(height: 14),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 320),
+              child: Text(body,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      fontSize: 15.5, height: 1.6, color: C.text4)),
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Мини-мокапы интерфейса ────────────────────────────────────────────────────
+// Текст в мокапах — плашки-«скелетоны»: не требуют локализации и читаются как
+// набросок интерфейса, а не как контент.
+
+Color _barColor(BuildContext context) => C.text4.withValues(alpha: 0.22);
+
+Widget _bar(BuildContext context, double w, {double h = 8}) => Container(
+      width: w,
+      height: h,
+      decoration: BoxDecoration(
+        color: _barColor(context),
+        borderRadius: BorderRadius.circular(h / 2),
+      ),
+    );
+
+BoxDecoration _cardDecoration(BuildContext context) => BoxDecoration(
+      color: Theme.of(context).colorScheme.surface,
+      borderRadius: BorderRadius.circular(22),
+      boxShadow: cardShadow(Theme.of(context).brightness == Brightness.dark),
+    );
+
+/// Страница 1: карточка класса — обложка, название, бейджи материалов.
+class _ClassMock extends StatelessWidget {
+  const _ClassMock();
 
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
     final secondary = Theme.of(context).colorScheme.secondary;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(32, 16, 32, 16),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const SizedBox(height: 24),
-          Container(
-            width: 104,
-            height: 104,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [secondary, primary],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(30),
-              boxShadow: primaryGlow(primary, opacity: 0.28),
-            ),
-            child: Icon(icon, size: 46, color: Colors.white),
+    Widget chip(IconData icon) => Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: primary.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(11),
           ),
-          const SizedBox(height: 36),
-          Text(title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontSize: 25,
-                  fontWeight: FontWeight.w800,
-                  height: 1.2,
-                  letterSpacing: -0.5,
-                  color: adaptiveText1(context))),
-          const SizedBox(height: 14),
-          Text(body,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 15, height: 1.55, color: C.text4)),
-          const SizedBox(height: 24),
-        ],
-      ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(icon, size: 12, color: primary),
+            const SizedBox(width: 6),
+            _bar(context, 34, h: 6),
+          ]),
+        );
+
+    return Container(
+      width: 280,
+      decoration: _cardDecoration(context),
+      clipBehavior: Clip.antiAlias,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          height: 84,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [secondary, primary],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            _bar(context, 150, h: 12),
+            const SizedBox(height: 9),
+            _bar(context, 92, h: 8),
+            const SizedBox(height: 16),
+            Row(children: [
+              chip(CupertinoIcons.play_circle),
+              const SizedBox(width: 8),
+              chip(CupertinoIcons.doc_text),
+            ]),
+          ]),
+        ),
+      ]),
+    );
+  }
+}
+
+/// Страница 2: уведомление об оценке + пузыри переписки.
+class _ChatMock extends StatelessWidget {
+  const _ChatMock();
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final secondary = Theme.of(context).colorScheme.secondary;
+
+    Widget bubble({required bool mine, required double w}) => Align(
+          alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              gradient: mine
+                  ? LinearGradient(colors: [primary, secondary])
+                  : null,
+              color: mine ? null : Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.only(
+                topLeft: const Radius.circular(16),
+                topRight: const Radius.circular(16),
+                bottomLeft: Radius.circular(mine ? 16 : 5),
+                bottomRight: Radius.circular(mine ? 5 : 16),
+              ),
+              boxShadow: softShadow(
+                  Theme.of(context).brightness == Brightness.dark),
+            ),
+            child: mine
+                ? Container(
+                    width: w,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.65),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  )
+                : _bar(context, w),
+          ),
+        );
+
+    return SizedBox(
+      width: 280,
+      child: Column(children: [
+        // Пуш об оценке.
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: _cardDecoration(context),
+          child: Row(children: [
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Icon(CupertinoIcons.bell_fill, size: 14, color: primary),
+            ),
+            const SizedBox(width: 10),
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              _bar(context, 120, h: 8),
+              const SizedBox(height: 6),
+              _bar(context, 74, h: 6),
+            ]),
+          ]),
+        ),
+        const SizedBox(height: 18),
+        bubble(mine: false, w: 118),
+        const SizedBox(height: 8),
+        bubble(mine: true, w: 88),
+        const SizedBox(height: 8),
+        bubble(mine: false, w: 64),
+      ]),
+    );
+  }
+}
+
+/// Страница 3: диалог с Chatra AI.
+class _AiMock extends StatelessWidget {
+  const _AiMock();
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final secondary = Theme.of(context).colorScheme.secondary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return SizedBox(
+      width: 280,
+      child: Column(children: [
+        // Вопрос студента.
+        Align(
+          alignment: Alignment.centerRight,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: [primary, secondary]),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+                bottomLeft: Radius.circular(16),
+                bottomRight: Radius.circular(5),
+              ),
+              boxShadow: softShadow(isDark),
+            ),
+            child: Container(
+              width: 104,
+              height: 8,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.65),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        // Ответ ассистента.
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+                bottomLeft: Radius.circular(5),
+                bottomRight: Radius.circular(16),
+              ),
+              boxShadow: softShadow(isDark),
+            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(CupertinoIcons.sparkles, size: 13, color: primary),
+                const SizedBox(width: 5),
+                Text('Chatra AI',
+                    style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w800,
+                        color: primary)),
+              ]),
+              const SizedBox(height: 10),
+              _bar(context, 168),
+              const SizedBox(height: 6),
+              _bar(context, 188),
+              const SizedBox(height: 6),
+              _bar(context, 120),
+            ]),
+          ),
+        ),
+      ]),
     );
   }
 }

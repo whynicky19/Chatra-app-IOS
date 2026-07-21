@@ -713,6 +713,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
             child: CachedNetworkImage(
               imageUrl: url,
               cacheKey: fileCacheKey(url),
+              memCacheWidth: 800,
               fit: BoxFit.cover,
               width: double.infinity,
               height: 200,

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../services/api_service.dart';
+import '../utils/message_attachment.dart';
 import '../utils/errors.dart';
 import 'auth_provider.dart';
 
@@ -479,16 +480,12 @@ class ChatsProvider extends ChangeNotifier {
     return content.length > 45 ? '${content.substring(0, 45)}...' : content;
   }
 
-  static final _uploadRegex =
-      RegExp(r'^(https?://\S+|/)?/?uploads/\S+$', caseSensitive: false);
-  static final _imageExtRegex =
-      RegExp(r'\.(jpg|jpeg|png|gif|webp)(\?|$)', caseSensitive: false);
-
+  /// Превью вложения в списке чатов. Разбор общий с бабблом: сайт шлёт
+  /// вложения markdown-ссылкой, приложение — голым URL.
   String? _attachmentPreviewKey(String content) {
-    final trimmed = content.trim();
-    if (trimmed.isEmpty || trimmed.contains(' ')) return null;
-    if (!_uploadRegex.hasMatch(trimmed)) return null;
-    return _imageExtRegex.hasMatch(trimmed) ? 'preview_photo' : 'preview_file';
+    final att = parseMessageAttachment(content);
+    if (att == null) return null;
+    return att.isImage ? 'preview_photo' : 'preview_file';
   }
 
   String chatTime(int id) {

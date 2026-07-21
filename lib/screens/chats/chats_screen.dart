@@ -13,10 +13,13 @@ import '../../services/api_service.dart';
 import '../../services/moderation_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_dialog.dart';
+import '../../widgets/blocked_banner.dart';
 import '../../widgets/moderation_actions.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/toast.dart';
-import '../classes/class_detail_utils.dart' show trimUrlPunctuation;
+import '../../utils/file_opener.dart';
+import '../../utils/message_attachment.dart';
+import '../classes/class_detail_utils.dart' show trimUrlPunctuation, fileCacheKey;
 
 class ChatsScreen extends StatefulWidget {
   const ChatsScreen({super.key});
@@ -494,26 +497,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
         ),
 
         if (partnerBlocked)
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.fromLTRB(16, 14, 16, MediaQuery.of(context).padding.bottom + 14),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.05), blurRadius: 12, offset: const Offset(0, -2))],
-            ),
-            child: Row(children: [
-              const Icon(CupertinoIcons.nosign, size: 18, color: C.text4),
-              const SizedBox(width: 10),
-              Expanded(child: Text(l.t('you_blocked_user'),
-                style: const TextStyle(fontSize: 13, color: C.text4, fontWeight: FontWeight.w600))),
-              const SizedBox(width: 10),
-              GestureDetector(
-                onTap: () => unblockUser(context, userId: partnerId!),
-                child: Text(l.t('unblock_user_action'),
-                  style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w700)),
-              ),
-            ]),
-          )
+          BlockedBanner(onUnblock: () => unblockUser(context, userId: partnerId!))
         else
           _ChatInputBar(
             ctrl: _msgCtrl,
@@ -618,7 +602,8 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
     String content = _msgCtrl.text.trim();
     if (_replyTo != null) {
       final senderName = _replyTo!['sender_name'] ?? _replyTo!['user_name'] ?? 'User';
-      final replyText = _replyTo!['content'] ?? '';
+      // В цитату кладём подпись, а не подписанную ссылку на файл.
+      final replyText = messagePreviewText((_replyTo!['content'] ?? '').toString());
       content = '> $senderName: $replyText\n\n$content';
       setState(() => _replyTo = null);
     }
@@ -715,29 +700,56 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
       fixedContent = context.read<ApiService>().fixUrlsInText(content);
     } catch (_) {}
 
-    final imgRegex = RegExp(
-        r'https?://\S+?\.(jpg|jpeg|png|gif|webp)(\?\S*)?',
-        caseSensitive: false);
-    final imgMatch = imgRegex.firstMatch(fixedContent);
-    if (imgMatch != null) {
-      final url = imgMatch.group(0)!;
-      final textPart = fixedContent.replaceAll(RegExp(r'\[.*?\]\(.*?\)'), '').replaceAll(url, '').trim();
-      return ClipRRect(borderRadius: BorderRadius.circular(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        CachedNetworkImage(
-          imageUrl: url,
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: 200,
-          fadeInDuration: Duration.zero,
-          fadeOutDuration: Duration.zero,
-          placeholder: (_, __) => Container(height: 200, color: adaptiveSurface2(context), child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.primary))),
-          errorWidget: (_, __, ___) => Container(height: 80, padding: const EdgeInsets.all(16), child: Row(children: [
-            const Icon(CupertinoIcons.photo, color: C.text4), const SizedBox(width: 8),
-            Flexible(child: Text(url.split('/').last, style: TextStyle(color: isMe ? Colors.white70 : C.text4, fontSize: 12))),
-          ]))),
-        if (textPart.isNotEmpty) Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
-          child: Text(textPart, style: TextStyle(fontSize: 14, color: isMe ? Colors.white : null))),
-      ]));
+    // Вложение (сайт шлёт markdown `[Фото](url) — имя`, приложение — голую
+    // ссылку). Разбираем общим парсером: раньше из markdown в URL уезжала
+    // закрывающая скобка и картинка не грузилась.
+    final att = parseMessageAttachment(fixedContent);
+    if (att != null) {
+      final url = context.read<ApiService>().fixUrl(att.url);
+      if (att.isImage) {
+        return ClipRRect(borderRadius: BorderRadius.circular(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          GestureDetector(
+            onTap: () => openRemoteFile(context, context.read<ApiService>(), url, att.name),
+            child: CachedNetworkImage(
+              imageUrl: url,
+              cacheKey: fileCacheKey(url),
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: 200,
+              fadeInDuration: Duration.zero,
+              fadeOutDuration: Duration.zero,
+              placeholder: (_, __) => Container(height: 200, color: adaptiveSurface2(context), child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.primary))),
+              errorWidget: (_, __, ___) => Container(height: 80, padding: const EdgeInsets.all(16), child: Row(children: [
+                const Icon(CupertinoIcons.photo, color: C.text4), const SizedBox(width: 8),
+                Flexible(child: Text(att.name, style: TextStyle(color: isMe ? Colors.white70 : C.text4, fontSize: 12))),
+              ])),
+            ),
+          ),
+          if (att.caption.isNotEmpty) Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+            child: Text(att.caption, style: TextStyle(fontSize: 14, color: isMe ? Colors.white : null))),
+        ]));
+      }
+      return Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          GestureDetector(
+            onTap: () => openRemoteFile(context, context.read<ApiService>(), url, att.name),
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: (isMe ? Colors.white : Theme.of(context).colorScheme.primary).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12)),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(CupertinoIcons.doc_fill, size: 18, color: isMe ? Colors.white70 : Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 8),
+                Flexible(child: Text(att.name, overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                    color: isMe ? Colors.white : Theme.of(context).colorScheme.primary))),
+              ]),
+            ),
+          ),
+          if (att.caption.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6),
+            child: Text(att.caption, style: TextStyle(fontSize: 14, color: isMe ? Colors.white : null))),
+        ]));
     }
 
     final urlRegex = RegExp(r'https?://\S+');
@@ -815,8 +827,7 @@ class _ChatInputBarState extends State<_ChatInputBar> {
     final hasText = widget.ctrl.text.trim().isNotEmpty;
 
     return Container(
-      padding: EdgeInsets.fromLTRB(12, 10, 12,
-          (MediaQuery.of(context).viewInsets.bottom + 8).clamp(90.0, double.infinity)),
+      padding: EdgeInsets.fromLTRB(12, 10, 12, bottomBarInset(context)),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         boxShadow: [BoxShadow(
@@ -1086,7 +1097,7 @@ class _ReplyPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final senderName = message['sender_name'] ?? message['user_name'] ?? 'User';
-    final text = message['content'] ?? '';
+    final text = messagePreviewText((message['content'] ?? '').toString());
     final surface = Theme.of(context).colorScheme.surface;
 
     return SlideTransition(

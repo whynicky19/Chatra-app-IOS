@@ -592,6 +592,12 @@ class ApiService {
     return response.data;
   }
 
+  /// Дневная квота сообщений ИИ: {limit, used, remaining, unlimited, resets_at}.
+  Future<Map<String, dynamic>> getAiLimits() async {
+    final response = await _dio.get('/ai/limits');
+    return Map<String, dynamic>.from(response.data);
+  }
+
   Future<List<dynamic>> getAiHistory({int? classId}) async {
     final response = await _dio.get('/ai/history',
         queryParameters: classId != null ? {'class_id': classId} : null);

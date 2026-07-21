@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:dio/dio.dart' show DioException;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,7 +8,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/l10n_provider.dart';
 import '../../../services/api_service.dart';
+import '../../../utils/ai_quota.dart';
 import '../../../theme/app_theme.dart';
+import '../../../widgets/ai_limit_notice.dart';
 import '../../../widgets/app_dialog.dart';
 import '../../../widgets/toast.dart';
 import '../rag_documents_sheet.dart';
@@ -35,6 +38,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
   final _ctrl   = TextEditingController();
   final List<Map<String, String>> _msgs = [];
   bool _loading = false;
+  AiQuota? _quota;
   late final AnimationController _fadeCtrl;
   late final ScrollController _scrollCtrl;
   late final String _historyKey;
@@ -54,6 +58,22 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
     final uid = context.read<AuthProvider>().userId?.toString() ?? 'anon';
     _historyKey = 'ai_chat_history_${widget.classId}_$uid';
     _loadHistory();
+    _loadQuota();
+  }
+
+  /// Свайп сверху вниз: подтягиваем тред этого класса и квоту с сервера —
+  /// история общая с сайтом.
+  Future<void> _refresh() async {
+    await _syncFromServer(List<Map<String, String>>.from(_msgs));
+    await _loadQuota();
+  }
+
+  /// Дневная квота ИИ — серверная, общая с сайтом и глобальным ИИ-экраном.
+  Future<void> _loadQuota() async {
+    try {
+      final q = AiQuota.fromJson(await context.read<ApiService>().getAiLimits());
+      if (mounted && q != null) setState(() => _quota = q);
+    } catch (_) {}
   }
 
   @override
@@ -136,6 +156,10 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
   void _send([String? override]) async {
     final text = override ?? _ctrl.text.trim();
     if (text.isEmpty || _loading) return;
+    if (_quota?.exhausted == true) {
+      showToast(context, context.read<L10n>().t('ai_daily_exhausted'), error: true);
+      return;
+    }
     setState(() { _msgs.add({'role': 'user', 'text': text}); _loading = true; });
     _ctrl.clear();
     _scrollToBottom();
@@ -162,9 +186,26 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
         classId: widget.classId,
         lectureContext: widget.lectureContext.isNotEmpty ? widget.lectureContext : null,
       );
-      if (mounted) { setState(() => _msgs.add({'role': 'assistant', 'text': data['content'] ?? context.read<L10n>().t('no_answer')})); _saveHistory(); _scrollToBottom(); }
-    } catch (_) {
-      if (mounted) { setState(() => _msgs.add({'role': 'assistant', 'text': context.read<L10n>().t('connection_error')})); _saveHistory(); _scrollToBottom(); }
+      if (mounted) {
+        setState(() {
+          _msgs.add({'role': 'assistant', 'text': data['content'] ?? context.read<L10n>().t('no_answer')});
+          _quota = AiQuota.fromJson(data['quota']) ?? _quota;
+        });
+        _saveHistory(); _scrollToBottom();
+      }
+    } catch (e) {
+      if (mounted) {
+        final resp = (e is DioException) ? e.response : null;
+        final detail = (resp?.data is Map) ? resp!.data['detail']?.toString() : null;
+        setState(() => _msgs.add({
+          'role': 'assistant',
+          'text': resp?.statusCode == 429
+              ? (detail ?? context.read<L10n>().t('ai_daily_exhausted'))
+              : context.read<L10n>().t('connection_error'),
+        }));
+        _saveHistory(); _scrollToBottom();
+        if (resp?.statusCode == 429) _loadQuota();
+      }
     }
     if (mounted) setState(() => _loading = false);
   }
@@ -173,13 +214,18 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final surface = Theme.of(context).colorScheme.surface;
     final isDark  = Theme.of(context).brightness == Brightness.dark;
+    final exhausted = _quota?.exhausted ?? false;
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       behavior: HitTestBehavior.translucent,
       child: Column(children: [
       Expanded(child: Stack(children: [
-        _msgs.isEmpty ? _emptyState(isDark) : _messageList(isDark),
+        RefreshIndicator(
+          onRefresh: _refresh,
+          color: Theme.of(context).colorScheme.primary,
+          child: _msgs.isEmpty ? _emptyState(isDark) : _messageList(isDark),
+        ),
         if (widget.isTeacher) Positioned(
           top: 10, right: _msgs.isNotEmpty ? 60 : 14,
           child: _headerButton(
@@ -207,7 +253,9 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
           color: Theme.of(context).scaffoldBackgroundColor,
           border: Border(top: BorderSide(color: adaptiveBorder(context).withValues(alpha: 0.5), width: 0.5)),
         ),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+        if (exhausted) AiLimitNotice(quota: _quota!),
+        Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
           Expanded(child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             curve: Curves.easeOutCubic,
@@ -219,8 +267,11 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
             ),
             child: TextField(
               controller: _ctrl,
+              enabled: !exhausted,
               decoration: InputDecoration(
-                hintText: context.read<L10n>().t('ask_about_course'),
+                hintText: exhausted
+                    ? context.read<L10n>().t('ai_limit_reached_title')
+                    : context.read<L10n>().t('ask_about_course'),
                 hintStyle: const TextStyle(fontSize: 15, color: C.text4),
                 border: InputBorder.none, enabledBorder: InputBorder.none, focusedBorder: InputBorder.none,
                 filled: false, contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
@@ -234,9 +285,9 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
             valueListenable: _ctrl,
             builder: (context, value, _) {
               final has = value.text.trim().isNotEmpty;
-              final active = has && !_loading;
+              final active = has && !_loading && !exhausted;
               return GestureDetector(
-                onTap: _send,
+                onTap: exhausted ? null : _send,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 220),
                   curve: Curves.easeOutCubic,
@@ -257,8 +308,8 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
                           transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
                           child: Icon(
                             CupertinoIcons.arrow_up,
-                            key: ValueKey(has),
-                            color: has ? Colors.white : C.text4,
+                            key: ValueKey(active),
+                            color: active ? Colors.white : C.text4,
                             size: 21,
                           ),
                         ),
@@ -266,6 +317,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
               );
             },
           ),
+        ]),
         ]),
       ),
     ]));
@@ -291,6 +343,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
       opacity: _fadeCtrl,
       child: LayoutBuilder(builder: (context, constraints) {
         return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
           child: ConstrainedBox(
             constraints: BoxConstraints(minHeight: constraints.maxHeight),
@@ -360,6 +413,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
   Widget _messageList(bool isDark) {
     return ListView.builder(
       controller: _scrollCtrl,
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
       itemCount: _msgs.length + (_loading ? 1 : 0),
       itemBuilder: (ctx, i) {

@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -25,8 +26,14 @@ import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/classes/class_detail_screen.dart';
 import 'screens/classes/archive_screen.dart';
 
-// Только для разработки. Для релиза: --dart-define=API_URL=https://прод-домен
-const String _kDevApiUrl = 'http://192.168.10.13:8000';
+// Дев-адрес бэкенда «хост-машина», не зависящий от Wi-Fi IP:
+//  - iOS-симулятор делит сеть с хостом → 127.0.0.1
+//  - Android-эмулятор видит хост как 10.0.2.2
+// Для релиза и физических устройств переопредели через --dart-define=API_URL=https://...
+String get _kDevApiUrl {
+  if (!kIsWeb && Platform.isAndroid) return 'http://10.0.2.2:8000';
+  return 'http://127.0.0.1:8000';
+}
 
 String? _resolveBaseUrl() {
   const overrideUrl = String.fromEnvironment('API_URL');

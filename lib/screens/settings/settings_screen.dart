@@ -9,6 +9,7 @@ import '../../widgets/app_dialog.dart';
 import '../../widgets/cupertino_liquid_switch.dart';
 import '../../widgets/toast.dart';
 import 'about_settings_screen.dart';
+import 'ai_limits_screen.dart';
 import 'security_settings_screen.dart';
 import 'settings_shared.dart';
 
@@ -257,6 +258,19 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               MaterialPageRoute(builder: (_) => const SecuritySettingsScreen())),
           ),
         0.48, 0.88),
+
+        const SizedBox(height: 16),
+
+        _animated(
+          SettingsActionCard(
+            icon: CupertinoIcons.sparkles,
+            iconBg: primary,
+            title: l.t('ai_limit_section'),
+            sub: l.t('ai_limit_section_sub'),
+            onTap: () => Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const AiLimitsScreen())),
+          ),
+        0.49, 0.89),
 
         const SizedBox(height: 16),
 

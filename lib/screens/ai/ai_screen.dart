@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:dio/dio.dart' show DioException;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,7 +8,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
+import '../../utils/ai_quota.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/ai_limit_notice.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/toast.dart';
 
@@ -21,6 +24,7 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
   final _scroll = ScrollController();
   final List<Map<String, String>> _msgs = [];
   bool _loading = false;
+  AiQuota? _quota;
 
   static const _legacyHistoryKey = 'ai_chat_history_v1';
   String _historyKey = _legacyHistoryKey;
@@ -31,6 +35,7 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
     final uid = context.read<AuthProvider>().userId;
     _historyKey = 'ai_chat_history_v1_${uid ?? 'anon'}';
     _restoreHistory();
+    _loadQuota();
   }
 
   Future<void> _restoreHistory() async {
@@ -40,6 +45,22 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
       _scrollDown();
     }
     await _syncFromServer(local);
+  }
+
+  /// Свайп сверху вниз: подтягиваем переписку и квоту с сервера — история
+  /// общая с сайтом, и без этого сообщения, написанные там, появлялись бы
+  /// только после перезахода на экран.
+  Future<void> _refresh() async {
+    await _syncFromServer(List<Map<String, String>>.from(_msgs));
+    await _loadQuota();
+  }
+
+  /// Дневная квота ИИ — серверная, общая с сайтом (см. /ai/limits).
+  Future<void> _loadQuota() async {
+    try {
+      final q = AiQuota.fromJson(await context.read<ApiService>().getAiLimits());
+      if (mounted && q != null) setState(() => _quota = q);
+    } catch (_) {}
   }
 
   Future<List<Map<String, String>>> _loadLocal() async {
@@ -152,6 +173,10 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
   void _send([String? override]) async {
     final text = override ?? _ctrl.text.trim();
     if (text.isEmpty || _loading) return;
+    if (_quota?.exhausted == true) {
+      showToast(context, context.read<L10n>().t('ai_daily_exhausted'), error: true);
+      return;
+    }
     HapticFeedback.lightImpact();
     setState(() { _msgs.add({'role': 'user', 'text': text, 'time': _now()}); _loading = true; });
     _saveHistory();
@@ -167,13 +192,22 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
       ];
       final data = await api.aiChat(apiMsgs);
       if (!mounted) return;
-      setState(() => _msgs.add({'role': 'assistant', 'text': data['content'] ?? context.read<L10n>().t('no_answer'), 'time': _now()}));
+      setState(() {
+        _msgs.add({'role': 'assistant', 'text': data['content'] ?? context.read<L10n>().t('no_answer'), 'time': _now()});
+        _quota = AiQuota.fromJson(data['quota']) ?? _quota;
+      });
       _saveHistory();
     } catch (e) {
       if (!mounted) return;
       final l = context.read<L10n>();
-      setState(() => _msgs.add({'role': 'assistant', 'text': e.toString().contains('503') ? l.t('ai_not_configured') : l.t('connection_error'), 'time': _now()}));
+      final resp = (e is DioException) ? e.response : null;
+      final detail = (resp?.data is Map) ? resp!.data['detail']?.toString() : null;
+      final text = resp?.statusCode == 429
+          ? (detail ?? l.t('ai_daily_exhausted'))
+          : e.toString().contains('503') ? l.t('ai_not_configured') : l.t('connection_error');
+      setState(() => _msgs.add({'role': 'assistant', 'text': text, 'time': _now()}));
       _saveHistory();
+      if (resp?.statusCode == 429) _loadQuota();
     }
     if (mounted) setState(() => _loading = false);
     _scrollDown();
@@ -208,12 +242,16 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
                 child: child,
               ),
             ),
-            child: _msgs.isEmpty
-                ? _emptyState(isDark, l)
-                : _messageList(isDark),
+            child: RefreshIndicator(
+              onRefresh: _refresh,
+              color: Theme.of(context).colorScheme.primary,
+              child: _msgs.isEmpty
+                  ? _emptyState(isDark, l)
+                  : _messageList(isDark),
+            ),
           ),
         ),
-        _AiInputBar(ctrl: _ctrl, loading: _loading, onSend: _send),
+        _AiInputBar(ctrl: _ctrl, loading: _loading, quota: _quota, onSend: _send),
       ]),
     );
   }
@@ -280,6 +318,7 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
     return LayoutBuilder(builder: (context, constraints) {
       return SingleChildScrollView(
         key: const ValueKey('empty_state'),
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: constraints.maxHeight),
@@ -343,6 +382,7 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
     return ListView.builder(
       key: const ValueKey('msg_list'),
       controller: _scroll,
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
       itemCount: _msgs.length + (_loading ? 1 : 0),
       itemBuilder: (ctx, i) {
@@ -457,9 +497,10 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
 class _AiInputBar extends StatelessWidget {
   final TextEditingController ctrl;
   final bool loading;
+  final AiQuota? quota;
   final VoidCallback onSend;
 
-  const _AiInputBar({required this.ctrl, required this.loading, required this.onSend});
+  const _AiInputBar({required this.ctrl, required this.loading, required this.onSend, this.quota});
 
   @override
   Widget build(BuildContext context) {
@@ -468,16 +509,19 @@ class _AiInputBar extends StatelessWidget {
     final l = context.read<L10n>();
     final isKZ = l.lang == 'KZ';
     final isEN = l.lang == 'EN';
-    final hint = isKZ ? 'Chatra AI-дан сұраңыз...' : isEN ? 'Ask Chatra AI...' : 'Спросите Chatra AI...';
+    final exhausted = quota?.exhausted ?? false;
+    final hint = exhausted
+        ? l.t('ai_limit_reached_title')
+        : isKZ ? 'Chatra AI-дан сұраңыз...' : isEN ? 'Ask Chatra AI...' : 'Спросите Chatra AI...';
 
     return Container(
-      padding: EdgeInsets.fromLTRB(14, 10, 14,
-        (MediaQuery.of(context).viewInsets.bottom + 8).clamp(90.0, double.infinity)),
+      padding: EdgeInsets.fromLTRB(14, 10, 14, bottomBarInset(context)),
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
         border: Border(top: BorderSide(color: adaptiveBorder(context).withValues(alpha: 0.5), width: 0.5)),
       ),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
+        if (exhausted) AiLimitNotice(quota: quota!),
         Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
           Expanded(
             child: AnimatedContainer(
@@ -491,6 +535,7 @@ class _AiInputBar extends StatelessWidget {
               ),
               child: TextField(
                 controller: ctrl,
+                enabled: !exhausted,
                 decoration: InputDecoration(
                   hintText: hint,
                   hintStyle: const TextStyle(color: C.text4, fontSize: 15),
@@ -511,9 +556,9 @@ class _AiInputBar extends StatelessWidget {
             valueListenable: ctrl,
             builder: (context, value, _) {
               final hasText = value.text.trim().isNotEmpty;
-              final active = hasText && !loading;
+              final active = hasText && !loading && !exhausted;
               return GestureDetector(
-                onTap: onSend,
+                onTap: exhausted ? null : onSend,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 220),
                   curve: Curves.easeOutCubic,
@@ -534,8 +579,8 @@ class _AiInputBar extends StatelessWidget {
                           transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
                           child: Icon(
                             CupertinoIcons.arrow_up,
-                            key: ValueKey(hasText),
-                            color: hasText ? Colors.white : C.text4,
+                            key: ValueKey(active),
+                            color: active ? Colors.white : C.text4,
                             size: 21,
                           ),
                         ),

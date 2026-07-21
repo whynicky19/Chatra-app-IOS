@@ -76,6 +76,17 @@ Color adaptivePrimaryLt(BuildContext context) {
   return Theme.of(context).colorScheme.primaryContainer;
 }
 
+/// Высота плавающего таб-бара main_shell — панели, приклеенные к низу вкладки
+/// (поле ввода чата, баннер блокировки), обязаны отступать на неё, иначе
+/// уезжают под навбар. Safe-area здесь недостаточно.
+const double kBottomBarHeight = 90;
+
+/// Нижний отступ для панели, приклеенной к низу вкладки: с открытой
+/// клавиатурой — её высота, иначе место под таб-бар.
+double bottomBarInset(BuildContext context) =>
+    (MediaQuery.of(context).viewInsets.bottom + 8)
+        .clamp(kBottomBarHeight, double.infinity);
+
 Color adaptiveBorder(BuildContext context) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
   return isDark ? C.darkBorder : C.border;

@@ -44,9 +44,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     _headerCtrl.forward();
     final provider = _classesProvider;
     provider.addListener(_onProviderError);
-    provider.loadJoined();
-    provider.load();
-    provider.loadNotifBadge();
+    // После первого кадра: load() синхронно зовёт notifyListeners(), а во
+    // время начального build это «setState() called during build».
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      provider.loadJoined();
+      provider.load();
+      provider.loadNotifBadge();
+    });
     _loadPersistedState();
   }
 

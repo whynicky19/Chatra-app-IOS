@@ -51,7 +51,9 @@ class _AiScreenState extends State<AiScreen> with TickerProviderStateMixin {
   /// общая с сайтом, и без этого сообщения, написанные там, появлялись бы
   /// только после перезахода на экран.
   Future<void> _refresh() async {
-    await _syncFromServer(List<Map<String, String>>.from(_msgs));
+    // Пустой local: refresh не должен ре-импортировать локальную историю,
+    // иначе очистка треда с другого устройства «воскресала» бы здесь.
+    await _syncFromServer(const []);
     await _loadQuota();
   }
 

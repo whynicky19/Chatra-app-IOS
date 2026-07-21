@@ -19,8 +19,9 @@ import 'settings/settings_screen.dart';
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
 
-  /// Запрос переключения вкладки извне (пуш «жалоба/заявка» ведёт в админку).
-  /// Значения: 'admin'. Обрабатывается и сбрасывается _MainShellState.
+  /// Запрос переключения вкладки извне (пуш «жалоба/заявка» ведёт в админку,
+  /// пуш о новом сообщении — в чаты). Значения: 'admin', 'chats'.
+  /// Обрабатывается и сбрасывается _MainShellState.
   static final ValueNotifier<String?> sectionRequest = ValueNotifier<String?>(null);
 
   @override State<MainShell> createState() => _MainShellState();
@@ -60,6 +61,8 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
     if (section == 'admin' && context.read<AuthProvider>().isAdmin) {
       // Вкладка админа — после Классов/Чатов/ИИ.
       _onTap(3);
+    } else if (section == 'chats') {
+      _onTap(_chatsTabIndex);
     }
   }
 

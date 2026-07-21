@@ -531,6 +531,7 @@ class ApiService {
   Future<void> addChatUser(int chatId, int userId) async => _dio.post('/chats/$chatId/users/$userId');
   Future<void> removeChatUser(int chatId, int userId) async => _dio.delete('/chats/$chatId/users/$userId');
   Future<void> deleteChat(int chatId) async => _dio.delete('/chats/$chatId');
+  Future<void> markChatRead(int chatId) async => _dio.put('/chats/$chatId/read');
 
   Future<List<dynamic>> getMessages(int chatId, {int? before, int limit = 50}) async {
     final params = <String, dynamic>{'limit': limit};

@@ -66,6 +66,7 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
     _bgPoller?.cancel();
     _bgPoller = Timer.periodic(const Duration(seconds: 10), (_) {
       _chatsProvider.pollMessages();
+      _chatsProvider.refreshChatSummaries();
     });
   }
 
@@ -247,7 +248,8 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
                   final color = _avatarColors[id % _avatarColors.length];
                   final title = provider.chatTitle(c);
                   final blocked = mod.isBlocked(_chatPartnerId(provider, c));
-                  final unread = !blocked && provider.hasUnread(id);
+                  final unreadN = blocked ? 0 : provider.unreadCount(id);
+                  final unread = unreadN > 0;
                   final time = l.t(provider.chatTime(id));
                   final preview = blocked
                       ? l.t('you_blocked_user')
@@ -307,13 +309,25 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
                             boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04), blurRadius: 10, offset: const Offset(0, 2))],
                           ),
                           child: Padding(padding: const EdgeInsets.all(14), child: Row(children: [
-                            Stack(children: [
+                            Stack(clipBehavior: Clip.none, children: [
                               Container(width: 52, height: 52,
                                 decoration: BoxDecoration(gradient: RadialGradient(colors: [color.withValues(alpha: 0.3), color.withValues(alpha: 0.12)]), shape: BoxShape.circle),
                                 child: Center(child: Text(initials, style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 20)))),
-                              if (unread) Positioned(right: 0, bottom: 0,
-                                child: Container(width: 14, height: 14,
-                                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, shape: BoxShape.circle, border: Border.all(color: surface, width: 2)))),
+                              if (unread) Positioned(right: -4, top: -4,
+                                child: Container(
+                                  constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+                                  padding: const EdgeInsets.symmetric(horizontal: 5),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: surface, width: 2),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    unreadN > 99 ? '99+' : '$unreadN',
+                                    style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800),
+                                  ),
+                                )),
                             ]),
                             const SizedBox(width: 14),
                             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -502,8 +516,9 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
           _ChatInputBar(
             ctrl: _msgCtrl,
             onSend: _send,
-            onAdd: () => _showPhotoMenu(context, provider.activeChatId!),
+            onAdd: provider.uploading ? null : () => _showPhotoMenu(context, provider.activeChatId!),
             onChanged: _onMsgChanged,
+            uploading: provider.uploading,
           ),
       ]),
     );
@@ -662,6 +677,12 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
     if (err != null) showToast(context, context.read<L10n>().t(err), error: true);
   }
 
+  // Разбор содержимого сообщения (regex вложений/ссылок) дорогой и вызывается
+  // на каждый rebuild списка (поллинг, тайпинг-индикатор) — кэшируем по
+  // тексту сообщения, он неизменяем после отправки.
+  final Map<String, String> _fixedContentCache = {};
+  final Map<String, MessageAttachment?> _attachmentCache = {};
+
   Widget _buildMessageContent(String content, bool isMe) {
     if (content.startsWith('> ')) {
       final nlIdx = content.indexOf('\n\n');
@@ -695,15 +716,18 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
         );
       }
     }
-    String fixedContent = content;
-    try {
-      fixedContent = context.read<ApiService>().fixUrlsInText(content);
-    } catch (_) {}
+    final fixedContent = _fixedContentCache.putIfAbsent(content, () {
+      try {
+        return context.read<ApiService>().fixUrlsInText(content);
+      } catch (_) {
+        return content;
+      }
+    });
 
     // Вложение (сайт шлёт markdown `[Фото](url) — имя`, приложение — голую
     // ссылку). Разбираем общим парсером: раньше из markdown в URL уезжала
     // закрывающая скобка и картинка не грузилась.
-    final att = parseMessageAttachment(fixedContent);
+    final att = _attachmentCache.putIfAbsent(content, () => parseMessageAttachment(fixedContent));
     if (att != null) {
       final url = context.read<ApiService>().fixUrl(att.url);
       if (att.isImage) {
@@ -783,14 +807,16 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
 class _ChatInputBar extends StatefulWidget {
   final TextEditingController ctrl;
   final VoidCallback onSend;
-  final VoidCallback onAdd;
+  final VoidCallback? onAdd;
   final ValueChanged<String> onChanged;
+  final bool uploading;
 
   const _ChatInputBar({
     required this.ctrl,
     required this.onSend,
     required this.onAdd,
     required this.onChanged,
+    this.uploading = false,
   });
 
   @override

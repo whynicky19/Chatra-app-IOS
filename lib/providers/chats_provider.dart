@@ -111,6 +111,11 @@ class ChatsProvider extends ChangeNotifier {
   final ApiService _api;
   final AuthProvider _auth;
 
+  /// Пинг от PushService при пуше о новом сообщении: chat_id пришедшего
+  /// сообщения. ChatsProvider слушает и мгновенно подтягивает счётчики
+  /// непрочитанных, не дожидаясь очередного тика поллера.
+  static final ValueNotifier<int?> pushChatPing = ValueNotifier<int?>(null);
+
   List<dynamic> chats = [];
   Map<int, List<dynamic>> messages = {};
   Map<int, List<dynamic>> chatUsers = {};
@@ -129,10 +134,35 @@ class ChatsProvider extends ChangeNotifier {
 
   bool get someoneIsTyping => _typingTimestamps.isNotEmpty;
 
-  ChatsProvider(this._api, this._auth);
+  /// Запрос открыть конкретный чат извне (тап по пуш-уведомлению о
+  /// сообщении). MainShell параллельно переключает вкладку на «Чаты».
+  static final ValueNotifier<int?> requestOpenChat = ValueNotifier<int?>(null);
+
+  ChatsProvider(this._api, this._auth) {
+    pushChatPing.addListener(_onPushPing);
+    requestOpenChat.addListener(_onOpenChatRequest);
+  }
+
+  void _onPushPing() {
+    final chatId = pushChatPing.value;
+    if (chatId == null) return;
+    pushChatPing.value = null;
+    refreshChatSummaries();
+    if (chatId == activeChatId) pollMessages();
+  }
+
+  void _onOpenChatRequest() {
+    final chatId = requestOpenChat.value;
+    if (chatId == null) return;
+    requestOpenChat.value = null;
+    setActiveChatId(chatId);
+    markSeen(chatId);
+  }
 
   @override
   void dispose() {
+    pushChatPing.removeListener(_onPushPing);
+    requestOpenChat.removeListener(_onOpenChatRequest);
     _disconnectWs();
     _stopFallbackPoller();
     _typingCleaner?.cancel();
@@ -174,6 +204,11 @@ class ChatsProvider extends ChangeNotifier {
     }
   }
 
+  /// Список чатов + предпросмотр последнего сообщения и unread_count
+  /// приходят одним лёгким запросом. Полную историю сообщений грузим только
+  /// когда пользователь реально открывает чат (см. ensureMessagesLoaded) —
+  /// раньше здесь тянулась вся история КАЖДОГО чата на старте и на каждом
+  /// поллинге, что было главным источником лишнего трафика/лагов.
   Future<void> loadChats() async {
     loading = true;
     notifyListeners();
@@ -181,25 +216,14 @@ class ChatsProvider extends ChangeNotifier {
       chats = await _api.getChats();
       await Future.wait(chats.map((c) async {
         final id = (c['id'] as num).toInt();
-        await Future.wait([
-          () async {
-            try {
-              chatUsers[id] = await _api.getChatUsers(id);
-            } catch (e) {
-              logError('ChatsProvider.loadChatUsers', e);
-              errorMessage = 'err_load_chat_members';
-            }
-          }(),
-          () async {
-            try {
-              messages[id] = await _api.getMessages(id);
-            } catch (e) {
-              logError('ChatsProvider.loadMessages', e);
-              errorMessage = 'err_load_messages';
-            }
-          }(),
-        ]);
+        try {
+          chatUsers[id] = await _api.getChatUsers(id);
+        } catch (e) {
+          logError('ChatsProvider.loadChatUsers', e);
+          errorMessage = 'err_load_chat_members';
+        }
       }));
+      if (activeChatId != null) await ensureMessagesLoaded(activeChatId!);
     } catch (e) {
       logError('ChatsProvider.loadChats', e);
       errorMessage = 'err_load_chats';
@@ -208,23 +232,63 @@ class ChatsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> pollMessages() async {
-    if (!isScreenVisible) return;
-    bool changed = false;
+  /// Подтягивает свежую историю чата при открытии. ВСЕГДА перезапрашивает
+  /// (не только при первом заходе): WS живёт только пока чат активен, так
+  /// что пока чат закрыт, ничего не обновляет его кэш — без принудительного
+  /// рефетча при повторном открытии показывались бы старые сообщения.
+  Future<void> ensureMessagesLoaded(int id) async {
     try {
-      for (final c in chats) {
-        final id = (c['id'] as num).toInt();
-        if (id == activeChatId && (_wsManager?.isConnected ?? false)) continue;
-        try {
-          final fresh = await _api.getMessages(id);
-          if (_messagesDiffer(messages[id], fresh)) {
-            messages[id] = fresh;
-            changed = true;
-          }
-        } catch (_) {}
+      final fresh = await _api.getMessages(id);
+      messages[id] = fresh;
+      notifyListeners();
+    } catch (e) {
+      logError('ChatsProvider.ensureMessagesLoaded', e);
+    }
+  }
+
+  /// Лёгкий поллинг: список чатов с unread_count и превью последнего
+  /// сообщения, без полных тел сообщений. Не завязан на видимость вкладки —
+  /// бейдж и превью должны обновляться, даже пока пользователь смотрит
+  /// другой таб.
+  Future<void> refreshChatSummaries() async {
+    try {
+      final fresh = await _api.getChats();
+      final byId = {for (final c in fresh) (c['id'] as num).toInt(): c};
+      bool changed = false;
+      for (var i = 0; i < chats.length; i++) {
+        final id = (chats[i]['id'] as num).toInt();
+        final f = byId[id];
+        if (f == null) continue;
+        final curLastId = (chats[i]['last_message']?['id'] as num?)?.toInt();
+        final freshLastId = (f['last_message']?['id'] as num?)?.toInt();
+        if (chats[i]['unread_count'] != f['unread_count'] || curLastId != freshLastId) {
+          chats[i] = f;
+          changed = true;
+        }
+      }
+      final knownIds = chats.map((c) => (c['id'] as num).toInt()).toSet();
+      final newOnes = fresh.where((c) => !knownIds.contains((c['id'] as num).toInt()));
+      if (newOnes.isNotEmpty) {
+        chats = [...chats, ...newOnes];
+        changed = true;
+      }
+      if (changed) notifyListeners();
+    } catch (_) {}
+  }
+
+  /// Фолбэк-поллинг активного чата, когда WS не подключён. Остальные чаты
+  /// (список/превью) обновляет refreshChatSummaries — без полной истории.
+  Future<void> pollMessages() async {
+    final id = activeChatId;
+    if (id == null) return;
+    if (_wsManager?.isConnected ?? false) return;
+    try {
+      final fresh = await _api.getMessages(id);
+      if (_messagesDiffer(messages[id], fresh)) {
+        messages[id] = fresh;
+        notifyListeners();
       }
     } catch (_) {}
-    if (changed) notifyListeners();
   }
 
   bool _messagesDiffer(List<dynamic>? a, List<dynamic> b) {
@@ -262,7 +326,15 @@ class ChatsProvider extends ChangeNotifier {
     }
   }
 
+  /// Идёт ли сейчас загрузка вложения. UI блокирует кнопку "+" на время
+  /// загрузки — иначе пользователь не видит прогресса и жмёт повторно,
+  /// уходят два одинаковых сообщения.
+  bool uploading = false;
+
   Future<String?> uploadAndSend(int chatId, String filePath, String fileName) async {
+    if (uploading) return null;
+    uploading = true;
+    notifyListeners();
     try {
       final result = await _api.uploadFile(filePath, fileName);
       var url = result['url'] ?? result['file_url'] ?? result['path'] ?? '';
@@ -270,7 +342,17 @@ class ChatsProvider extends ChangeNotifier {
         url = _api.toRelativeUploadUrl(url);
       }
       if (url.isNotEmpty) {
-        await _api.sendMessage(chatId, url);
+        final response = await _api.sendMessage(chatId, url);
+        final msgId = (response['id'] as num?)?.toInt();
+        if (msgId != null) {
+          final msgs = List<dynamic>.from(messages[chatId] ?? []);
+          if (!msgs.any((m) => (m['id'] as num?)?.toInt() == msgId)) {
+            msgs.add(response);
+            messages[chatId] = msgs;
+            lastSeenMsgId[chatId] = msgId;
+            saveSeenMsgIds();
+          }
+        }
         if (!(_wsManager?.isConnected ?? false)) await pollMessages();
         return null;
       }
@@ -278,6 +360,9 @@ class ChatsProvider extends ChangeNotifier {
     } catch (e) {
       logError('ChatsProvider.uploadAndSend', e);
       return 'err_upload';
+    } finally {
+      uploading = false;
+      notifyListeners();
     }
   }
 
@@ -356,7 +441,10 @@ class ChatsProvider extends ChangeNotifier {
       _stopFallbackPoller();
     }
     activeChatId = id;
-    if (id != null) _connectWs(id);
+    if (id != null) {
+      _connectWs(id);
+      ensureMessagesLoaded(id);
+    }
     notifyListeners();
   }
 
@@ -366,8 +454,23 @@ class ChatsProvider extends ChangeNotifier {
       final id = (msgs.last['id'] as num?)?.toInt();
       if (id != null) lastSeenMsgId[chatId] = id;
     }
+    final idx = chats.indexWhere((c) => (c['id'] as num).toInt() == chatId);
+    if (idx != -1 && (chats[idx]['unread_count'] ?? 0) != 0) {
+      chats[idx] = {...chats[idx] as Map, 'unread_count': 0};
+    }
     notifyListeners();
     saveSeenMsgIds();
+    _api.markChatRead(chatId).catchError((e) {
+      logError('ChatsProvider.markSeen', e);
+    });
+  }
+
+  int unreadCount(int id) {
+    final c = chats.firstWhere(
+      (c) => (c['id'] as num?)?.toInt() == id,
+      orElse: () => const {},
+    );
+    return (c['unread_count'] as num?)?.toInt() ?? 0;
   }
 
   void _connectWs(int chatId) {
@@ -405,6 +508,9 @@ class ChatsProvider extends ChangeNotifier {
         if (activeChatId == chatId) {
           lastSeenMsgId[chatId] = msgId;
           saveSeenMsgIds();
+          _api.markChatRead(chatId).catchError((e) {
+            logError('ChatsProvider._handleWsMessage', e);
+          });
         }
         notifyListeners();
       }
@@ -444,17 +550,26 @@ class ChatsProvider extends ChangeNotifier {
     _fallbackPoller = null;
   }
 
+  /// Последнее сообщение чата: если полная история уже загружена (чат
+  /// открывали) — берём оттуда, иначе — превью с сервера из /chats/.
+  dynamic _lastMsgFor(int id) {
+    final loaded = messages[id];
+    if (loaded != null && loaded.isNotEmpty) return loaded.last;
+    final idx = chats.indexWhere((c) => (c['id'] as num?)?.toInt() == id);
+    return idx == -1 ? null : chats[idx]['last_message'];
+  }
+
   List<dynamic> get sortedChats {
     final sorted = List<dynamic>.from(chats);
     sorted.sort((a, b) {
-      final aMsgs = messages[(a['id'] as num).toInt()] ?? [];
-      final bMsgs = messages[(b['id'] as num).toInt()] ?? [];
-      if (aMsgs.isEmpty && bMsgs.isEmpty) return 0;
-      if (aMsgs.isEmpty) return 1;
-      if (bMsgs.isEmpty) return -1;
+      final aMsg = _lastMsgFor((a['id'] as num).toInt());
+      final bMsg = _lastMsgFor((b['id'] as num).toInt());
+      if (aMsg == null && bMsg == null) return 0;
+      if (aMsg == null) return 1;
+      if (bMsg == null) return -1;
       try {
-        final aTime = DateTime.parse(aMsgs.last['created_at']);
-        final bTime = DateTime.parse(bMsgs.last['created_at']);
+        final aTime = DateTime.parse(aMsg['created_at']);
+        final bTime = DateTime.parse(bMsg['created_at']);
         return bTime.compareTo(aTime);
       } catch (_) { return 0; }
     });
@@ -472,9 +587,9 @@ class ChatsProvider extends ChangeNotifier {
   }
 
   String? lastPreview(int id) {
-    final msgs = messages[id] ?? [];
-    if (msgs.isEmpty) return null;
-    final String content = msgs.last['content'] ?? '';
+    final last = _lastMsgFor(id);
+    if (last == null) return null;
+    final String content = last['content'] ?? '';
     final attachment = _attachmentPreviewKey(content);
     if (attachment != null) return attachment;
     return content.length > 45 ? '${content.substring(0, 45)}...' : content;
@@ -489,10 +604,10 @@ class ChatsProvider extends ChangeNotifier {
   }
 
   String chatTime(int id) {
-    final msgs = messages[id] ?? [];
-    if (msgs.isEmpty) return '';
+    final last = _lastMsgFor(id);
+    if (last == null) return '';
     try {
-      final d = DateTime.parse(msgs.last['created_at']);
+      final d = DateTime.parse(last['created_at']);
       final now = DateTime.now();
       if (now.difference(d).inMinutes < 1) return 'time_now';
       if (now.difference(d).inHours < 24) return '${d.hour}:${d.minute.toString().padLeft(2, '0')}';
@@ -501,13 +616,5 @@ class ChatsProvider extends ChangeNotifier {
     } catch (_) { return ''; }
   }
 
-  bool hasUnread(int id) {
-    final msgs = messages[id] ?? [];
-    if (msgs.isEmpty) return false;
-    final last = msgs.last;
-    if (last['user_id'] == _auth.userId) return false;
-    final lastSeenId = lastSeenMsgId[id];
-    if (lastSeenId == null) return true;
-    return ((last['id'] as num?)?.toInt() ?? 0) > lastSeenId;
-  }
+  bool hasUnread(int id) => unreadCount(id) > 0;
 }

@@ -18,6 +18,11 @@ import 'settings/settings_screen.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
+
+  /// Запрос переключения вкладки извне (пуш «жалоба/заявка» ведёт в админку).
+  /// Значения: 'admin'. Обрабатывается и сбрасывается _MainShellState.
+  static final ValueNotifier<String?> sectionRequest = ValueNotifier<String?>(null);
+
   @override State<MainShell> createState() => _MainShellState();
 }
 
@@ -42,6 +47,20 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
 
     Connectivity().checkConnectivity().then(_applyConnectivity);
     _connectSub = Connectivity().onConnectivityChanged.listen(_applyConnectivity);
+
+    MainShell.sectionRequest.addListener(_onSectionRequest);
+    // Пуш мог прийти до построения шелла (холодный старт по тапу).
+    WidgetsBinding.instance.addPostFrameCallback((_) => _onSectionRequest());
+  }
+
+  void _onSectionRequest() {
+    final section = MainShell.sectionRequest.value;
+    if (section == null || !mounted) return;
+    MainShell.sectionRequest.value = null;
+    if (section == 'admin' && context.read<AuthProvider>().isAdmin) {
+      // Вкладка админа — после Классов/Чатов/ИИ.
+      _onTap(3);
+    }
   }
 
   void _applyConnectivity(List<ConnectivityResult> results) {
@@ -78,6 +97,7 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    MainShell.sectionRequest.removeListener(_onSectionRequest);
     _offlineDebounce?.cancel();
     _recheckTimer?.cancel();
     _connectSub?.cancel();

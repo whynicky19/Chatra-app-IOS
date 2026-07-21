@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../screens/main_shell.dart';
 import 'api_service.dart';
 
 @pragma('vm:entry-point')
@@ -145,6 +146,13 @@ class PushService {
         break;
       case 'message':
         if (classId != null) nav.pushNamed('/class', arguments: classId);
+        break;
+      // Админские события: жалоба, заявка на аватар, лекция на модерации —
+      // переключаем шелл на вкладку админки (проверка роли — в MainShell).
+      case 'admin_report':
+      case 'avatar_request':
+      case 'lecture_request':
+        MainShell.sectionRequest.value = 'admin';
         break;
     }
   }

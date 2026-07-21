@@ -36,6 +36,8 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
   final ScrollController _chatScrollCtrl = ScrollController();
   DateTime? _lastTypingSent;
   Map<String, dynamic>? _replyTo;
+  int? _scrollTrackedChatId;
+  int _scrollTrackedMsgCount = 0;
 
   static const _avatarColors = [
     C.teal,
@@ -389,6 +391,22 @@ class _ChatsScreenState extends State<ChatsScreen> with TickerProviderStateMixin
     final msgs = mod.blockedIds.isEmpty
         ? allMsgs
         : allMsgs.where((m) => !mod.isBlocked((m['user_id'] as num?)?.toInt())).toList();
+
+    // Автоскролл вниз при новом сообщении (как в чате с ИИ) — WS/поллинг
+    // добавляют сообщения через провайдер, а не через _send(), поэтому сам
+    // экран должен заметить прирост списка и докрутить.
+    final activeChatId = provider.activeChatId;
+    if (activeChatId != null) {
+      if (_scrollTrackedChatId != activeChatId) {
+        _scrollTrackedChatId = activeChatId;
+        _scrollTrackedMsgCount = msgs.length;
+      } else if (msgs.length > _scrollTrackedMsgCount) {
+        _scrollTrackedMsgCount = msgs.length;
+        _scrollToBottom(animated: true);
+      } else {
+        _scrollTrackedMsgCount = msgs.length;
+      }
+    }
 
     return Scaffold(
       resizeToAvoidBottomInset: false,

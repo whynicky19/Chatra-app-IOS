@@ -92,11 +92,11 @@ class ClassPostsTab extends StatelessWidget {
     );
     }
 
-    final filesPerPost = posts.map(extractFiles).toList();
-
     return ListView.builder(padding: const EdgeInsets.fromLTRB(14, 14, 14, 90), itemCount: posts.length, itemBuilder: (ctx, i) {
       final p = posts[i];
-      final files = filesPerPost[i];
+      // Считаем файлы лениво, только для реально построенных карточек:
+      // раньше jsonDecode+regex гонялись по всем постам на каждый rebuild.
+      final files = extractFiles(p);
       final body = preview(p);
       final num = posts.length - i;
 

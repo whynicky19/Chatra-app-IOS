@@ -184,32 +184,37 @@ class _AdminAvatarsTabState extends State<AdminAvatarsTab> with SingleTickerProv
 
   Widget _buildAvatarsSubTab(L10n l, Color primary, bool isDark) {
     if (_loadingAvatars) return Center(child: CircularProgressIndicator(color: primary, strokeWidth: 2.5));
+    final headers = <Widget>[
+      Row(children: [
+        for (final f in const ['all', 'pending', 'approved', 'rejected']) ...[
+          _filterChip(f == 'all' ? l.t('filter_all') : (f == 'pending' ? l.t('pending_approval') : (f == 'approved' ? l.t('ready') : l.t('rejected'))),
+            selected: _avatarFilter == f, onTap: () { setState(() => _avatarFilter = f); _loadAvatars(); }, primary: primary),
+          const SizedBox(width: 8),
+        ],
+      ]),
+      const SizedBox(height: 12),
+      if (_avatars.isEmpty)
+        Padding(padding: const EdgeInsets.symmetric(vertical: 40), child: Center(child: Text(l.t('no_ai_data'), style: const TextStyle(color: C.text4)))),
+    ];
     return RefreshIndicator(
       color: primary,
       onRefresh: _loadAvatars,
-      child: ListView(
+      // Ленивый список: заявки на аватары могут быть длинным org-wide списком.
+      child: ListView.builder(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 90),
         physics: const AlwaysScrollableScrollPhysics(),
-        children: [
-          Row(children: [
-            for (final f in const ['all', 'pending', 'approved', 'rejected']) ...[
-              _filterChip(f == 'all' ? l.t('filter_all') : (f == 'pending' ? l.t('pending_approval') : (f == 'approved' ? l.t('ready') : l.t('rejected'))),
-                selected: _avatarFilter == f, onTap: () { setState(() => _avatarFilter = f); _loadAvatars(); }, primary: primary),
-              const SizedBox(width: 8),
-            ],
-          ]),
-          const SizedBox(height: 12),
-          if (_avatars.isEmpty)
-            Padding(padding: const EdgeInsets.symmetric(vertical: 40), child: Center(child: Text(l.t('no_ai_data'), style: const TextStyle(color: C.text4))))
-          else
-            ..._avatars.map((a) => _AvatarRequestCard(
-                  avatar: a,
-                  isDark: isDark,
-                  onApprove: () => _reviewAvatar(a, approve: true),
-                  onReject: () async { final reason = await _promptRejectionReason(l); if (reason != null) _reviewAvatar(a, approve: false, reason: reason); },
-                  onDelete: () => _deleteAvatar(a),
-                )),
-        ],
+        itemCount: headers.length + _avatars.length,
+        itemBuilder: (ctx, index) {
+          if (index < headers.length) return headers[index];
+          final a = _avatars[index - headers.length];
+          return _AvatarRequestCard(
+            avatar: a,
+            isDark: isDark,
+            onApprove: () => _reviewAvatar(a, approve: true),
+            onReject: () async { final reason = await _promptRejectionReason(l); if (reason != null) _reviewAvatar(a, approve: false, reason: reason); },
+            onDelete: () => _deleteAvatar(a),
+          );
+        },
       ),
     );
   }
@@ -223,15 +228,19 @@ class _AdminAvatarsTabState extends State<AdminAvatarsTab> with SingleTickerProv
           ? ListView(physics: const AlwaysScrollableScrollPhysics(), children: [
               Padding(padding: const EdgeInsets.symmetric(vertical: 40), child: Center(child: Text(l.t('no_ai_data'), style: const TextStyle(color: C.text4)))),
             ])
-          : ListView(
+          : ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 90),
               physics: const AlwaysScrollableScrollPhysics(),
-              children: _lectures.map((lec) => _AdminLectureCard(
-                    lecture: lec,
-                    isDark: isDark,
-                    onApprove: () => _reviewLecture(lec, approve: true),
-                    onReject: () async { final reason = await _promptRejectionReason(l); if (reason != null) _reviewLecture(lec, approve: false, reason: reason); },
-                  )).toList(),
+              itemCount: _lectures.length,
+              itemBuilder: (ctx, index) {
+                final lec = _lectures[index];
+                return _AdminLectureCard(
+                  lecture: lec,
+                  isDark: isDark,
+                  onApprove: () => _reviewLecture(lec, approve: true),
+                  onReject: () async { final reason = await _promptRejectionReason(l); if (reason != null) _reviewLecture(lec, approve: false, reason: reason); },
+                );
+              },
             ),
     );
   }

@@ -175,7 +175,13 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
     final avg = (widget.rating['avg_score'] ?? 0).round();
     final pct = (widget.rating['avg_percent'] ?? 0).round();
 
-    return ListView(padding: const EdgeInsets.fromLTRB(12, 12, 12, 90), children: [
+    final subMap = <int, dynamic>{};
+    for (final s in widget.mySubs) {
+      subMap[(s['assignment_id'] as num).toInt()] = s;
+    }
+    // Ленивый список: карточки заданий строятся по мере скролла, а не все сразу
+    // (при 30–50 заданиях жадный ListView даёт заметный лаг на открытии вкладки).
+    final headers = <Widget>[
       if (!widget.isTeacher && widget.rating.isNotEmpty) Padding(
         padding: const EdgeInsets.only(bottom: 16),
         child: IntrinsicHeight(child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -272,13 +278,14 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
         Text(widget.isTeacher ? l.t('create_first_assignment') : l.t('no_assignments_yet'),
           style: const TextStyle(fontSize: 13, color: C.text4)),
       ]))),
-      ...() {
-        final subMap = <int, dynamic>{};
-        for (final s in widget.mySubs) {
-          subMap[(s['assignment_id'] as num).toInt()] = s;
-        }
-        return widget.assignments.asMap().entries.map((entry) {
-        final i = entry.key; final a = entry.value;
+    ];
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 90),
+      itemCount: headers.length + widget.assignments.length,
+      itemBuilder: (ctx, index) {
+        if (index < headers.length) return headers[index];
+        final i = index - headers.length;
+        final a = widget.assignments[i];
         final sub = subMap[(a['id'] as num).toInt()];
         final status = sub?['status'];
         final grade = sub?['grade'];
@@ -369,9 +376,8 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             ),
           )),
         );
-        }).toList();
-      }(),
-    ]);
+      },
+    );
   }
 
   void _showAssignment(dynamic a, dynamic sub) {
@@ -1099,7 +1105,8 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               ]);
             }
             final filtered = subs.where((s) => search.isEmpty || (s['student_name'] ?? '').toLowerCase().contains(search.toLowerCase())).toList();
-            return ListView(controller: sc, padding: const EdgeInsets.all(20), children: [
+            // Ленивый список: у популярного задания это может быть 50–100+ работ.
+            final gradeHeaders = <Widget>[
               Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 16), decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2)))),
               Row(children: [
                 _statBox('${subs.length}', l.t('total'), adaptiveText1(context)),
@@ -1151,7 +1158,14 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               TextField(decoration: InputDecoration(hintText: l.t('search_student'), prefixIcon: const Icon(CupertinoIcons.search, size: 18, color: C.text4), contentPadding: const EdgeInsets.symmetric(vertical: 10)),
                 onChanged: (v) => setS(() => search = v)),
               const SizedBox(height: 12),
-              ...filtered.map((s) {
+            ];
+            return ListView.builder(
+              controller: sc,
+              padding: const EdgeInsets.all(20),
+              itemCount: gradeHeaders.length + filtered.length,
+              itemBuilder: (ctx, index) {
+                if (index < gradeHeaders.length) return gradeHeaders[index];
+                final s = filtered[index - gradeHeaders.length];
                 final name = s['student_name'] ?? s['student_email'] ?? '#${s['student_id']}';
                 final initials = name.length >= 2 ? '${name[0]}${name.split(' ').length > 1 ? name.split(' ').last[0] : name[1]}'.toUpperCase() : name[0].toUpperCase();
                 final score = s['grade']?['score'];
@@ -1173,8 +1187,8 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                         Text(isGraded ? l.t('graded_one') : l.t('pending_one'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: isGraded ? Theme.of(context).colorScheme.primary : C.yellow)),
                       ]),
                     ])));
-              }),
-            ]);
+              },
+            );
           }));
         });
     } catch (_) { showToast(context, l.t('error_loading'), error: true); }

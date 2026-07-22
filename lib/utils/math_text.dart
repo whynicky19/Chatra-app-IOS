@@ -1,5 +1,7 @@
 library;
 
+import 'dart:collection';
+
 const Map<String, String> _symbols = {
   'cdot': '·', 'times': '×', 'div': '÷', 'pm': '±', 'mp': '∓',
   'le': '≤', 'leq': '≤', 'ge': '≥', 'geq': '≥', 'ne': '≠', 'neq': '≠',
@@ -48,7 +50,29 @@ String? _mapAll(String v, Map<String, String> table) {
 bool _looksLikeMath(String s) =>
     RegExp(r'[=^_\\<>≤≥]|[a-zA-Z]\s*[+\-*/]\s*[a-zA-Z0-9]').hasMatch(s);
 
+// Мемоизация: cleanMathText прогоняет ~15 регэкспов по строке. Её зовут прямо
+// в build() (нарративный текст слайда, конспект), а плеер лекции делает
+// setState на каждый тик позиции аудио — без кэша это те же регэкспы десятки
+// раз в секунду и заметный джанк. Ключ — исходный текст, значение неизменно.
+const int _kMaxCacheEntries = 64;
+final LinkedHashMap<String, String> _cleanCache =
+    LinkedHashMap<String, String>();
+
 String cleanMathText(String text) {
+  final cached = _cleanCache.remove(text);
+  if (cached != null) {
+    _cleanCache[text] = cached;
+    return cached;
+  }
+  final result = _cleanMathTextImpl(text);
+  _cleanCache[text] = result;
+  if (_cleanCache.length > _kMaxCacheEntries) {
+    _cleanCache.remove(_cleanCache.keys.first);
+  }
+  return result;
+}
+
+String _cleanMathTextImpl(String text) {
   var s = text;
 
   s = s.replaceAllMapped(

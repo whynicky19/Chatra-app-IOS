@@ -13,6 +13,7 @@ import '../../../utils/ai_quota.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/ai_limit_notice.dart';
 import '../../../widgets/toast.dart';
+import 'ai_message_content.dart';
 
 /// Тело одной переписки с главным ИИ-ассистентом: список сообщений + композер.
 /// Встраивается как body в [AiScreen] (не пуш-экран) — история открывается
@@ -21,13 +22,11 @@ import '../../../widgets/toast.dart';
 class AiConversationView extends StatefulWidget {
   final int? threadId;
   final ValueChanged<int> onThreadCreated;
-  final ValueChanged<String> onTitleChanged;
 
   const AiConversationView({
     super.key,
     required this.threadId,
     required this.onThreadCreated,
-    required this.onTitleChanged,
   });
 
   @override
@@ -231,7 +230,12 @@ class _AiConversationViewState extends State<AiConversationView> {
       final l = context.read<L10n>();
       final sysLang = l.lang == 'KZ' ? 'казахском' : l.lang == 'EN' ? 'английском' : 'русском';
       final apiMsgs = <Map<String, dynamic>>[
-        {'role': 'system', 'content': 'Ты AI-ассистент образовательной платформы Chatra. Отвечай на $sysLang языке.'},
+        {
+          'role': 'system',
+          'content': 'Ты AI-ассистент образовательной платформы Chatra. Отвечай на $sysLang языке. '
+              'Все математические формулы пиши в LaTeX: инлайн — между одинарными \$...\$, '
+              'формулу на отдельной строке — между двойными \$\$...\$\$. Не используй другой синтаксис для формул.'
+        },
         ..._msgs.map((m) => {'role': m['role']!, 'content': m['text']!}),
       ];
       final data = await api.aiChat(apiMsgs, threadId: threadId);
@@ -243,7 +247,6 @@ class _AiConversationViewState extends State<AiConversationView> {
       _saveHistory();
       final newTitle = data['thread_title']?.toString();
       if (newTitle != null && newTitle.isNotEmpty) {
-        widget.onTitleChanged(newTitle);
         context.read<AiChatsProvider>().patchLocal(threadId, title: newTitle, updatedAt: DateTime.now());
       } else {
         context.read<AiChatsProvider>().patchLocal(threadId, updatedAt: DateTime.now());
@@ -490,7 +493,10 @@ class _AiConversationViewState extends State<AiConversationView> {
                 border: Border.all(color: adaptiveBorder(context).withValues(alpha: isDark ? 0.4 : 0.5), width: 0.5),
                 boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.16 : 0.04), blurRadius: 14, offset: const Offset(0, 4))],
               ),
-              child: SelectableText(text, style: const TextStyle(fontSize: 15.5, height: 1.6, letterSpacing: 0.05)),
+              child: AiMessageContent(
+                text: text,
+                style: TextStyle(fontSize: 15.5, height: 1.6, letterSpacing: 0.05, color: adaptiveText1(context)),
+              ),
             ),
           ),
           if ((m['time'] ?? '').isNotEmpty)

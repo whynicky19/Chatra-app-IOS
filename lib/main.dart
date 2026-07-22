@@ -9,14 +9,12 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'services/api_service.dart';
 import 'services/crash_reporting.dart';
 import 'services/push_service.dart';
-import 'services/moderation_service.dart';
 import 'utils/errors.dart';
 import 'providers/auth_provider.dart';
 import 'providers/org_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/l10n_provider.dart';
 import 'providers/classes_provider.dart';
-import 'providers/chats_provider.dart';
 import 'theme/app_theme.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
@@ -110,16 +108,12 @@ Future<void> _start() async {
   final theme = ThemeProvider();
   final l10n = L10n();
   final classes = ClassesProvider(api, auth);
-  final chats = ChatsProvider(api, auth);
-  final moderation = ModerationService(api);
 
-  int? lastModUid = auth.userId;
-  moderation.configure(auth.userId);
+  int? lastUid = auth.userId;
   CrashReporting.setUser(auth.userId);
   auth.addListener(() {
-    if (auth.userId != lastModUid) {
-      lastModUid = auth.userId;
-      moderation.configure(auth.userId);
+    if (auth.userId != lastUid) {
+      lastUid = auth.userId;
       CrashReporting.setUser(auth.userId);
     }
   });
@@ -153,8 +147,6 @@ Future<void> _start() async {
       ChangeNotifierProvider<ThemeProvider>.value(value: theme),
       ChangeNotifierProvider<L10n>.value(value: l10n),
       ChangeNotifierProvider<ClassesProvider>.value(value: classes),
-      ChangeNotifierProvider<ChatsProvider>.value(value: chats),
-      ChangeNotifierProvider<ModerationService>.value(value: moderation),
     ],
     child: const ChatraApp(),
   ));

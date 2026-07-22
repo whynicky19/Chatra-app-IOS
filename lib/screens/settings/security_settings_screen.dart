@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
-import 'blocked_users_screen.dart';
 import 'settings_shared.dart';
 
 class SecuritySettingsScreen extends StatelessWidget {
@@ -24,15 +23,6 @@ class SecuritySettingsScreen extends StatelessWidget {
           title: l.t('change_password'),
           sub: l.t('change_password_sub'),
           onTap: () => openChangePassword(context),
-        ),
-        const SizedBox(height: 16),
-        SettingsActionCard(
-          icon: CupertinoIcons.nosign,
-          iconBg: primary,
-          title: l.t('blocked_users_title'),
-          sub: l.t('blocked_users_sub'),
-          onTap: () => Navigator.push(context,
-            MaterialPageRoute(builder: (_) => const BlockedUsersScreen())),
         ),
         const SizedBox(height: 16),
         SettingsActionCard(

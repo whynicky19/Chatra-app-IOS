@@ -105,38 +105,3 @@ class SkeletonClassCard extends StatelessWidget {
     );
   }
 }
-
-class SkeletonChatRow extends StatelessWidget {
-  const SkeletonChatRow({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface = Theme.of(context).colorScheme.surface;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: softShadow(isDark),
-      ),
-      child: const Row(children: [
-        SkeletonBox(width: 52, height: 52, borderRadius: 26),
-        SizedBox(width: 14),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Expanded(child: SkeletonBox(width: double.infinity, height: 14, borderRadius: 7)),
-              SizedBox(width: 40),
-              SkeletonBox(width: 32, height: 10, borderRadius: 5),
-            ]),
-            SizedBox(height: 8),
-            SkeletonBox(width: 150, height: 11, borderRadius: 5),
-          ]),
-        ),
-      ]),
-    );
-  }
-}

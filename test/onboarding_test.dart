@@ -40,15 +40,12 @@ void main() {
     await tester.pumpWidget(wrap(() => done = true));
     await tester.pumpAndSettle();
 
-    // Первая и вторая страницы — «Далее».
-    expect(find.text('Далее'), findsOneWidget);
-    await tester.tap(find.text('Далее'));
-    await tester.pumpAndSettle();
+    // Первая страница — «Далее».
     expect(find.text('Далее'), findsOneWidget);
     await tester.tap(find.text('Далее'));
     await tester.pumpAndSettle();
 
-    // Третья — последняя.
+    // Вторая — последняя.
     expect(find.text('Начать'), findsOneWidget);
     expect(done, isFalse, reason: 'до нажатия «Начать» интро не закрывается');
 

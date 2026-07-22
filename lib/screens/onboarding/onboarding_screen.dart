@@ -72,7 +72,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     // Вместо иконок — мини-мокапы реального интерфейса приложения.
     final pages = <(Widget, String, String, String)>[
       (const _ClassMock(), 'onb_1_tag', 'onb_1_title', 'onb_1_body'),
-      (const _ChatMock(), 'onb_2_tag', 'onb_2_title', 'onb_2_body'),
       (const _AiMock(), 'onb_3_tag', 'onb_3_title', 'onb_3_body'),
     ];
     final isLast = _page == pages.length - 1;
@@ -310,83 +309,7 @@ class _ClassMock extends StatelessWidget {
   }
 }
 
-/// Страница 2: уведомление об оценке + пузыри переписки.
-class _ChatMock extends StatelessWidget {
-  const _ChatMock();
-
-  @override
-  Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
-    final secondary = Theme.of(context).colorScheme.secondary;
-
-    Widget bubble({required bool mine, required double w}) => Align(
-          alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              gradient: mine
-                  ? LinearGradient(colors: [primary, secondary])
-                  : null,
-              color: mine ? null : Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.only(
-                topLeft: const Radius.circular(16),
-                topRight: const Radius.circular(16),
-                bottomLeft: Radius.circular(mine ? 16 : 5),
-                bottomRight: Radius.circular(mine ? 5 : 16),
-              ),
-              boxShadow: softShadow(
-                  Theme.of(context).brightness == Brightness.dark),
-            ),
-            child: mine
-                ? Container(
-                    width: w,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.65),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  )
-                : _bar(context, w),
-          ),
-        );
-
-    return SizedBox(
-      width: 280,
-      child: Column(children: [
-        // Пуш об оценке.
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: _cardDecoration(context),
-          child: Row(children: [
-            Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(9),
-              ),
-              child: Icon(CupertinoIcons.bell_fill, size: 14, color: primary),
-            ),
-            const SizedBox(width: 10),
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _bar(context, 120, h: 8),
-              const SizedBox(height: 6),
-              _bar(context, 74, h: 6),
-            ]),
-          ]),
-        ),
-        const SizedBox(height: 18),
-        bubble(mine: false, w: 118),
-        const SizedBox(height: 8),
-        bubble(mine: true, w: 88),
-        const SizedBox(height: 8),
-        bubble(mine: false, w: 64),
-      ]),
-    );
-  }
-}
-
-/// Страница 3: диалог с Chatra AI.
+/// Страница 2: диалог с Chatra AI.
 class _AiMock extends StatelessWidget {
   const _AiMock();
 

@@ -1,7 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:chatra_app/services/api_service.dart';
-import 'package:chatra_app/providers/chats_provider.dart';
-import 'package:chatra_app/providers/auth_provider.dart';
 import 'package:chatra_app/screens/classes/class_detail_utils.dart';
 
 /// Ссылки на файлы приходят подписанными (?exp=...&sig=...) и с абсолютным
@@ -102,40 +100,6 @@ void main() {
         reason: 'ссылка должна съесться целиком, без текстового остатка');
     expect(rendered, contains('sig=990f483f'));
     expect(rendered, isNot(contains('localhost')));
-  });
-
-  group('превью в списке чатов', () {
-    // Провайдеру для этих методов не нужны сеть и авторизация.
-    final p = ChatsProvider(api, AuthProvider(api));
-
-    void put(String content) => p.messages[1] = [
-          {'content': content, 'user_id': 2, 'id': 1}
-        ];
-
-    test('вложение-картинка показывается ярлыком, а не ссылкой', () {
-      put('/uploads/x.jpg?exp=1&sig=abc');
-      expect(p.lastPreview(1), 'preview_photo');
-    });
-
-    test('вложение-файл тоже ярлыком', () {
-      put('/uploads/doc.pdf?exp=1&sig=abc');
-      expect(p.lastPreview(1), 'preview_file');
-    });
-
-    test('абсолютная ссылка на upload тоже распознаётся', () {
-      put('http://localhost:8000/uploads/x.png?sig=1');
-      expect(p.lastPreview(1), 'preview_photo');
-    });
-
-    test('обычный текст остаётся текстом', () {
-      put('привет, как дела?');
-      expect(p.lastPreview(1), 'привет, как дела?');
-    });
-
-    test('текст со ссылкой внутри не считается вложением', () {
-      put('глянь /uploads/x.jpg');
-      expect(p.lastPreview(1), 'глянь /uploads/x.jpg');
-    });
   });
 
   // Бэкенд переподписывает ссылки в каждом JSON-ответе, поэтому exp/sig у одного

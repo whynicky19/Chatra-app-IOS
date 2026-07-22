@@ -513,72 +513,6 @@ class ApiService {
     return response.data;
   }
 
-  Future<List<dynamic>> getChats() async {
-    final response = await _dio.get('/chats/');
-    return response.data;
-  }
-
-  Future<Map<String, dynamic>> createChat(String name) async {
-    final response = await _dio.post('/chats/', data: {'name': name});
-    return response.data;
-  }
-
-  Future<List<dynamic>> getChatUsers(int chatId) async {
-    final response = await _dio.get('/chats/$chatId/users');
-    return response.data;
-  }
-
-  Future<void> addChatUser(int chatId, int userId) async => _dio.post('/chats/$chatId/users/$userId');
-  Future<void> removeChatUser(int chatId, int userId) async => _dio.delete('/chats/$chatId/users/$userId');
-  Future<void> deleteChat(int chatId) async => _dio.delete('/chats/$chatId');
-  Future<void> markChatRead(int chatId) async => _dio.put('/chats/$chatId/read');
-
-  Future<List<dynamic>> getMessages(int chatId, {int? before, int limit = 50}) async {
-    final params = <String, dynamic>{'limit': limit};
-    if (before != null) params['before'] = before;
-    final response = await _dio.get('/messages/chat/$chatId', queryParameters: params);
-    return response.data;
-  }
-
-  Future<Map<String, dynamic>> sendMessage(int chatId, String content) async {
-    final response = await _dio.post('/messages/chat/$chatId', data: {'content': content});
-    return response.data;
-  }
-
-  Future<void> createReport({
-    required int reportedUserId,
-    required String reason,
-    String? content,
-    int? messageId,
-  }) async {
-    await _dio.post('/reports', data: {
-      'reported_user_id': reportedUserId,
-      'reason': reason,
-      if (content != null && content.isNotEmpty) 'content': content,
-      if (messageId != null) 'message_id': messageId,
-    });
-  }
-
-  Future<List<dynamic>> getBlocks() async {
-    final response = await _dio.get('/blocks');
-    return response.data;
-  }
-
-  Future<void> blockUser(int userId) async => _dio.post('/blocks/$userId');
-
-  Future<void> unblockUserApi(int userId) async => _dio.delete('/blocks/$userId');
-
-  Future<List<dynamic>> getReports({String? status}) async {
-    final response = await _dio.get('/reports',
-        queryParameters: status != null ? {'status': status} : null);
-    return response.data;
-  }
-
-  Future<void> resolveReport(int reportId) async =>
-      _dio.put('/reports/$reportId/resolve');
-
-  Future<void> deleteMessage(int id) async => _dio.delete('/messages/$id');
-
   Future<Map<String, dynamic>> aiChat(List<Map<String, dynamic>> messages,
       {int? classId, int maxTokens = 1500, double temperature = 0.7, String? lectureContext}) async {
     final data = <String, dynamic>{
@@ -874,19 +808,6 @@ class ApiService {
     return response.data;
   }
 
-  Future<void> addReaction(int msgId, String emoji) async =>
-      _dio.post('/reactions/$msgId', queryParameters: {'emoji': emoji});
-
-  Future<void> removeReaction(int msgId) async => _dio.delete('/reactions/$msgId');
-
-  Future<List<dynamic>> getReactions(int msgId) async {
-    final response = await _dio.get('/reactions/$msgId');
-    final data = response.data;
-    if (data is List) return data;
-    if (data is Map && data['items'] is List) return data['items'] as List;
-    return [];
-  }
-
   Future<String> fetchFileText(String url) async {
     try {
       final response = await _dio.get<String>(url,
@@ -924,6 +845,4 @@ class ApiService {
     final m = RegExp(r'^https?://[^/]+(/.*)$').firstMatch(url);
     return m != null ? m.group(1)! : url;
   }
-
-  String get wsBaseUrl => baseUrl.replaceFirst('http', 'ws');
 }

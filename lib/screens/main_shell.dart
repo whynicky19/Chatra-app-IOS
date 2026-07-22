@@ -7,11 +7,9 @@ import 'package:provider/provider.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 import '../providers/auth_provider.dart';
-import '../providers/chats_provider.dart';
 import '../providers/l10n_provider.dart';
 import '../theme/app_theme.dart';
 import 'home/home_screen.dart';
-import 'chats/chats_screen.dart';
 import 'ai/ai_screen.dart';
 import 'admin/admin_screen.dart';
 import 'settings/settings_screen.dart';
@@ -19,17 +17,14 @@ import 'settings/settings_screen.dart';
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
 
-  /// Запрос переключения вкладки извне (пуш «жалоба/заявка» ведёт в админку,
-  /// пуш о новом сообщении — в чаты). Значения: 'admin', 'chats'.
-  /// Обрабатывается и сбрасывается _MainShellState.
+  /// Запрос переключения вкладки извне (пуш «жалоба/заявка» ведёт в админку).
+  /// Значения: 'admin'. Обрабатывается и сбрасывается _MainShellState.
   static final ValueNotifier<String?> sectionRequest = ValueNotifier<String?>(null);
 
   @override State<MainShell> createState() => _MainShellState();
 }
 
 class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
-  static const _chatsTabIndex = 1;
-
   int _idx = 0;
   late AnimationController _navAnim;
 
@@ -44,7 +39,6 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
     super.initState();
     _navAnim = AnimationController(vsync: this, duration: const Duration(milliseconds: 950));
     _navAnim.forward();
-    context.read<ChatsProvider>().isScreenVisible = _idx == _chatsTabIndex;
 
     Connectivity().checkConnectivity().then(_applyConnectivity);
     _connectSub = Connectivity().onConnectivityChanged.listen(_applyConnectivity);
@@ -59,10 +53,8 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
     if (section == null || !mounted) return;
     MainShell.sectionRequest.value = null;
     if (section == 'admin' && context.read<AuthProvider>().isAdmin) {
-      // Вкладка админа — после Классов/Чатов/ИИ.
-      _onTap(3);
-    } else if (section == 'chats') {
-      _onTap(_chatsTabIndex);
+      // Вкладка админа — после Классов/ИИ.
+      _onTap(2);
     }
   }
 
@@ -111,7 +103,6 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
   void _onTap(int i) {
     if (_idx == i) return;
     HapticFeedback.lightImpact();
-    context.read<ChatsProvider>().isScreenVisible = i == _chatsTabIndex;
     setState(() => _idx = i);
   }
 
@@ -123,14 +114,13 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final screens = <Widget>[
-      const HomeScreen(), const ChatsScreen(), const AiScreen(),
+      const HomeScreen(), const AiScreen(),
       if (isAdmin) const AdminScreen(),
       const SettingsScreen(),
     ];
 
     final items = <_NavItem>[
       _NavItem(CupertinoIcons.book,               CupertinoIcons.book_fill,              l.t('nav_classes')),
-      _NavItem(CupertinoIcons.bubble_left,        CupertinoIcons.bubble_left_fill,       l.t('nav_chats')),
       _NavItem(CupertinoIcons.sparkles,           CupertinoIcons.sparkles,               l.t('nav_ai')),
       if (isAdmin)
         _NavItem(CupertinoIcons.shield,           CupertinoIcons.shield_fill,            l.t('nav_admin')),

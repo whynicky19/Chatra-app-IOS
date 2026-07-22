@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-import '../providers/chats_provider.dart';
 import '../screens/main_shell.dart';
 import 'api_service.dart';
 
@@ -52,7 +51,7 @@ class PushService {
         ?.createNotificationChannel(const AndroidNotificationChannel(
           _channelId,
           _channelName,
-          description: 'Оценки, сообщения и напоминания о дедлайнах',
+          description: 'Оценки и напоминания о дедлайнах',
           importance: Importance.high,
         ));
 
@@ -114,10 +113,6 @@ class PushService {
   }
 
   Future<void> _showForeground(RemoteMessage message) async {
-    if (message.data['type'] == 'message') {
-      final chatId = int.tryParse(message.data['chat_id']?.toString() ?? '');
-      if (chatId != null) ChatsProvider.pushChatPing.value = chatId;
-    }
     final n = message.notification;
     final String title = n?.title ?? message.data['title']?.toString() ?? 'Chatra';
     final String body = n?.body ?? message.data['body']?.toString() ?? '';
@@ -148,13 +143,6 @@ class PushService {
       case 'grade':
       case 'deadline':
         if (classId != null) nav.pushNamed('/class', arguments: classId);
-        break;
-      case 'message':
-        final chatId = int.tryParse(data['chat_id']?.toString() ?? '');
-        if (chatId != null) {
-          ChatsProvider.requestOpenChat.value = chatId;
-          MainShell.sectionRequest.value = 'chats';
-        }
         break;
       // Админские события: жалоба, заявка на аватар, лекция на модерации —
       // переключаем шелл на вкладку админки (проверка роли — в MainShell).

@@ -1,9 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/image_cache.dart';
+import '../../../widgets/network_cover_image.dart';
 import '../../../widgets/toast.dart';
 
 class ClassCoverSliver extends StatelessWidget {
@@ -48,16 +48,11 @@ class ClassCoverSliver extends StatelessWidget {
 
     Widget cover;
     if (isNetwork) {
-      cover = RepaintBoundary(child: CachedNetworkImage(
-        imageUrl: coverImg.toString(),
+      cover = RepaintBoundary(child: NetworkCoverImage(
+        url: coverImg.toString(),
         cacheKey: 'class_cover_$classId',
-        fit: BoxFit.cover,
         alignment: Alignment.topCenter,
         memCacheWidth: 800,
-        fadeInDuration: Duration.zero,
-        fadeOutDuration: Duration.zero,
-        placeholder: (_, __) => const SizedBox.shrink(),
-        errorWidget: (_, __, ___) => const SizedBox.shrink(),
       ));
     } else if (isData) {
       final bytes = decodeBase64Image(coverImg.toString());

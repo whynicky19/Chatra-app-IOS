@@ -9,7 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import '../../widgets/network_cover_image.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../providers/classes_provider.dart';
@@ -654,7 +654,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       child: coverImg != null && coverImg.toString().startsWith('data:')
                           ? Builder(builder: (_) { final bytes = decodeBase64Image(coverImg.toString()); return bytes != null ? Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, gaplessPlayback: true, cacheWidth: 640) : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))); })
                           : coverImg != null
-                              ? CachedNetworkImage(imageUrl: context.read<ApiService>().fixUrl(coverImg.toString()), fit: BoxFit.cover, width: double.infinity, memCacheWidth: 640, fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero, placeholder: (_, __) => const SizedBox.shrink(), errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))))
+                              ? NetworkCoverImage(url: context.read<ApiService>().fixUrl(coverImg.toString()), memCacheWidth: 640, errorBuilder: (_) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))))
                               : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))));
                   }),
                   Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -868,7 +868,7 @@ class _ClassContextMenu extends StatelessWidget {
                 coverImg != null && coverImg.toString().startsWith('data:')
                     ? Builder(builder: (_) { final bytes = decodeBase64Image(coverImg.toString()); return bytes != null ? Image.memory(bytes, fit: BoxFit.cover, gaplessPlayback: true, cacheWidth: 640) : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))); })
                     : coverImg != null
-                        ? CachedNetworkImage(imageUrl: context.read<ApiService>().fixUrl(coverImg.toString()), cacheKey: 'class_cover_${cls['id']}', fit: BoxFit.cover, memCacheWidth: 800, fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero, placeholder: (_, __) => const SizedBox.shrink(), errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))))
+                        ? NetworkCoverImage(url: context.read<ApiService>().fixUrl(coverImg.toString()), cacheKey: 'class_cover_${cls['id']}', memCacheWidth: 800, errorBuilder: (_) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))))
                         : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight))),
                 Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                   begin: Alignment.topCenter, end: Alignment.bottomCenter,
@@ -1159,16 +1159,10 @@ class _ClassCard extends StatelessWidget {
                                 ? Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, gaplessPlayback: true, cacheWidth: 640)
                                 : const SizedBox.shrink();
                           })
-                        : CachedNetworkImage(
-                            imageUrl: context.read<ApiService>().fixUrl(coverImg.toString()),
+                        : NetworkCoverImage(
+                            url: context.read<ApiService>().fixUrl(coverImg.toString()),
                             cacheKey: 'class_cover_$id',
-                            fit: BoxFit.cover,
-                            width: double.infinity,
                             memCacheWidth: 800,
-                            fadeInDuration: Duration.zero,
-                            fadeOutDuration: Duration.zero,
-                            placeholder: (_, __) => const SizedBox.shrink(),
-                            errorWidget: (_, __, ___) => const SizedBox.shrink(),
                           ),
                   Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                     begin: Alignment.topCenter, end: Alignment.bottomCenter,

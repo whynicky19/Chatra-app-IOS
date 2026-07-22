@@ -2,12 +2,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../providers/l10n_provider.dart';
 import '../../providers/classes_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/image_cache.dart';
+import '../../widgets/network_cover_image.dart';
 
 class ArchiveScreen extends StatelessWidget {
   const ArchiveScreen({super.key});
@@ -203,14 +203,10 @@ class _ArchiveCard extends StatelessWidget {
                                       gaplessPlayback: true, cacheWidth: 640)
                                   : const SizedBox.shrink();
                             })
-                          : CachedNetworkImage(
-                              imageUrl: context.read<ApiService>().fixUrl(coverImg.toString()),
+                          : NetworkCoverImage(
+                              url: context.read<ApiService>().fixUrl(coverImg.toString()),
                               cacheKey: 'class_cover_$id',
                               memCacheWidth: 640,
-                              fit: BoxFit.cover, width: double.infinity,
-                              fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero,
-                              placeholder: (_, __) => const SizedBox.shrink(),
-                              errorWidget: (_, __, ___) => const SizedBox.shrink(),
                             ),
                     Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                       begin: Alignment.topCenter, end: Alignment.bottomCenter,

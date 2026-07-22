@@ -8,8 +8,8 @@ import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/image_cache.dart';
 import '../../widgets/app_dialog.dart';
+import '../../widgets/network_cover_image.dart';
 import '../../widgets/toast.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'admin_avatars_tab.dart';
 
 class AdminScreen extends StatefulWidget {
@@ -1097,10 +1097,8 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           ? Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, gaplessPlayback: true, cacheWidth: 640)
           : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors)));
     }
-    return CachedNetworkImage(imageUrl: coverImg.toString(), cacheKey: classId != null ? 'class_cover_$classId' : null, memCacheWidth: 640, fit: BoxFit.cover, width: double.infinity,
-      fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero,
-      placeholder: (_, __) => const SizedBox.shrink(),
-      errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))));
+    return NetworkCoverImage(url: coverImg.toString(), cacheKey: classId != null ? 'class_cover_$classId' : null, memCacheWidth: 640,
+      errorBuilder: (_) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))));
   }
 
   Future<bool> _action(dynamic u, String action) async {

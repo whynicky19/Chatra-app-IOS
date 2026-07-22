@@ -8,7 +8,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/telegram_logo.dart';
 import '../../widgets/toast.dart';
 
-const String kDeveloperTelegramUrl = 'https://t.me/nickyuii';
+const String kDeveloperTelegramUrl = 'https://t.me/whynickyy';
 
 String? get _telegramHandle {
   final path = Uri.parse(kDeveloperTelegramUrl).pathSegments;

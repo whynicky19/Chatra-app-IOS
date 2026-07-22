@@ -301,7 +301,7 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isSchool = context.select<OrgProvider, bool>((o) => o.isSchool);
     final primary = isSchool ? C.amber : C.teal;
-    final bg = isDark ? Colors.black : Colors.white;
+    final bg = isDark ? C.darkBg : Colors.white;
     final wordColor = isDark ? Colors.white : C.text1;
 
     return Scaffold(

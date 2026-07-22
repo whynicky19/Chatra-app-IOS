@@ -25,7 +25,10 @@ class C {
   static const tealLight = tealLt;
   static const yellowLt  = Color(0xFFFEF9C3);
 
-  static const darkBg      = Color(0xFF000000);
+  // Не чистый #000 (слишком контрастно/OLED-плоско) — тёплый тёмно-серый в
+  // духе macOS/iOS, на фоне которого darkSurface (#1C1C1E) карточек всё ещё
+  // заметно "приподнят". Совпадает с --bg тёмной темы сайта.
+  static const darkBg      = Color(0xFF0B0B0D);
   static const darkSurface  = Color(0xFF1C1C1E);
   static const darkSurface2 = Color(0xFF2C2C2E);
   static const darkBorder   = Color(0xFF38383A);

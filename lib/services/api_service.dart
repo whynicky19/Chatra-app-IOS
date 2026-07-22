@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../models/ai_thread.dart';
 
 class ApiService {
   late final Dio _dio;
@@ -513,14 +514,42 @@ class ApiService {
     return response.data;
   }
 
+  // ── ИИ-треды (мульти-чат главного ассистента) ──────────────────────────
+  Future<List<AiThread>> getAiThreads() async {
+    final response = await _dio.get('/ai/threads');
+    return (response.data as List)
+        .map((e) => AiThread.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
+  }
+
+  Future<AiThread> createAiThread() async {
+    final response = await _dio.post('/ai/threads');
+    return AiThread.fromJson(Map<String, dynamic>.from(response.data as Map));
+  }
+
+  Future<AiThread> renameAiThread(int id, String title) async {
+    final response = await _dio.patch('/ai/threads/$id', data: {'title': title});
+    return AiThread.fromJson(Map<String, dynamic>.from(response.data as Map));
+  }
+
+  Future<AiThread> pinAiThread(int id, bool pinned) async {
+    final response = await _dio.patch('/ai/threads/$id', data: {'pinned': pinned});
+    return AiThread.fromJson(Map<String, dynamic>.from(response.data as Map));
+  }
+
+  Future<void> deleteAiThread(int id) async {
+    await _dio.delete('/ai/threads/$id');
+  }
+
   Future<Map<String, dynamic>> aiChat(List<Map<String, dynamic>> messages,
-      {int? classId, int maxTokens = 1500, double temperature = 0.7, String? lectureContext}) async {
+      {int? classId, int? threadId, int maxTokens = 1500, double temperature = 0.7, String? lectureContext}) async {
     final data = <String, dynamic>{
       'messages': messages,
       'max_tokens': maxTokens,
       'temperature': temperature,
     };
     if (classId != null) data['class_id'] = classId;
+    if (threadId != null) data['thread_id'] = threadId;
     if (lectureContext != null) data['lecture_context'] = lectureContext;
     final response = await _dio.post('/ai/chat', data: data,
         options: Options(receiveTimeout: const Duration(minutes: 2), sendTimeout: const Duration(seconds: 30)));
@@ -533,20 +562,27 @@ class ApiService {
     return Map<String, dynamic>.from(response.data);
   }
 
-  Future<List<dynamic>> getAiHistory({int? classId}) async {
+  Future<List<dynamic>> getAiHistory({int? classId, int? threadId}) async {
+    final params = <String, dynamic>{};
+    if (classId != null) params['class_id'] = classId;
+    if (threadId != null) params['thread_id'] = threadId;
     final response = await _dio.get('/ai/history',
-        queryParameters: classId != null ? {'class_id': classId} : null);
+        queryParameters: params.isEmpty ? null : params);
     return response.data as List<dynamic>;
   }
 
-  Future<void> clearAiHistory({int? classId}) async {
+  Future<void> clearAiHistory({int? classId, int? threadId}) async {
+    final params = <String, dynamic>{};
+    if (classId != null) params['class_id'] = classId;
+    if (threadId != null) params['thread_id'] = threadId;
     await _dio.delete('/ai/history',
-        queryParameters: classId != null ? {'class_id': classId} : null);
+        queryParameters: params.isEmpty ? null : params);
   }
 
-  Future<List<dynamic>> importAiHistory(List<Map<String, String>> messages, {int? classId}) async {
+  Future<List<dynamic>> importAiHistory(List<Map<String, String>> messages,
+      {int? classId, int? threadId}) async {
     final response = await _dio.post('/ai/history/import',
-        data: {'class_id': classId, 'messages': messages});
+        data: {'class_id': classId, 'thread_id': threadId, 'messages': messages});
     return response.data as List<dynamic>;
   }
 

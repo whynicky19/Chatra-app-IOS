@@ -15,6 +15,7 @@ import 'providers/org_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/l10n_provider.dart';
 import 'providers/classes_provider.dart';
+import 'providers/ai_chats_provider.dart';
 import 'theme/app_theme.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
@@ -108,6 +109,7 @@ Future<void> _start() async {
   final theme = ThemeProvider();
   final l10n = L10n();
   final classes = ClassesProvider(api, auth);
+  final aiChats = AiChatsProvider(api, auth);
 
   int? lastUid = auth.userId;
   CrashReporting.setUser(auth.userId);
@@ -147,6 +149,7 @@ Future<void> _start() async {
       ChangeNotifierProvider<ThemeProvider>.value(value: theme),
       ChangeNotifierProvider<L10n>.value(value: l10n),
       ChangeNotifierProvider<ClassesProvider>.value(value: classes),
+      ChangeNotifierProvider<AiChatsProvider>.value(value: aiChats),
     ],
     child: const ChatraApp(),
   ));

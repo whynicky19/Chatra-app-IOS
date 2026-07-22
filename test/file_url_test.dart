@@ -125,4 +125,36 @@ void main() {
       expect(fileCacheKey(a), isNot(fileCacheKey(b)));
     });
   });
+
+  // Оригинальное имя хранится в #fragment как Uri.encodeComponent(name).
+  // Отображение обязано быть точным обратным преобразованием для любых имён:
+  // кириллица, пробелы, %, #, эмодзи — иначе учитель/студент увидит мусор.
+  group('fileDisplayName round-trip', () {
+    String build(String name) =>
+        'http://h/uploads/uuid.pdf?exp=1&sig=2#${Uri.encodeComponent(name)}';
+
+    for (final name in const [
+      'отчёт по практике.pdf',
+      'Тапсырма 1.docx',
+      'файл с пробелами.pdf',
+      '50% готово.pdf',
+      'draft#2.pdf',
+      'смета_100%_итог.xlsx',
+      'презентация 😀.pptx',
+    ]) {
+      test('точно восстанавливает "$name"', () {
+        expect(fileDisplayName(build(name)), name);
+      });
+    }
+
+    test('без fragment откатывается на последний сегмент пути', () {
+      expect(fileDisplayName('http://h/uploads/uuid.pdf?exp=1&sig=2'),
+          'uuid.pdf');
+    });
+
+    test('cleanFileUrl срезает имя даже если в имени есть закодированная #', () {
+      final url = build('draft#2.pdf');
+      expect(cleanFileUrl(url), 'http://h/uploads/uuid.pdf?exp=1&sig=2');
+    });
+  });
 }

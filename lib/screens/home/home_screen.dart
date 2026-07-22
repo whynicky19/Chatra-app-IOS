@@ -1167,6 +1167,8 @@ class _ClassCard extends StatelessWidget {
                             memCacheWidth: 800,
                             fadeInDuration: Duration.zero,
                             fadeOutDuration: Duration.zero,
+                            placeholder: (_, __) => const SizedBox.shrink(),
+                            errorWidget: (_, __, ___) => const SizedBox.shrink(),
                           ),
                   Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                     begin: Alignment.topCenter, end: Alignment.bottomCenter,

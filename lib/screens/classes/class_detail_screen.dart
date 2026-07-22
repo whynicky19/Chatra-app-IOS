@@ -329,7 +329,11 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     try {
       final dir = await getTemporaryDirectory();
       final safeFileName = name.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
-      final filePath = '${dir.path}/${fileCacheKey(cleanUrl)}_$safeFileName';
+      // Кэш-ключ уходит в имя ПАПКИ, а не файла: иначе он торчит перед названием
+      // в системном вьюере/шаринге при открытии.
+      final cacheDir = Directory('${dir.path}/dl_${fileCacheKey(cleanUrl)}');
+      if (!await cacheDir.exists()) await cacheDir.create(recursive: true);
+      final filePath = '${cacheDir.path}/$safeFileName';
       final file = File(filePath);
 
       if (!await file.exists()) {
@@ -586,12 +590,14 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 if (result != null && mounted) {
                   final api = context.read<ApiService>();
                   for (final pf in result.files) {
-                    if (pf.path != null) {
-                      try {
-                        final res = await api.uploadFile(pf.path!, pf.name);
-                        final url = res['url'] ?? res['file_url'] ?? res['path'];
-                        if (url != null) setS(() => editFiles.add('$url#${Uri.encodeComponent(pf.name)}'));
-                      } catch (_) {}
+                    if (pf.path == null) continue;
+                    try {
+                      final res = await api.uploadFile(pf.path!, pf.name);
+                      final url = res['url'] ?? res['file_url'] ?? res['path'];
+                      if (url == null || url.toString().isEmpty) throw Exception('upload_failed');
+                      setS(() => editFiles.add('$url#${Uri.encodeComponent(pf.name)}'));
+                    } catch (_) {
+                      if (mounted) showToast(context, '${l.t('upload_error')}: ${pf.name}', error: true);
                     }
                   }
                 }
@@ -1013,14 +1019,18 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 try {
                   final api = context.read<ApiService>();
                   final fileUrls = <String>[];
-                  for (final pf in lectureFiles) {
-                    if (pf.path != null) {
-                      try {
-                        final res = await api.uploadFile(pf.path!, pf.name);
-                        final url = res['url'] ?? res['file_url'] ?? res['path'];
-                        if (url != null) fileUrls.add('$url#${Uri.encodeComponent(pf.name)}');
-                      } catch (_) {}
+                  // Сбой аплоада обязан прервать публикацию: иначе пост уходит с неполным списком файлов.
+                  try {
+                    for (final pf in lectureFiles) {
+                      if (pf.path == null) continue;
+                      final res = await api.uploadFile(pf.path!, pf.name);
+                      final url = res['url'] ?? res['file_url'] ?? res['path'];
+                      if (url == null || url.toString().isEmpty) throw Exception('upload_failed');
+                      fileUrls.add('$url#${Uri.encodeComponent(pf.name)}');
                     }
+                  } catch (_) {
+                    if (mounted && ctx.mounted) showToast(context, l.t('upload_failed'), error: true);
+                    return;
                   }
                   await api.createPost('$prefix ${tc.text.trim()}', jsonEncode({
                     'content': cc.text,
@@ -1178,18 +1188,18 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   final api = context.read<ApiService>();
 
                   final fileUrls = <String>[];
-                  for (final pf in [...attachedFiles, ...referenceFiles]) {
-                    if (pf.path != null) {
-                      try {
-                        final res = await api.uploadFile(pf.path!, pf.name);
-                        final url = res['url'] ?? res['file_url'] ?? res['path'];
-                        if (url != null && url.toString().isNotEmpty) {
-                          fileUrls.add('$url#${Uri.encodeComponent(pf.name)}');
-                        }
-                      } catch (e) {
-                        if (mounted) showToast(context, '${l.t('upload_error')}: ${pf.name}', error: true);
-                      }
+                  // Сбой аплоада обязан прервать создание задания: иначе оно уходит с неполным списком файлов.
+                  try {
+                    for (final pf in [...attachedFiles, ...referenceFiles]) {
+                      if (pf.path == null) continue;
+                      final res = await api.uploadFile(pf.path!, pf.name);
+                      final url = res['url'] ?? res['file_url'] ?? res['path'];
+                      if (url == null || url.toString().isEmpty) throw Exception('upload_failed');
+                      fileUrls.add('$url#${Uri.encodeComponent(pf.name)}');
                     }
+                  } catch (_) {
+                    if (mounted && ctx.mounted) showToast(context, l.t('upload_failed'), error: true);
+                    return;
                   }
 
                   if (!mounted) return;
@@ -1388,14 +1398,18 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 try {
                   final api = context.read<ApiService>();
                   final uploadedUrls = <String>[];
-                  for (final pf in newFiles) {
-                    if (pf.path != null) {
-                      try {
-                        final res = await api.uploadFile(pf.path!, pf.name);
-                        final url = res['url'] ?? res['file_url'] ?? res['path'];
-                        if (url != null) uploadedUrls.add('$url#${Uri.encodeComponent(pf.name)}');
-                      } catch (_) {}
+                  // Сбой аплоада обязан прервать сохранение: иначе задание уходит с потерянным файлом.
+                  try {
+                    for (final pf in newFiles) {
+                      if (pf.path == null) continue;
+                      final res = await api.uploadFile(pf.path!, pf.name);
+                      final url = res['url'] ?? res['file_url'] ?? res['path'];
+                      if (url == null || url.toString().isEmpty) throw Exception('upload_failed');
+                      uploadedUrls.add('$url#${Uri.encodeComponent(pf.name)}');
                     }
+                  } catch (_) {
+                    if (mounted && ctx.mounted) showToast(context, l.t('upload_failed'), error: true);
+                    return;
                   }
                   if (!mounted) return;
                   final fixedNewUrls = uploadedUrls.map(context.read<ApiService>().fixUrl).toList();

@@ -209,6 +209,8 @@ class _ArchiveCard extends StatelessWidget {
                               memCacheWidth: 640,
                               fit: BoxFit.cover, width: double.infinity,
                               fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero,
+                              placeholder: (_, __) => const SizedBox.shrink(),
+                              errorWidget: (_, __, ___) => const SizedBox.shrink(),
                             ),
                     Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                       begin: Alignment.topCenter, end: Alignment.bottomCenter,

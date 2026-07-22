@@ -34,7 +34,11 @@ Future<void> openRemoteFile(BuildContext context, ApiService api, String url, St
   try {
     final dir = await getTemporaryDirectory();
     final safeName = name.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
-    final filePath = '${dir.path}/${fileCacheKey(cleanUrl)}_$safeName';
+    // Кэш-ключ уходит в имя ПАПКИ, а не файла: иначе он торчит перед названием
+    // в системном вьюере/шаринге при открытии (юзер видел "a3f9c1_Отчёт.pdf").
+    final cacheDir = Directory('${dir.path}/dl_${fileCacheKey(cleanUrl)}');
+    if (!await cacheDir.exists()) await cacheDir.create(recursive: true);
+    final filePath = '${cacheDir.path}/$safeName';
     final file = File(filePath);
 
     if (!await file.exists()) {

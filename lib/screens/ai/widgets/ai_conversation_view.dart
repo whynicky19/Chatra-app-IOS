@@ -5,57 +5,67 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../providers/auth_provider.dart';
-import '../../providers/l10n_provider.dart';
-import '../../providers/ai_chats_provider.dart';
-import '../../services/api_service.dart';
-import '../../utils/ai_quota.dart';
-import '../../theme/app_theme.dart';
-import '../../widgets/ai_limit_notice.dart';
-import '../../widgets/toast.dart';
+import '../../../providers/auth_provider.dart';
+import '../../../providers/l10n_provider.dart';
+import '../../../providers/ai_chats_provider.dart';
+import '../../../services/api_service.dart';
+import '../../../utils/ai_quota.dart';
+import '../../../theme/app_theme.dart';
+import '../../../widgets/ai_limit_notice.dart';
+import '../../../widgets/toast.dart';
 
-/// Один чат (тред) главного ИИ-ассистента. По сути прежний экран ассистента,
-/// но привязанный к конкретному thread_id и синхронизируемый по нему.
-class AiChatDetailScreen extends StatefulWidget {
-  final int threadId;
-  final String initialTitle;
-  const AiChatDetailScreen({super.key, required this.threadId, required this.initialTitle});
+/// Тело одной переписки с главным ИИ-ассистентом: список сообщений + композер.
+/// Встраивается как body в [AiScreen] (не пуш-экран) — история открывается
+/// поверх неё в drawer. Если [threadId] ещё нет (новый чат), тред лениво
+/// создаётся при первой отправке и сообщается наверх через [onThreadCreated].
+class AiConversationView extends StatefulWidget {
+  final int? threadId;
+  final ValueChanged<int> onThreadCreated;
+  final ValueChanged<String> onTitleChanged;
+
+  const AiConversationView({
+    super.key,
+    required this.threadId,
+    required this.onThreadCreated,
+    required this.onTitleChanged,
+  });
+
   @override
-  State<AiChatDetailScreen> createState() => _AiChatDetailScreenState();
+  State<AiConversationView> createState() => _AiConversationViewState();
 }
 
-class _AiChatDetailScreenState extends State<AiChatDetailScreen> with TickerProviderStateMixin {
+class _AiConversationViewState extends State<AiConversationView> {
   final _ctrl = TextEditingController();
   final _scroll = ScrollController();
   final List<Map<String, String>> _msgs = [];
   bool _loading = false;
   AiQuota? _quota;
-  late String _title;
-
-  late final String _historyKey;
+  int? _threadId;
 
   @override
   void initState() {
     super.initState();
-    _title = widget.initialTitle;
-    final uid = context.read<AuthProvider>().userId;
-    _historyKey = 'ai_chat_history_v2_${uid ?? 'anon'}_${widget.threadId}';
-    _restoreHistory();
+    _threadId = widget.threadId;
+    if (_threadId != null) _restoreHistory(_threadId!);
     _loadQuota();
   }
 
-  Future<void> _restoreHistory() async {
-    final local = await _loadLocal();
-    if (mounted && local.isNotEmpty) {
-      setState(() { _msgs..clear()..addAll(local); });
-      _scrollDown();
-    }
-    await _syncFromServer(local);
+  String _historyKey(int threadId) {
+    final uid = context.read<AuthProvider>().userId;
+    return 'ai_chat_history_v2_${uid ?? 'anon'}_$threadId';
   }
 
-  Future<void> _refresh() async {
-    await _syncFromServer(const []);
-    await _loadQuota();
+  Future<void> _restoreHistory(int threadId) async {
+    final local = await _loadLocal(threadId);
+    if (mounted && local.isNotEmpty) {
+      setState(() {
+        _msgs
+          ..clear()
+          ..addAll(local);
+      });
+      _scrollDown();
+    }
+    await _syncFromServer(threadId, local);
   }
 
   Future<void> _loadQuota() async {
@@ -65,10 +75,10 @@ class _AiChatDetailScreenState extends State<AiChatDetailScreen> with TickerProv
     } catch (_) {}
   }
 
-  Future<List<Map<String, String>>> _loadLocal() async {
+  Future<List<Map<String, String>>> _loadLocal(int threadId) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_historyKey);
+      final raw = prefs.getString(_historyKey(threadId));
       if (raw == null || raw.isEmpty) return [];
       return (jsonDecode(raw) as List)
           .whereType<Map>()
@@ -79,27 +89,32 @@ class _AiChatDetailScreenState extends State<AiChatDetailScreen> with TickerProv
     }
   }
 
-  Future<void> _syncFromServer(List<Map<String, String>> local) async {
+  Future<void> _syncFromServer(int threadId, List<Map<String, String>> local) async {
     try {
       final api = context.read<ApiService>();
-      var rows = await api.getAiHistory(threadId: widget.threadId);
+      var rows = await api.getAiHistory(threadId: threadId);
       if (rows.isEmpty && local.isNotEmpty) {
         rows = await api.importAiHistory(
           local.map((m) => {'role': m['role'] ?? 'user', 'content': m['text'] ?? ''}).toList(),
-          threadId: widget.threadId,
+          threadId: threadId,
         );
       }
-      final list = rows.map<Map<String, String>>((r) => {
-        'role': (r['role'] ?? 'assistant').toString(),
-        'text': (r['content'] ?? '').toString(),
-        'time': _fmtTime(r['created_at']),
-      }).toList();
-      if (!mounted) return;
-      setState(() { _msgs..clear()..addAll(list); });
+      final list = rows
+          .map<Map<String, String>>((r) => {
+                'role': (r['role'] ?? 'assistant').toString(),
+                'text': (r['content'] ?? '').toString(),
+                'time': _fmtTime(r['created_at']),
+              })
+          .toList();
+      if (!mounted || _threadId != threadId) return;
+      setState(() {
+        _msgs
+          ..clear()
+          ..addAll(list);
+      });
       _saveHistory();
       _scrollDown();
-    } catch (_) {
-    }
+    } catch (_) {}
   }
 
   String _fmtTime(dynamic iso) {
@@ -112,8 +127,12 @@ class _AiChatDetailScreenState extends State<AiChatDetailScreen> with TickerProv
   }
 
   void _saveHistory() {
+    final threadId = _threadId;
+    if (threadId == null) return;
     SharedPreferences.getInstance().then((prefs) {
-      try { prefs.setString(_historyKey, jsonEncode(_msgs)); } catch (_) {}
+      try {
+        prefs.setString(_historyKey(threadId), jsonEncode(_msgs));
+      } catch (_) {}
     }).catchError((_) {});
   }
 
@@ -131,25 +150,41 @@ class _AiChatDetailScreenState extends State<AiChatDetailScreen> with TickerProv
       {
         'icon': CupertinoIcons.book,
         'title': isKZ ? 'Тақырыпты түсіндір' : isEN ? 'Explain Topic' : 'Объяснить тему',
-        'desc':  isKZ ? 'Күрделі тұжырымды қарапайым сөздермен' : isEN ? 'Break down complex concepts in simple words' : 'Разбери сложную концепцию простыми словами',
+        'desc': isKZ
+            ? 'Күрделі тұжырымды қарапайым сөздермен'
+            : isEN
+                ? 'Break down complex concepts in simple words'
+                : 'Разбери сложную концепцию простыми словами',
         'prompt': l.t('tip_explain'),
       },
       {
         'icon': CupertinoIcons.lightbulb,
         'title': isKZ ? 'Тұжырымдарды ашу' : isEN ? 'Break Down Concepts' : 'Разобрать концепции',
-        'desc':  isKZ ? 'Тәсілдер арасындағы айырмашылықты түсін' : isEN ? 'Understand the difference between approaches' : 'Помоги понять разницу между подходами',
+        'desc': isKZ
+            ? 'Тәсілдер арасындағы айырмашылықты түсін'
+            : isEN
+                ? 'Understand the difference between approaches'
+                : 'Помоги понять разницу между подходами',
         'prompt': l.t('tip_concepts'),
       },
       {
         'icon': CupertinoIcons.pencil,
         'title': isKZ ? 'Тапсырмаға көмек' : isEN ? 'Help with Task' : 'Помочь с заданием',
-        'desc':  isKZ ? 'Шешімді қайдан бастау керектігін айт' : isEN ? 'Tell me where to start the solution' : 'Подскажи, с чего начать решение',
+        'desc': isKZ
+            ? 'Шешімді қайдан бастау керектігін айт'
+            : isEN
+                ? 'Tell me where to start the solution'
+                : 'Подскажи, с чего начать решение',
         'prompt': l.t('tip_help'),
       },
       {
         'icon': CupertinoIcons.exclamationmark_triangle,
         'title': isKZ ? 'Қателерді тап' : isEN ? 'Find Mistakes' : 'Найти ошибки',
-        'desc':  isKZ ? 'Кодымды тексеріп, мәселелерді көрсет' : isEN ? 'Review my code and point out issues' : 'Проверь мой код и укажи на проблемы',
+        'desc': isKZ
+            ? 'Кодымды тексеріп, мәселелерді көрсет'
+            : isEN
+                ? 'Review my code and point out issues'
+                : 'Проверь мой код и укажи на проблемы',
         'prompt': l.t('tip_mistakes'),
       },
     ];
@@ -160,6 +195,20 @@ class _AiChatDetailScreenState extends State<AiChatDetailScreen> with TickerProv
     return '${n.hour.toString().padLeft(2, '0')}:${n.minute.toString().padLeft(2, '0')}';
   }
 
+  /// Тред создаётся лениво: первое сообщение в новом чате сначала заводит
+  /// тред на бэке (обязателен thread_id для главного ассистента), потом шлёт.
+  Future<int?> _ensureThread() async {
+    if (_threadId != null) return _threadId;
+    try {
+      final t = await context.read<AiChatsProvider>().createThread();
+      _threadId = t.id;
+      widget.onThreadCreated(t.id);
+      return t.id;
+    } catch (_) {
+      return null;
+    }
+  }
+
   void _send([String? override]) async {
     final text = override ?? _ctrl.text.trim();
     if (text.isEmpty || _loading) return;
@@ -168,11 +217,16 @@ class _AiChatDetailScreenState extends State<AiChatDetailScreen> with TickerProv
       return;
     }
     HapticFeedback.lightImpact();
-    setState(() { _msgs.add({'role': 'user', 'text': text, 'time': _now()}); _loading = true; });
+    setState(() {
+      _msgs.add({'role': 'user', 'text': text, 'time': _now()});
+      _loading = true;
+    });
     _saveHistory();
     _ctrl.clear();
     _scrollDown();
     try {
+      final threadId = await _ensureThread();
+      if (threadId == null) throw Exception('no_thread');
       final api = context.read<ApiService>();
       final l = context.read<L10n>();
       final sysLang = l.lang == 'KZ' ? 'казахском' : l.lang == 'EN' ? 'английском' : 'русском';
@@ -180,21 +234,19 @@ class _AiChatDetailScreenState extends State<AiChatDetailScreen> with TickerProv
         {'role': 'system', 'content': 'Ты AI-ассистент образовательной платформы Chatra. Отвечай на $sysLang языке.'},
         ..._msgs.map((m) => {'role': m['role']!, 'content': m['text']!}),
       ];
-      final data = await api.aiChat(apiMsgs, threadId: widget.threadId);
+      final data = await api.aiChat(apiMsgs, threadId: threadId);
       if (!mounted) return;
       setState(() {
         _msgs.add({'role': 'assistant', 'text': data['content'] ?? context.read<L10n>().t('no_answer'), 'time': _now()});
         _quota = AiQuota.fromJson(data['quota']) ?? _quota;
       });
       _saveHistory();
-      // Заголовок сервер генерит после первого обмена; на каждой отправке
-      // подбиваем свежесть треда в списке без полной перезагрузки.
       final newTitle = data['thread_title']?.toString();
       if (newTitle != null && newTitle.isNotEmpty) {
-        setState(() => _title = newTitle);
-        context.read<AiChatsProvider>().patchLocal(widget.threadId, title: newTitle, updatedAt: DateTime.now());
+        widget.onTitleChanged(newTitle);
+        context.read<AiChatsProvider>().patchLocal(threadId, title: newTitle, updatedAt: DateTime.now());
       } else {
-        context.read<AiChatsProvider>().patchLocal(widget.threadId, updatedAt: DateTime.now());
+        context.read<AiChatsProvider>().patchLocal(threadId, updatedAt: DateTime.now());
       }
     } catch (e) {
       if (!mounted) return;
@@ -203,7 +255,9 @@ class _AiChatDetailScreenState extends State<AiChatDetailScreen> with TickerProv
       final detail = (resp?.data is Map) ? resp!.data['detail']?.toString() : null;
       final text = resp?.statusCode == 429
           ? (detail ?? l.t('ai_daily_exhausted'))
-          : e.toString().contains('503') ? l.t('ai_not_configured') : l.t('connection_error');
+          : e.toString().contains('503')
+              ? l.t('ai_not_configured')
+              : l.t('connection_error');
       setState(() => _msgs.add({'role': 'assistant', 'text': text, 'time': _now()}));
       _saveHistory();
       if (resp?.statusCode == 429) _loadQuota();
@@ -214,77 +268,45 @@ class _AiChatDetailScreenState extends State<AiChatDetailScreen> with TickerProv
 
   void _scrollDown() {
     Future.delayed(const Duration(milliseconds: 100), () {
-      if (_scroll.hasClients) _scroll.animateTo(_scroll.position.maxScrollExtent, duration: const Duration(milliseconds: 350), curve: Curves.easeOut);
+      if (_scroll.hasClients) {
+        _scroll.animateTo(_scroll.position.maxScrollExtent, duration: const Duration(milliseconds: 350), curve: Curves.easeOut);
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface = Theme.of(context).colorScheme.surface;
-    final l = context.watch<L10n>();
 
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Column(children: [
-        _buildHeader(isDark, surface, l),
-        Expanded(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 280),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeIn,
-            transitionBuilder: (child, anim) => FadeTransition(
-              opacity: anim,
-              child: SlideTransition(
-                position: Tween<Offset>(begin: const Offset(0, 0.04), end: Offset.zero).animate(anim),
-                child: child,
-              ),
-            ),
-            child: RefreshIndicator(
-              onRefresh: _refresh,
-              color: Theme.of(context).colorScheme.primary,
-              child: _msgs.isEmpty
-                  ? _emptyState(isDark, l)
-                  : _messageList(isDark),
+    return Column(children: [
+      Expanded(
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 280),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeIn,
+          transitionBuilder: (child, anim) => FadeTransition(
+            opacity: anim,
+            child: SlideTransition(
+              position: Tween<Offset>(begin: const Offset(0, 0.04), end: Offset.zero).animate(anim),
+              child: child,
             ),
           ),
+          child: _msgs.isEmpty ? _emptyState(context.watch<L10n>()) : _messageList(isDark),
         ),
-        _AiInputBar(ctrl: _ctrl, loading: _loading, quota: _quota, onSend: _send),
-      ]),
-    );
-  }
-
-  Widget _buildHeader(bool isDark, Color surface, L10n l) {
-    return SafeArea(bottom: false, child: Container(
-      padding: const EdgeInsets.fromLTRB(6, 8, 16, 8),
-      decoration: BoxDecoration(
-        color: surface,
-        border: Border(bottom: BorderSide(color: adaptiveBorder(context).withValues(alpha: 0.5), width: 0.5)),
       ),
-      child: Row(children: [
-        IconButton(
-          icon: Icon(CupertinoIcons.back, color: adaptiveText1(context)),
-          onPressed: () => Navigator.pop(context),
-        ),
-        Expanded(child: Text(
-          _title.isEmpty ? l.t('untitled_chat') : _title,
-          maxLines: 1, overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -0.4),
-        )),
-      ]),
-    ));
+      _AiInputBar(ctrl: _ctrl, loading: _loading, quota: _quota, onSend: _send),
+    ]);
   }
 
-  Widget _emptyState(bool isDark, L10n l) {
+  Widget _emptyState(L10n l) {
     final tips = _tips(l);
     final isKZ = l.lang == 'KZ';
     final isEN = l.lang == 'EN';
     final subtitle = isKZ
         ? 'Оқу туралы кез келген нәрсе сұраңыз'
         : isEN
-        ? 'Ask anything about your studies'
-        : 'Спросите что угодно об учёбе';
+            ? 'Ask anything about your studies'
+            : 'Спросите что угодно об учёбе';
 
     return LayoutBuilder(builder: (context, constraints) {
       return SingleChildScrollView(
@@ -294,16 +316,34 @@ class _AiChatDetailScreenState extends State<AiChatDetailScreen> with TickerProv
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: constraints.maxHeight),
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Text('Chatra AI', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: adaptiveText1(context), letterSpacing: -0.6)),
+            Container(
+              width: 76,
+              height: 76,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                    colors: [
+                      Theme.of(context).colorScheme.primary.withValues(alpha: 0.85),
+                      Theme.of(context).colorScheme.primary,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight),
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: primaryGlow(Theme.of(context).colorScheme.primary, opacity: 0.28),
+              ),
+              child: const Icon(CupertinoIcons.sparkles, size: 32, color: Colors.white),
+            ),
+            const SizedBox(height: 18),
+            Text('Chatra AI',
+                style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: adaptiveText1(context), letterSpacing: -0.6)),
             const SizedBox(height: 10),
             Text(subtitle, style: const TextStyle(fontSize: 15, color: C.text4, height: 1.4), textAlign: TextAlign.center),
-            const SizedBox(height: 28),
+            const SizedBox(height: 30),
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 440),
               child: Column(children: [
                 for (var i = 0; i < tips.length; i++) ...[
                   if (i > 0) const SizedBox(height: 10),
-                  _suggestionRow(tips[i], isDark, i),
+                  _suggestionRow(tips[i], i),
                 ],
               ]),
             ),
@@ -313,7 +353,8 @@ class _AiChatDetailScreenState extends State<AiChatDetailScreen> with TickerProv
     });
   }
 
-  Widget _suggestionRow(Map<String, dynamic> tip, bool isDark, int index) {
+  Widget _suggestionRow(Map<String, dynamic> tip, int index) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
       duration: Duration(milliseconds: 320 + index * 70),
@@ -329,17 +370,27 @@ class _AiChatDetailScreenState extends State<AiChatDetailScreen> with TickerProv
         },
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           decoration: BoxDecoration(
             color: isDark ? C.darkSurface : Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: adaptiveBorder(context).withValues(alpha: 0.6), width: 0.5),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: adaptiveBorder(context).withValues(alpha: 0.5), width: 0.5),
             boxShadow: softShadow(isDark),
           ),
           child: Row(children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: adaptiveTealLt(context),
+                borderRadius: BorderRadius.circular(11),
+              ),
+              child: Icon(tip['icon'] as IconData, size: 17, color: Theme.of(context).colorScheme.primary),
+            ),
+            const SizedBox(width: 14),
             Expanded(
               child: Text(tip['title'] as String,
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveText1(context), letterSpacing: -0.2)),
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveText1(context), letterSpacing: -0.2)),
             ),
             const SizedBox(width: 12),
             Icon(CupertinoIcons.arrow_up_left, size: 16, color: C.text4.withValues(alpha: 0.7)),
@@ -354,7 +405,7 @@ class _AiChatDetailScreenState extends State<AiChatDetailScreen> with TickerProv
       key: const ValueKey('msg_list'),
       controller: _scroll,
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 22, 16, 14),
       itemCount: _msgs.length + (_loading ? 1 : 0),
       itemBuilder: (ctx, i) {
         if (i == _msgs.length) return _typingIndicator();
@@ -381,24 +432,31 @@ class _AiChatDetailScreenState extends State<AiChatDetailScreen> with TickerProv
     final text = m['text'] ?? '';
     final timeStr = m['time'] ?? '';
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16, left: 48),
+      padding: const EdgeInsets.only(bottom: 18, left: 48),
       child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+          padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 14),
           decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary], begin: Alignment.topLeft, end: Alignment.bottomRight),
+            gradient: LinearGradient(
+                colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight),
             borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(22), topRight: Radius.circular(22),
-              bottomLeft: Radius.circular(22), bottomRight: Radius.circular(6),
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+              bottomLeft: Radius.circular(24),
+              bottomRight: Radius.circular(7),
             ),
-            boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.28), blurRadius: 16, offset: const Offset(0, 5))],
+            boxShadow: [
+              BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.26), blurRadius: 18, offset: const Offset(0, 6)),
+            ],
           ),
-          child: Text(text, style: const TextStyle(fontSize: 15, color: Colors.white, height: 1.5)),
+          child: Text(text, style: const TextStyle(fontSize: 15.5, color: Colors.white, height: 1.55, letterSpacing: -0.1)),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 5),
         Padding(
-          padding: const EdgeInsets.only(right: 2),
-          child: Text(timeStr, style: const TextStyle(fontSize: 10, color: C.text4)),
+          padding: const EdgeInsets.only(right: 3),
+          child: Text(timeStr, style: const TextStyle(fontSize: 10.5, color: C.text4)),
         ),
       ]),
     );
@@ -409,7 +467,7 @@ class _AiChatDetailScreenState extends State<AiChatDetailScreen> with TickerProv
     final l = context.read<L10n>();
     final copied = l.lang == 'KZ' ? 'Көшірілді' : l.lang == 'EN' ? 'Copied' : 'Скопировано';
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14, right: 52),
+      padding: const EdgeInsets.only(bottom: 16, right: 52),
       child: Align(
         alignment: Alignment.centerLeft,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
@@ -420,22 +478,25 @@ class _AiChatDetailScreenState extends State<AiChatDetailScreen> with TickerProv
               showToast(context, copied);
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 13),
               decoration: BoxDecoration(
                 color: isDark ? C.darkSurface : Colors.white,
                 borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20), topRight: Radius.circular(20),
-                  bottomLeft: Radius.circular(6), bottomRight: Radius.circular(20),
+                  topLeft: Radius.circular(22),
+                  topRight: Radius.circular(22),
+                  bottomLeft: Radius.circular(7),
+                  bottomRight: Radius.circular(22),
                 ),
-                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.05), blurRadius: 12, offset: const Offset(0, 3))],
+                border: Border.all(color: adaptiveBorder(context).withValues(alpha: isDark ? 0.4 : 0.5), width: 0.5),
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.16 : 0.04), blurRadius: 14, offset: const Offset(0, 4))],
               ),
-              child: SelectableText(text, style: const TextStyle(fontSize: 15, height: 1.6, letterSpacing: 0.1)),
+              child: SelectableText(text, style: const TextStyle(fontSize: 15.5, height: 1.6, letterSpacing: 0.05)),
             ),
           ),
           if ((m['time'] ?? '').isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(left: 6, top: 4),
-              child: Text(m['time']!, style: const TextStyle(fontSize: 10, color: C.text4)),
+              padding: const EdgeInsets.only(left: 7, top: 5),
+              child: Text(m['time']!, style: const TextStyle(fontSize: 10.5, color: C.text4)),
             ),
         ]),
       ),
@@ -445,16 +506,18 @@ class _AiChatDetailScreenState extends State<AiChatDetailScreen> with TickerProv
   Widget _typingIndicator() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14, right: 52),
+      padding: const EdgeInsets.only(bottom: 16, right: 52),
       child: Align(
         alignment: Alignment.centerLeft,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+          padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 16),
           decoration: BoxDecoration(
             color: isDark ? C.darkSurface : Colors.white,
             borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20), topRight: Radius.circular(20),
-              bottomLeft: Radius.circular(6), bottomRight: Radius.circular(20),
+              topLeft: Radius.circular(22),
+              topRight: Radius.circular(22),
+              bottomLeft: Radius.circular(7),
+              bottomRight: Radius.circular(22),
             ),
             boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04), blurRadius: 10)],
           ),
@@ -483,7 +546,11 @@ class _AiInputBar extends StatelessWidget {
     final exhausted = quota?.exhausted ?? false;
     final hint = exhausted
         ? l.t('ai_limit_reached_title')
-        : isKZ ? 'Chatra AI-дан сұраңыз...' : isEN ? 'Ask Chatra AI...' : 'Спросите Chatra AI...';
+        : isKZ
+            ? 'Chatra AI-дан сұраңыз...'
+            : isEN
+                ? 'Ask Chatra AI...'
+                : 'Спросите Chatra AI...';
 
     return Container(
       padding: EdgeInsets.fromLTRB(14, 10, 14, bottomBarInset(context)),
@@ -498,10 +565,11 @@ class _AiInputBar extends StatelessWidget {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeOutCubic,
-              constraints: const BoxConstraints(minHeight: 46),
+              constraints: const BoxConstraints(minHeight: 48),
               decoration: BoxDecoration(
                 color: surface,
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(26),
+                border: Border.all(color: adaptiveBorder(context).withValues(alpha: 0.4), width: 0.5),
                 boxShadow: softShadow(isDark),
               ),
               child: TextField(
@@ -514,7 +582,7 @@ class _AiInputBar extends StatelessWidget {
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
                   filled: false,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                 ),
                 onSubmitted: (_) => onSend(),
                 maxLines: 4,
@@ -533,16 +601,19 @@ class _AiInputBar extends StatelessWidget {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 220),
                   curve: Curves.easeOutCubic,
-                  width: 46, height: 46,
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: active ? Theme.of(context).colorScheme.primary : surface,
-                    boxShadow: active
-                        ? primaryGlow(Theme.of(context).colorScheme.primary, opacity: 0.32)
-                        : softShadow(isDark),
+                    boxShadow: active ? primaryGlow(Theme.of(context).colorScheme.primary, opacity: 0.32) : softShadow(isDark),
                   ),
                   child: loading
-                      ? Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Theme.of(context).colorScheme.primary)))
+                      ? Center(
+                          child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2.2, color: Theme.of(context).colorScheme.primary)))
                       : AnimatedSwitcher(
                           duration: const Duration(milliseconds: 180),
                           switchInCurve: Curves.easeOutBack,
@@ -574,7 +645,8 @@ class _AiInputBar extends StatelessWidget {
 class _Dot extends StatefulWidget {
   final int delay;
   const _Dot({required this.delay});
-  @override State<_Dot> createState() => _DotState();
+  @override
+  State<_Dot> createState() => _DotState();
 }
 
 class _DotState extends State<_Dot> with SingleTickerProviderStateMixin {
@@ -591,19 +663,24 @@ class _DotState extends State<_Dot> with SingleTickerProviderStateMixin {
     _anim = CurvedAnimation(parent: _c, curve: Curves.easeInOut);
   }
 
-  @override void dispose() { _c.dispose(); super.dispose(); }
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
-    animation: _anim,
-    builder: (_, __) => Container(
-      width: 7, height: 7,
-      margin: const EdgeInsets.symmetric(horizontal: 3),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3 + _anim.value * 0.7),
-        shape: BoxShape.circle,
-      ),
-      transform: Matrix4.translationValues(0, -4 * _anim.value, 0),
-    ),
-  );
+        animation: _anim,
+        builder: (_, __) => Container(
+          width: 7,
+          height: 7,
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3 + _anim.value * 0.7),
+            shape: BoxShape.circle,
+          ),
+          transform: Matrix4.translationValues(0, -4 * _anim.value, 0),
+        ),
+      );
 }

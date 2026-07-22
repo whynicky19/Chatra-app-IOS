@@ -319,23 +319,6 @@ class _AiConversationViewState extends State<AiConversationView> {
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: constraints.maxHeight),
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Container(
-              width: 76,
-              height: 76,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                    colors: [
-                      Theme.of(context).colorScheme.primary.withValues(alpha: 0.85),
-                      Theme.of(context).colorScheme.primary,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight),
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: primaryGlow(Theme.of(context).colorScheme.primary, opacity: 0.28),
-              ),
-              child: const Icon(CupertinoIcons.sparkles, size: 32, color: Colors.white),
-            ),
-            const SizedBox(height: 18),
             Text('Chatra AI',
                 style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: adaptiveText1(context), letterSpacing: -0.6)),
             const SizedBox(height: 10),
@@ -404,11 +387,15 @@ class _AiConversationViewState extends State<AiConversationView> {
   }
 
   Widget _messageList(bool isDark) {
+    // Верхний паддинг = safe-area + место под плавающую кнопку истории —
+    // без отдельной полосы-хедера: это просто отступ первого сообщения
+    // внутри самого скролла, он уезжает вверх при прокрутке как обычно.
+    final topPad = MediaQuery.of(context).padding.top + 60;
     return ListView.builder(
       key: const ValueKey('msg_list'),
       controller: _scroll,
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 22, 16, 14),
+      padding: EdgeInsets.fromLTRB(16, topPad, 16, 14),
       itemCount: _msgs.length + (_loading ? 1 : 0),
       itemBuilder: (ctx, i) {
         if (i == _msgs.length) return _typingIndicator();

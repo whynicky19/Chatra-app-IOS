@@ -21,6 +21,13 @@ class _AiScreenState extends State<AiScreen> {
   int? _activeThreadId;
   bool _picked = false;
 
+  /// Ключ [AiConversationView] завязан на это, а НЕ на [_activeThreadId]
+  /// напрямую. Иначе лениво создающийся тред (null -> id при первой отправке
+  /// в новом чате) менял бы ValueKey прямо посреди отправки — Flutter пересоздал
+  /// бы виджет и оборвал ещё не сохранённый ответ ИИ (и генерацию названия
+  /// вместе с ним). Инкрементируется только при осознанной смене чата.
+  int _sessionKey = 0;
+
   @override
   void initState() {
     super.initState();
@@ -38,6 +45,7 @@ class _AiScreenState extends State<AiScreen> {
       setState(() {
         _picked = true;
         _activeThreadId = threads.first.id;
+        _sessionKey++;
       });
     } else {
       setState(() => _picked = true);
@@ -48,19 +56,23 @@ class _AiScreenState extends State<AiScreen> {
   /// создаётся лениво при первой отправке (см. AiConversationView), иначе
   /// в истории копились бы пустые чаты, если пользователь ничего не написал.
   void _createChat() {
-    setState(() => _activeThreadId = null);
+    setState(() {
+      _activeThreadId = null;
+      _sessionKey++;
+    });
     _scaffoldKey.currentState?.closeDrawer();
   }
 
   void _selectThread(AiThread t) {
-    setState(() => _activeThreadId = t.id);
+    setState(() {
+      _activeThreadId = t.id;
+      _sessionKey++;
+    });
     Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    final topInset = MediaQuery.of(context).padding.top + 56;
-
     return Scaffold(
       key: _scaffoldKey,
       resizeToAvoidBottomInset: false,
@@ -70,23 +82,50 @@ class _AiScreenState extends State<AiScreen> {
         onSelect: _selectThread,
         onCreate: _createChat,
       ),
+      // Кнопка истории — плавающая поверх переписки (как в ChatGPT/Claude),
+      // без отдельной полосы-хедера, которая просто отъедала бы экран.
       body: Stack(children: [
         Positioned.fill(
-          child: Padding(
-            padding: EdgeInsets.only(top: topInset),
-            child: AiConversationView(
-              key: ValueKey('conv_${_activeThreadId ?? 'new'}'),
-              threadId: _activeThreadId,
-              onThreadCreated: (id) => setState(() => _activeThreadId = id),
-            ),
+          child: AiConversationView(
+            key: ValueKey('conv_$_sessionKey'),
+            threadId: _activeThreadId,
+            onThreadCreated: (id) => setState(() => _activeThreadId = id),
           ),
         ),
+        // Контент едет под статус-бар edge-to-edge — часы/индикаторы теряются
+        // на светлом/пёстром фоне сообщений. Лёгкий градиент-подложка (не
+        // сплошная плашка) держит их читаемыми, не забирая место у контента.
+        const Positioned(top: 0, left: 0, right: 0, child: IgnorePointer(child: _StatusBarScrim())),
         Positioned(
           top: MediaQuery.of(context).padding.top + 12,
           left: 16,
           child: _HistoryButton(onTap: () => _scaffoldKey.currentState?.openDrawer()),
         ),
       ]),
+    );
+  }
+}
+
+/// Едва заметная подложка под статус-баром для edge-to-edge контента:
+/// градиент от фона экрана до прозрачного, а не сплошная плашка — время,
+/// Dynamic Island и индикаторы остаются читаемыми поверх любого сообщения,
+/// но полезная область экрана не уменьшается (высота — только safe area).
+class _StatusBarScrim extends StatelessWidget {
+  const _StatusBarScrim();
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = Theme.of(context).scaffoldBackgroundColor;
+    final height = MediaQuery.of(context).padding.top + 16;
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [bg.withValues(alpha: 0.78), bg.withValues(alpha: 0.0)],
+        ),
+      ),
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:dio/dio.dart' show DioException;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:provider/provider.dart';
 import '../../../providers/l10n_provider.dart';
 import '../../../services/api_service.dart';
@@ -958,6 +959,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
 
   void _viewSubs(int aId) async {
     final l = context.read<L10n>();
+    final assignmentMaxScore = (widget.assignments.firstWhere((x) => (x['id'] as num).toInt() == aId, orElse: () => {})['max_score'] as num?) ?? 100;
     try {
       final subs = await context.read<ApiService>().getSubmissions(aId, cohortId: widget.cohortId);
       if (!mounted) return;
@@ -1093,7 +1095,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                         ]),
                   )),
                   const SizedBox(height: 10),
-                  _manualGradeAndDeleteRow(ctx, selectedSub, (updated) => setS(() => selectedSub = updated), () {
+                  _manualGradeAndDeleteRow(ctx, selectedSub, assignmentMaxScore, (updated) => setS(() => selectedSub = updated), () {
                     subs.removeWhere((s) => s['id'] == selectedSub['id']);
                     setS(() => selectedSub = null);
                     widget.onRefresh();
@@ -1131,7 +1133,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                         ]),
                   )),
                   const SizedBox(height: 10),
-                  _manualGradeAndDeleteRow(ctx, selectedSub, (updated) => setS(() => selectedSub = updated), () {
+                  _manualGradeAndDeleteRow(ctx, selectedSub, assignmentMaxScore, (updated) => setS(() => selectedSub = updated), () {
                     subs.removeWhere((s) => s['id'] == selectedSub['id']);
                     setS(() => selectedSub = null);
                     widget.onRefresh();
@@ -1231,11 +1233,11 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
     } catch (_) { showToast(context, l.t('error_loading'), error: true); }
   }
 
-  Widget _manualGradeAndDeleteRow(BuildContext ctx, dynamic sub, void Function(dynamic updated) onGraded, VoidCallback onDeleted) {
+  Widget _manualGradeAndDeleteRow(BuildContext ctx, dynamic sub, num maxScore, void Function(dynamic updated) onGraded, VoidCallback onDeleted) {
     final l = context.read<L10n>();
     return Row(children: [
       Expanded(child: OutlinedButton.icon(
-        onPressed: () => _showManualGradeDialog(ctx, sub, onGraded),
+        onPressed: () => _showManualGradeDialog(ctx, sub, maxScore, onGraded),
         icon: const Icon(CupertinoIcons.pencil, size: 16),
         label: Text(l.t('grade_manually'), style: const TextStyle(fontSize: 13)),
         style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
@@ -1252,55 +1254,139 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
     ]);
   }
 
-  Future<void> _showManualGradeDialog(BuildContext ctx, dynamic sub, void Function(dynamic updated) onGraded) async {
+  Future<void> _showManualGradeDialog(BuildContext ctx, dynamic sub, num maxScore, void Function(dynamic updated) onGraded) async {
     final l = context.read<L10n>();
     final existingScore = sub['grade']?['score'];
     final scoreC = TextEditingController(text: existingScore != null ? '$existingScore' : '');
     final feedbackC = TextEditingController(text: sub['grade']?['feedback']?.toString() ?? '');
     bool saving = false;
 
-    await showCupertinoDialog<void>(
+    await showModalBottomSheet<void>(
       context: ctx,
-      builder: (c) => StatefulBuilder(builder: (c, setD) => CupertinoAlertDialog(
-        title: Text(l.t('grade_manual_title')),
-        content: Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: Column(children: [
-            CupertinoTextField(controller: scoreC, placeholder: l.t('grade_score_hint'), keyboardType: TextInputType.number),
-            const SizedBox(height: 8),
-            CupertinoTextField(controller: feedbackC, placeholder: l.t('grade_feedback_hint'), maxLines: 3),
-          ]),
-        ),
-        actions: [
-          CupertinoDialogAction(onPressed: () => Navigator.pop(c), child: Text(l.t('cancel'))),
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            onPressed: saving ? null : () async {
-              final score = num.tryParse(scoreC.text.trim());
-              if (score == null) return;
-              setD(() => saving = true);
-              try {
-                await context.read<ApiService>().gradeSubmission(
-                  (sub['id'] as num).toInt(),
-                  score: score,
-                  feedback: feedbackC.text.trim().isEmpty ? null : feedbackC.text.trim(),
-                );
-                if (!mounted || !c.mounted) return;
-                final updated = await context.read<ApiService>().getSubmission((sub['id'] as num).toInt());
-                if (!mounted || !c.mounted) return;
-                onGraded(updated);
-                Navigator.pop(c);
-                showToast(context, l.t('grade_saved'));
-              } catch (_) {
-                if (mounted && c.mounted) { setD(() => saving = false); showToast(context, l.t('error'), error: true); }
-              }
-            },
-            child: saving
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                : Text(l.t('grade_save')),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (c) => StatefulBuilder(builder: (c, setD) {
+        final score = num.tryParse(scoreC.text.trim());
+        final pct = score != null && maxScore > 0 ? (score / maxScore * 100).round().clamp(0, 999) : null;
+
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(c).viewInsets.bottom),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(c).colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(c).padding.bottom + 20),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Center(child: Container(
+                  width: 36, height: 4, margin: const EdgeInsets.only(bottom: 18),
+                  decoration: BoxDecoration(color: adaptiveBorder(c), borderRadius: BorderRadius.circular(2)),
+                )),
+                Row(children: [
+                  Container(
+                    width: 40, height: 40,
+                    decoration: BoxDecoration(color: Theme.of(c).colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
+                    child: Icon(CupertinoIcons.pencil, size: 18, color: Theme.of(c).colorScheme.primary),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text(l.t('grade_manual_title'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: adaptiveText1(c)))),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(c),
+                    child: Container(width: 30, height: 30,
+                      decoration: BoxDecoration(color: adaptiveSurface2(c), shape: BoxShape.circle),
+                      child: const Icon(CupertinoIcons.xmark, color: C.text4, size: 14)),
+                  ),
+                ]),
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(color: adaptiveSurface2(c), borderRadius: BorderRadius.circular(AppRadii.tile)),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(l.t('grade_score_hint'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 0.4)),
+                    const SizedBox(height: 8),
+                    Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                      SizedBox(
+                        width: 90,
+                        child: CupertinoTextField(
+                          controller: scoreC,
+                          keyboardType: TextInputType.number,
+                          autofocus: true,
+                          placeholder: '0',
+                          decoration: null,
+                          padding: EdgeInsets.zero,
+                          style: TextStyle(fontSize: 42, fontWeight: FontWeight.w900, color: Theme.of(c).colorScheme.primary, height: 1),
+                          onChanged: (_) => setD(() {}),
+                        ),
+                      ),
+                      Padding(padding: const EdgeInsets.only(bottom: 6, left: 4), child: Text('/ ${maxScore.toInt()}', style: const TextStyle(fontSize: 18, color: C.text4, fontWeight: FontWeight.w600))),
+                      const Spacer(),
+                      if (pct != null) Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(color: Theme.of(c).colorScheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppRadii.chip)),
+                        child: Text('$pct%', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Theme.of(c).colorScheme.primary)),
+                      ),
+                    ]),
+                  ]),
+                ),
+                const SizedBox(height: 14),
+                Text(l.t('grade_feedback_hint'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 0.4)),
+                const SizedBox(height: 8),
+                Container(
+                  decoration: BoxDecoration(color: adaptiveSurface2(c), borderRadius: BorderRadius.circular(AppRadii.tile)),
+                  child: CupertinoTextField(
+                    controller: feedbackC,
+                    maxLines: 3,
+                    placeholder: l.t('grade_feedback_hint'),
+                    decoration: null,
+                    padding: const EdgeInsets.all(14),
+                    style: TextStyle(fontSize: 14, color: adaptiveText1(c), height: 1.4),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(children: [
+                  Expanded(child: OutlinedButton(
+                    onPressed: saving ? null : () => Navigator.pop(c),
+                    style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+                    child: Text(l.t('cancel')),
+                  )),
+                  const SizedBox(width: 10),
+                  Expanded(flex: 2, child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+                    onPressed: saving || score == null ? null : () async {
+                      HapticFeedback.lightImpact();
+                      setD(() => saving = true);
+                      try {
+                        await context.read<ApiService>().gradeSubmission(
+                          (sub['id'] as num).toInt(),
+                          score: score,
+                          feedback: feedbackC.text.trim().isEmpty ? null : feedbackC.text.trim(),
+                        );
+                        if (!mounted || !c.mounted) return;
+                        final updated = await context.read<ApiService>().getSubmission((sub['id'] as num).toInt());
+                        if (!mounted || !c.mounted) return;
+                        onGraded(updated);
+                        Navigator.pop(c);
+                        showToast(context, l.t('grade_saved'));
+                      } catch (_) {
+                        if (mounted && c.mounted) { setD(() => saving = false); showToast(context, l.t('error'), error: true); }
+                      }
+                    },
+                    child: saving
+                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                            const Icon(CupertinoIcons.checkmark_circle_fill, size: 16, color: Colors.white),
+                            const SizedBox(width: 6),
+                            Text(l.t('grade_save'), style: const TextStyle(fontWeight: FontWeight.w700)),
+                          ]),
+                  )),
+                ]),
+              ]),
+            ),
           ),
-        ],
-      )),
+        );
+      }),
     );
     scoreC.dispose();
     feedbackC.dispose();

@@ -40,11 +40,22 @@ class _AiConversationViewState extends State<AiConversationView> {
   bool _loading = false;
   AiQuota? _quota;
   int? _threadId;
+  // Сообщения с индексом < этого порога — уже загруженная история: у них
+  // нет entrance-анимации (см. _messageList). Иначе при открытии чата с
+  // длинной перепиской десятки сообщений одновременно проигрывали бы
+  // fade+slide, накладываясь на автоскролл — визуально «рвано». Анимация
+  // появления остаётся только для реально нового сообщения (send/receive).
+  int _bulkLoadedCount = 0;
+  // Пока история существующего треда ещё грузится, список скрыт — как
+  // только он готов (и уже доскроллен вниз), один плавный fade-in вместо
+  // резкого появления. Новый пустой чат виден сразу, скрывать нечего.
+  bool _listVisible = false;
 
   @override
   void initState() {
     super.initState();
     _threadId = widget.threadId;
+    _listVisible = _threadId == null;
     if (_threadId != null) _restoreHistory(_threadId!);
     _loadQuota();
   }
@@ -61,8 +72,9 @@ class _AiConversationViewState extends State<AiConversationView> {
         _msgs
           ..clear()
           ..addAll(local);
+        _bulkLoadedCount = _msgs.length;
       });
-      _scrollDown(animate: false);
+      _scrollDown(animate: false, reveal: true);
     }
     await _syncFromServer(threadId, local);
   }
@@ -110,10 +122,15 @@ class _AiConversationViewState extends State<AiConversationView> {
         _msgs
           ..clear()
           ..addAll(list);
+        _bulkLoadedCount = _msgs.length;
       });
       _saveHistory();
-      _scrollDown(animate: false);
-    } catch (_) {}
+      _scrollDown(animate: false, reveal: true);
+    } catch (_) {
+      // Сеть недоступна и локальной истории тоже не было — не оставлять
+      // список невидимым навсегда.
+      if (mounted && !_listVisible) setState(() => _listVisible = true);
+    }
   }
 
   String _fmtTime(dynamic iso) {
@@ -276,11 +293,17 @@ class _AiConversationViewState extends State<AiConversationView> {
   // это и давало ощущение «рваного» скролла на длинной переписке. Плавную
   // анимацию оставляем только для реально нового сообщения (send/receive),
   // там дистанция маленькая и лишних вставок не происходит.
-  void _scrollDown({bool animate = true}) {
+  void _scrollDown({bool animate = true, bool reveal = false}) {
     Future.delayed(const Duration(milliseconds: 100), () {
-      if (!_scroll.hasClients) return;
+      if (!_scroll.hasClients) {
+        if (reveal && mounted) setState(() => _listVisible = true);
+        return;
+      }
       if (!animate) {
         _scroll.jumpTo(_scroll.position.maxScrollExtent);
+        // Список уже стоит на нужной позиции — теперь можно плавно проявить
+        // его одним лёгким fade-in вместо резкого появления.
+        if (reveal && mounted) setState(() => _listVisible = true);
         // Корректирующий джамп: если контент (картинки/markdown) доразметился
         // уже после первого прыжка, maxScrollExtent мог вырасти.
         Future.delayed(const Duration(milliseconds: 120), () {
@@ -309,7 +332,22 @@ class _AiConversationViewState extends State<AiConversationView> {
               child: child,
             ),
           ),
-          child: _msgs.isEmpty ? _emptyState(context.watch<L10n>()) : _messageList(isDark),
+          // Пока грузится история уже существующего треда (threadId != null),
+          // держим _messageList (пусть пока и без элементов) вместо
+          // _emptyState — иначе на каждое открытие чата с перепиской
+          // AnimatedSwitcher лишний раз проигрывал бы fade+slide переход
+          // empty → list ровно в момент, когда сообщения появляются.
+          child: (_msgs.isEmpty && widget.threadId == null)
+              ? _emptyState(context.watch<L10n>())
+              : AnimatedOpacity(
+                  // Список уже доскроллен вниз (см. _scrollDown reveal) —
+                  // остаётся только мягко проявить его одним fade-in, без
+                  // отдельных анимаций на каждое сообщение.
+                  opacity: _listVisible ? 1 : 0,
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOut,
+                  child: _messageList(isDark),
+                ),
         ),
       ),
       _AiInputBar(ctrl: _ctrl, loading: _loading, quota: _quota, onSend: _send),
@@ -416,6 +454,14 @@ class _AiConversationViewState extends State<AiConversationView> {
         if (i == _msgs.length) return _typingIndicator();
         final m = _msgs[i];
         final isUser = m['role'] == 'user';
+        final bubble = RepaintBoundary(
+          child: isUser ? _userMessage(m) : _aiMessage(m, isDark),
+        );
+        // Уже загруженная история появляется сразу, без entrance-анимации —
+        // она играла бы для каждого сообщения при каждом открытии чата
+        // (см. _bulkLoadedCount). Анимация появления — только для реально
+        // нового сообщения (только что отправленного/полученного).
+        if (i < _bulkLoadedCount) return bubble;
         return TweenAnimationBuilder<double>(
           key: ValueKey('msg_$i'),
           tween: Tween(begin: 0.0, end: 1.0),
@@ -425,9 +471,7 @@ class _AiConversationViewState extends State<AiConversationView> {
             opacity: t,
             child: Transform.translate(offset: Offset(isUser ? 18 * (1 - t) : -18 * (1 - t), 8 * (1 - t)), child: child),
           ),
-          child: RepaintBoundary(
-            child: isUser ? _userMessage(m) : _aiMessage(m, isDark),
-          ),
+          child: bubble,
         );
       },
     );

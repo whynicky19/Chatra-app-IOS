@@ -490,6 +490,9 @@ class ApiService {
     return response.data;
   }
 
+  // Ответ теперь {status: 'graded'|'needs_review', grade, ai_confidence,
+  // ai_review_reasons} вместо голого Grade — confidence ниже порога
+  // means grade == null, сдача ждёт ручной проверки учителем.
   Future<Map<String, dynamic>> aiGrade(int submissionId) async {
     try {
       final response = await _dio.post('/submissions/$submissionId/ai-grade',

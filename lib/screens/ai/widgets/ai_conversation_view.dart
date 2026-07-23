@@ -62,7 +62,7 @@ class _AiConversationViewState extends State<AiConversationView> {
           ..clear()
           ..addAll(local);
       });
-      _scrollDown();
+      _scrollDown(animate: false);
     }
     await _syncFromServer(threadId, local);
   }
@@ -112,7 +112,7 @@ class _AiConversationViewState extends State<AiConversationView> {
           ..addAll(list);
       });
       _saveHistory();
-      _scrollDown();
+      _scrollDown(animate: false);
     } catch (_) {}
   }
 
@@ -269,11 +269,26 @@ class _AiConversationViewState extends State<AiConversationView> {
     _scrollDown();
   }
 
-  void _scrollDown() {
+  // animate=false — мгновенный переход в конец при открытии чата/подгрузке
+  // истории: если тут анимировать через animateTo, ListView.builder ещё не
+  // построенные сообщения лениво создаёт прямо во время скролла, и у каждого
+  // при первом построении играет своя entrance-анимация (см. _messageList) —
+  // это и давало ощущение «рваного» скролла на длинной переписке. Плавную
+  // анимацию оставляем только для реально нового сообщения (send/receive),
+  // там дистанция маленькая и лишних вставок не происходит.
+  void _scrollDown({bool animate = true}) {
     Future.delayed(const Duration(milliseconds: 100), () {
-      if (_scroll.hasClients) {
-        _scroll.animateTo(_scroll.position.maxScrollExtent, duration: const Duration(milliseconds: 350), curve: Curves.easeOut);
+      if (!_scroll.hasClients) return;
+      if (!animate) {
+        _scroll.jumpTo(_scroll.position.maxScrollExtent);
+        // Корректирующий джамп: если контент (картинки/markdown) доразметился
+        // уже после первого прыжка, maxScrollExtent мог вырасти.
+        Future.delayed(const Duration(milliseconds: 120), () {
+          if (_scroll.hasClients) _scroll.jumpTo(_scroll.position.maxScrollExtent);
+        });
+        return;
       }
+      _scroll.animateTo(_scroll.position.maxScrollExtent, duration: const Duration(milliseconds: 350), curve: Curves.easeOut);
     });
   }
 

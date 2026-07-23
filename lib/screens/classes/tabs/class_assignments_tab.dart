@@ -291,13 +291,14 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
         final grade = sub?['grade'];
         final isGraded = status == 'graded';
         final isSubmitted = status == 'submitted';
+        final isNeedsReview = status == 'needs_review';
         final deadline = a['deadline'];
         final isLate = deadline != null && DateTime.tryParse(deadline)?.isBefore(DateTime.now()) == true && sub == null;
 
-        Color statusColor = isGraded ? C.green : isSubmitted ? Theme.of(context).colorScheme.primary : isLate ? C.red : C.text4;
-        Color statusBg = isGraded ? C.greenLt : isSubmitted ? adaptivePrimaryLt(context) : isLate ? C.redLt : adaptiveSurface2(context);
-        String statusText = isGraded ? l.t('graded') : isSubmitted ? l.t('submitted') : isLate ? l.t('overdue') : l.t('new_status');
-        IconData statusIcon = isGraded ? CupertinoIcons.checkmark_circle_fill : isSubmitted ? CupertinoIcons.arrow_up_doc : isLate ? CupertinoIcons.clock : CupertinoIcons.pencil;
+        Color statusColor = isGraded ? C.green : isNeedsReview ? C.amber : isSubmitted ? Theme.of(context).colorScheme.primary : isLate ? C.red : C.text4;
+        Color statusBg = isGraded ? C.greenLt : isNeedsReview ? C.amberLt : isSubmitted ? adaptivePrimaryLt(context) : isLate ? C.redLt : adaptiveSurface2(context);
+        String statusText = isGraded ? l.t('graded') : isNeedsReview ? l.t('needs_review') : isSubmitted ? l.t('submitted') : isLate ? l.t('overdue') : l.t('new_status');
+        IconData statusIcon = isGraded ? CupertinoIcons.checkmark_circle_fill : isNeedsReview ? CupertinoIcons.exclamationmark_triangle : isSubmitted ? CupertinoIcons.arrow_up_doc : isLate ? CupertinoIcons.clock : CupertinoIcons.pencil;
 
         return TweenAnimationBuilder<double>(
           key: ValueKey('asgn_${a['id']}'),
@@ -391,9 +392,11 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
     final deadline = a['deadline'];
     final isLate = deadline != null && DateTime.tryParse(deadline)?.isBefore(DateTime.now()) == true && sub == null;
     final sheetStatusColor = sub?['status'] == 'graded' ? C.green
+        : sub?['status'] == 'needs_review' ? C.amber
         : sub?['status'] == 'submitted' ? Theme.of(context).colorScheme.primary
         : isLate ? C.red : C.text4;
     final sheetStatusText = sub?['status'] == 'graded' ? l.t('graded')
+        : sub?['status'] == 'needs_review' ? l.t('needs_review')
         : sub?['status'] == 'submitted' ? l.t('submitted')
         : isLate ? l.t('overdue') : l.t('new_status');
 
@@ -673,6 +676,10 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     ])),
                 ]),
               ]),
+              if (isTeacherOrAdmin && sub['ai_confidence'] != null) ...[
+                const SizedBox(height: 8),
+                Text('${l.t('confidence_label')}: ${sub['ai_confidence']}%', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: C.text4)),
+              ],
               if (sub['grade']['feedback'] != null) ...[
                 const SizedBox(height: 14),
                 Text(l.t('feedback'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
@@ -720,6 +727,35 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.primary)),
               const SizedBox(width: 12),
               Expanded(child: Text(l.t('ai_checking'), style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w500))),
+            ])),
+        ],
+        if (sub != null && sub['status'] == 'needs_review') ...[
+          const SizedBox(height: 16),
+          Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: C.amber.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: C.amber.withValues(alpha: 0.3))),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                const Icon(CupertinoIcons.exclamationmark_triangle, size: 16, color: C.amber),
+                const SizedBox(width: 8),
+                Expanded(child: Text(l.t('needs_review_title'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: C.amber))),
+              ]),
+              const SizedBox(height: 6),
+              Text(l.t('needs_review_body'), style: const TextStyle(fontSize: 13, color: C.text4)),
+              // Уверенность/причины распознавания — только для учителя, студент их не видит.
+              if (isTeacherOrAdmin && sub['ai_confidence'] != null) ...[
+                const SizedBox(height: 10),
+                Text('${l.t('confidence_label')}: ${sub['ai_confidence']}%', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              ],
+              if (isTeacherOrAdmin && sub['ai_review_reasons'] != null) ...(() {
+                List<dynamic> reasons = [];
+                try { reasons = jsonDecode(sub['ai_review_reasons']); } catch (_) {
+                  if (sub['ai_review_reasons'] is List) reasons = sub['ai_review_reasons'];
+                }
+                if (reasons.isEmpty) return <Widget>[];
+                return [
+                  const SizedBox(height: 8),
+                  ...reasons.map((r) => Padding(padding: const EdgeInsets.only(top: 2), child: Text('• $r', style: const TextStyle(fontSize: 12, color: C.text4)))),
+                ];
+              })(),
             ])),
         ],
         if (sub != null && (sub['text_content'] != null || sub['file_urls'] != null)) ...[
@@ -1031,12 +1067,12 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     onPressed: grading ? null : () async {
                       setS(() => grading = true);
                       try {
-                        await context.read<ApiService>().aiGrade(selectedSub['id']);
+                        final result = await context.read<ApiService>().aiGrade(selectedSub['id']);
                         if (!mounted || !ctx.mounted) return;
                         final updated = await context.read<ApiService>().getSubmission(selectedSub['id']);
                         if (!mounted || !ctx.mounted) return;
                         setS(() { selectedSub = updated; grading = false; });
-                        showToast(context, l.t('regraded'));
+                        showToast(context, result['status'] == 'needs_review' ? l.t('needs_review_toast') : l.t('regraded'));
                       } catch (e) {
                         if (!mounted || !ctx.mounted) return;
                         setS(() => grading = false);
@@ -1069,12 +1105,12 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     onPressed: grading ? null : () async {
                       setS(() => grading = true);
                       try {
-                        await context.read<ApiService>().aiGrade(selectedSub['id']);
+                        final result = await context.read<ApiService>().aiGrade(selectedSub['id']);
                         if (!mounted || !ctx.mounted) return;
                         final updated = await context.read<ApiService>().getSubmission(selectedSub['id']);
                         if (!mounted || !ctx.mounted) return;
                         setS(() { selectedSub = updated; grading = false; });
-                        showToast(context, l.t('graded_ok'));
+                        showToast(context, result['status'] == 'needs_review' ? l.t('needs_review_toast') : l.t('graded_ok'));
                       } catch (e) {
                         if (!mounted || !ctx.mounted) return;
                         setS(() => grading = false);
@@ -1170,6 +1206,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 final initials = name.length >= 2 ? '${name[0]}${name.split(' ').length > 1 ? name.split(' ').last[0] : name[1]}'.toUpperCase() : name[0].toUpperCase();
                 final score = s['grade']?['score'];
                 final isGraded = s['status'] == 'graded';
+                final isNeedsReview = s['status'] == 'needs_review';
                 return GestureDetector(onTap: () => setS(() => selectedSub = s),
                   child: Container(margin: const EdgeInsets.only(bottom: 8), padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(16)),
@@ -1184,7 +1221,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                       Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                         if (score != null) Text('$score/100', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary))
                         else const Text('—', style: TextStyle(fontSize: 16, color: C.text4)),
-                        Text(isGraded ? l.t('graded_one') : l.t('pending_one'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: isGraded ? Theme.of(context).colorScheme.primary : C.yellow)),
+                        Text(isGraded ? l.t('graded_one') : isNeedsReview ? l.t('needs_review') : l.t('pending_one'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: isGraded ? Theme.of(context).colorScheme.primary : isNeedsReview ? C.amber : C.yellow)),
                       ]),
                     ])));
               },

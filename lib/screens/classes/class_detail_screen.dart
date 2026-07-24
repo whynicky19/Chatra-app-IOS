@@ -133,6 +133,10 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       final fixed = (newUrl != null && newUrl.isNotEmpty)
           ? context.read<ApiService>().fixUrl(newUrl) : '';
       await CachedNetworkImage.evictFromCache(fixed, cacheKey: 'class_cover_${widget.classId}');
+      // Списки/сетки/карточки показывают cover_thumbnail отдельным кэш-ключом
+      // (см. cardCoverUrl) — иначе после смены обложки в них ещё какое-то
+      // время висела бы старая миниатюра.
+      await CachedNetworkImage.evictFromCache(fixed, cacheKey: 'class_cover_thumb_${widget.classId}');
     } catch (_) {}
     PaintingBinding.instance.imageCache.clear();
     PaintingBinding.instance.imageCache.clearLiveImages();

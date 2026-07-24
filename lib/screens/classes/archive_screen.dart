@@ -169,7 +169,7 @@ class _ArchiveCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.watch<L10n>();
     final surface = Theme.of(context).colorScheme.surface;
-    final coverImg = cls['cover_image'];
+    final coverImg = cardCoverUrl(cls);
     final title = (cls['name'] ?? cls['title'] ?? '').toString();
     final teacher = (cls['teacher'] ?? cls['teacher_name'] ?? '').toString();
     final id = cls['id'] as int;
@@ -200,13 +200,13 @@ class _ArchiveCard extends StatelessWidget {
                               final bytes = decodeBase64Image(coverImg.toString());
                               return bytes != null
                                   ? Image.memory(bytes, fit: BoxFit.cover, width: double.infinity,
-                                      gaplessPlayback: true, cacheWidth: 640)
+                                      gaplessPlayback: true, cacheWidth: 480)
                                   : const SizedBox.shrink();
                             })
                           : NetworkCoverImage(
                               url: context.read<ApiService>().fixUrl(coverImg.toString()),
-                              cacheKey: 'class_cover_$id',
-                              memCacheWidth: 640,
+                              cacheKey: 'class_cover_thumb_$id',
+                              memCacheWidth: 480,
                             ),
                     Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                       begin: Alignment.topCenter, end: Alignment.bottomCenter,

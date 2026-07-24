@@ -706,7 +706,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           final cls         = classes[i];
           final classId     = (cls['id'] as num?)?.toInt() ?? 0;
           final title       = cls['title']?.toString() ?? '';
-          final coverImg    = cls['cover_image'];
+          final coverImg    = cardCoverUrl(cls);
           final uid         = (cls['user_id'] as num?)?.toInt();
           final creatorName = uid != null ? (userNames[uid] ?? 'Пользователь #$uid') : '—';
           final description = (cls['description'] ?? '').toString();
@@ -1094,10 +1094,10 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     if (coverImg.toString().startsWith('data:')) {
       final bytes = decodeBase64Image(coverImg.toString());
       return bytes != null
-          ? Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, gaplessPlayback: true, cacheWidth: 640)
+          ? Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, gaplessPlayback: true, cacheWidth: 480)
           : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors)));
     }
-    return NetworkCoverImage(url: coverImg.toString(), cacheKey: classId != null ? 'class_cover_$classId' : null, memCacheWidth: 640,
+    return NetworkCoverImage(url: coverImg.toString(), cacheKey: classId != null ? 'class_cover_thumb_$classId' : null, memCacheWidth: 480,
       errorBuilder: (_) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))));
   }
 

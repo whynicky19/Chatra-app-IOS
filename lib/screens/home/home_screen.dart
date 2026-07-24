@@ -417,7 +417,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final code = (cls['invite_code'] ?? '').toString();
     final isPinned = _pinnedIds.contains(id);
     final colors = _grads[id % _grads.length];
-    final coverImg = cls['cover_image'];
+    final coverImg = cardCoverUrl(cls);
 
     showGeneralDialog(
       context: context,
@@ -649,12 +649,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 clipBehavior: Clip.antiAlias,
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Builder(builder: (_) {
-                    final coverImg = foundClass!['cover_image'];
+                    final coverImg = cardCoverUrl(foundClass!);
                     return SizedBox(height: 80, width: double.infinity,
                       child: coverImg != null && coverImg.toString().startsWith('data:')
-                          ? Builder(builder: (_) { final bytes = decodeBase64Image(coverImg.toString()); return bytes != null ? Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, gaplessPlayback: true, cacheWidth: 640) : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))); })
+                          ? Builder(builder: (_) { final bytes = decodeBase64Image(coverImg.toString()); return bytes != null ? Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, gaplessPlayback: true, cacheWidth: 480) : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))); })
                           : coverImg != null
-                              ? NetworkCoverImage(url: context.read<ApiService>().fixUrl(coverImg.toString()), memCacheWidth: 640, errorBuilder: (_) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))))
+                              ? NetworkCoverImage(url: context.read<ApiService>().fixUrl(coverImg.toString()), cacheKey: 'class_cover_thumb_${foundClass!['id']}', memCacheWidth: 480, errorBuilder: (_) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))))
                               : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))));
                   }),
                   Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -866,9 +866,9 @@ class _ClassContextMenu extends StatelessWidget {
             SizedBox(height: 110, width: double.infinity,
               child: Stack(fit: StackFit.expand, children: [
                 coverImg != null && coverImg.toString().startsWith('data:')
-                    ? Builder(builder: (_) { final bytes = decodeBase64Image(coverImg.toString()); return bytes != null ? Image.memory(bytes, fit: BoxFit.cover, gaplessPlayback: true, cacheWidth: 640) : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))); })
+                    ? Builder(builder: (_) { final bytes = decodeBase64Image(coverImg.toString()); return bytes != null ? Image.memory(bytes, fit: BoxFit.cover, gaplessPlayback: true, cacheWidth: 480) : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))); })
                     : coverImg != null
-                        ? NetworkCoverImage(url: context.read<ApiService>().fixUrl(coverImg.toString()), cacheKey: 'class_cover_${cls['id']}', memCacheWidth: 800, errorBuilder: (_) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))))
+                        ? NetworkCoverImage(url: context.read<ApiService>().fixUrl(coverImg.toString()), cacheKey: 'class_cover_thumb_${cls['id']}', memCacheWidth: 480, errorBuilder: (_) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))))
                         : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight))),
                 Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                   begin: Alignment.topCenter, end: Alignment.bottomCenter,
@@ -1130,7 +1130,7 @@ class _ClassCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark   = Theme.of(context).brightness == Brightness.dark;
     final surface  = Theme.of(context).colorScheme.surface;
-    final coverImg = cls['cover_image'];
+    final coverImg = cardCoverUrl(cls);
     final teacherName = cls['teacher_name'] ?? '';
     final id = cls['id'] as int;
 
@@ -1156,13 +1156,13 @@ class _ClassCard extends StatelessWidget {
                         ? Builder(builder: (_) {
                             final bytes = decodeBase64Image(coverImg.toString());
                             return bytes != null
-                                ? Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, gaplessPlayback: true, cacheWidth: 640)
+                                ? Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, gaplessPlayback: true, cacheWidth: 480)
                                 : const SizedBox.shrink();
                           })
                         : NetworkCoverImage(
                             url: context.read<ApiService>().fixUrl(coverImg.toString()),
-                            cacheKey: 'class_cover_$id',
-                            memCacheWidth: 800,
+                            cacheKey: 'class_cover_thumb_$id',
+                            memCacheWidth: 480,
                           ),
                   Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                     begin: Alignment.topCenter, end: Alignment.bottomCenter,

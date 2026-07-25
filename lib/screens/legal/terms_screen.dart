@@ -10,6 +10,7 @@ class TermsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = context.watch<L10n>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       body: SafeArea(
         bottom: false,
@@ -39,8 +40,16 @@ class TermsScreen extends StatelessWidget {
                   color: Theme.of(context).colorScheme.primary),
               ),
               const SizedBox(height: 18),
-              Text(l.t('terms_body'),
-                style: TextStyle(fontSize: 15, height: 1.6, color: adaptiveText1(context))),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isDark ? C.darkSurface : Colors.white,
+                  borderRadius: BorderRadius.circular(AppRadii.card),
+                  boxShadow: cardShadow(isDark),
+                ),
+                child: Text(l.t('terms_body'),
+                  style: TextStyle(fontSize: 14, height: 1.55, color: adaptiveText2(context))),
+              ),
             ],
           )),
         ]),

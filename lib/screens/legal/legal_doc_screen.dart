@@ -101,7 +101,7 @@ class LegalDocScreen extends StatelessWidget {
               color: adaptiveText1(context), letterSpacing: -0.2))),
         ]),
         const SizedBox(height: 12),
-        Text(body, style: const TextStyle(fontSize: 14, height: 1.55, color: C.text3)),
+        Text(body, style: TextStyle(fontSize: 14, height: 1.55, color: adaptiveText2(context))),
       ]),
     );
   }

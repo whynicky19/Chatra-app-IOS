@@ -61,12 +61,14 @@ class SettingsSubScreen extends StatelessWidget {
   final String title;
   final String? subtitle;
   final List<Widget> children;
+  final Widget? footer;
 
   const SettingsSubScreen({
     super.key,
     required this.title,
     required this.children,
     this.subtitle,
+    this.footer,
   });
 
   @override
@@ -96,6 +98,10 @@ class SettingsSubScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
             children: children,
           )),
+          if (footer != null) Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Center(child: footer),
+          ),
         ]),
       ),
     );

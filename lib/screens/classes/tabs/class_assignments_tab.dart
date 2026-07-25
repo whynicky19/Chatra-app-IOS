@@ -298,7 +298,6 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
 
         final showBadge = isGraded || isNeedsReview || isSubmitted || isLate;
         Color statusColor = isGraded ? C.green : isNeedsReview ? C.amber : isSubmitted ? Theme.of(context).colorScheme.primary : C.red;
-        Color statusBg = isGraded ? C.greenLt : isNeedsReview ? C.amberLt : isSubmitted ? adaptivePrimaryLt(context) : C.redLt;
         String statusText = isGraded ? l.t('graded') : isNeedsReview ? l.t('needs_review') : isSubmitted ? l.t('submitted') : l.t('overdue');
         IconData statusIcon = isGraded ? CupertinoIcons.checkmark_circle_fill : isNeedsReview ? CupertinoIcons.exclamationmark_triangle : isSubmitted ? CupertinoIcons.arrow_up_doc : CupertinoIcons.clock;
 
@@ -321,12 +320,6 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Expanded(child: Text(a['title'] ?? '', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800), maxLines: 2, overflow: TextOverflow.ellipsis)),
-                    if (showBadge) ...[
-                      const SizedBox(width: 8),
-                      Container(padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                        decoration: BoxDecoration(color: statusBg, borderRadius: BorderRadius.circular(AppRadii.card)),
-                        child: Text(statusText, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: statusColor))),
-                    ],
                     if (widget.isTeacher) GestureDetector(
                       onTap: () => _showAssignmentActions(a),
                       child: Container(width: 30, height: 30, alignment: Alignment.center, margin: const EdgeInsets.only(left: 2),

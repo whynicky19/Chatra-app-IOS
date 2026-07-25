@@ -27,6 +27,7 @@ class AboutSettingsScreen extends StatelessWidget {
     return SettingsSubScreen(
       title: l.t('about_section'),
       subtitle: l.t('about_section_sub'),
+      footer: const _VersionLabel(),
       children: [
         SettingsActionCard(
           icon: CupertinoIcons.doc_plaintext,
@@ -79,8 +80,6 @@ class AboutSettingsScreen extends StatelessWidget {
             ]),
           ),
         ),
-        const SizedBox(height: 28),
-        const _VersionLabel(),
       ],
     );
   }

@@ -783,15 +783,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   ),
                 ]),
                 const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.22), borderRadius: BorderRadius.circular(8)),
-                  child: Text(
-                    '${l.t('lecture').toUpperCase()} $num',
-                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 1.0),
-                  ),
-                ),
-                const SizedBox(height: 10),
                 Text(
                   cleanPostTitle(p['title'] ?? ''),
                   style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white, height: 1.25, letterSpacing: -0.3),

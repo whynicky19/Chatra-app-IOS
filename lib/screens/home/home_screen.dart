@@ -382,14 +382,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     decoration: BoxDecoration(
                       color: surface,
                       borderRadius: BorderRadius.circular(AppRadii.card),
-                      border: Border.all(color: primary.withValues(alpha: 0.35), width: 1.5),
+                      border: Border.all(color: adaptiveBorder(context), width: 1.5),
                       boxShadow: softShadow(isDark),
                     ),
                     child: Column(mainAxisSize: MainAxisSize.min, children: [
                       Container(width: 52, height: 52,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: primary.withValues(alpha: 0.5), width: 1.5),
+                          border: Border.all(color: adaptiveBorder(context), width: 1.5),
                         ),
                         child: Icon(CupertinoIcons.add, color: primary, size: 26)),
                       const SizedBox(height: 12),
@@ -1146,19 +1146,22 @@ class _ClassCard extends StatelessWidget {
               borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
               child: SizedBox(height: 168, width: double.infinity,
                 child: Stack(fit: StackFit.expand, children: [
-                  Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight))),
-                  if (coverImg != null)
-                    coverImg.toString().startsWith('data:')
+                  Builder(builder: (_) {
+                    final gradient = Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight)));
+                    if (coverImg == null) return gradient;
+                    return coverImg.toString().startsWith('data:')
                         ? Builder(builder: (_) {
                             final bytes = decodeBase64Image(coverImg.toString());
                             return bytes != null
                                 ? Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, gaplessPlayback: true, cacheWidth: 480)
-                                : const SizedBox.shrink();
+                                : gradient;
                           })
                         : NetworkCoverImage(
                             url: context.read<ApiService>().fixUrl(coverImg.toString()),
                             memCacheWidth: 480,
-                          ),
+                            errorBuilder: (_) => gradient,
+                          );
+                  }),
                   Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                     begin: Alignment.topCenter, end: Alignment.bottomCenter,
                     stops: const [0.5, 1.0],

@@ -100,6 +100,11 @@ Color adaptiveText1(BuildContext context) {
   return isDark ? C.darkText1 : C.text1;
 }
 
+Color adaptiveText2(BuildContext context) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  return isDark ? C.darkText2 : C.text2;
+}
+
 const _r16 = BorderRadius.all(Radius.circular(16));
 
 InputDecorationTheme _input(Color fill, Color focus) => InputDecorationTheme(

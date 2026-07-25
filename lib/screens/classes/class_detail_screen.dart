@@ -23,7 +23,6 @@ import '../../widgets/toast.dart';
 import 'tabs/class_posts_tab.dart';
 import 'tabs/class_assignments_tab.dart';
 import 'tabs/class_ai_tab.dart';
-import 'tabs/class_avatar_tab.dart';
 import 'rollover_screen.dart';
 import 'class_detail_utils.dart';
 import 'widgets/class_cover_sliver.dart';
@@ -49,11 +48,10 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   String _title = '';
   List<dynamic> _lectures = [];
   List<dynamic> _materials = [];
-  bool _loading = true, _loadingAsg = false, _aiTabActive = false, _avatarTabActive = false;
+  bool _loading = true, _loadingAsg = false, _aiTabActive = false;
   bool _coverPrecached = false;
   Widget? _headerCache;
   String _headerSig = '';
-  int? _avatarLectureCount;
   List<dynamic> _cohorts = [];
   int? _selectedCohortId;
 
@@ -68,18 +66,16 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 5, vsync: this, initialIndex: widget.initialTab);
+    _tabCtrl = TabController(length: 4, vsync: this, initialIndex: widget.initialTab);
     _aiTabActive = widget.initialTab == 3;
-    _avatarTabActive = widget.initialTab == 4;
     _tabCtrl.addListener(() {
       if (_tabCtrl.index == 2 && _assignments.isEmpty) _loadAssignments();
       if (_tabCtrl.indexIsChanging) {
         HapticFeedback.selectionClick();
       } else {
         final isAi = _tabCtrl.index == 3;
-        final isAvatar = _tabCtrl.index == 4;
-        if (_aiTabActive != isAi || _avatarTabActive != isAvatar) {
-          setState(() { _aiTabActive = isAi; _avatarTabActive = isAvatar; });
+        if (_aiTabActive != isAi) {
+          setState(() { _aiTabActive = isAi; });
         }
       }
     });
@@ -461,13 +457,11 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   _tabItem(CupertinoIcons.square_stack_3d_down_right, l.t('materials')),
                   _tabItem(CupertinoIcons.list_bullet, l.t('assignments')),
                   _tabItem(CupertinoIcons.sparkles, l.t('ai_chat')),
-                  _tabItem(CupertinoIcons.person_crop_rectangle,
-                    _avatarLectureCount != null ? '${l.t('avatar')} ($_avatarLectureCount)' : l.t('avatar')),
                 ],
               ),
               if (_canManageCohorts && _cohorts.length > 1) _cohortSelector(l),
               if (auth.isTeacher) AnimatedBuilder(animation: _tabCtrl, builder: (ctx, _) {
-                if (_tabCtrl.index == 3 || _tabCtrl.index == 4) return const SizedBox.shrink();
+                if (_tabCtrl.index == 3) return const SizedBox.shrink();
                 return Padding(
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
                   child: Row(children: [
@@ -534,14 +528,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   onOpenFile: (url, name) => _openFileViewer(context, url, name),
                 ),
                 _aiTab(viewOnly),
-                ClassAvatarTab(
-                  classId: widget.classId,
-                  isTeacher: auth.isTeacher,
-                  isActive: _avatarTabActive,
-                  onLecturesChanged: (count) {
-                    if (mounted && _avatarLectureCount != count) setState(() => _avatarLectureCount = count);
-                  },
-                ),
               ]),
           ),
         ]),

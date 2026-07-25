@@ -144,11 +144,9 @@ class PushService {
       case 'deadline':
         if (classId != null) nav.pushNamed('/class', arguments: classId);
         break;
-      // Админские события: жалоба, заявка на аватар, лекция на модерации —
+      // Админские события: жалоба на модерации —
       // переключаем шелл на вкладку админки (проверка роли — в MainShell).
       case 'admin_report':
-      case 'avatar_request':
-      case 'lecture_request':
         MainShell.sectionRequest.value = 'admin';
         break;
     }

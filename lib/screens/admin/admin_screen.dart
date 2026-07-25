@@ -10,7 +10,6 @@ import '../../utils/image_cache.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/network_cover_image.dart';
 import '../../widgets/toast.dart';
-import 'admin_avatars_tab.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -29,8 +28,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
   bool _classesLoading = true;
   String _search      = '';
   int _totalTokens    = 0;
-  bool _avatarsTabActive = false;
-  int _avatarsPendingCount = 0;
   int? _aiFilterClassId;
   int _aiLogPage      = 1;
   int _aiLogTotal     = 0;
@@ -40,13 +37,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 4, vsync: this);
-    _tabCtrl.addListener(() {
-      if (!_tabCtrl.indexIsChanging) {
-        final isAvatars = _tabCtrl.index == 3;
-        if (_avatarsTabActive != isAvatars) setState(() => _avatarsTabActive = isAvatars);
-      }
-    });
+    _tabCtrl = TabController(length: 3, vsync: this);
     _initAll();
   }
 
@@ -273,17 +264,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                 Tab(text: l.t('users')),
                 const Tab(text: 'AI'),
                 Tab(text: l.t('class_tab')),
-                Tab(child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Flexible(child: Text(l.t('admin_avatars_tab'), overflow: TextOverflow.ellipsis, maxLines: 1)),
-                  if (_avatarsPendingCount > 0) Padding(
-                    padding: const EdgeInsets.only(left: 6),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                      decoration: BoxDecoration(color: C.red, borderRadius: BorderRadius.circular(AppRadii.chip)),
-                      child: Text('$_avatarsPendingCount', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800)),
-                    ),
-                  ),
-                ])),
               ],
             ),
           ),
@@ -291,12 +271,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             _memoUsersTab(tabSig),
             _memoAiTab(tabSig),
             _memoClassesTab(tabSig),
-            AdminAvatarsTab(
-              isActive: _avatarsTabActive,
-              onPendingCountChanged: (count) {
-                if (mounted && _avatarsPendingCount != count) setState(() => _avatarsPendingCount = count);
-              },
-            ),
           ])),
         ]),
       )),

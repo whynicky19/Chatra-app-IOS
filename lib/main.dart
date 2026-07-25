@@ -36,10 +36,10 @@ String get _kDevApiUrl {
 
 String? _resolveBaseUrl() {
   const overrideUrl = String.fromEnvironment('API_URL');
-  if (overrideUrl.isNotEmpty) return overrideUrl;
+  if (overrideUrl.isNotEmpty) return '$overrideUrl/api';
   const overrideUrl2 = String.fromEnvironment('API_BASE_URL');
-  if (overrideUrl2.isNotEmpty) return overrideUrl2;
-  return kReleaseMode ? null : _kDevApiUrl;
+  if (overrideUrl2.isNotEmpty) return '$overrideUrl2/api';
+  return kReleaseMode ? null : '$_kDevApiUrl/api';
 }
 
 class _MisconfiguredApp extends StatelessWidget {

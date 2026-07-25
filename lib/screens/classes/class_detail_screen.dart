@@ -47,7 +47,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   Map<String, dynamic> _meta = {};
   String _title = '';
   List<dynamic> _lectures = [];
-  List<dynamic> _materials = [];
   bool _loading = true, _loadingAsg = false, _aiTabActive = false;
   bool _coverPrecached = false;
   Widget? _headerCache;
@@ -66,21 +65,21 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 4, vsync: this, initialIndex: widget.initialTab);
-    _aiTabActive = widget.initialTab == 3;
+    _tabCtrl = TabController(length: 3, vsync: this, initialIndex: widget.initialTab);
+    _aiTabActive = widget.initialTab == 2;
     _tabCtrl.addListener(() {
-      if (_tabCtrl.index == 2 && _assignments.isEmpty) _loadAssignments();
+      if (_tabCtrl.index == 1 && _assignments.isEmpty) _loadAssignments();
       if (_tabCtrl.indexIsChanging) {
         HapticFeedback.selectionClick();
       } else {
-        final isAi = _tabCtrl.index == 3;
+        final isAi = _tabCtrl.index == 2;
         if (_aiTabActive != isAi) {
           setState(() { _aiTabActive = isAi; });
         }
       }
     });
     _load();
-    if (widget.initialTab == 2) _loadAssignments();
+    if (widget.initialTab == 1) _loadAssignments();
   }
 
   @override
@@ -93,9 +92,14 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       final rawUrl = clsData['cover_image'];
       if (rawUrl != null && rawUrl.toString().isNotEmpty && !rawUrl.toString().startsWith('data:')) {
         final url = context.read<ApiService>().fixUrl(rawUrl.toString());
+        // Ключ кэша — без query (exp/sig меняются при каждом ответе сервера,
+        // см. NetworkCoverImage._stableCacheKey), иначе прекэш не совпадёт
+        // с виджетом, который реально рисует обложку.
+        final qIdx = url.indexOf('?');
+        final cacheKey = qIdx == -1 ? url : url.substring(0, qIdx);
         precacheImage(
           ResizeImage(
-            CachedNetworkImageProvider(url, cacheKey: 'class_cover_${widget.classId}'),
+            CachedNetworkImageProvider(url, cacheKey: cacheKey),
             width: 800,
           ),
           context,
@@ -124,17 +128,12 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     if (_canManageCohorts) _loadCohorts();
   }
 
-  Future<void> _evictCoverCache(String? newUrl) async {
-    try {
-      final fixed = (newUrl != null && newUrl.isNotEmpty)
-          ? context.read<ApiService>().fixUrl(newUrl) : '';
-      await CachedNetworkImage.evictFromCache(fixed, cacheKey: 'class_cover_${widget.classId}');
-      // Списки/сетки/карточки показывают cover_thumbnail отдельным кэш-ключом
-      // (см. cardCoverUrl) — иначе после смены обложки в них ещё какое-то
-      // время висела бы старая миниатюра.
-      await CachedNetworkImage.evictFromCache(fixed, cacheKey: 'class_cover_thumb_${widget.classId}');
-    } catch (_) {}
-    PaintingBinding.instance.imageCache.clear();
+  // Обложки теперь кэшируются по самому URL (не по стабильному id-ключу) —
+  // каждая новая загрузка обложки получает свой уникальный URL в облачном
+  // хранилище, поэтому старые байты просто перестают запрашиваться. Явный
+  // evict больше не нужен для попадания в другие вкладки, но подчищаем
+  // live-кэш, чтобы не тянуть старый кадр до следующего кадра рендера.
+  void _evictCoverCache() {
     PaintingBinding.instance.imageCache.clearLiveImages();
   }
 
@@ -158,14 +157,13 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
 
   void _recomputeDerived() {
     _lectures = _posts.where((p) => (p['title'] ?? '').startsWith('[LECTURE][${widget.classId}]')).toList();
-    _materials = _posts.where((p) => (p['title'] ?? '').startsWith('[HW][${widget.classId}]')).toList();
     _meta = _classData;
     _title = (_classData['name'] ?? '${context.read<L10n>().t('class_label')} #${widget.classId}').toString();
     _recomputeAiContext();
   }
 
   void _recomputeAiContext() {
-    final all = [..._lectures, ..._materials].take(12);
+    final all = _lectures.take(12);
     final parts = <String>[];
     for (final p in all) {
       final title = cleanPostTitle(p['title'] ?? '');
@@ -201,9 +199,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     }
     _cachedLectureContext = parts.join('\n\n');
 
-    final allPosts = [..._lectures, ..._materials];
     final urls = <String>[];
-    for (final p in allPosts) {
+    for (final p in _lectures) {
       for (final f in _extractFiles(p)) {
         final ext = cleanFileUrl(f).split('?').first.split('.').last.toLowerCase();
         if (['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(ext)) urls.add(f);
@@ -220,7 +217,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     final result = <String, String>{};
 
     final filePairs = <({String url, String cleanUrl})>[];
-    for (final p in [..._lectures, ..._materials]) {
+    for (final p in _lectures) {
       List<dynamic> files = [];
       try {
         final b = jsonDecode(p['body'] ?? '');
@@ -266,14 +263,10 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     if (mounted) setState(() => _loadingAsg = false);
   }
 
-  Widget _tabItem(IconData icon, String label) {
+  Widget _tabItem(String label) {
     return Tab(
-      height: 58,
-      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Icon(icon, size: 19),
-        const SizedBox(height: 3),
-        FittedBox(fit: BoxFit.scaleDown, child: Text(label, maxLines: 1, softWrap: false)),
-      ]),
+      height: 32,
+      child: FittedBox(fit: BoxFit.scaleDown, child: Text(label, maxLines: 1, softWrap: false)),
     );
   }
 
@@ -406,26 +399,20 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     final displayTitle = (_title.isNotEmpty ? _title : (clsData['title'] ?? '')).toString();
     final displayDesc = (meta['description'] ?? clsData['description'] ?? '').toString();
 
-    final inviteCode = (meta['invite_code'] as String?) ?? '';
     final headerSig = '$displayTitle|$displayDesc|${coverImg?.toString() ?? ''}|'
-        '${auth.isTeacher}|$inviteCode|$isArchivedForUser|${l.t('class_code')}|${l.t('code_copied')}|${l.t('archived_badge')}|${l.t('regenerate_code')}';
+        '${auth.isTeacher}|$isArchivedForUser|${l.t('archived_badge')}';
     if (headerSig != _headerSig || _headerCache == null) {
       _headerSig = headerSig;
       _headerCache = ClassCoverSliver(
-        classId: widget.classId,
         title: displayTitle,
         desc: displayDesc,
         coverImg: coverImg,
         isTeacher: auth.isTeacher,
-        inviteCode: inviteCode,
         isArchived: isArchivedForUser,
         archivedLabel: l.t('archived_badge'),
-        codeLabel: l.t('class_code'),
-        codeCopiedLabel: l.t('code_copied'),
         onBack: () => Navigator.pop(context),
         onEdit: _editClass,
-        regenerateLabel: l.t('regenerate_code'),
-        onRegenerateCode: _regenerateCode,
+        onSettings: _classSettings,
       );
     }
 
@@ -441,27 +428,39 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.05), blurRadius: 8, offset: const Offset(0, 2))],
             ),
             child: Column(children: [
-              TabBar(
-                controller: _tabCtrl,
-                labelColor: Theme.of(context).colorScheme.primary,
-                unselectedLabelColor: C.text4,
-                indicatorColor: Theme.of(context).colorScheme.primary,
-                indicatorWeight: 2,
-                indicatorSize: TabBarIndicatorSize.label,
-                dividerColor: Colors.transparent,
-                labelPadding: const EdgeInsets.symmetric(horizontal: 4),
-                labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.1),
-                unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-                tabs: [
-                  _tabItem(CupertinoIcons.book, '${l.t('lectures')} (${_lectures.length})'),
-                  _tabItem(CupertinoIcons.square_stack_3d_down_right, l.t('materials')),
-                  _tabItem(CupertinoIcons.list_bullet, l.t('assignments')),
-                  _tabItem(CupertinoIcons.sparkles, l.t('ai_chat')),
-                ],
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+                child: Container(
+                  height: 38,
+                  padding: const EdgeInsets.all(2.5),
+                  decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(11)),
+                  child: TabBar(
+                    controller: _tabCtrl,
+                    dividerColor: Colors.transparent,
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    indicatorAnimation: TabIndicatorAnimation.elastic,
+                    indicator: BoxDecoration(
+                      color: surfaceColor,
+                      borderRadius: BorderRadius.circular(8.5),
+                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.10), blurRadius: 4, offset: const Offset(0, 1))],
+                    ),
+                    splashFactory: NoSplash.splashFactory,
+                    overlayColor: WidgetStateProperty.all(Colors.transparent),
+                    labelColor: adaptiveText1(context),
+                    unselectedLabelColor: C.text4,
+                    labelPadding: const EdgeInsets.symmetric(horizontal: 2),
+                    labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: -0.1),
+                    unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: -0.1),
+                    tabs: [
+                      _tabItem(l.t('lectures')),
+                      _tabItem(l.t('assignments')),
+                      _tabItem(l.t('ai_chat')),
+                    ],
+                  ),
+                ),
               ),
-              if (_canManageCohorts && _cohorts.length > 1) _cohortSelector(l),
               if (auth.isTeacher) AnimatedBuilder(animation: _tabCtrl, builder: (ctx, _) {
-                if (_tabCtrl.index == 3) return const SizedBox.shrink();
+                if (_tabCtrl.index == 2) return const SizedBox.shrink();
                 return Padding(
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
                   child: Row(children: [
@@ -511,12 +510,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               )
             : TabBarView(controller: _tabCtrl, children: [
                 ClassPostsTab(
-                  posts: _lectures, type: 'lecture', isTeacher: auth.isTeacher, fileTexts: _fileTexts,
-                  onShowPost: _showPost, onEditPost: _editPost,
-                  onDeletePost: (id) async { try { await context.read<ApiService>().deletePost(id); _load(); } catch (_) {} },
-                ),
-                ClassPostsTab(
-                  posts: _materials, type: 'material', isTeacher: auth.isTeacher, fileTexts: _fileTexts,
+                  posts: _lectures, isTeacher: auth.isTeacher, fileTexts: _fileTexts,
                   onShowPost: _showPost, onEditPost: _editPost,
                   onDeletePost: (id) async { try { await context.read<ApiService>().deletePost(id); _load(); } catch (_) {} },
                 ),
@@ -601,7 +595,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               const SizedBox(width: 12),
               Expanded(child: ElevatedButton(onPressed: () async {
                 try {
-                  final prefix = (p['title'] ?? '').startsWith('[LECTURE]') ? '[LECTURE][${widget.classId}] ' : '[HW][${widget.classId}] ';
+                  final prefix = '[LECTURE][${widget.classId}] ';
                   await context.read<ApiService>().updatePost(p['id'], '$prefix${tc.text.trim()}', jsonEncode({
                     'content': cc.text,
                     if (editFiles.isNotEmpty) 'files': editFiles,
@@ -645,7 +639,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     return result;
   }
 
-  Widget _cohortSelector(L10n l) {
+  Widget _cohortSelector(L10n l, {VoidCallback? onChangedExtra}) {
     final activeCohort = _cohorts.firstWhere(
       (c) => c['status'] == 'active',
       orElse: () => null,
@@ -701,6 +695,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 onChanged: (v) {
                   HapticFeedback.selectionClick();
                   setState(() => _selectedCohortId = (v == activeId) ? null : v);
+                  onChangedExtra?.call();
                 },
               ),
             ),
@@ -738,13 +733,12 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     );
   }
 
-  void _showPost(dynamic p, String type, int num) {
+  void _showPost(dynamic p, int num) {
     String content = '';
     try { final b = jsonDecode(p['body']); content = b['content'] ?? b['description'] ?? ''; }
     catch (_) { content = p['body'] ?? ''; }
     final files    = _extractFiles(p);
     final cleanText = cleanContent(content);
-    final isLecture = type == 'lecture';
     final accent    = Theme.of(context).colorScheme.primary;
     final isDark    = Theme.of(context).brightness == Brightness.dark;
     final l         = context.read<L10n>();
@@ -793,7 +787,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.22), borderRadius: BorderRadius.circular(8)),
                   child: Text(
-                    '${(isLecture ? l.t('lecture') : l.t('material')).toUpperCase()} $num',
+                    '${l.t('lecture').toUpperCase()} $num',
                     style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 1.0),
                   ),
                 ),
@@ -910,7 +904,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
                       Container(width: 64, height: 64,
                         decoration: BoxDecoration(color: accent.withValues(alpha: 0.08), shape: BoxShape.circle),
-                        child: Icon(isLecture ? CupertinoIcons.book : CupertinoIcons.tray, size: 30, color: accent)),
+                        child: Icon(CupertinoIcons.book, size: 30, color: accent)),
                       const SizedBox(height: 14),
                       Text(l.t('content_empty'), style: const TextStyle(fontSize: 14, color: C.text4, fontWeight: FontWeight.w500)),
                     ])),
@@ -946,7 +940,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
 
   void _showAddMenu() {
     final l = context.read<L10n>();
-    String type = 'lecture';
     final tc = TextEditingController(), cc = TextEditingController();
     List<PlatformFile> lectureFiles = [];
     showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Theme.of(context).colorScheme.surface,
@@ -967,20 +960,10 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             IconButton(icon: const Icon(CupertinoIcons.xmark), onPressed: () => Navigator.pop(ctx)),
           ]),
           const SizedBox(height: 20),
-          Container(decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(AppRadii.tile)),
-            child: Row(children: [
-              Expanded(child: GestureDetector(onTap: () => setS(() => type = 'lecture'),
-                child: Container(padding: const EdgeInsets.symmetric(vertical: 12), decoration: BoxDecoration(color: type == 'lecture' ? Theme.of(ctx).colorScheme.surface : Colors.transparent, borderRadius: BorderRadius.circular(12)),
-                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(CupertinoIcons.book, size: 16, color: type == 'lecture' ? Theme.of(context).colorScheme.primary : C.text4), const SizedBox(width: 6), Text(l.t('lecture'), style: TextStyle(fontWeight: FontWeight.w600, color: type == 'lecture' ? Theme.of(context).colorScheme.primary : C.text4))])))),
-              Expanded(child: GestureDetector(onTap: () => setS(() => type = 'material'),
-                child: Container(padding: const EdgeInsets.symmetric(vertical: 12), decoration: BoxDecoration(color: type == 'material' ? Theme.of(ctx).colorScheme.surface : Colors.transparent, borderRadius: BorderRadius.circular(12)),
-                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(CupertinoIcons.doc_text, size: 16, color: type == 'material' ? Theme.of(context).colorScheme.primary : C.text4), const SizedBox(width: 6), Text(l.t('material'), style: TextStyle(fontWeight: FontWeight.w600, color: type == 'material' ? Theme.of(context).colorScheme.primary : C.text4))])))),
-            ])),
-          const SizedBox(height: 20),
-          _fieldLabel2('${type == 'lecture' ? l.t('lecture_topic') : l.t('material_topic')} *'),
+          _fieldLabel2('${l.t('lecture_topic')} *'),
           TextField(controller: tc, decoration: InputDecoration(hintText: l.t('topic_hint'))),
           const SizedBox(height: 16),
-          _fieldLabel2(type == 'lecture' ? l.t('lecture_content') : l.t('material_content')),
+          _fieldLabel2(l.t('lecture_content')),
           TextField(controller: cc, decoration: InputDecoration(hintText: l.t('content_body_hint')), maxLines: 4),
           const SizedBox(height: 20),
           _fieldLabel2(l.t('attach_files')),
@@ -1005,7 +988,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
               onPressed: () async {
                 if (tc.text.trim().isEmpty) return;
-                final prefix = type == 'lecture' ? '[LECTURE][${widget.classId}]' : '[HW][${widget.classId}]';
+                final prefix = '[LECTURE][${widget.classId}]';
                 try {
                   final api = context.read<ApiService>();
                   final fileUrls = <String>[];
@@ -1566,8 +1549,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     XFile? newCoverFile;
     bool coverRemoved = false;
     bool saving = false;
-    final bool rotationOriginal = (meta['rotation_mode'] == 'yearly');
-    bool rotationYearly = rotationOriginal;
 
     showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
@@ -1625,54 +1606,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           const SizedBox(height: 16),
           _fieldLabel2(l.t('teacher_name_label')),
           TextField(controller: tn, decoration: InputDecoration(hintText: l.t('teacher_display_hint'))),
-          if (_canManageCohorts) ...[
-          const SizedBox(height: 20),
-          Container(
-            decoration: BoxDecoration(
-              color: adaptiveSurface2(context),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: SwitchListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              value: rotationYearly,
-              onChanged: saving ? null : (v) => setS(() => rotationYearly = v),
-              title: Text(context.read<L10n>().t('yearly_rotation'),
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Text(context.read<L10n>().t('yearly_rotation_sub'),
-                    style: const TextStyle(fontSize: 12.5, color: C.text4)),
-              ),
-            ),
-          ),
-          if (rotationYearly) ...[
-            const SizedBox(height: 12),
-            GestureDetector(
-              onTap: () async {
-                Navigator.pop(ctx);
-                final changed = await Navigator.push<bool>(context,
-                    MaterialPageRoute(builder: (_) => const RolloverScreen()));
-                if (changed == true && mounted) _load();
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.35)),
-                ),
-                child: Row(children: [
-                  Icon(CupertinoIcons.calendar_badge_plus, size: 19, color: Theme.of(context).colorScheme.primary),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(context.read<L10n>().t('new_academic_year'),
-                      style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700,
-                          color: Theme.of(context).colorScheme.primary))),
-                  Icon(CupertinoIcons.chevron_right, size: 15, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6)),
-                ]),
-              ),
-            ),
-          ],
-          ],
           const SizedBox(height: 28),
           Row(children: [
             Expanded(child: OutlinedButton(onPressed: saving ? null : () => Navigator.pop(ctx), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)), child: Text(l.t('cancel')))),
@@ -1698,12 +1631,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                       description: dc.text.trim(),
                       teacher: tn.text.trim(),
                       coverImage: coverImage);
-                  if (rotationYearly != rotationOriginal) {
-                    await api.setRotationMode(
-                        widget.classId, rotationYearly ? 'yearly' : 'manual');
-                  }
                   if (!mounted || !ctx.mounted) return;
-                  if (coverChanged) await _evictCoverCache(coverImage);
+                  if (coverChanged) _evictCoverCache();
                   if (!mounted || !ctx.mounted) return;
                   Navigator.pop(ctx);
                   _applyClassUpdate(updated);
@@ -1719,6 +1648,114 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           ]),
           const SizedBox(height: 24),
         ])))).then((_) { tc.dispose(); dc.dispose(); tn.dispose(); });
+  }
+
+  void _classSettings() {
+    final l = context.read<L10n>();
+    final inviteCode = (_meta['invite_code'] as String?) ?? '';
+    bool rotationYearly = (_meta['rotation_mode'] == 'yearly');
+    bool savingRotation = false;
+
+    showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => DraggableScrollableSheet(expand: false, initialChildSize: 0.6, maxChildSize: 0.9,
+        builder: (ctx, scroll) => ListView(controller: scroll, padding: const EdgeInsets.all(24), children: [
+          Row(children: [
+            Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.tile)),
+              child: Icon(CupertinoIcons.gear_alt_fill, color: Theme.of(context).colorScheme.primary, size: 20)),
+            const SizedBox(width: 12),
+            Expanded(child: Text(l.t('class_settings'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800))),
+            IconButton(icon: const Icon(CupertinoIcons.xmark), onPressed: () => Navigator.pop(ctx)),
+          ]),
+          const SizedBox(height: 20),
+          if (inviteCode.isNotEmpty) ...[
+            _fieldLabel2(l.t('class_code')),
+            const SizedBox(height: 8),
+            Wrap(spacing: 8, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
+              GestureDetector(
+                onTap: () { Clipboard.setData(ClipboardData(text: inviteCode)); showToast(context, '${l.t('code_copied')}: $inviteCode'); },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(10)),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(CupertinoIcons.doc_on_doc, size: 14, color: Theme.of(context).colorScheme.primary),
+                    const SizedBox(width: 6),
+                    Text(inviteCode, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary, letterSpacing: 2)),
+                  ]),
+                ),
+              ),
+              GestureDetector(
+                onTap: () async { Navigator.pop(ctx); await _regenerateCode(); },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), border: Border.all(color: adaptiveBorder(context))),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(CupertinoIcons.refresh, size: 14, color: C.text4),
+                    const SizedBox(width: 6),
+                    Text(l.t('regenerate_code'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: C.text4)),
+                  ]),
+                ),
+              ),
+            ]),
+            const SizedBox(height: 20),
+          ],
+          if (_canManageCohorts && _cohorts.length > 1) ...[
+            _cohortSelector(l, onChangedExtra: () => setS(() {})),
+            const SizedBox(height: 16),
+          ],
+          if (_canManageCohorts) ...[
+            Container(
+              decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(16)),
+              child: SwitchListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                value: rotationYearly,
+                onChanged: savingRotation ? null : (v) async {
+                  setS(() { rotationYearly = v; savingRotation = true; });
+                  try {
+                    await context.read<ApiService>().setRotationMode(widget.classId, v ? 'yearly' : 'manual');
+                    setState(() => _meta = {..._meta, 'rotation_mode': v ? 'yearly' : 'manual'});
+                  } catch (_) {
+                    if (ctx.mounted) setS(() => rotationYearly = !v);
+                  }
+                  if (ctx.mounted) setS(() => savingRotation = false);
+                },
+                title: Text(l.t('yearly_rotation'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(l.t('yearly_rotation_sub'), style: const TextStyle(fontSize: 12.5, color: C.text4)),
+                ),
+              ),
+            ),
+            if (rotationYearly) ...[
+              const SizedBox(height: 12),
+              GestureDetector(
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  final changed = await Navigator.push<bool>(context,
+                      MaterialPageRoute(builder: (_) => const RolloverScreen()));
+                  if (changed == true && mounted) _load();
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.35)),
+                  ),
+                  child: Row(children: [
+                    Icon(CupertinoIcons.calendar_badge_plus, size: 19, color: Theme.of(context).colorScheme.primary),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(l.t('new_academic_year'),
+                        style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700,
+                            color: Theme.of(context).colorScheme.primary))),
+                    Icon(CupertinoIcons.chevron_right, size: 15, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6)),
+                  ]),
+                ),
+              ),
+            ],
+          ],
+          const SizedBox(height: 16),
+        ])))).then((_) {});
   }
 
   @override void dispose() {

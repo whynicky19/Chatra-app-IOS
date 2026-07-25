@@ -296,10 +296,11 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
         final deadline = a['deadline'];
         final isLate = deadline != null && DateTime.tryParse(deadline)?.isBefore(DateTime.now()) == true && sub == null;
 
-        Color statusColor = isGraded ? C.green : isNeedsReview ? C.amber : isSubmitted ? Theme.of(context).colorScheme.primary : isLate ? C.red : C.text4;
-        Color statusBg = isGraded ? C.greenLt : isNeedsReview ? C.amberLt : isSubmitted ? adaptivePrimaryLt(context) : isLate ? C.redLt : adaptiveSurface2(context);
-        String statusText = isGraded ? l.t('graded') : isNeedsReview ? l.t('needs_review') : isSubmitted ? l.t('submitted') : isLate ? l.t('overdue') : l.t('new_status');
-        IconData statusIcon = isGraded ? CupertinoIcons.checkmark_circle_fill : isNeedsReview ? CupertinoIcons.exclamationmark_triangle : isSubmitted ? CupertinoIcons.arrow_up_doc : isLate ? CupertinoIcons.clock : CupertinoIcons.pencil;
+        final showBadge = isGraded || isNeedsReview || isSubmitted || isLate;
+        Color statusColor = isGraded ? C.green : isNeedsReview ? C.amber : isSubmitted ? Theme.of(context).colorScheme.primary : C.red;
+        Color statusBg = isGraded ? C.greenLt : isNeedsReview ? C.amberLt : isSubmitted ? adaptivePrimaryLt(context) : C.redLt;
+        String statusText = isGraded ? l.t('graded') : isNeedsReview ? l.t('needs_review') : isSubmitted ? l.t('submitted') : l.t('overdue');
+        IconData statusIcon = isGraded ? CupertinoIcons.checkmark_circle_fill : isNeedsReview ? CupertinoIcons.exclamationmark_triangle : isSubmitted ? CupertinoIcons.arrow_up_doc : CupertinoIcons.clock;
 
         return TweenAnimationBuilder<double>(
           key: ValueKey('asgn_${a['id']}'),
@@ -317,38 +318,35 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 boxShadow: cardShadow(isDark),
               ),
               child: Column(children: [
-                Padding(padding: const EdgeInsets.all(16), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Container(width: 48, height: 48,
-                    decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.tile)),
-                    child: Icon(statusIcon, color: statusColor, size: 22)),
-                  const SizedBox(width: 12),
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Row(children: [
-                      Expanded(child: Text(a['title'] ?? '', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800), maxLines: 2, overflow: TextOverflow.ellipsis)),
+                Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Expanded(child: Text(a['title'] ?? '', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800), maxLines: 2, overflow: TextOverflow.ellipsis)),
+                    if (showBadge) ...[
                       const SizedBox(width: 8),
                       Container(padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                         decoration: BoxDecoration(color: statusBg, borderRadius: BorderRadius.circular(AppRadii.card)),
                         child: Text(statusText, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: statusColor))),
+                    ],
+                    if (widget.isTeacher) GestureDetector(
+                      onTap: () => _showAssignmentActions(a),
+                      child: Container(width: 30, height: 30, alignment: Alignment.center, margin: const EdgeInsets.only(left: 2),
+                        child: const Icon(CupertinoIcons.ellipsis, size: 18, color: C.text4)),
+                    ),
+                  ]),
+                  if (a['description'] != null && _cleanContent(a['description'].toString()).isNotEmpty)
+                    Padding(padding: const EdgeInsets.only(top: 4),
+                      child: Text(_cleanContent(a['description'].toString()), style: const TextStyle(fontSize: 13, color: C.text4, height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis)),
+                  const SizedBox(height: 10),
+                  Wrap(spacing: 12, children: [
+                    if (deadline != null) Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(CupertinoIcons.calendar, size: 12, color: isLate ? C.red : C.text4), const SizedBox(width: 4),
+                      Text(_fmtDate(deadline), style: TextStyle(fontSize: 12, color: isLate ? C.red : C.text4, fontWeight: FontWeight.w500)),
                     ]),
-                    if (a['description'] != null && _cleanContent(a['description'].toString()).isNotEmpty)
-                      Padding(padding: const EdgeInsets.only(top: 4),
-                        child: Text(_cleanContent(a['description'].toString()), style: const TextStyle(fontSize: 13, color: C.text4), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                    const SizedBox(height: 10),
-                    Wrap(spacing: 12, children: [
-                      if (deadline != null) Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(CupertinoIcons.calendar, size: 12, color: isLate ? C.red : C.text4), const SizedBox(width: 4),
-                        Text(_fmtDate(deadline), style: TextStyle(fontSize: 12, color: isLate ? C.red : C.text4, fontWeight: FontWeight.w500)),
-                      ]),
-                      Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(CupertinoIcons.star_fill, size: 14, color: Theme.of(context).colorScheme.primary), const SizedBox(width: 3),
-                        Text('${a['max_score'] ?? 100} ${l.t('pts')}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
-                      ]),
-                      if (grade != null) Row(mainAxisSize: MainAxisSize.min, children: [
-                        const Icon(CupertinoIcons.checkmark_circle_fill, size: 12, color: C.green), const SizedBox(width: 3),
-                        Text('${grade['score']}/${a['max_score']}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: C.green)),
-                      ]),
+                    if (grade != null) Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(CupertinoIcons.checkmark_circle_fill, size: 12, color: C.green), const SizedBox(width: 3),
+                      Text('${grade['score']}/${a['max_score']}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: C.green)),
                     ]),
-                  ])),
+                  ]),
                 ])),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
@@ -357,7 +355,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     borderRadius: const BorderRadius.vertical(bottom: Radius.circular(18)),
                   ),
                   child: Row(children: [
-                    Container(
+                    if (showBadge) Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(8)),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -379,6 +377,35 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
           )),
         );
       },
+    );
+  }
+
+  void _deleteAssignment(dynamic a) async {
+    final l = context.read<L10n>();
+    final ok = await showConfirmDialog(context,
+      title: l.t('delete_assignment_q'),
+      message: l.t('delete_irreversible'),
+      icon: CupertinoIcons.trash,
+      danger: true,
+      confirmText: l.t('delete'),
+      cancelText: l.t('cancel'));
+    if (ok != true || !mounted) return;
+    try {
+      await context.read<ApiService>().deleteAssignment(a['id']);
+      if (mounted) { widget.onRefresh(); showToast(context, l.t('assignment_deleted')); }
+    } catch (_) {
+      if (mounted) showToast(context, l.t('error_generic'), error: true);
+    }
+  }
+
+  void _showAssignmentActions(dynamic a) {
+    final l = context.read<L10n>();
+    showAppActionSheet(context,
+      actions: [
+        AppActionSheetAction(icon: CupertinoIcons.pencil, label: l.t('edit'), onTap: () => widget.onEditAssignment(a)),
+        AppActionSheetAction(icon: CupertinoIcons.trash, label: l.t('delete'), destructive: true, onTap: () => _deleteAssignment(a)),
+      ],
+      cancelText: l.t('cancel'),
     );
   }
 
@@ -909,38 +936,6 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
           const SizedBox(height: 20),
           Divider(height: 1, color: adaptiveBorder(context)),
           const SizedBox(height: 16),
-          Row(children: [
-            Expanded(child: OutlinedButton.icon(
-              icon: const Icon(CupertinoIcons.pencil, size: 16),
-              label: Text(l.t('edit')),
-              onPressed: () { Navigator.pop(ctx); widget.onEditAssignment(a); },
-              style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
-            )),
-            const SizedBox(width: 10),
-            OutlinedButton(
-              onPressed: () async {
-                Navigator.pop(ctx);
-                final ok = await showConfirmDialog(context,
-                  title: l.t('delete_assignment_q'),
-                  message: l.t('delete_irreversible'),
-                  icon: CupertinoIcons.trash,
-                  danger: true,
-                  confirmText: l.t('delete'),
-                  cancelText: l.t('cancel'));
-                if (ok == true && mounted) {
-                  try {
-                    await context.read<ApiService>().deleteAssignment(a['id']);
-                    if (mounted) { widget.onRefresh(); showToast(context, l.t('assignment_deleted')); }
-                  } catch (_) {
-                    if (mounted) showToast(context, l.t('error_generic'), error: true);
-                  }
-                }
-              },
-              style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12), side: BorderSide(color: C.red.withValues(alpha: 0.5))),
-              child: const Icon(CupertinoIcons.trash, size: 18, color: C.red),
-            ),
-          ]),
-          const SizedBox(height: 10),
           ConstrainedBox(constraints: const BoxConstraints(minWidth: double.infinity, minHeight: 48), child: ElevatedButton.icon(
             icon: const Icon(CupertinoIcons.list_bullet, size: 18),
             label: Text(l.t('view_works')),

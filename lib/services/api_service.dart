@@ -752,11 +752,21 @@ class ApiService {
     }
   }
 
+  // Абсолютные URL файлов, которые отдаёт бэкенд (R2 и локальные /uploads),
+  // уже сами содержат "/api/uploads/..." после хоста (см. file_urls.py,
+  // r2_storage.py). baseUrl здесь — это Dio base, который тоже всегда
+  // заканчивается на "/api" (см. _resolveBaseUrl в main.dart). Если при
+  // подмене localhost/127.0.0.1 использовать baseUrl как есть, получится
+  // задвоенный "/api/api/uploads/..." (404) — поэтому для замены хоста нужен
+  // корень БЕЗ "/api".
+  String get _uploadHostRoot =>
+      baseUrl.endsWith('/api') ? baseUrl.substring(0, baseUrl.length - 4) : baseUrl;
+
   String fixUrl(String url) {
     if (url.isEmpty) return url;
     var fixed = url
-        .replaceAll(RegExp(r'https?://localhost:\d+'), baseUrl)
-        .replaceAll(RegExp(r'https?://127\.0\.0\.1:\d+'), baseUrl);
+        .replaceAll(RegExp(r'https?://localhost:\d+'), _uploadHostRoot)
+        .replaceAll(RegExp(r'https?://127\.0\.0\.1:\d+'), _uploadHostRoot);
     if (!fixed.startsWith('http') && !fixed.startsWith('ws')) {
       fixed = '$baseUrl${fixed.startsWith('/') ? '' : '/'}$fixed';
     }
@@ -766,8 +776,8 @@ class ApiService {
   String fixUrlsInText(String text) {
     if (text.isEmpty) return text;
     var out = text
-        .replaceAll(RegExp(r'https?://localhost:\d+'), baseUrl)
-        .replaceAll(RegExp(r'https?://127\.0\.0\.1:\d+'), baseUrl);
+        .replaceAll(RegExp(r'https?://localhost:\d+'), _uploadHostRoot)
+        .replaceAll(RegExp(r'https?://127\.0\.0\.1:\d+'), _uploadHostRoot);
     out = out.replaceAllMapped(
       RegExp(r'(^|\s)(/uploads/\S+)'),
       (m) => '${m[1]}$baseUrl${m[2]}',

@@ -20,7 +20,10 @@ final RegExp fileUrlRe = RegExp(
     r'https?://[^\s"<>]+?\.(pdf|docx?|pptx?|xlsx?|txt|md|csv|rtf|png|jpe?g|gif|webp|mp3|wav|m4a|webm|ogg|mp4)'
     r'(\?[^\s"<>]*)?(#[^\s"<>]*)?',
     caseSensitive: false);
-final RegExp mdFileRe = RegExp(r'📎\s*\[([^\]\n]+)\]\((https?://[^\s)]+)\)');
+// URL внутри скобок может содержать пробелы (оригинальное имя файла в пути,
+// например "Lection 1.pptx") — границу задают сами скобки markdown-ссылки,
+// поэтому пробел из группы захвата не исключаем, только ')' и перевод строки.
+final RegExp mdFileRe = RegExp(r'📎\s*\[([^\]\n]+)\]\((https?://[^)\n]+)\)');
 
 String cleanContent(String content) {
   return content

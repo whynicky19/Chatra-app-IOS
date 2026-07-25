@@ -1,43 +1,31 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/image_cache.dart';
 import '../../../widgets/network_cover_image.dart';
-import '../../../widgets/toast.dart';
 
 class ClassCoverSliver extends StatelessWidget {
-  final int classId;
   final String title;
   final String desc;
   final dynamic coverImg;
   final bool isTeacher;
-  final String inviteCode;
   final bool isArchived;
   final String archivedLabel;
-  final String codeLabel;
-  final String codeCopiedLabel;
-  final String regenerateLabel;
   final VoidCallback onBack;
   final VoidCallback onEdit;
-  final VoidCallback onRegenerateCode;
+  final VoidCallback onSettings;
 
   const ClassCoverSliver({
     super.key,
-    required this.classId,
     required this.title,
     required this.desc,
     required this.coverImg,
     required this.isTeacher,
-    required this.inviteCode,
     required this.isArchived,
     required this.archivedLabel,
-    required this.codeLabel,
-    required this.codeCopiedLabel,
-    required this.regenerateLabel,
     required this.onBack,
     required this.onEdit,
-    required this.onRegenerateCode,
+    required this.onSettings,
   });
 
   @override
@@ -50,7 +38,6 @@ class ClassCoverSliver extends StatelessWidget {
     if (isNetwork) {
       cover = RepaintBoundary(child: NetworkCoverImage(
         url: coverImg.toString(),
-        cacheKey: 'class_cover_$classId',
         alignment: Alignment.topCenter,
         memCacheWidth: 800,
       ));
@@ -79,6 +66,12 @@ class ClassCoverSliver extends StatelessWidget {
         onPressed: onBack,
       ),
       actions: [
+        if (isTeacher) IconButton(
+          padding: EdgeInsets.zero,
+          icon: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(AppRadii.chip)), child: const Icon(CupertinoIcons.gear_alt_fill, color: Colors.white70, size: 17)),
+          onPressed: onSettings,
+        ),
+        if (isTeacher) const SizedBox(width: 6),
         if (isTeacher) IconButton(
           padding: EdgeInsets.zero,
           icon: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(AppRadii.chip)), child: const Icon(CupertinoIcons.pencil, color: Colors.white70, size: 18)),
@@ -134,40 +127,6 @@ class ClassCoverSliver extends StatelessWidget {
             if (desc.isNotEmpty) ...[
               const SizedBox(height: 4),
               Text(desc, style: const TextStyle(color: Colors.white70, fontSize: 13)),
-            ],
-            if (isTeacher && inviteCode.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Wrap(spacing: 8, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
-                GestureDetector(
-                  onTap: () { Clipboard.setData(ClipboardData(text: inviteCode)); showToast(context, '$codeCopiedLabel: $inviteCode'); },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(color: adaptivePrimaryLt(context).withValues(alpha: 0.9), borderRadius: BorderRadius.circular(8)),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Icon(CupertinoIcons.doc_on_doc, size: 14, color: primary),
-                      const SizedBox(width: 6),
-                      Text('$codeLabel: ', style: TextStyle(fontSize: 13, color: primary)),
-                      Text(inviteCode, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: primary, letterSpacing: 2)),
-                    ]),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: onRegenerateCode,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
-                    ),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      const Icon(CupertinoIcons.refresh, size: 13, color: Colors.white),
-                      const SizedBox(width: 6),
-                      Text(regenerateLabel, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white)),
-                    ]),
-                  ),
-                ),
-              ]),
             ],
           ]))),
         ]),

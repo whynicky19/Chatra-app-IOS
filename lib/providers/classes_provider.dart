@@ -250,7 +250,4 @@ class ClassesProvider extends ChangeNotifier {
 
   List<Map<String, dynamic>> get archivedClasses =>
       classes.where((c) => _isArchived(c)).toList();
-
-  int lectureCount(int id) =>
-    posts.where((p) => (p['title'] ?? '').startsWith('[LECTURE][$id]')).length;
 }

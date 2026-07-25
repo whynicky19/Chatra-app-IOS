@@ -13,7 +13,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 /// быть не может.
 class NetworkCoverImage extends StatelessWidget {
   final String url;
-  final String? cacheKey;
   final BoxFit fit;
   final AlignmentGeometry alignment;
   final int? memCacheWidth;
@@ -23,7 +22,6 @@ class NetworkCoverImage extends StatelessWidget {
   const NetworkCoverImage({
     super.key,
     required this.url,
-    this.cacheKey,
     this.fit = BoxFit.cover,
     this.alignment = Alignment.center,
     this.memCacheWidth,
@@ -31,13 +29,26 @@ class NetworkCoverImage extends StatelessWidget {
     this.errorBuilder,
   });
 
+  /// Бэкенд подписывает файловые URL параметрами exp/sig и переподписывает их
+  /// заново при КАЖДОМ ответе (см. file_urls.py: sign_uploads_in_text) — сама
+  /// подпись не имеет отношения к содержимому файла. Если кэшировать по
+  /// полному URL как есть, каждое открытие экрана получает новый exp/sig →
+  /// новый "URL" → мимо диск-кэша → обложка перекачивается заново каждый раз.
+  /// Путь файла (без query) стабилен, пока обложку не перезалили — поэтому
+  /// именно он служит ключом кэша, а полный URL с подписью используется
+  /// только для самого запроса.
+  String get _stableCacheKey {
+    final i = url.indexOf('?');
+    return i == -1 ? url : url.substring(0, i);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Image(
       image: ResizeImage.resizeIfNeeded(
         memCacheWidth,
         null,
-        CachedNetworkImageProvider(url, cacheKey: cacheKey),
+        CachedNetworkImageProvider(url, cacheKey: _stableCacheKey),
       ),
       fit: fit,
       alignment: alignment,

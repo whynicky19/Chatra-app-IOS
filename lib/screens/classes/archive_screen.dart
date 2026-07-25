@@ -172,7 +172,6 @@ class _ArchiveCard extends StatelessWidget {
     final coverImg = cardCoverUrl(cls);
     final title = (cls['name'] ?? cls['title'] ?? '').toString();
     final teacher = (cls['teacher'] ?? cls['teacher_name'] ?? '').toString();
-    final id = cls['id'] as int;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
@@ -205,7 +204,6 @@ class _ArchiveCard extends StatelessWidget {
                             })
                           : NetworkCoverImage(
                               url: context.read<ApiService>().fixUrl(coverImg.toString()),
-                              cacheKey: 'class_cover_thumb_$id',
                               memCacheWidth: 480,
                             ),
                     Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(

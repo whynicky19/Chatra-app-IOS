@@ -315,7 +315,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     index: i,
                     colors: _grads[id % _grads.length],
                     isPinned: _pinnedIds.contains(id),
-                    lectureCount: provider.lectureCount(id),
                     isTeacher: auth.isTeacher,
                     openLabel: l.t('open'),
                     codeCopiedLabel: l.t('code_copied'),
@@ -478,7 +477,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 onMembers: () {
                   Navigator.pop(ctx);
                   Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => ClassDetailScreen(classId: id, initialTab: 3),
+                    builder: (_) => ClassDetailScreen(classId: id, initialTab: 2),
                   ));
                 },
                 onDelete: () async {
@@ -654,7 +653,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       child: coverImg != null && coverImg.toString().startsWith('data:')
                           ? Builder(builder: (_) { final bytes = decodeBase64Image(coverImg.toString()); return bytes != null ? Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, gaplessPlayback: true, cacheWidth: 480) : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))); })
                           : coverImg != null
-                              ? NetworkCoverImage(url: context.read<ApiService>().fixUrl(coverImg.toString()), cacheKey: 'class_cover_thumb_${foundClass!['id']}', memCacheWidth: 480, errorBuilder: (_) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))))
+                              ? NetworkCoverImage(url: context.read<ApiService>().fixUrl(coverImg.toString()), memCacheWidth: 480, errorBuilder: (_) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))))
                               : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))));
                   }),
                   Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -868,7 +867,7 @@ class _ClassContextMenu extends StatelessWidget {
                 coverImg != null && coverImg.toString().startsWith('data:')
                     ? Builder(builder: (_) { final bytes = decodeBase64Image(coverImg.toString()); return bytes != null ? Image.memory(bytes, fit: BoxFit.cover, gaplessPlayback: true, cacheWidth: 480) : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))); })
                     : coverImg != null
-                        ? NetworkCoverImage(url: context.read<ApiService>().fixUrl(coverImg.toString()), cacheKey: 'class_cover_thumb_${cls['id']}', memCacheWidth: 480, errorBuilder: (_) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))))
+                        ? NetworkCoverImage(url: context.read<ApiService>().fixUrl(coverImg.toString()), memCacheWidth: 480, errorBuilder: (_) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))))
                         : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight))),
                 Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                   begin: Alignment.topCenter, end: Alignment.bottomCenter,
@@ -1087,7 +1086,6 @@ class _ClassCard extends StatelessWidget {
   final int index;
   final List<Color> colors;
   final bool isPinned;
-  final int lectureCount;
   final bool isTeacher;
   final String openLabel;
   final String codeCopiedLabel;
@@ -1109,7 +1107,6 @@ class _ClassCard extends StatelessWidget {
     required this.index,
     required this.colors,
     required this.isPinned,
-    required this.lectureCount,
     required this.isTeacher,
     required this.openLabel,
     required this.codeCopiedLabel,
@@ -1132,7 +1129,6 @@ class _ClassCard extends StatelessWidget {
     final surface  = Theme.of(context).colorScheme.surface;
     final coverImg = cardCoverUrl(cls);
     final teacherName = cls['teacher_name'] ?? '';
-    final id = cls['id'] as int;
 
     return RepaintBoundary(
       child: GestureDetector(
@@ -1161,7 +1157,6 @@ class _ClassCard extends StatelessWidget {
                           })
                         : NetworkCoverImage(
                             url: context.read<ApiService>().fixUrl(coverImg.toString()),
-                            cacheKey: 'class_cover_thumb_$id',
                             memCacheWidth: 480,
                           ),
                   Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
@@ -1188,16 +1183,6 @@ class _ClassCard extends StatelessWidget {
                       index: index,
                       child: SizedBox(width: 44, height: 44,
                         child: Center(child: Icon(CupertinoIcons.line_horizontal_3, size: 20, color: Colors.white.withValues(alpha: 0.5)))),
-                    )),
-                  Positioned(bottom: 10, left: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                      decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.48), borderRadius: BorderRadius.circular(AppRadii.chip)),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        const Icon(CupertinoIcons.play_circle, size: 13, color: Colors.white70),
-                        const SizedBox(width: 4),
-                        Text('$lectureCount', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
-                      ]),
                     )),
                 ]),
               ),

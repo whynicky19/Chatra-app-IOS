@@ -322,7 +322,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           _markRead(n.key);
                           if (canNavigate) {
                             Navigator.push(context, MaterialPageRoute(
-                              builder: (_) => ClassDetailScreen(classId: n.classId!, initialTab: 2)));
+                              builder: (_) => ClassDetailScreen(classId: n.classId!, initialTab: 1)));
                           }
                         },
                         child: Container(

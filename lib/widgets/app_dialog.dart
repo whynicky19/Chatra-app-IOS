@@ -167,6 +167,89 @@ Future<bool?> showConfirmDialog(
   });
 }
 
+class AppActionSheetAction {
+  final String label;
+  final IconData icon;
+  final bool destructive;
+  final VoidCallback onTap;
+  const AppActionSheetAction({required this.label, required this.icon, required this.onTap, this.destructive = false});
+}
+
+Future<void> showAppActionSheet(
+  BuildContext context, {
+  required List<AppActionSheetAction> actions,
+  required String cancelText,
+}) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  return showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    builder: (ctx) => SafeArea(
+      minimum: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Container(
+          decoration: BoxDecoration(
+            color: Theme.of(ctx).colorScheme.surface,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: cardShadow(isDark),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 10, bottom: 4),
+              child: Container(width: 36, height: 4,
+                decoration: BoxDecoration(color: adaptiveBorder(ctx), borderRadius: BorderRadius.circular(2))),
+            ),
+            for (int i = 0; i < actions.length; i++) ...[
+              if (i > 0) Divider(height: 1, indent: 20, endIndent: 20, color: adaptiveBorder(ctx)),
+              _AppActionSheetTile(action: actions[i]),
+            ],
+          ]),
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: () => Navigator.pop(ctx),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            decoration: BoxDecoration(
+              color: Theme.of(ctx).colorScheme.surface,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: cardShadow(isDark),
+            ),
+            child: Text(cancelText, textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700, color: Theme.of(ctx).colorScheme.primary)),
+          ),
+        ),
+      ]),
+    ),
+  );
+}
+
+class _AppActionSheetTile extends StatelessWidget {
+  final AppActionSheetAction action;
+  const _AppActionSheetTile({required this.action});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = action.destructive ? C.red : Theme.of(context).colorScheme.primary;
+    return GestureDetector(
+      onTap: () { Navigator.pop(context); action.onTap(); },
+      child: Container(
+        height: 54,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Row(children: [
+          Icon(action.icon, size: 19, color: color),
+          const SizedBox(width: 14),
+          Text(action.label,
+            style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w600,
+              color: action.destructive ? color : adaptiveText1(context))),
+        ]),
+      ),
+    );
+  }
+}
+
 Future<String?> showInputDialog(
   BuildContext context, {
   required String title,

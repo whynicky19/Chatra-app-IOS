@@ -414,7 +414,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
           return GestureDetector(
             onTap: classId != null ? () => Navigator.push(context, MaterialPageRoute(
-              builder: (_) => ClassDetailScreen(classId: classId, initialTab: 2),
+              builder: (_) => ClassDetailScreen(classId: classId, initialTab: 1),
             )) : null,
             child: Container(
               margin: const EdgeInsets.only(bottom: 10),

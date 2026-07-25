@@ -705,7 +705,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                     child: SizedBox(height: 128, width: double.infinity,
                       child: Stack(fit: StackFit.expand, children: [
-                        _classCover(coverImg, i, classId: classId),
+                        _classCover(coverImg, i),
                         Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                           begin: Alignment.topCenter, end: Alignment.bottomCenter,
                           stops: const [0.5, 1.0], colors: [Colors.transparent, Colors.black.withValues(alpha: 0.42)],
@@ -824,7 +824,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
 
               Padding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 14), child: Row(children: [
                 ClipRRect(borderRadius: BorderRadius.circular(12),
-                  child: SizedBox(width: 52, height: 52, child: _classCover(coverImg, colorIdx, classId: classId))),
+                  child: SizedBox(width: 52, height: 52, child: _classCover(coverImg, colorIdx))),
                 const SizedBox(width: 12),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(className, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800), maxLines: 2, overflow: TextOverflow.ellipsis),
@@ -1059,7 +1059,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _classCover(dynamic coverImg, int index, {int? classId}) {
+  Widget _classCover(dynamic coverImg, int index) {
     const grads = [[Color(0xFF006475), Color(0xFF009AAF)], [Color(0xFF0C4A6E), Color(0xFF0369A1)],
                    [Color(0xFF134E4A), Color(0xFF0D9488)], [Color(0xFF312E81), Color(0xFF4338CA)],
                    [Color(0xFF1E3A5F), Color(0xFF2563EB)]];
@@ -1071,7 +1071,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           ? Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, gaplessPlayback: true, cacheWidth: 480)
           : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors)));
     }
-    return NetworkCoverImage(url: coverImg.toString(), cacheKey: classId != null ? 'class_cover_thumb_$classId' : null, memCacheWidth: 480,
+    return NetworkCoverImage(url: coverImg.toString(), memCacheWidth: 480,
       errorBuilder: (_) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))));
   }
 

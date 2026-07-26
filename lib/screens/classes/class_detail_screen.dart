@@ -26,6 +26,7 @@ import 'tabs/class_ai_tab.dart';
 import 'rollover_screen.dart';
 import 'class_detail_utils.dart';
 import 'widgets/class_cover_sliver.dart';
+import 'lecture_detail_screen.dart';
 
 class ClassDetailScreen extends StatefulWidget {
   final int classId;
@@ -737,196 +738,16 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     String content = '';
     try { final b = jsonDecode(p['body']); content = b['content'] ?? b['description'] ?? ''; }
     catch (_) { content = p['body'] ?? ''; }
-    final files    = _extractFiles(p);
+    final files = _extractFiles(p);
     final cleanText = cleanContent(content);
-    final accent    = Theme.of(context).colorScheme.primary;
-    final isDark    = Theme.of(context).brightness == Brightness.dark;
-    final l         = context.read<L10n>();
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.75,
-        maxChildSize: 0.96,
-        minChildSize: 0.4,
-        builder: (ctx, sc) => Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(children: [
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [const Color(0xFF006475), Theme.of(context).colorScheme.primary],
-                  begin: Alignment.topLeft, end: Alignment.bottomRight,
-                ),
-              ),
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
-                  Expanded(child: Center(child: Container(
-                    width: 36, height: 4,
-                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.35), borderRadius: BorderRadius.circular(2)),
-                  ))),
-                  GestureDetector(
-                    onTap: () => Navigator.pop(ctx),
-                    child: Container(
-                      width: 30, height: 30,
-                      decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.18), shape: BoxShape.circle),
-                      child: const Icon(CupertinoIcons.xmark, color: Colors.white, size: 16),
-                    ),
-                  ),
-                ]),
-                const SizedBox(height: 14),
-                Text(
-                  cleanPostTitle(p['title'] ?? ''),
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white, height: 1.25, letterSpacing: -0.3),
-                  maxLines: 3, overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 12),
-                Row(children: [
-                  const Icon(CupertinoIcons.calendar, size: 12, color: Colors.white60),
-                  const SizedBox(width: 5),
-                  Text(fmtDate(p['created_at'] ?? ''), style: const TextStyle(fontSize: 12, color: Colors.white60, fontWeight: FontWeight.w500)),
-                  if (files.isNotEmpty) ...[
-                    const SizedBox(width: 12),
-                    Container(width: 4, height: 4, decoration: const BoxDecoration(color: Colors.white30, shape: BoxShape.circle)),
-                    const SizedBox(width: 12),
-                    const Icon(CupertinoIcons.paperclip, size: 12, color: Colors.white60),
-                    const SizedBox(width: 4),
-                    Text('${files.length} ${files.length == 1 ? l.t('file') : l.t('files')}', style: const TextStyle(fontSize: 12, color: Colors.white60, fontWeight: FontWeight.w500)),
-                  ],
-                ]),
-              ]),
-            ),
-
-            Expanded(child: ListView(
-              controller: sc,
-              padding: const EdgeInsets.fromLTRB(20, 22, 20, 32),
-              children: [
-                if (cleanText.isNotEmpty) ...[
-                  Row(children: [
-                    Container(width: 3, height: 18, decoration: BoxDecoration(color: accent, borderRadius: BorderRadius.circular(2))),
-                    const SizedBox(width: 10),
-                    Text(l.t('content_label'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: accent, letterSpacing: 0.3)),
-                  ]),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: isDark ? C.darkSurface2 : C.bg,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: accent.withValues(alpha: 0.1)),
-                    ),
-                    child: Text(cleanText, style: const TextStyle(fontSize: 15, height: 1.75, letterSpacing: 0.1)),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-
-                if (files.isNotEmpty) ...[
-                  Row(children: [
-                    Container(width: 3, height: 18, decoration: BoxDecoration(color: accent, borderRadius: BorderRadius.circular(2))),
-                    const SizedBox(width: 10),
-                    Text(l.t('attached_files_edit'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: accent, letterSpacing: 0.3)),
-                  ]),
-                  const SizedBox(height: 12),
-                  ...files.asMap().entries.map((entry) {
-                    final i = entry.key; final f = entry.value;
-                    final name = fileDisplayName(f);
-                    final ext  = name.split('.').last.toLowerCase();
-
-                    final fileConfig = _fileTypeConfig(ext);
-                    final fileIcon  = fileConfig['icon'] as IconData;
-                    final fileColor = fileConfig['color'] as Color;
-                    final fileBg    = fileConfig['bg'] as Color;
-
-                    return TweenAnimationBuilder<double>(
-                      tween: Tween(begin: 0.0, end: 1.0),
-                      duration: Duration(milliseconds: 250 + i * 60),
-                      curve: Curves.easeOutCubic,
-                      builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 8*(1-t)), child: child)),
-                      child: GestureDetector(
-                        onTap: () => _openFileViewer(context, f, name),
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: isDark ? C.darkSurface2 : Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: fileColor.withValues(alpha: 0.18)),
-                            boxShadow: [BoxShadow(color: fileColor.withValues(alpha: isDark ? 0.04 : 0.07), blurRadius: 10, offset: const Offset(0, 3))],
-                          ),
-                          child: Row(children: [
-                            Container(
-                              width: 46, height: 46,
-                              decoration: BoxDecoration(color: fileBg, borderRadius: BorderRadius.circular(12)),
-                              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                                Icon(fileIcon, size: 20, color: fileColor),
-                                const SizedBox(height: 1),
-                                Text(ext.toUpperCase(), style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: fileColor, letterSpacing: 0.5)),
-                              ]),
-                            ),
-                            const SizedBox(width: 13),
-                            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              Text(name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, height: 1.2), overflow: TextOverflow.ellipsis, maxLines: 1),
-                              const SizedBox(height: 3),
-                              Text(l.t('tap_to_open'), style: const TextStyle(fontSize: 11, color: C.text4)),
-                            ])),
-                            Container(
-                              width: 34, height: 34,
-                              decoration: BoxDecoration(color: fileColor.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(AppRadii.chip)),
-                              child: Icon(CupertinoIcons.arrow_up_right_square, size: 16, color: fileColor),
-                            ),
-                          ]),
-                        ),
-                      ),
-                    );
-                  }),
-                ],
-
-                if (cleanText.isEmpty && files.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 40),
-                    child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                      Container(width: 64, height: 64,
-                        decoration: BoxDecoration(color: accent.withValues(alpha: 0.08), shape: BoxShape.circle),
-                        child: Icon(CupertinoIcons.book, size: 30, color: accent)),
-                      const SizedBox(height: 14),
-                      Text(l.t('content_empty'), style: const TextStyle(fontSize: 14, color: C.text4, fontWeight: FontWeight.w500)),
-                    ])),
-                  ),
-              ],
-            )),
-          ]),
-        ),
-      ),
-    );
-  }
-
-  Map<String, dynamic> _fileTypeConfig(String ext) {
-    switch (ext) {
-      case 'pdf':
-        return {'icon': CupertinoIcons.doc_text, 'color': const Color(0xFFE53E3E), 'bg': const Color(0xFFFFF5F5)};
-      case 'pptx': case 'ppt':
-        return {'icon': CupertinoIcons.film,       'color': const Color(0xFFDD6B20), 'bg': const Color(0xFFFFFAF0)};
-      case 'doc': case 'docx':
-        return {'icon': CupertinoIcons.doc_text,    'color': const Color(0xFF2B6CB0), 'bg': const Color(0xFFEBF8FF)};
-      case 'xlsx': case 'xls':
-        return {'icon': CupertinoIcons.square_grid_2x2,    'color': const Color(0xFF276749), 'bg': const Color(0xFFF0FFF4)};
-      case 'txt': case 'md':
-        return {'icon': CupertinoIcons.doc_plaintext,   'color': const Color(0xFF553C9A), 'bg': const Color(0xFFFAF5FF)};
-      case 'jpg': case 'jpeg': case 'png': case 'gif': case 'webp':
-        return {'icon': CupertinoIcons.photo,          'color': const Color(0xFF0C4A6E), 'bg': const Color(0xFFE0F2FE)};
-      case 'mp4': case 'mov': case 'avi':
-        return {'icon': CupertinoIcons.play_circle,    'color': const Color(0xFF6B21A8), 'bg': const Color(0xFFF5F3FF)};
-      default:
-        return {'icon': CupertinoIcons.doc, 'color': C.text4,             'bg': C.surface2};
-    }
+    Navigator.push(context, MaterialPageRoute(builder: (_) => LectureDetailScreen(
+      title: cleanPostTitle(p['title'] ?? ''),
+      dateLabel: fmtDate(p['created_at'] ?? ''),
+      content: cleanText,
+      files: files,
+      onOpenFile: _openFileViewer,
+    )));
   }
 
   void _showAddMenu() {

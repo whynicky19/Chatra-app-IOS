@@ -1194,17 +1194,17 @@ class _ClassCard extends StatelessWidget {
               Text(cls['title'] ?? '', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: adaptiveText1(context), height: 1.2), maxLines: 2, overflow: TextOverflow.ellipsis),
               const SizedBox(height: 8),
               Wrap(spacing: 6, runSpacing: 6, children: [
-                if (teacherName.isNotEmpty) _MetaChip(label: teacherName, icon: CupertinoIcons.person, isDark: isDark, color: Theme.of(context).colorScheme.primary),
+                if (teacherName.isNotEmpty) _MetaChip(label: teacherName, icon: CupertinoIcons.person, isDark: isDark),
               ]),
               const SizedBox(height: 12),
               Row(children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                  decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
+                  decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Text(openLabel, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
+                    Text(openLabel, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: adaptiveText1(context))),
                     const SizedBox(width: 4),
-                    Icon(CupertinoIcons.arrow_right, size: 14, color: Theme.of(context).colorScheme.primary),
+                    Icon(CupertinoIcons.arrow_right, size: 14, color: adaptiveText1(context)),
                   ]),
                 ),
                 const Spacer(),
@@ -1267,12 +1267,11 @@ class _MetaChip extends StatelessWidget {
   final String label;
   final IconData icon;
   final bool isDark;
-  final Color? color;
-  const _MetaChip({required this.label, required this.icon, required this.isDark, this.color});
+  const _MetaChip({required this.label, required this.icon, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
-    final c = color ?? C.text4;
+    const c = C.text4;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
@@ -1282,7 +1281,7 @@ class _MetaChip extends StatelessWidget {
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(icon, size: 12, color: c),
         const SizedBox(width: 4),
-        Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c)),
+        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c)),
       ]),
     );
   }

@@ -1,6 +1,21 @@
+import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+
+/// grade.criteria_scores приходит с бэка JSON-строкой (Text-колонка в БД),
+/// а не готовым списком — элементы вида {name, score, max, comment}.
+List<dynamic> parseCriteriaScores(dynamic raw) {
+  if (raw == null) return [];
+  if (raw is List) return raw;
+  if (raw is String && raw.isNotEmpty) {
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is List) return decoded;
+    } catch (_) {}
+  }
+  return [];
+}
 
 String cleanPostTitle(String t) =>
     t.replaceFirst(RegExp(r'^\[(LECTURE|HW)\]\[\d+\]\s*'), '').trim();

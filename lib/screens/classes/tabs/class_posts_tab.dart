@@ -3,10 +3,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/l10n_provider.dart';
-import '../../../services/api_service.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/app_dialog.dart';
-import '../class_detail_utils.dart';
 
 class ClassPostsTab extends StatelessWidget {
   final List<dynamic> posts;
@@ -32,7 +30,6 @@ class ClassPostsTab extends StatelessWidget {
     final surface = Theme.of(context).colorScheme.surface;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accentColor = Theme.of(context).colorScheme.primary;
-    final api = context.read<ApiService>();
 
     String clean(String t) => t.replaceFirst(RegExp(r'^\[LECTURE\]\[\d+\]\s*'), '').trim();
 
@@ -46,17 +43,6 @@ class ClassPostsTab extends StatelessWidget {
     String fmtDate(String? d) {
       if (d == null) return '';
       try { final dt = DateTime.parse(d); return '${dt.day}.${dt.month.toString().padLeft(2, '0')}.${dt.year}'; } catch (_) { return d; }
-    }
-
-    List<String> extractFiles(dynamic p) {
-      try {
-        final b = jsonDecode(p['body'] ?? '');
-        if (b['files'] is List && (b['files'] as List).isNotEmpty) {
-          return (b['files'] as List).map((f) => api.fixUrl(f.toString())).toList();
-        }
-      } catch (_) {}
-      final body = p['body'] ?? '';
-      return extractFileUrls(body).map(api.fixUrl).toList();
     }
 
     void showActions(dynamic p) {
@@ -93,9 +79,6 @@ class ClassPostsTab extends StatelessWidget {
 
     return ListView.builder(padding: const EdgeInsets.fromLTRB(14, 14, 14, 90), itemCount: posts.length, itemBuilder: (ctx, i) {
       final p = posts[i];
-      // Считаем файлы лениво, только для реально построенных карточек:
-      // раньше jsonDecode+regex гонялись по всем постам на каждый rebuild.
-      final files = extractFiles(p);
       final body = preview(p);
       final num = posts.length - i;
 
@@ -134,17 +117,6 @@ class ClassPostsTab extends StatelessWidget {
                   const Icon(CupertinoIcons.clock, size: 12, color: C.text4),
                   const SizedBox(width: 4),
                   Text(fmtDate(p['created_at'] ?? ''), style: const TextStyle(fontSize: 12, color: C.text4)),
-                  if (files.isNotEmpty) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                      decoration: BoxDecoration(color: accentColor.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(6)),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(CupertinoIcons.paperclip, size: 10, color: accentColor),
-                        const SizedBox(width: 3),
-                        Text('${files.length}', style: TextStyle(fontSize: 11, color: accentColor, fontWeight: FontWeight.w700)),
-                      ])),
-                  ],
                   const Spacer(),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),

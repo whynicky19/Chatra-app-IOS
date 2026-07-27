@@ -1,3 +1,6 @@
+# Local dev scripts
+/scripts/run_device.sh
+
 # Miscellaneous
 *.class
 *.log

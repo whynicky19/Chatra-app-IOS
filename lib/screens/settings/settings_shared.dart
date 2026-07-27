@@ -253,10 +253,10 @@ class _DeleteAccountSheetState extends State<DeleteAccountSheet> {
 
 class SheetScaffold extends StatelessWidget {
   final String title;
-  final IconData icon;
+  final IconData? icon;
   final Color accent;
   final List<Widget> children;
-  const SheetScaffold({super.key, required this.title, required this.icon,
+  const SheetScaffold({super.key, required this.title, this.icon,
     required this.accent, required this.children});
 
   @override
@@ -273,10 +273,12 @@ class SheetScaffold extends StatelessWidget {
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 20),
             decoration: BoxDecoration(color: C.text4.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)))),
-          Center(child: Container(width: 52, height: 52,
-            decoration: BoxDecoration(color: accent.withValues(alpha: 0.12), shape: BoxShape.circle),
-            child: Icon(icon, color: accent, size: 24))),
-          const SizedBox(height: 14),
+          if (icon != null) ...[
+            Center(child: Container(width: 52, height: 52,
+              decoration: BoxDecoration(color: accent.withValues(alpha: 0.12), shape: BoxShape.circle),
+              child: Icon(icon, color: accent, size: 24))),
+            const SizedBox(height: 14),
+          ],
           Text(title, textAlign: TextAlign.center,
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: adaptiveText1(context), letterSpacing: -0.3)),
           const SizedBox(height: 22),

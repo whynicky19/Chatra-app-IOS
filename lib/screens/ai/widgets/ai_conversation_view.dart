@@ -242,6 +242,7 @@ class _AiConversationViewState extends State<AiConversationView> {
     _scrollDown();
     try {
       final threadId = await _ensureThread();
+      if (!mounted) return;
       if (threadId == null) throw Exception('no_thread');
       final api = context.read<ApiService>();
       final l = context.read<L10n>();
@@ -417,16 +418,6 @@ class _AiConversationViewState extends State<AiConversationView> {
             boxShadow: softShadow(isDark),
           ),
           child: Row(children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: adaptiveTealLt(context),
-                borderRadius: BorderRadius.circular(11),
-              ),
-              child: Icon(tip['icon'] as IconData, size: 17, color: Theme.of(context).colorScheme.primary),
-            ),
-            const SizedBox(width: 14),
             Expanded(
               child: Text(tip['title'] as String,
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveText1(context), letterSpacing: -0.2)),

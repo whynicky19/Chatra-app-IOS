@@ -71,30 +71,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(18), boxShadow: cardShadow(isDark)),
           clipBehavior: Clip.antiAlias,
           child: Column(children: [
-            Stack(clipBehavior: Clip.none, children: [
-              Container(height: 72, decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Theme.of(context).colorScheme.secondary, primary],
-                  begin: Alignment.topLeft, end: Alignment.bottomRight),
-              )),
-              Positioned(bottom: -34, left: 20, child: Container(
-                width: 68, height: 68,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(colors: [primary, Theme.of(context).colorScheme.secondary], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                  border: Border.all(color: surface, width: 3),
-                ),
-                child: Center(child: Text(auth.initials,
-                  style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w700))),
-              )),
-            ]),
-            const SizedBox(height: 44),
-            Padding(padding: const EdgeInsets.fromLTRB(20, 0, 20, 20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Padding(padding: const EdgeInsets.fromLTRB(20, 20, 20, 20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                Flexible(child: Text(auth.fullName.isNotEmpty ? auth.fullName : auth.email,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: adaptiveText1(context)),
-                  overflow: TextOverflow.ellipsis)),
-                const SizedBox(width: 8),
+                Expanded(child: _fieldLabel(l.t('full_name'))),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
                   decoration: BoxDecoration(color: primary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(AppRadii.card)),
@@ -102,28 +81,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                     style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: primary)),
                 ),
               ]),
-              const SizedBox(height: 2),
-              Text(auth.email, style: const TextStyle(fontSize: 13, color: C.text4)),
-              if (auth.fullName.isNotEmpty && !_isCyrillicName(auth.fullName)) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: C.amber.withValues(alpha: isDark ? 0.16 : 0.10),
-                    borderRadius: BorderRadius.circular(AppRadii.chip),
-                  ),
-                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Icon(CupertinoIcons.exclamationmark_triangle_fill, size: 15, color: C.amberDk),
-                    const SizedBox(width: 8),
-                    Expanded(child: Text(
-                      l.t('fio_not_cyrillic_warn'),
-                      style: const TextStyle(fontSize: 12, color: C.amberDk, fontWeight: FontWeight.w600, height: 1.4),
-                    )),
-                  ]),
-                ),
-              ],
-              const SizedBox(height: 20),
-              _fieldLabel(l.t('full_name')),
+              const SizedBox(height: 7),
               TextField(controller: _nameCtrl, onChanged: (_) => setState(() {}), decoration: const InputDecoration(
                 prefixIcon: Padding(padding: EdgeInsets.only(left: 4),
                   child: Icon(CupertinoIcons.person, size: 18, color: C.text4)))),
@@ -147,28 +105,30 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 hintText: auth.email,
                 prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
                   child: Icon(CupertinoIcons.mail, size: 18, color: C.text4)))),
-              const SizedBox(height: 20),
-              GestureDetector(
-                onTap: _saving ? null : () async {
-                  setState(() => _saving = true);
-                  await auth.updateProfile(_nameCtrl.text.trim());
-                  if (!context.mounted) return;
-                  setState(() => _saving = false);
-                  showToast(context, l.t('saved'));
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: primary,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: _saving ? null : primaryGlow(primary, opacity: 0.30),
+              if (_nameCtrl.text.trim().isNotEmpty && _nameCtrl.text.trim() != auth.fullName.trim()) ...[
+                const SizedBox(height: 20),
+                GestureDetector(
+                  onTap: _saving ? null : () async {
+                    setState(() => _saving = true);
+                    await auth.updateProfile(_nameCtrl.text.trim());
+                    if (!context.mounted) return;
+                    setState(() => _saving = false);
+                    showToast(context, l.t('saved'));
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: primary,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: _saving ? null : primaryGlow(primary, opacity: 0.30),
+                    ),
+                    child: Center(child: _saving
+                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
+                      : Text(l.t('save_changes'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white))),
                   ),
-                  child: Center(child: _saving
-                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
-                    : Text(l.t('save_changes'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white))),
                 ),
-              ),
+              ],
             ])),
           ]),
         ), 0.1, 0.6),
@@ -194,53 +154,25 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
         const SizedBox(height: 16),
 
-        _animated(Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(18), boxShadow: cardShadow(isDark)),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
+        _animated(GestureDetector(
+          onTap: () => _showLanguagePicker(context, l),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(18), boxShadow: cardShadow(isDark)),
+            child: Row(children: [
               Container(
                 width: 32, height: 32,
                 decoration: BoxDecoration(color: const Color(0xFFFF9500), borderRadius: BorderRadius.circular(8)),
                 child: const Icon(CupertinoIcons.globe, size: 17, color: Colors.white),
               ),
-              const SizedBox(width: 12),
-              Text(l.t('language'),
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveText1(context))),
+              const SizedBox(width: 14),
+              Expanded(child: Text(l.t('language'),
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: adaptiveText1(context)))),
+              Text(_langLabel(l.lang), style: const TextStyle(fontSize: 15, color: C.text4)),
+              const SizedBox(width: 6),
+              const Icon(CupertinoIcons.chevron_right, size: 14, color: C.text4),
             ]),
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
-              child: Row(children: [
-                {'code': 'RU', 'label': 'Русский'},
-                {'code': 'KZ', 'label': 'Қазақша'},
-                {'code': 'EN', 'label': 'English'},
-              ].map((lang) {
-                final sel = l.lang == lang['code'];
-                return Expanded(child: GestureDetector(
-                  onTap: () => l.setLang(lang['code']!),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(vertical: 9),
-                    decoration: BoxDecoration(
-                      color: sel ? surface : Colors.transparent,
-                      borderRadius: BorderRadius.circular(AppRadii.chip),
-                      boxShadow: sel ? softShadow(isDark) : null,
-                    ),
-                    child: Column(children: [
-                      Text(lang['code']!,
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-                          color: sel ? primary : C.text4)),
-                      const SizedBox(height: 1),
-                      Text(lang['label']!,
-                        style: TextStyle(fontSize: 9, color: sel ? C.text3 : C.text4)),
-                    ]),
-                  ),
-                ));
-              }).toList()),
-            ),
-          ]),
+          ),
         ), 0.45, 0.82),
 
         const SizedBox(height: 16),
@@ -367,6 +299,88 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
   String _roleLabel(String r, L10n l) =>
     r == 'admin' ? l.t('role_admin') : r == 'teacher' ? l.t('role_teacher') : l.t('role_student');
+
+  static const _langOptions = [
+    {'code': 'RU', 'label': 'Русский'},
+    {'code': 'KZ', 'label': 'Қазақша'},
+    {'code': 'EN', 'label': 'English'},
+  ];
+
+  String _langLabel(String? code) =>
+    _langOptions.firstWhere((o) => o['code'] == code, orElse: () => _langOptions.first)['label']!;
+
+  void _showLanguagePicker(BuildContext context, L10n l) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _LanguageSheet(),
+    );
+  }
+}
+
+class _LanguageSheet extends StatelessWidget {
+  const _LanguageSheet();
+
+  static const _options = [
+    {'code': 'RU', 'label': 'Русский'},
+    {'code': 'KZ', 'label': 'Қазақша'},
+    {'code': 'EN', 'label': 'English'},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.watch<L10n>();
+    final primary = Theme.of(context).colorScheme.primary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return SheetScaffold(
+      title: l.t('language'),
+      accent: const Color(0xFFFF9500),
+      children: [
+        for (final lang in _options) ...[
+          _LanguageOptionRow(
+            label: lang['label']!,
+            selected: l.lang == lang['code'],
+            primary: primary,
+            isDark: isDark,
+            onTap: () { l.setLang(lang['code']!); Navigator.pop(context); },
+          ),
+          if (lang != _options.last) const SizedBox(height: 10),
+        ],
+      ],
+    );
+  }
+}
+
+class _LanguageOptionRow extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final Color primary;
+  final bool isDark;
+  final VoidCallback onTap;
+  const _LanguageOptionRow({
+    required this.label, required this.selected, required this.primary,
+    required this.isDark, required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: selected ? primary.withValues(alpha: isDark ? 0.16 : 0.08) : adaptiveSurface2(context),
+        borderRadius: BorderRadius.circular(14),
+        border: selected ? Border.all(color: primary.withValues(alpha: 0.4)) : null,
+      ),
+      child: Row(children: [
+        Expanded(child: Text(label,
+          style: TextStyle(fontSize: 15, fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            color: selected ? primary : adaptiveText1(context)))),
+        if (selected) Icon(CupertinoIcons.check_mark_circled_solid, size: 20, color: primary),
+      ]),
+    ),
+  );
 }
 
 class _SectionLabel extends StatelessWidget {

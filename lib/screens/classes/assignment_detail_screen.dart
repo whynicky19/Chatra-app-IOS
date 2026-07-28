@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:dio/dio.dart' show DioException;
 import 'package:file_picker/file_picker.dart';
@@ -65,6 +66,12 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
   bool _criteriaExpanded = false;
   List<PlatformFile> _pickedFiles = [];
 
+  // Проверка ИИ — единственный блокирующий запрос без стадий на бэкенде,
+  // поэтому прогресс симулируем на клиенте (тот же текст, что на Web).
+  static const _checkSteps = ['check_step_1', 'check_step_2', 'check_step_3', 'check_step_4', 'check_step_5'];
+  int _checkStepIdx = 0;
+  Timer? _checkStepTimer;
+
   dynamic get a => widget.assignment;
   dynamic get sub => widget.submission;
 
@@ -72,11 +79,17 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
   void initState() {
     super.initState();
     _assignmentFuture = context.read<ApiService>().getAssignment((a['id'] as num).toInt());
+    if (sub != null && sub['status'] == 'grading') {
+      _checkStepTimer = Timer.periodic(const Duration(milliseconds: 3500), (_) {
+        if (_checkStepIdx < _checkSteps.length - 1) setState(() => _checkStepIdx++);
+      });
+    }
   }
 
   @override
   void dispose() {
     _tc.dispose();
+    _checkStepTimer?.cancel();
     super.dispose();
   }
 
@@ -121,19 +134,46 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
     return result;
   }
 
-  List<String> _extractAssignmentFiles(dynamic listA, [dynamic detailA]) {
-    final result = <String>{};
+  List<String> _extractReferenceFiles(dynamic listA, [dynamic detailA]) {
+    final seen = <String>{};
+    final result = <String>[];
     for (final src in [listA, if (detailA != null) detailA]) {
       if (src == null) continue;
-      result.addAll(_parseFileUrls(src['file_urls']));
-      result.addAll(_parseFileUrls(src['files']));
-      result.addAll(_parseFileUrls(src['attachments']));
-      if (src['file_url'] != null) result.add(context.read<ApiService>().fixUrl(src['file_url'].toString()));
-      if (src['description'] != null) {
-        result.addAll(_extractFilesFromText(src['description'].toString()));
+      for (final url in [..._parseFileUrls(src['reference_solution_urls']), ..._parseFileUrls(src['reference_solution_url'])]) {
+        if (url.isEmpty) continue;
+        if (seen.add(_filePathKey(url))) result.add(url);
       }
     }
-    return result.where((s) => s.isNotEmpty).toList();
+    return result;
+  }
+
+  // Ключ дедупликации — по пути без query: listA (список) и detailA (отдельный
+  // getAssignment) — два разных HTTP-ответа, а подписанный URL одного и того же
+  // файла в description получает новую подпись/exp в каждом из них.
+  String _filePathKey(String url) {
+    try { return Uri.parse(url).path; } catch (_) { return url.split('?').first; }
+  }
+
+  List<String> _extractAssignmentFiles(dynamic listA, [dynamic detailA]) {
+    final seen = <String>{};
+    final result = <String>[];
+    void addAll(Iterable<String> urls) {
+      for (final url in urls) {
+        if (url.isEmpty) continue;
+        if (seen.add(_filePathKey(url))) result.add(url);
+      }
+    }
+    for (final src in [listA, if (detailA != null) detailA]) {
+      if (src == null) continue;
+      addAll(_parseFileUrls(src['file_urls']));
+      addAll(_parseFileUrls(src['files']));
+      addAll(_parseFileUrls(src['attachments']));
+      if (src['file_url'] != null) addAll([context.read<ApiService>().fixUrl(src['file_url'].toString())]);
+      if (src['description'] != null) {
+        addAll(_extractFilesFromText(src['description'].toString()));
+      }
+    }
+    return result;
   }
 
   Future<void> _submit() async {
@@ -228,6 +268,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
 
     final showSubmitBar = !widget.isTeacher && !widget.viewOnly && sub == null;
     final showRetractBar = !widget.isTeacher && !widget.viewOnly && sub != null && sub['status'] != 'graded' && sub['grade'] == null;
+    final showViewWorksBar = widget.isTeacher && !widget.viewOnly;
 
     return CupertinoTheme(
       data: CupertinoThemeData(
@@ -263,7 +304,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(20, 6, 20, showSubmitBar || showRetractBar ? 24 : 48),
+                padding: EdgeInsets.fromLTRB(20, 6, 20, showSubmitBar || showRetractBar || showViewWorksBar ? 24 : 48),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Row(children: [
                     Container(
@@ -344,6 +385,19 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                       ]);
                     },
                   ),
+                  if (widget.isTeacher) ...(() {
+                    final refFiles = _extractReferenceFiles(a);
+                    if (refFiles.isEmpty) return <Widget>[];
+                    return [
+                      Text(l.t('reference_files'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: detailText1(context))),
+                      const SizedBox(height: 12),
+                      for (final f in refFiles) ...[
+                        FileCard(name: fileDisplayName(f), onTap: () => widget.onOpenFile(f, fileDisplayName(f))),
+                        const SizedBox(height: 10),
+                      ],
+                      const SizedBox(height: 12),
+                    ];
+                  })(),
                   if (widget.isTeacher) ...(() {
                     List<dynamic> criteria = [];
                     try { criteria = jsonDecode(a['criteria'] ?? '[]'); } catch (_) {}
@@ -454,7 +508,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                       child: Row(children: [
                         SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: accent)),
                         const SizedBox(width: 12),
-                        Expanded(child: Text(l.t('ai_checking'), style: TextStyle(fontSize: 13.5, color: accent, fontWeight: FontWeight.w500))),
+                        Expanded(child: Text(l.t(_checkSteps[_checkStepIdx]), style: TextStyle(fontSize: 13.5, color: accent, fontWeight: FontWeight.w500))),
                       ]),
                     ),
                     const SizedBox(height: 20),
@@ -463,14 +517,10 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(color: C.amber.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(16), border: Border.all(color: C.amber.withValues(alpha: 0.3))),
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Row(children: [
-                          const Icon(CupertinoIcons.exclamationmark_triangle, size: 16, color: C.amber),
-                          const SizedBox(width: 8),
-                          Expanded(child: Text(l.t('needs_review_title'), style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: C.amber))),
-                        ]),
-                        const SizedBox(height: 6),
-                        Text(l.t('needs_review_body'), style: TextStyle(fontSize: 13.5, color: detailText2(context))),
+                      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        const Icon(CupertinoIcons.exclamationmark_circle, size: 16, color: C.amber),
+                        const SizedBox(width: 10),
+                        Expanded(child: Text(l.t('needs_review_student_msg'), style: TextStyle(fontSize: 13.5, height: 1.5, color: detailText2(context)))),
                       ]),
                     ),
                     const SizedBox(height: 20),
@@ -575,7 +625,14 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                     secondary: true,
                     onTap: _retract,
                   )
-                : null,
+                : showViewWorksBar
+                    ? _BottomActionBar(
+                        label: l.t('view_works'),
+                        busy: false,
+                        accent: accent,
+                        onTap: () => widget.onViewSubmissions(a),
+                      )
+                    : null,
       ),
     );
   }

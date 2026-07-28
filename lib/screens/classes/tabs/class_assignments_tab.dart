@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -43,7 +44,21 @@ class ClassAssignmentsTab extends StatefulWidget {
   State<ClassAssignmentsTab> createState() => _ClassAssignmentsTabState();
 }
 
+List<String> _parseStringList(dynamic raw) {
+  if (raw == null) return [];
+  if (raw is List) return raw.map((e) => e.toString()).toList();
+  if (raw is String && raw.isNotEmpty) {
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is List) return decoded.map((e) => e.toString()).toList();
+    } catch (_) {}
+  }
+  return [];
+}
+
 class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
+  static const _checkSteps = ['check_step_1', 'check_step_2', 'check_step_3', 'check_step_4', 'check_step_5'];
+
   dynamic _subFor(int aId) => widget.mySubs.firstWhere((s) => s['assignment_id'] == aId, orElse: () => null);
 
   String _fmtDate(String? d) {
@@ -339,6 +354,18 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
           bool gradingAll = false;
           int gradingDone = 0;
           int gradingTotal = 0;
+          // Проверка ИИ — единственный блокирующий запрос без стадий на бэкенде,
+          // поэтому прогресс симулируем на клиенте (тот же текст, что на Web).
+          int checkStepIdx = 0;
+          Timer? checkStepTimer;
+          void startCheckSteps(void Function(void Function()) setS) {
+            checkStepIdx = 0;
+            checkStepTimer?.cancel();
+            checkStepTimer = Timer.periodic(const Duration(milliseconds: 3500), (_) {
+              if (checkStepIdx < _checkSteps.length - 1) setS(() => checkStepIdx++);
+            });
+          }
+          void stopCheckSteps() { checkStepTimer?.cancel(); checkStepTimer = null; }
           return StatefulBuilder(builder: (ctx, setS) => DraggableScrollableSheet(expand: false, initialChildSize: 0.85, maxChildSize: 0.95, builder: (ctx, sc) {
             final graded = subs.where((s) => s['status'] == 'graded').length;
             final pending = subs.length - graded;
@@ -392,7 +419,86 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                         ])));
                   }),
                 ],
-                if (score != null) ...[
+                if (selectedSub['status'] == 'needs_review') ...[
+                  const SizedBox(height: 20),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(color: C.amber.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(16), border: Border.all(color: C.amber.withValues(alpha: 0.3))),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(l.t('status_needs_review_label'), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: C.amber)),
+                      if (score != null) ...[
+                        const SizedBox(height: 10),
+                        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                          Text(l.t('suggested_score_label'), style: const TextStyle(fontSize: 13, color: C.text4)),
+                          Text('$score / $assignmentMaxScore', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
+                        ]),
+                      ],
+                      if (selectedSub['ai_confidence'] != null) ...[
+                        const SizedBox(height: 6),
+                        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                          Text(l.t('confidence_label'), style: const TextStyle(fontSize: 13, color: C.text4)),
+                          Text('${selectedSub['ai_confidence']}%', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
+                        ]),
+                      ],
+                      if (_parseStringList(selectedSub['ai_review_reasons']).isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Text(l.t('review_reasons_label'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
+                        const SizedBox(height: 6),
+                        for (final r in _parseStringList(selectedSub['ai_review_reasons']))
+                          Padding(padding: const EdgeInsets.only(bottom: 4), child: Text('•  $r', style: const TextStyle(fontSize: 13, color: C.text4, height: 1.4))),
+                      ],
+                      if (feedback != null || criteria.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Text(l.t('ai_analysis_label'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
+                        if (feedback != null) Padding(padding: const EdgeInsets.only(top: 6), child: Text(feedback, style: const TextStyle(fontSize: 13.5, height: 1.5))),
+                        for (final c in criteria) Container(
+                          margin: const EdgeInsets.only(top: 8), padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(AppRadii.tile)),
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Row(children: [
+                              Expanded(child: Text(c['name'] ?? '', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700))),
+                              Text('${c['score'] ?? 0} / ${c['max'] ?? c['max_score'] ?? c['weight'] ?? 0}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                            ]),
+                            if ((c['comment'] ?? c['feedback']) != null) Padding(padding: const EdgeInsets.only(top: 4), child: Text(c['comment'] ?? c['feedback'], style: const TextStyle(fontSize: 12.5, color: C.text4, height: 1.4))),
+                          ]),
+                        ),
+                      ],
+                    ]),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(children: [
+                    Expanded(child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+                      onPressed: (grade == null || grading) ? null : () async {
+                        setS(() => grading = true);
+                        try {
+                          final updatedGrade = await context.read<ApiService>().gradeSubmission(
+                            selectedSub['id'],
+                            score: score,
+                            feedback: feedback,
+                            criteriaScores: criteria.isNotEmpty ? criteria : null,
+                          );
+                          if (!mounted || !ctx.mounted) return;
+                          setS(() { selectedSub = {...selectedSub, 'grade': updatedGrade, 'status': 'graded'}; grading = false; });
+                          showToast(context, '${l.t('grade_saved')}: ${updatedGrade['score']} / $assignmentMaxScore');
+                        } catch (e) {
+                          if (!mounted || !ctx.mounted) return;
+                          setS(() => grading = false);
+                          showToast(context, l.t('grade_error'), error: true);
+                        }
+                      },
+                      child: grading
+                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : Text(l.t('confirm_suggested'), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700), textAlign: TextAlign.center),
+                    )),
+                    const SizedBox(width: 10),
+                    Expanded(child: OutlinedButton(
+                      onPressed: () => _showManualGradeDialog(ctx, selectedSub, assignmentMaxScore, (updated) => setS(() => selectedSub = updated)),
+                      style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+                      child: Text(l.t('change_score'), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700), textAlign: TextAlign.center),
+                    )),
+                  ]),
+                ] else if (score != null) ...[
                   const SizedBox(height: 20),
                   Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(16)),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -434,6 +540,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
                     onPressed: grading ? null : () async {
                       setS(() => grading = true);
+                      startCheckSteps(setS);
                       try {
                         final result = await context.read<ApiService>().aiGrade(selectedSub['id']);
                         if (!mounted || !ctx.mounted) return;
@@ -446,13 +553,13 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                         setS(() => grading = false);
                         final msg = e.toString().contains('criteria') ? l.t('no_criteria') : l.t('grade_error');
                         showToast(context, msg, error: true);
-                      }
+                      } finally { stopCheckSteps(); }
                     },
                     child: grading
                       ? Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                           const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
                           const SizedBox(width: 12),
-                          Text(l.t('ai_grading'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                          Text(l.t(_checkSteps[checkStepIdx]), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                         ])
                       : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                           const Icon(CupertinoIcons.bolt_fill, size: 18, color: Colors.white),
@@ -472,6 +579,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
                     onPressed: grading ? null : () async {
                       setS(() => grading = true);
+                      startCheckSteps(setS);
                       try {
                         final result = await context.read<ApiService>().aiGrade(selectedSub['id']);
                         if (!mounted || !ctx.mounted) return;
@@ -484,13 +592,13 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                         setS(() => grading = false);
                         final msg = e.toString().contains('criteria') ? l.t('no_criteria') : l.t('grade_error');
                         showToast(context, msg, error: true);
-                      }
+                      } finally { stopCheckSteps(); }
                     },
                     child: grading
                       ? Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                           const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
                           const SizedBox(width: 12),
-                          Text(l.t('ai_grading'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                          Text(l.t(_checkSteps[checkStepIdx]), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                         ])
                       : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                           const Icon(CupertinoIcons.bolt_fill, size: 18, color: Colors.white),

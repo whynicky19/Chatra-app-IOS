@@ -479,7 +479,10 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                             criteriaScores: criteria.isNotEmpty ? criteria : null,
                           );
                           if (!mounted || !ctx.mounted) return;
-                          setS(() { selectedSub = {...selectedSub, 'grade': updatedGrade, 'status': 'graded'}; grading = false; });
+                          // Финальную оценку теперь ставит человек — старая уверенность
+                          // ИИ (если сдача была needs_review) больше не относится к делу
+                          // и вводит в заблуждение рядом с новым баллом.
+                          setS(() { selectedSub = {...selectedSub, 'grade': updatedGrade, 'status': 'graded', 'ai_confidence': null, 'ai_review_reasons': null}; grading = false; });
                           showToast(context, '${l.t('grade_saved')}: ${updatedGrade['score']} / $assignmentMaxScore');
                         } catch (e) {
                           if (!mounted || !ctx.mounted) return;

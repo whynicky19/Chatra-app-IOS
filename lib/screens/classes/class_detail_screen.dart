@@ -813,6 +813,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             Expanded(child: ElevatedButton.icon(icon: const Icon(CupertinoIcons.plus, size: 16, color: Colors.white), label: Text(l.t('publish')),
               style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
               onPressed: () async {
+                FocusScope.of(ctx).unfocus();
                 if (tc.text.trim().isEmpty) {
                   showToast(context, l.t('enter_lecture_topic'), error: true);
                   return;
@@ -1007,6 +1008,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             Expanded(child: ElevatedButton.icon(icon: const Icon(CupertinoIcons.plus, size: 16, color: Colors.white), label: Text(l.t('create_assignment')),
               style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
               onPressed: () async {
+                FocusScope.of(ctx).unfocus();
                 if (tc.text.trim().isEmpty) {
                   showToast(context, l.t('enter_assignment_title'), error: true);
                   return;
@@ -1551,6 +1553,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     final inviteCode = (_meta['invite_code'] as String?) ?? '';
     bool rotationYearly = (_meta['rotation_mode'] == 'yearly');
     bool savingRotation = false;
+    bool codeCopied = false;
 
     showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
@@ -1569,14 +1572,19 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             const SizedBox(height: 8),
             Wrap(spacing: 8, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
               GestureDetector(
-                onTap: () { Clipboard.setData(ClipboardData(text: inviteCode)); showToast(context, '${l.t('code_copied')}: $inviteCode'); },
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: inviteCode));
+                  showToast(context, '${l.t('code_copied')}: $inviteCode');
+                  setS(() => codeCopied = true);
+                  Future.delayed(const Duration(seconds: 2), () { if (ctx.mounted) setS(() => codeCopied = false); });
+                },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(10)),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(CupertinoIcons.doc_on_doc, size: 14, color: Theme.of(context).colorScheme.primary),
+                    Icon(codeCopied ? CupertinoIcons.checkmark_alt : CupertinoIcons.doc_on_doc, size: 14, color: Theme.of(context).colorScheme.primary),
                     const SizedBox(width: 6),
-                    Text(inviteCode, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary, letterSpacing: 2)),
+                    Text(codeCopied ? l.t('code_copied') : inviteCode, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary, letterSpacing: codeCopied ? 0 : 2)),
                   ]),
                 ),
               ),

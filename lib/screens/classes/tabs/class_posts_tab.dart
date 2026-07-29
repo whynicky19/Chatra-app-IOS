@@ -118,15 +118,11 @@ class ClassPostsTab extends StatelessWidget {
                   const SizedBox(width: 4),
                   Text(fmtDate(p['created_at'] ?? ''), style: const TextStyle(fontSize: 12, color: C.text4)),
                   const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(color: accentColor.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(8)),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Text(l.t('open'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: accentColor)),
-                      const SizedBox(width: 3),
-                      Icon(CupertinoIcons.chevron_right, size: 12, color: accentColor),
-                    ]),
-                  ),
+                  Row(mainAxisSize: MainAxisSize.min, children: [
+                    Text(l.t('open'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: accentColor)),
+                    const SizedBox(width: 3),
+                    Icon(CupertinoIcons.chevron_right, size: 12, color: accentColor),
+                  ]),
                 ]),
               ),
             ]),

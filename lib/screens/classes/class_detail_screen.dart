@@ -475,11 +475,11 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                       onTap: () => _createAssignment(),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 11),
-                        decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.28))),
+                        decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
                         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                          Icon(CupertinoIcons.doc, size: 15, color: Theme.of(context).colorScheme.primary),
+                          Icon(CupertinoIcons.doc, size: 15, color: adaptiveText1(context)),
                           const SizedBox(width: 6),
-                          Text(l.t('assignment'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
+                          Text(l.t('assignment'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: adaptiveText1(context))),
                         ]),
                       ),
                     )),
@@ -488,11 +488,11 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                       onTap: () => _showAddMenu(),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 11),
-                        decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary]), borderRadius: BorderRadius.circular(AppRadii.tile), boxShadow: primaryGlow(Theme.of(context).colorScheme.primary, opacity: 0.28)),
+                        decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
                         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                          const Icon(CupertinoIcons.plus, size: 16, color: Colors.white),
+                          Icon(CupertinoIcons.book, size: 15, color: adaptiveText1(context)),
                           const SizedBox(width: 6),
-                          Text(l.t('add'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
+                          Text(l.t('lecture'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: adaptiveText1(context))),
                         ]),
                       ),
                     )),
@@ -564,11 +564,11 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 return Container(
                   margin: const EdgeInsets.only(bottom: 6),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(AppRadii.chip)),
+                  decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
                   child: Row(children: [
-                    Icon(CupertinoIcons.doc, size: 14, color: Theme.of(context).colorScheme.primary),
+                    const Icon(CupertinoIcons.doc, size: 14, color: C.text3),
                     const SizedBox(width: 6),
-                    Expanded(child: Text(name, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary), overflow: TextOverflow.ellipsis)),
+                    Expanded(child: Text(name, style: const TextStyle(fontSize: 12, color: C.text3), overflow: TextOverflow.ellipsis)),
                     GestureDetector(onTap: () => setS(() => editFiles.remove(f)), child: const Icon(CupertinoIcons.xmark, size: 14, color: C.text4)),
                   ]),
                 );
@@ -593,8 +593,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   }
                 }
               },
-              child: Container(padding: const EdgeInsets.symmetric(vertical: 10), decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3))),
-                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(CupertinoIcons.paperclip, size: 16, color: Theme.of(context).colorScheme.primary), const SizedBox(width: 6), Text(l.t('attach_files_action'), style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600))])),
+              child: Container(padding: const EdgeInsets.symmetric(vertical: 10), decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: adaptiveBorder(context))),
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(CupertinoIcons.paperclip, size: 16, color: C.text3), const SizedBox(width: 6), Text(l.t('attach_files_action'), style: const TextStyle(fontSize: 13, color: C.text3, fontWeight: FontWeight.w600))])),
             ),
             const SizedBox(height: 20),
             Row(children: [
@@ -768,6 +768,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     final l = context.read<L10n>();
     final tc = TextEditingController(), cc = TextEditingController();
     List<PlatformFile> lectureFiles = [];
+    bool isSubmitting = false;
     showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => Padding(
@@ -776,8 +777,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           Container(width: 40, height: 4, decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2))),
           const SizedBox(height: 16),
           Row(children: [
-            Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.tile)),
-              child: Icon(CupertinoIcons.book, color: Theme.of(context).colorScheme.primary, size: 22)),
+            Container(width: 44, height: 44, decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
+              child: Icon(CupertinoIcons.book, color: adaptiveText1(context), size: 22)),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(l.t('add_lecture'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
@@ -796,43 +797,49 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           GestureDetector(onTap: () async {
             final result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
             if (result != null) setS(() => lectureFiles.addAll(result.files));
-          }, child: Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3))),
+          }, child: Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: adaptiveBorder(context))),
             child: Column(children: [
-              Icon(CupertinoIcons.arrow_up_doc, size: 24, color: Theme.of(context).colorScheme.primary), const SizedBox(height: 6),
+              const Icon(CupertinoIcons.arrow_up_doc, size: 24, color: C.text3), const SizedBox(height: 6),
               Text(l.t('click_or_choose'), style: const TextStyle(fontSize: 13, color: C.text4)),
               Text(l.t('file_types_hint'), style: const TextStyle(fontSize: 10, color: C.text4)),
             ]))),
           if (lectureFiles.isNotEmpty) ...[const SizedBox(height: 8),
             ...lectureFiles.map((f) => Container(margin: const EdgeInsets.only(bottom: 4), padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(AppRadii.chip)),
-              child: Row(children: [Icon(CupertinoIcons.doc_text, size: 14, color: Theme.of(context).colorScheme.primary), const SizedBox(width: 6), Expanded(child: Text(f.name, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary), overflow: TextOverflow.ellipsis)), GestureDetector(onTap: () => setS(() => lectureFiles.remove(f)), child: const Icon(CupertinoIcons.xmark, size: 14, color: C.text4))])))],
+              decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
+              child: Row(children: [const Icon(CupertinoIcons.doc_text, size: 14, color: C.text3), const SizedBox(width: 6), Expanded(child: Text(f.name, style: const TextStyle(fontSize: 12, color: C.text3), overflow: TextOverflow.ellipsis)), GestureDetector(onTap: () => setS(() => lectureFiles.remove(f)), child: const Icon(CupertinoIcons.xmark, size: 14, color: C.text4))])))],
           const SizedBox(height: 20),
           Row(children: [
-            Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)), child: Text(l.t('cancel')))),
+            Expanded(child: OutlinedButton(onPressed: isSubmitting ? null : () => Navigator.pop(ctx), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)), child: Text(l.t('cancel')))),
             const SizedBox(width: 12),
-            Expanded(child: ElevatedButton.icon(icon: const Icon(CupertinoIcons.plus, size: 16, color: Colors.white), label: Text(l.t('publish')),
+            Expanded(child: ElevatedButton.icon(
+              icon: isSubmitting
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(CupertinoIcons.plus, size: 16, color: Colors.white),
+              label: Text(l.t('publish')),
               style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-              onPressed: () async {
+              onPressed: isSubmitting ? null : () async {
                 FocusScope.of(ctx).unfocus();
                 if (tc.text.trim().isEmpty) {
                   showToast(context, l.t('enter_lecture_topic'), error: true);
                   return;
                 }
+                setS(() => isSubmitting = true);
                 final prefix = '[LECTURE][${widget.classId}]';
                 try {
                   final api = context.read<ApiService>();
                   final fileUrls = <String>[];
                   // Сбой аплоада обязан прервать публикацию: иначе пост уходит с неполным списком файлов.
+                  // Файлы грузятся параллельно (Future.wait), а не по одному — иначе N файлов ждут N последовательных запросов.
                   try {
-                    for (final pf in lectureFiles) {
-                      if (pf.path == null) continue;
-                      final res = await api.uploadFile(pf.path!, pf.name);
-                      final url = res['url'] ?? res['file_url'] ?? res['path'];
+                    final validFiles = lectureFiles.where((pf) => pf.path != null).toList();
+                    final results = await Future.wait(validFiles.map((pf) => api.uploadFile(pf.path!, pf.name)), eagerError: true);
+                    for (var i = 0; i < validFiles.length; i++) {
+                      final url = results[i]['url'] ?? results[i]['file_url'] ?? results[i]['path'];
                       if (url == null || url.toString().isEmpty) throw Exception('upload_failed');
-                      fileUrls.add('$url#${Uri.encodeComponent(pf.name)}');
+                      fileUrls.add('$url#${Uri.encodeComponent(validFiles[i].name)}');
                     }
                   } catch (_) {
-                    if (mounted && ctx.mounted) showToast(context, l.t('upload_failed'), error: true);
+                    if (mounted && ctx.mounted) { showToast(context, l.t('upload_failed'), error: true); setS(() => isSubmitting = false); }
                     return;
                   }
                   await api.createPost('$prefix ${tc.text.trim()}', jsonEncode({
@@ -841,7 +848,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   }));
                   if (!mounted || !ctx.mounted) return;
                   Navigator.pop(ctx); _load(); showToast(context, l.t('published'));
-                } catch (_) { if (mounted && ctx.mounted) showToast(context, l.t('error_generic'), error: true); }
+                } catch (_) { if (mounted && ctx.mounted) { showToast(context, l.t('error_generic'), error: true); setS(() => isSubmitting = false); } }
               })),
           ]),
         ]))))).then((_) {
@@ -865,14 +872,15 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     List<TextEditingController> criteriaDescCs = [TextEditingController()];
     List<PlatformFile> attachedFiles = [];
     List<PlatformFile> referenceFiles = [];
+    bool isSubmitting = false;
 
     showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => DraggableScrollableSheet(expand: false, initialChildSize: 0.9, maxChildSize: 0.95,
         builder: (ctx, scroll) => ListView(controller: scroll, padding: const EdgeInsets.all(24), children: [
           Row(children: [
-            Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(AppRadii.tile)),
-              child: Icon(CupertinoIcons.pencil, color: Theme.of(context).colorScheme.primary, size: 22)),
+            Container(width: 44, height: 44, decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
+              child: Icon(CupertinoIcons.pencil, color: adaptiveText1(context), size: 22)),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(l.t('new_assignment'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
@@ -906,7 +914,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             ]))),
           const SizedBox(height: 20),
           Row(children: [
-            Text(l.t('attached_files'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
+            Text(l.t('attached_files'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)),
             const Spacer(),
             GestureDetector(
               onTap: () async {
@@ -922,20 +930,20 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               child: Row(children: [const Icon(CupertinoIcons.paperclip, size: 16, color: C.text4), const SizedBox(width: 8), Text(l.t('no_attached_files'), style: const TextStyle(fontSize: 13, color: C.text4))]))
           else
             ...attachedFiles.map((f) => Container(margin: const EdgeInsets.only(bottom: 6), padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
               child: Row(children: [
-                Icon(CupertinoIcons.doc, size: 16, color: Theme.of(context).colorScheme.primary),
+                const Icon(CupertinoIcons.doc, size: 16, color: C.text3),
                 const SizedBox(width: 8),
-                Expanded(child: Text(f.name, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis)),
+                Expanded(child: Text(f.name, style: const TextStyle(fontSize: 13, color: C.text3, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis)),
                 GestureDetector(onTap: () => setS(() => attachedFiles.removeWhere((x) => x.name == f.name)),
                   child: const Icon(CupertinoIcons.xmark, size: 14, color: C.text4)),
               ]))),
           const SizedBox(height: 20),
-          Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.04), borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15))),
+          Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(16), border: Border.all(color: adaptiveBorder(context))),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                Container(width: 36, height: 36, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.chip)),
-                  child: Icon(CupertinoIcons.checkmark_circle, size: 18, color: Theme.of(context).colorScheme.primary)),
+                Container(width: 36, height: 36, decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
+                  child: Icon(CupertinoIcons.checkmark_circle, size: 18, color: adaptiveText1(context))),
                 const SizedBox(width: 10),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Row(children: [Text(l.t('reference_solutions'), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)), const Spacer(), Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)), child: Text(l.t('graded_by_ai'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)))]),
@@ -947,9 +955,9 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 final result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
                 if (result != null) setS(() => referenceFiles.addAll(result.files));
               },
-              child: Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3))),
+              child: Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: adaptiveBorder(context))),
                 child: Column(children: [
-                  Icon(CupertinoIcons.arrow_up_doc, size: 28, color: Theme.of(context).colorScheme.primary),
+                  const Icon(CupertinoIcons.arrow_up_doc, size: 28, color: C.text3),
                   const SizedBox(height: 6),
                   Text(l.t('click_or_choose'), style: const TextStyle(fontSize: 13, color: C.text4)),
                   const Text('PDF, DOCX, DOC, PPTX, XLSX, TXT, MD', style: TextStyle(fontSize: 10, color: C.text4)),
@@ -957,13 +965,13 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               if (referenceFiles.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 ...referenceFiles.map((f) => Container(margin: const EdgeInsets.only(bottom: 4), padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(AppRadii.chip)),
-                  child: Row(children: [Icon(CupertinoIcons.doc_text, size: 14, color: Theme.of(context).colorScheme.primary), const SizedBox(width: 6), Expanded(child: Text(f.name, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary), overflow: TextOverflow.ellipsis)), GestureDetector(onTap: () => setS(() => referenceFiles.remove(f)), child: const Icon(CupertinoIcons.xmark, size: 14, color: C.text4))]))),
+                  decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
+                  child: Row(children: [const Icon(CupertinoIcons.doc_text, size: 14, color: C.text3), const SizedBox(width: 6), Expanded(child: Text(f.name, style: const TextStyle(fontSize: 12, color: C.text3), overflow: TextOverflow.ellipsis)), GestureDetector(onTap: () => setS(() => referenceFiles.remove(f)), child: const Icon(CupertinoIcons.xmark, size: 14, color: C.text4))]))),
               ],
             ])),
           const SizedBox(height: 20),
           Row(children: [
-            Text(l.t('grading_criteria'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
+            Text(l.t('grading_criteria'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)),
             const Spacer(),
             GestureDetector(onTap: () => setS(() {
                 criteria.add({'name': '', 'weight': 0, 'desc': ''});
@@ -1003,31 +1011,37 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           }),
           const SizedBox(height: 24),
           Row(children: [
-            Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)), child: Text(l.t('cancel')))),
+            Expanded(child: OutlinedButton(onPressed: isSubmitting ? null : () => Navigator.pop(ctx), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)), child: Text(l.t('cancel')))),
             const SizedBox(width: 12),
-            Expanded(child: ElevatedButton.icon(icon: const Icon(CupertinoIcons.plus, size: 16, color: Colors.white), label: Text(l.t('create_assignment')),
+            Expanded(child: ElevatedButton.icon(
+              icon: isSubmitting
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(CupertinoIcons.plus, size: 16, color: Colors.white),
+              label: Text(l.t('create_assignment')),
               style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-              onPressed: () async {
+              onPressed: isSubmitting ? null : () async {
                 FocusScope.of(ctx).unfocus();
                 if (tc.text.trim().isEmpty) {
                   showToast(context, l.t('enter_assignment_title'), error: true);
                   return;
                 }
+                setS(() => isSubmitting = true);
                 try {
                   final api = context.read<ApiService>();
 
                   final fileUrls = <String>[];
                   // Сбой аплоада обязан прервать создание задания: иначе оно уходит с неполным списком файлов.
+                  // Файлы грузятся параллельно (Future.wait), а не по одному — иначе N файлов ждут N последовательных запросов.
                   try {
-                    for (final pf in [...attachedFiles, ...referenceFiles]) {
-                      if (pf.path == null) continue;
-                      final res = await api.uploadFile(pf.path!, pf.name);
-                      final url = res['url'] ?? res['file_url'] ?? res['path'];
+                    final validFiles = [...attachedFiles, ...referenceFiles].where((pf) => pf.path != null).toList();
+                    final results = await Future.wait(validFiles.map((pf) => api.uploadFile(pf.path!, pf.name)), eagerError: true);
+                    for (var i = 0; i < validFiles.length; i++) {
+                      final url = results[i]['url'] ?? results[i]['file_url'] ?? results[i]['path'];
                       if (url == null || url.toString().isEmpty) throw Exception('upload_failed');
-                      fileUrls.add('$url#${Uri.encodeComponent(pf.name)}');
+                      fileUrls.add('$url#${Uri.encodeComponent(validFiles[i].name)}');
                     }
                   } catch (_) {
-                    if (mounted && ctx.mounted) showToast(context, l.t('upload_failed'), error: true);
+                    if (mounted && ctx.mounted) { showToast(context, l.t('upload_failed'), error: true); setS(() => isSubmitting = false); }
                     return;
                   }
 
@@ -1063,7 +1077,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                       ? '${l.t('assignment_created')} (${fileUrls.length} ${l.t('file')})'
                       : l.t('assignment_created'));
                 } catch (e) {
-                  if (mounted && ctx.mounted) showToast(context, '${l.t('error_generic')}: $e', error: true);
+                  if (mounted && ctx.mounted) { showToast(context, '${l.t('error_generic')}: $e', error: true); setS(() => isSubmitting = false); }
                 }
               })),
           ]),
@@ -1081,7 +1095,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     });
   }
 
-  Widget _fieldLabel2(String s) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(s, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)));
+  Widget _fieldLabel2(String s) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(s, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)));
 
   void _editAssignment(dynamic a) {
     final l = context.read<L10n>();
@@ -1149,7 +1163,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           const SizedBox(height: 20),
           if (keepUrls.isNotEmpty) ...[
             Row(children: [
-              Text(l.t('current_files'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
+              Text(l.t('current_files'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)),
               const Spacer(),
               Text(l.t('tap_x_remove'), style: const TextStyle(fontSize: 11, color: C.text4)),
             ]),
@@ -1157,17 +1171,17 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             ...keepUrls.map((url) {
               final name = fileDisplayName(url);
               return Container(margin: const EdgeInsets.only(bottom: 6), padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
                 child: Row(children: [
-                  Icon(CupertinoIcons.doc, size: 15, color: Theme.of(context).colorScheme.primary), const SizedBox(width: 8),
-                  Expanded(child: Text(name, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary), overflow: TextOverflow.ellipsis)),
+                  const Icon(CupertinoIcons.doc, size: 15, color: C.text3), const SizedBox(width: 8),
+                  Expanded(child: Text(name, style: const TextStyle(fontSize: 13, color: C.text3), overflow: TextOverflow.ellipsis)),
                   GestureDetector(onTap: () => setS(() => keepUrls.remove(url)), child: const Icon(CupertinoIcons.xmark, size: 15, color: C.red)),
                 ]));
             }),
             const SizedBox(height: 12),
           ],
           Row(children: [
-            Text(l.t('add_files_label'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
+            Text(l.t('add_files_label'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)),
             const Spacer(),
             GestureDetector(
               onTap: () async {
@@ -1179,17 +1193,17 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           ]),
           const SizedBox(height: 8),
           if (newFiles.isNotEmpty) ...newFiles.map((f) => Container(margin: const EdgeInsets.only(bottom: 6), padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
             child: Row(children: [
-              Icon(CupertinoIcons.doc, size: 15, color: Theme.of(context).colorScheme.primary), const SizedBox(width: 8),
-              Expanded(child: Text(f.name, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary), overflow: TextOverflow.ellipsis)),
+              const Icon(CupertinoIcons.doc, size: 15, color: C.text3), const SizedBox(width: 8),
+              Expanded(child: Text(f.name, style: const TextStyle(fontSize: 13, color: C.text3), overflow: TextOverflow.ellipsis)),
               GestureDetector(onTap: () => setS(() => newFiles.remove(f)), child: const Icon(CupertinoIcons.xmark, size: 15, color: C.text4)),
             ])))
           else Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(12)),
             child: Row(children: [const Icon(CupertinoIcons.paperclip, size: 15, color: C.text4), const SizedBox(width: 8), Text(l.t('no_new_files'), style: const TextStyle(fontSize: 13, color: C.text4))])),
           const SizedBox(height: 24),
           Row(children: [
-            Text(l.t('grading_criteria'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
+            Text(l.t('grading_criteria'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)),
             const Spacer(),
             GestureDetector(onTap: () => setS(() {
                 criteria.add({'name': '', 'weight': 0, 'desc': ''});
@@ -1231,7 +1245,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: Row(children: [
-                Icon(CupertinoIcons.square_stack, size: 18, color: Theme.of(context).colorScheme.primary),
+                Icon(CupertinoIcons.square_stack, size: 18, color: adaptiveText1(context)),
                 const SizedBox(width: 10),
                 Expanded(child: Text(context.read<L10n>().t('assignment_variants'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700))),
                 const Icon(CupertinoIcons.chevron_right, size: 16, color: C.text4),

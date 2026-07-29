@@ -13,7 +13,6 @@ import '../../../theme/app_theme.dart';
 import '../../../widgets/ai_limit_notice.dart';
 import '../../../widgets/app_dialog.dart';
 import '../../../widgets/toast.dart';
-import '../rag_documents_sheet.dart';
 import '../../ai/widgets/ai_message_content.dart';
 
 class ClassAiTab extends StatefulWidget {
@@ -236,17 +235,6 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
           onRefresh: _refresh,
           color: Theme.of(context).colorScheme.primary,
           child: _msgs.isEmpty ? _emptyState(isDark) : _messageList(isDark),
-        ),
-        if (widget.isTeacher) Positioned(
-          top: 10, right: _msgs.isNotEmpty ? 60 : 14,
-          child: _headerButton(
-            icon: CupertinoIcons.doc_text_search,
-            color: Theme.of(context).colorScheme.primary,
-            onTap: () {
-              HapticFeedback.lightImpact();
-              showRagDocumentsSheet(context, classId: widget.classId);
-            },
-          ),
         ),
         if (_msgs.isNotEmpty) Positioned(
           top: 10, right: 14,

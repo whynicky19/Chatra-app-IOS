@@ -681,31 +681,6 @@ class ApiService {
   Future<void> adminSetAiUnlimited(int userId, bool unlimited) async =>
       _dio.put('/admin/users/$userId/ai_unlimited', data: {'unlimited': unlimited});
 
-  Future<Map<String, dynamic>> ragIngest(String filePath, String fileName, {int? classId}) async {
-    final formData = FormData.fromMap({
-      'file': await MultipartFile.fromFile(filePath, filename: fileName),
-      if (classId != null) 'class_id': classId,
-    });
-    final response = await _dio.post('/rag/ingest', data: formData);
-    return response.data;
-  }
-
-  Future<List<dynamic>> ragDocuments({int? classId}) async {
-    try {
-      final params = <String, dynamic>{};
-      if (classId != null) params['class_id'] = classId;
-      final response = await _dio.get('/rag/documents', queryParameters: params);
-      final data = response.data;
-      if (data is List) return data;
-      if (data is Map && data['items'] is List) return data['items'] as List;
-      return [];
-    } catch (_) {
-      return [];
-    }
-  }
-
-  Future<void> deleteRagDocument(int docId) async => _dio.delete('/rag/documents/$docId');
-
   Future<List<dynamic>> getAssignmentVariants(int assignmentId) async {
     final response = await _dio.get('/assignments/$assignmentId/variants');
     final data = response.data;

@@ -65,20 +65,6 @@ class ClassCoverSliver extends StatelessWidget {
         icon: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(AppRadii.chip)), child: const Icon(CupertinoIcons.chevron_left, color: Colors.white, size: 20)),
         onPressed: onBack,
       ),
-      actions: [
-        if (isTeacher) IconButton(
-          padding: EdgeInsets.zero,
-          icon: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(AppRadii.chip)), child: const Icon(CupertinoIcons.gear_alt_fill, color: Colors.white70, size: 17)),
-          onPressed: onSettings,
-        ),
-        if (isTeacher) const SizedBox(width: 6),
-        if (isTeacher) IconButton(
-          padding: EdgeInsets.zero,
-          icon: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(AppRadii.chip)), child: const Icon(CupertinoIcons.pencil, color: Colors.white70, size: 18)),
-          onPressed: onEdit,
-        ),
-        const SizedBox(width: 8),
-      ],
       flexibleSpace: LayoutBuilder(builder: (context, constraints) {
         final topPad = MediaQuery.of(context).padding.top;
         final settle = ((constraints.maxHeight - kToolbarHeight - topPad) /
@@ -107,6 +93,24 @@ class ClassCoverSliver extends StatelessWidget {
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white,
                     shadows: [Shadow(color: Colors.black54, blurRadius: 6)])),
               ))),
+          // Настройки/редактирование скрыты в панели инструментов намеренно: они должны
+          // уходить вместе с обложкой при скролле, а не оставаться закреплёнными как back-кнопка.
+          if (isTeacher && settle > 0)
+            Positioned(top: topPad, right: 8, height: kToolbarHeight,
+              child: Opacity(opacity: settle, child: IgnorePointer(ignoring: settle < 0.3, child: Row(children: [
+                IconButton(
+                  padding: EdgeInsets.zero,
+                  icon: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(AppRadii.chip)), child: const Icon(CupertinoIcons.gear_alt_fill, color: Colors.white70, size: 17)),
+                  onPressed: onSettings,
+                ),
+                const SizedBox(width: 6),
+                IconButton(
+                  padding: EdgeInsets.zero,
+                  icon: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(AppRadii.chip)), child: const Icon(CupertinoIcons.pencil, color: Colors.white70, size: 18)),
+                  onPressed: onEdit,
+                ),
+                const SizedBox(width: 8),
+              ])))),
           Positioned(bottom: 16, left: 16, right: 16, child: Opacity(opacity: settle, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             if (isArchived) ...[
               Container(

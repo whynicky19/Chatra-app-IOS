@@ -751,10 +751,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 final img = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1200, imageQuality: 85);
                 if (img != null) setS(() => coverFile = img);
               }, child: Container(height: 160, width: double.infinity,
-                decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3), width: 1.5), color: coverFile != null ? null : adaptivePrimaryLt(context).withValues(alpha: 0.3)),
+                decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: adaptiveBorder(context), width: 1.5), color: coverFile != null ? null : adaptiveSurface2(context)),
                 child: coverFile != null
                     ? ClipRRect(borderRadius: BorderRadius.circular(16), child: Image.file(File(coverFile!.path), fit: BoxFit.cover, width: double.infinity))
-                    : Column(mainAxisAlignment: MainAxisAlignment.center, children: [Container(width: 50, height: 50, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(AppRadii.tile)), child: Icon(CupertinoIcons.photo, size: 26, color: Theme.of(context).colorScheme.primary)), const SizedBox(height: 10), Text(l.t('click_to_upload'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)), const Text('JPG, PNG', style: TextStyle(fontSize: 12, color: C.text4))]))),
+                    : Column(mainAxisAlignment: MainAxisAlignment.center, children: [Container(width: 50, height: 50, decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)), child: Icon(CupertinoIcons.photo, size: 26, color: adaptiveText1(context))), const SizedBox(height: 10), Text(l.t('click_to_upload'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: adaptiveText1(context))), const Text('JPG, PNG', style: TextStyle(fontSize: 12, color: C.text4))]))),
               const SizedBox(height: 20),
               _fl3(l.t('class_name_required')), TextField(controller: nameC, decoration: InputDecoration(hintText: l.t('class_name_hint'))),
               const SizedBox(height: 16), _fl3(l.t('class_desc')), TextField(controller: descC, decoration: InputDecoration(hintText: l.t('class_desc_hint')), maxLines: 3),

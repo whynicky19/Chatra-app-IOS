@@ -270,7 +270,7 @@ class SheetScaffold extends StatelessWidget {
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
-        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 20),
             decoration: BoxDecoration(color: C.text4.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)))),
           if (icon != null) ...[
@@ -283,7 +283,7 @@ class SheetScaffold extends StatelessWidget {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: adaptiveText1(context), letterSpacing: -0.3)),
           const SizedBox(height: 22),
           ...children,
-        ]),
+        ])),
       ),
     );
   }

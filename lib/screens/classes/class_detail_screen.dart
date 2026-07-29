@@ -164,9 +164,15 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   }
 
   void _recomputeAiContext() {
-    final all = _lectures.take(12);
+    // Бэкенд отдаёт _lectures уже в порядке "1, 2, 3..." (posts.position, см.
+    // migrations/017), но номер берём именно из позиции в ЭТОМ полном списке
+    // (до .take(12)), чтобы обрезка не сдвигала нумерацию видимых лекций.
+    final numbered = _lectures.asMap().entries.toList();
+    final all = numbered.take(12);
     final parts = <String>[];
-    for (final p in all) {
+    for (final entry in all) {
+      final number = entry.key + 1;
+      final p = entry.value;
       final title = cleanPostTitle(p['title'] ?? '');
       String content = '';
       List<dynamic> files = [];
@@ -178,7 +184,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       content = content.replaceAll(RegExp(r'\n{3,}'), '\n\n').trim();
       if (content.length > 4000) content = content.substring(0, 4000);
       final sb = StringBuffer();
-      if (title.isNotEmpty) sb.write('### $title\n');
+      sb.write('### Лекция $number${title.isNotEmpty ? ": $title" : ""}\n');
       if (content.isNotEmpty) sb.write(content);
       if (files.isNotEmpty) {
         for (final f in files) {
@@ -758,7 +764,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => Padding(
         padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
+        child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
           Container(width: 40, height: 4, decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2))),
           const SizedBox(height: 16),
           Row(children: [
@@ -826,7 +832,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 } catch (_) { if (mounted && ctx.mounted) showToast(context, l.t('error_generic'), error: true); }
               })),
           ]),
-        ])))).then((_) { tc.dispose(); cc.dispose(); });
+        ]))))).then((_) { tc.dispose(); cc.dispose(); });
   }
 
   void _createAssignment() {
@@ -834,6 +840,13 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     final tc = TextEditingController(), dc = TextEditingController(), sc = TextEditingController(text: '100');
     DateTime? deadline;
     List<Map<String, dynamic>> criteria = [{'name': '', 'weight': 100, 'desc': ''}];
+    // Контроллеры критериев обязаны жить столько же, сколько сама строка, а не
+    // пересоздаваться на каждой перестройке DraggableScrollableSheet (она
+    // ребилдится через LayoutBuilder при каждом изменении высоты клавиатуры) —
+    // иначе TextField теряет фокус/ввод и виджет-дерево путает controller.
+    List<TextEditingController> criteriaNameCs = [TextEditingController()];
+    List<TextEditingController> criteriaWeightCs = [TextEditingController(text: '100')];
+    List<TextEditingController> criteriaDescCs = [TextEditingController()];
     List<PlatformFile> attachedFiles = [];
     List<PlatformFile> referenceFiles = [];
 
@@ -866,6 +879,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             final d = await showDatePicker(context: ctx, initialDate: DateTime.now().add(const Duration(days: 7)), firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 365)));
             if (d != null && ctx.mounted) {
               final t = await showTimePicker(context: ctx, initialTime: const TimeOfDay(hour: 23, minute: 59));
+              if (!ctx.mounted) return;
               setS(() => deadline = DateTime(d.year, d.month, d.day, t?.hour ?? 23, t?.minute ?? 59));
             }
           }, child: Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -935,16 +949,21 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           Row(children: [
             Text(l.t('grading_criteria'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
             const Spacer(),
-            GestureDetector(onTap: () => setS(() => criteria.add({'name': '', 'weight': 0, 'desc': ''})),
+            GestureDetector(onTap: () => setS(() {
+                criteria.add({'name': '', 'weight': 0, 'desc': ''});
+                criteriaNameCs.add(TextEditingController());
+                criteriaWeightCs.add(TextEditingController(text: '0'));
+                criteriaDescCs.add(TextEditingController());
+              }),
               child: Text('+ ${l.t('add')}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary))),
           ]),
           const SizedBox(height: 4),
           Text('${l.t('criteria_sum_hint')} (${sc.text}/${sc.text})', style: const TextStyle(fontSize: 11, color: C.text4)),
           const SizedBox(height: 12),
           ...List.generate(criteria.length, (i) {
-            final nameC = TextEditingController(text: criteria[i]['name']);
-            final weightC = TextEditingController(text: '${criteria[i]['weight']}');
-            final descC = TextEditingController(text: criteria[i]['desc'] ?? '');
+            final nameC = criteriaNameCs[i];
+            final weightC = criteriaWeightCs[i];
+            final descC = criteriaDescCs[i];
             return Container(margin: const EdgeInsets.only(bottom: 10), padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: Column(children: [
@@ -955,7 +974,12 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   const SizedBox(width: 8),
                   SizedBox(width: 60, child: TextField(controller: weightC, keyboardType: TextInputType.number, textAlign: TextAlign.center, decoration: const InputDecoration(contentPadding: EdgeInsets.symmetric(vertical: 10)), onChanged: (v) => criteria[i]['weight'] = int.tryParse(v) ?? 0)),
                   const SizedBox(width: 4),
-                  GestureDetector(onTap: () { if (criteria.length > 1) setS(() => criteria.removeAt(i)); }, child: const Icon(CupertinoIcons.xmark, size: 16, color: C.red)),
+                  GestureDetector(onTap: () { if (criteria.length > 1) setS(() {
+                      criteria.removeAt(i);
+                      criteriaNameCs.removeAt(i).dispose();
+                      criteriaWeightCs.removeAt(i).dispose();
+                      criteriaDescCs.removeAt(i).dispose();
+                    }); }, child: const Icon(CupertinoIcons.xmark, size: 16, color: C.red)),
                 ]),
                 const SizedBox(height: 6),
                 TextField(controller: descC, decoration: InputDecoration(hintText: l.t('criterion_desc'), contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)), onChanged: (v) => criteria[i]['desc'] = v),
@@ -1024,7 +1048,12 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               })),
           ]),
           const SizedBox(height: 24),
-        ])))).then((_) { tc.dispose(); dc.dispose(); sc.dispose(); });
+        ])))).then((_) {
+      tc.dispose(); dc.dispose(); sc.dispose();
+      for (final c in criteriaNameCs) { c.dispose(); }
+      for (final c in criteriaWeightCs) { c.dispose(); }
+      for (final c in criteriaDescCs) { c.dispose(); }
+    });
   }
 
   Widget _fieldLabel2(String s) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(s, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)));
@@ -1048,6 +1077,9 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       criteria = (raw as List).map((c) => {'name': c['name'] ?? '', 'weight': c['weight'] ?? 0, 'desc': c['description'] ?? c['desc'] ?? ''}).toList();
     } catch (_) {}
     if (criteria.isEmpty) criteria = [{'name': '', 'weight': a['max_score'] ?? 100, 'desc': ''}];
+    List<TextEditingController> criteriaNameCs = criteria.map((c) => TextEditingController(text: c['name'])).toList();
+    List<TextEditingController> criteriaWeightCs = criteria.map((c) => TextEditingController(text: '${c['weight']}')).toList();
+    List<TextEditingController> criteriaDescCs = criteria.map((c) => TextEditingController(text: c['desc'] ?? '')).toList();
 
     showModalBottomSheet(
       context: context, isScrollControlled: true, backgroundColor: Theme.of(context).colorScheme.surface,
@@ -1080,6 +1112,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             final d = await showDatePicker(context: ctx, initialDate: deadline ?? DateTime.now().add(const Duration(days: 7)), firstDate: DateTime.now().subtract(const Duration(days: 1)), lastDate: DateTime.now().add(const Duration(days: 365)));
             if (d != null && ctx.mounted) {
               final t = await showTimePicker(context: ctx, initialTime: TimeOfDay(hour: deadline?.hour ?? 23, minute: deadline?.minute ?? 59));
+              if (!ctx.mounted) return;
               setS(() => deadline = DateTime(d.year, d.month, d.day, t?.hour ?? 23, t?.minute ?? 59));
             }
           }, child: Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -1133,14 +1166,19 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           Row(children: [
             Text(l.t('grading_criteria'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
             const Spacer(),
-            GestureDetector(onTap: () => setS(() => criteria.add({'name': '', 'weight': 0, 'desc': ''})),
+            GestureDetector(onTap: () => setS(() {
+                criteria.add({'name': '', 'weight': 0, 'desc': ''});
+                criteriaNameCs.add(TextEditingController());
+                criteriaWeightCs.add(TextEditingController(text: '0'));
+                criteriaDescCs.add(TextEditingController());
+              }),
               child: Text('+ ${l.t('add')}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary))),
           ]),
           const SizedBox(height: 12),
           ...List.generate(criteria.length, (i) {
-            final nameC   = TextEditingController(text: criteria[i]['name']);
-            final weightC = TextEditingController(text: '${criteria[i]['weight']}');
-            final descC   = TextEditingController(text: criteria[i]['desc'] ?? '');
+            final nameC   = criteriaNameCs[i];
+            final weightC = criteriaWeightCs[i];
+            final descC   = criteriaDescCs[i];
             return Container(margin: const EdgeInsets.only(bottom: 10), padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: Column(children: [
@@ -1150,7 +1188,12 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   const SizedBox(width: 8),
                   SizedBox(width: 60, child: TextField(controller: weightC, keyboardType: TextInputType.number, textAlign: TextAlign.center, decoration: const InputDecoration(contentPadding: EdgeInsets.symmetric(vertical: 10)), onChanged: (v) => criteria[i]['weight'] = int.tryParse(v) ?? 0)),
                   const SizedBox(width: 4),
-                  GestureDetector(onTap: () { if (criteria.length > 1) setS(() => criteria.removeAt(i)); }, child: const Icon(CupertinoIcons.xmark, size: 16, color: C.red)),
+                  GestureDetector(onTap: () { if (criteria.length > 1) setS(() {
+                      criteria.removeAt(i);
+                      criteriaNameCs.removeAt(i).dispose();
+                      criteriaWeightCs.removeAt(i).dispose();
+                      criteriaDescCs.removeAt(i).dispose();
+                    }); }, child: const Icon(CupertinoIcons.xmark, size: 16, color: C.red)),
                 ]),
                 const SizedBox(height: 6),
                 TextField(controller: descC, decoration: InputDecoration(hintText: l.t('criterion_desc'), contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)), onChanged: (v) => criteria[i]['desc'] = v),
@@ -1227,7 +1270,12 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           const SizedBox(height: 24),
         ]),
       )),
-    ).then((_) { tc.dispose(); dc.dispose(); sc.dispose(); });
+    ).then((_) {
+      tc.dispose(); dc.dispose(); sc.dispose();
+      for (final c in criteriaNameCs) { c.dispose(); }
+      for (final c in criteriaWeightCs) { c.dispose(); }
+      for (final c in criteriaDescCs) { c.dispose(); }
+    });
   }
 
   void _showVariantsSheet(int assignmentId) {

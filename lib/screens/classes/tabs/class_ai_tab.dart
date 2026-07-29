@@ -14,6 +14,7 @@ import '../../../widgets/ai_limit_notice.dart';
 import '../../../widgets/app_dialog.dart';
 import '../../../widgets/toast.dart';
 import '../rag_documents_sheet.dart';
+import '../../ai/widgets/ai_message_content.dart';
 
 class ClassAiTab extends StatefulWidget {
   final int classId;
@@ -179,7 +180,15 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
         {'role': 'assistant', 'content': 'Ознакомился с прикреплёнными материалами курса.'},
       ] : [];
       final apiMsgs = <Map<String, dynamic>>[
-        {'role': 'system', 'content': 'Ты AI-ассистент курса "${widget.className}". Отвечай на русском.$lectureBlock'},
+        {'role': 'system', 'content':
+            'Ты AI-ассистент курса "${widget.className}". Отвечай на русском. '
+            'Материалы курса ниже помечены заголовками вида "### Лекция N: <тема>" — '
+            'если студент просит объяснить материал по номеру (например "объясни '
+            '2 лекцию"), найди блок с этим номером и объясняй именно его. Объясняй '
+            'подробно: раскрывай ключевые понятия, приводи примеры и связи между '
+            'идеями, а не просто пересказывай заголовок. Математические формулы '
+            'записывай в LaTeX: инлайн — \$...\$ или \\(...\\), блочные — \$\$...\$\$ '
+            'или \\[...\\]. Код — в блоках ```язык.$lectureBlock'},
         ...visionPre,
         ..._msgs.map((m) => {'role': m['role']!, 'content': m['text']!}),
       ];
@@ -475,7 +484,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
             ),
             boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.05), blurRadius: 12, offset: const Offset(0, 3))],
           ),
-          child: SelectableText(text, style: const TextStyle(fontSize: 15, height: 1.6, letterSpacing: 0.1)),
+          child: AiMessageContent(text: text, style: const TextStyle(fontSize: 15, height: 1.6, letterSpacing: 0.1)),
         ),
       ),
     ),

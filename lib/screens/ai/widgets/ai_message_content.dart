@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 
-/// Рендерит текст сообщения ассистента с формулами LaTeX внутри.
-/// Блочные ($$...$$, \[...\]) и инлайн ($...$, \(...\)) формулы разбираются
-/// и рисуются через flutter_math_fork; остальной текст — обычными словами
-/// во `Wrap`, чтобы формулы могли стоять прямо посреди строки.
+/// Рендерит текст сообщения ассистента: формулы LaTeX, markdown-списки и
+/// таблицы. Документ разбирается построчно на параграфы/списки/таблицы;
+/// внутри параграфов блочные ($$...$$, \[...\]) и инлайн ($...$, \(...\))
+/// формулы рисуются через flutter_math_fork, остальной текст — обычными
+/// словами во `Wrap`, чтобы формулы могли стоять прямо посреди строки.
+/// Внутри пунктов списка и ячеек таблицы поддерживаются только инлайн-формулы.
 class AiMessageContent extends StatelessWidget {
   final String text;
   final TextStyle style;
@@ -13,12 +15,213 @@ class AiMessageContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final blocks = _buildBlocks(_tokenize(text), style);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
-      children: blocks,
+      children: _buildDocument(text, style),
     );
+  }
+
+  // ── Document-level: параграфы / списки / таблицы ──────────────────────────
+  List<Widget> _buildDocument(String text, TextStyle style) {
+    final lines = text.split('\n');
+    final widgets = <Widget>[];
+    final paragraph = <String>[];
+
+    void flushParagraph() {
+      if (paragraph.isEmpty) return;
+      widgets.addAll(_buildBlocks(_tokenize(paragraph.join('\n')), style));
+      paragraph.clear();
+    }
+
+    var i = 0;
+    while (i < lines.length) {
+      final line = lines[i];
+      if (line.trimLeft().startsWith('```')) {
+        flushParagraph();
+        i++; // пропускаем открывающий ``` (с языком или без)
+        final codeLines = <String>[];
+        while (i < lines.length && !lines[i].trimLeft().startsWith('```')) {
+          codeLines.add(lines[i]);
+          i++;
+        }
+        if (i < lines.length) i++; // пропускаем закрывающий ```
+        widgets.add(_buildCodeBlock(codeLines.join('\n'), style));
+        continue;
+      }
+      if (_isTableRow(line) && i + 1 < lines.length && _isTableSep(lines[i + 1])) {
+        flushParagraph();
+        final header = _splitRow(line);
+        i += 2;
+        final rows = <List<String>>[];
+        while (i < lines.length && _isTableRow(lines[i])) {
+          rows.add(_splitRow(lines[i]));
+          i++;
+        }
+        widgets.add(_buildTable(header, rows, style));
+        continue;
+      }
+      if (_isUl(line) || _isOl(line)) {
+        final ordered = _isOl(line);
+        final items = <String>[];
+        while (i < lines.length && (ordered ? _isOl(lines[i]) : _isUl(lines[i]))) {
+          items.add(_stripMarker(lines[i]));
+          i++;
+        }
+        flushParagraph();
+        widgets.add(_buildList(items, ordered, style));
+        continue;
+      }
+      paragraph.add(line);
+      i++;
+    }
+    flushParagraph();
+    return widgets;
+  }
+
+  // Таблицу опознаём по строке-разделителю (только "-", "|", ":", пробелы) —
+  // не по обязательным крайним "|", т.к. модель их часто опускает. Требуем
+  // "|" и в самой строке-разделителе, иначе горизонтальная черта "---"
+  // (частый в ответах разделитель разделов) не будет ошибочно принята за таблицу.
+  static final _tableRowRe = RegExp(r'\|');
+  static final _tableSepRe = RegExp(r'^[-|:\s]+$');
+  static final _ulRe = RegExp(r'^\s*[-*]\s+\S');
+  static final _olRe = RegExp(r'^\s*\d+\.\s+\S');
+
+  bool _isTableRow(String l) => _tableRowRe.hasMatch(l);
+  bool _isTableSep(String l) => _tableSepRe.hasMatch(l) && l.contains('-') && l.contains('|');
+  bool _isUl(String l) => _ulRe.hasMatch(l);
+  bool _isOl(String l) => _olRe.hasMatch(l);
+  String _stripMarker(String l) => l.replaceFirst(RegExp(r'^\s*(?:[-*]|\d+\.)\s+'), '');
+
+  List<String> _splitRow(String l) {
+    var s = l.trim();
+    if (s.startsWith('|')) s = s.substring(1);
+    if (s.endsWith('|')) s = s.substring(0, s.length - 1);
+    return s.split('|').map((c) => c.trim()).toList();
+  }
+
+  Widget _buildList(List<String> items, bool ordered, TextStyle style) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (var idx = 0; idx < items.length; idx++)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(width: 22, child: Text(ordered ? '${idx + 1}.' : '•', style: style)),
+                  Expanded(
+                    child: Wrap(
+                      spacing: 4,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: _inlineWidgets(items[idx], style),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTable(List<String> header, List<List<String>> rows, TextStyle style) {
+    final cols = header.length;
+    List<String> pad(List<String> r) {
+      final out = List<String>.from(r);
+      while (out.length < cols) {
+        out.add('');
+      }
+      if (out.length > cols) out.removeRange(cols, out.length);
+      return out;
+    }
+
+    final borderColor = (style.color ?? const Color(0xFF000000)).withValues(alpha: 0.2);
+    Widget cell(String text, TextStyle st) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Wrap(
+            spacing: 4,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: _inlineWidgets(text, st),
+          ),
+        );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Table(
+          border: TableBorder.all(color: borderColor, width: 0.6),
+          defaultColumnWidth: const IntrinsicColumnWidth(),
+          children: [
+            TableRow(children: [for (final h in header) cell(h, style.copyWith(fontWeight: FontWeight.w700))]),
+            for (final r in rows) TableRow(children: [for (final c in pad(r)) cell(c, style)]),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Тёмный фон код-блока — как на сайте (`.code-bl`: #0a0a16 / #99e6f0).
+  Widget _buildCodeBlock(String code, TextStyle style) {
+    final codeStyle = TextStyle(
+      fontFamily: 'monospace',
+      fontSize: (style.fontSize ?? 15) - 1,
+      height: 1.5,
+      color: const Color(0xFF99E6F0),
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: const Color(0xFF0A0A16), borderRadius: BorderRadius.circular(8)),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Text(code, style: codeStyle),
+        ),
+      ),
+    );
+  }
+
+  Widget _inlineCode(String code, TextStyle style) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+        decoration: BoxDecoration(
+          color: (style.color ?? const Color(0xFF000000)).withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(code, style: style.copyWith(fontFamily: 'monospace', fontSize: (style.fontSize ?? 15) - 1)),
+      );
+
+  List<Widget> _inlineWidgets(String text, TextStyle style) {
+    final widgets = <Widget>[];
+    for (final seg in _tokenizeInline(text)) {
+      switch (seg.type) {
+        case _SegType.inline:
+          widgets.add(Math.tex(
+            seg.value,
+            mathStyle: MathStyle.text,
+            textStyle: style,
+            onErrorFallback: (_) => Text('\$${seg.value}\$', style: style),
+          ));
+          break;
+        case _SegType.code:
+          widgets.add(_inlineCode(seg.value, style));
+          break;
+        default:
+          for (final word in seg.value.split(' ')) {
+            if (word.isEmpty) continue;
+            widgets.add(Text(word, style: style));
+          }
+      }
+    }
+    return widgets;
   }
 
   List<Widget> _buildBlocks(List<_Seg> segs, TextStyle style) {
@@ -57,6 +260,9 @@ class AiMessageContent extends StatelessWidget {
             onErrorFallback: (_) => Text('\$${seg.value}\$', style: style),
           ));
           break;
+        case _SegType.code:
+          currentLine.add(_inlineCode(seg.value, style));
+          break;
         case _SegType.text:
           final lines = seg.value.split('\n');
           for (var i = 0; i < lines.length; i++) {
@@ -75,6 +281,7 @@ class AiMessageContent extends StatelessWidget {
 
   static final _blockRe = RegExp(r'\$\$([\s\S]+?)\$\$|\\\[([\s\S]+?)\\\]');
   static final _inlineRe = RegExp(r'\$([^$\n]+?)\$|\\\(([\s\S]+?)\\\)');
+  static final _inlineCodeRe = RegExp(r'`([^`\n]+)`');
   static final _currencyRe = RegExp(r'^\s*\d[\d,.\s]*\s*$');
 
   static List<_Seg> _tokenize(String text) {
@@ -89,7 +296,21 @@ class AiMessageContent extends StatelessWidget {
     return segs;
   }
 
+  // Инлайн-код (`...`) вырезаем раньше формул, чтобы `$var$` внутри код-спана
+  // не принялось за LaTeX.
   static List<_Seg> _tokenizeInline(String text) {
+    final segs = <_Seg>[];
+    var last = 0;
+    for (final m in _inlineCodeRe.allMatches(text)) {
+      if (m.start > last) segs.addAll(_tokenizeMath(text.substring(last, m.start)));
+      segs.add(_Seg(_SegType.code, m.group(1) ?? ''));
+      last = m.end;
+    }
+    if (last < text.length) segs.addAll(_tokenizeMath(text.substring(last)));
+    return segs;
+  }
+
+  static List<_Seg> _tokenizeMath(String text) {
     final segs = <_Seg>[];
     var last = 0;
     for (final m in _inlineRe.allMatches(text)) {
@@ -108,7 +329,7 @@ class AiMessageContent extends StatelessWidget {
   }
 }
 
-enum _SegType { text, inline, block }
+enum _SegType { text, inline, block, code }
 
 class _Seg {
   final _SegType type;

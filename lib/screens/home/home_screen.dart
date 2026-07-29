@@ -712,8 +712,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       }),
     ).then((_) {
       lookupDebounce?.cancel();
-      for (final c in controllers) { c.dispose(); }
-      for (final f in focusNodes) { f.dispose(); }
+      // Диалог завершает Future ещё до начала анимации закрытия (см.
+      // TransitionRoute.completed в SDK) — если во время закрытия клавиатура
+      // тоже уходит, ещё видимые TextField перестраиваются с уже
+      // задиспоженным контроллером ("used after being disposed"). Даём
+      // закрывающей анимации время закончиться перед dispose().
+      Future.delayed(const Duration(milliseconds: 400), () {
+        for (final c in controllers) { c.dispose(); }
+        for (final f in focusNodes) { f.dispose(); }
+      });
     });
   }
 
@@ -761,7 +768,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               Expanded(child: ElevatedButton(
                 style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
                 onPressed: submitting ? null : () async {
-                  if (nameC.text.trim().isEmpty) return;
+                  if (nameC.text.trim().isEmpty) {
+                    showToast(context, l.t('enter_class_name'), error: true);
+                    return;
+                  }
                   setS(() => submitting = true);
                   try {
                     final api = context.read<ApiService>();
@@ -795,10 +805,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           ]),
         ),
       ))).then((_) {
-      nameC.dispose();
-      descC.dispose();
-      teacherC.dispose();
-      periodC.dispose();
+      Future.delayed(const Duration(milliseconds: 400), () {
+        nameC.dispose();
+        descC.dispose();
+        teacherC.dispose();
+        periodC.dispose();
+      });
       if (created && mounted) {
         if (createdClass != null) provider.addCreatedClass(createdClass!);
         provider.load();

@@ -865,8 +865,13 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
         );
       }),
     );
-    scoreC.dispose();
-    feedbackC.dispose();
+    // showModalBottomSheet завершает await ещё до начала анимации закрытия
+    // (см. TransitionRoute.completed в SDK) — dispose откладываем, иначе ещё
+    // видимый TextField ловит "used after being disposed" во время закрытия.
+    Future.delayed(const Duration(milliseconds: 400), () {
+      scoreC.dispose();
+      feedbackC.dispose();
+    });
   }
 
   Future<void> _confirmDeleteSubmission(BuildContext ctx, dynamic sub, VoidCallback onDeleted) async {

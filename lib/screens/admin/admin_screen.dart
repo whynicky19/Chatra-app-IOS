@@ -1059,7 +1059,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           ? Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, gaplessPlayback: true, cacheWidth: 480)
           : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors)));
     }
-    return NetworkCoverImage(url: coverImg.toString(), memCacheWidth: 480,
+    return NetworkCoverImage(url: context.read<ApiService>().fixUrl(coverImg.toString()), memCacheWidth: 480,
       errorBuilder: (_) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))));
   }
 

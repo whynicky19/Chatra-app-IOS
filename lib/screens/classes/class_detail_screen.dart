@@ -613,7 +613,15 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               }, child: Text(l.t('save')))),
             ]),
           ])));
-      })).then((_) { tc.dispose(); cc.dispose(); });
+      })).then((_) {
+        // showModalBottomSheet завершает Future ещё ДО начала анимации закрытия
+        // (см. TransitionRoute.completed в SDK) — шторка со своими TextField ещё
+        // видна и может перестроиться (например, из-за скрытия клавиатуры,
+        // которое меняет MediaQuery.viewInsets). Немедленный dispose() тут ловил
+        // "TextEditingController used after being disposed" прямо во время
+        // закрывающей анимации — откладываем чуть дольше её длительности (~250мс).
+        Future.delayed(const Duration(milliseconds: 400), () { tc.dispose(); cc.dispose(); });
+      });
   }
 
   List<String> _extractFiles(dynamic p) {
@@ -805,7 +813,10 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             Expanded(child: ElevatedButton.icon(icon: const Icon(CupertinoIcons.plus, size: 16, color: Colors.white), label: Text(l.t('publish')),
               style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
               onPressed: () async {
-                if (tc.text.trim().isEmpty) return;
+                if (tc.text.trim().isEmpty) {
+                  showToast(context, l.t('enter_lecture_topic'), error: true);
+                  return;
+                }
                 final prefix = '[LECTURE][${widget.classId}]';
                 try {
                   final api = context.read<ApiService>();
@@ -832,7 +843,11 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 } catch (_) { if (mounted && ctx.mounted) showToast(context, l.t('error_generic'), error: true); }
               })),
           ]),
-        ]))))).then((_) { tc.dispose(); cc.dispose(); });
+        ]))))).then((_) {
+        // См. комментарий в _editLectureSheet выше: showModalBottomSheet
+        // завершает Future ДО начала анимации закрытия — dispose откладываем.
+        Future.delayed(const Duration(milliseconds: 400), () { tc.dispose(); cc.dispose(); });
+      });
   }
 
   void _createAssignment() {
@@ -992,7 +1007,10 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             Expanded(child: ElevatedButton.icon(icon: const Icon(CupertinoIcons.plus, size: 16, color: Colors.white), label: Text(l.t('create_assignment')),
               style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
               onPressed: () async {
-                if (tc.text.trim().isEmpty) return;
+                if (tc.text.trim().isEmpty) {
+                  showToast(context, l.t('enter_assignment_title'), error: true);
+                  return;
+                }
                 try {
                   final api = context.read<ApiService>();
 
@@ -1049,10 +1067,15 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           ]),
           const SizedBox(height: 24),
         ])))).then((_) {
-      tc.dispose(); dc.dispose(); sc.dispose();
-      for (final c in criteriaNameCs) { c.dispose(); }
-      for (final c in criteriaWeightCs) { c.dispose(); }
-      for (final c in criteriaDescCs) { c.dispose(); }
+      // showModalBottomSheet завершает Future ДО начала анимации закрытия —
+      // dispose откладываем, иначе фокусный TextField ещё в дереве ловит
+      // "used after being disposed" во время закрывающей анимации.
+      Future.delayed(const Duration(milliseconds: 400), () {
+        tc.dispose(); dc.dispose(); sc.dispose();
+        for (final c in criteriaNameCs) { c.dispose(); }
+        for (final c in criteriaWeightCs) { c.dispose(); }
+        for (final c in criteriaDescCs) { c.dispose(); }
+      });
     });
   }
 
@@ -1222,7 +1245,10 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               label: Text(l.t('save')),
               style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
               onPressed: () async {
-                if (tc.text.trim().isEmpty) return;
+                if (tc.text.trim().isEmpty) {
+                  showToast(context, l.t('enter_assignment_title'), error: true);
+                  return;
+                }
                 try {
                   final api = context.read<ApiService>();
                   final uploadedUrls = <String>[];
@@ -1271,10 +1297,12 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
         ]),
       )),
     ).then((_) {
-      tc.dispose(); dc.dispose(); sc.dispose();
-      for (final c in criteriaNameCs) { c.dispose(); }
-      for (final c in criteriaWeightCs) { c.dispose(); }
-      for (final c in criteriaDescCs) { c.dispose(); }
+      Future.delayed(const Duration(milliseconds: 400), () {
+        tc.dispose(); dc.dispose(); sc.dispose();
+        for (final c in criteriaNameCs) { c.dispose(); }
+        for (final c in criteriaWeightCs) { c.dispose(); }
+        for (final c in criteriaDescCs) { c.dispose(); }
+      });
     });
   }
 
@@ -1377,7 +1405,11 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   ])),
           ]));
       }),
-    ).then((_) { variantTitleC.dispose(); variantContentC.dispose(); });
+    ).then((_) {
+      Future.delayed(const Duration(milliseconds: 400), () {
+        variantTitleC.dispose(); variantContentC.dispose();
+      });
+    });
   }
 
   Future<void> _regenerateCode() async {
@@ -1507,7 +1539,11 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             )),
           ]),
           const SizedBox(height: 24),
-        ])))).then((_) { tc.dispose(); dc.dispose(); tn.dispose(); });
+        ])))).then((_) {
+      Future.delayed(const Duration(milliseconds: 400), () {
+        tc.dispose(); dc.dispose(); tn.dispose();
+      });
+    });
   }
 
   void _classSettings() {

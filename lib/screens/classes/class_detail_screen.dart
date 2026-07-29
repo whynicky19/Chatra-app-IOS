@@ -848,7 +848,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     if (fileUrls.isNotEmpty) 'files': fileUrls,
                   }));
                   if (!mounted || !ctx.mounted) return;
-                  Navigator.pop(ctx); _load(); showToast(context, l.t('published'));
+                  Navigator.pop(ctx); FocusManager.instance.primaryFocus?.unfocus(); _load(); showToast(context, l.t('published'));
                 } catch (_) { if (mounted && ctx.mounted) { showToast(context, l.t('error_generic'), error: true); setS(() => isSubmitting = false); } }
               })),
           ]),
@@ -1073,6 +1073,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
 
                   if (!mounted || !ctx.mounted) return;
                   Navigator.pop(ctx);
+                  FocusManager.instance.primaryFocus?.unfocus();
                   _loadAssignments();
                   showToast(context, fileUrls.isNotEmpty
                       ? '${l.t('assignment_created')} (${fileUrls.length} ${l.t('file')})'
@@ -1262,6 +1263,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               label: Text(l.t('save')),
               style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
               onPressed: () async {
+                FocusScope.of(ctx).unfocus();
                 if (tc.text.trim().isEmpty) {
                   showToast(context, l.t('enter_assignment_title'), error: true);
                   return;
@@ -1305,7 +1307,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     if (deadline != null) 'deadline': toServerDateString(deadline!),
                   });
                   if (!mounted || !ctx.mounted) return;
-                  Navigator.pop(ctx); _loadAssignments(); showToast(context, l.t('updated'));
+                  Navigator.pop(ctx); FocusManager.instance.primaryFocus?.unfocus(); _loadAssignments(); showToast(context, l.t('updated'));
                 } catch (e) { if (mounted && ctx.mounted) showToast(context, '${l.t('error_generic')}: $e', error: true); }
               },
             )),

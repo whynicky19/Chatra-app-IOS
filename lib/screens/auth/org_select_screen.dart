@@ -6,7 +6,6 @@ import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 import '../../providers/org_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/ambient_glow.dart';
 
 class OrgSelectScreen extends StatefulWidget {
   const OrgSelectScreen({super.key});
@@ -55,17 +54,6 @@ class _OrgSelectScreenState extends State<OrgSelectScreen> {
     return Scaffold(
       backgroundColor: isDark ? C.darkBg : C.bg,
       body: Stack(children: [
-        AmbientGlow(
-          alignment: Alignment.topLeft,
-          color: C.teal,
-          opacity: (_picked == OrgType.university ? 0.16 : 0.07) * (isDark ? 1.4 : 1.0),
-        ),
-        AmbientGlow(
-          alignment: Alignment.bottomRight,
-          color: C.amber,
-          opacity: (_picked == OrgType.school ? 0.16 : 0.07) * (isDark ? 1.4 : 1.0),
-        ),
-
         SafeArea(child: Column(children: [
           Expanded(child: Center(child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
@@ -74,31 +62,17 @@ class _OrgSelectScreenState extends State<OrgSelectScreen> {
               child: Column(mainAxisSize: MainAxisSize.min, children: [
                 _reveal(1, SizedBox(
                   width: 108, height: 108,
-                  child: Stack(alignment: Alignment.center, children: [
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 450),
-                      curve: Curves.easeOutCubic,
-                      width: 64, height: 64,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        boxShadow: [BoxShadow(
-                          color: _accent.withValues(alpha: hasPick ? 0.38 : 0.18),
-                          blurRadius: 44, spreadRadius: 10,
-                        )],
-                      ),
+                  child: TweenAnimationBuilder<Color?>(
+                    tween: ColorTween(begin: C.teal, end: _accent),
+                    duration: const Duration(milliseconds: 450),
+                    curve: Curves.easeOutCubic,
+                    builder: (_, color, __) => Image.asset(
+                      'assets/logo-icon.png',
+                      width: 108, height: 108,
+                      fit: BoxFit.contain,
+                      color: color,
                     ),
-                    TweenAnimationBuilder<Color?>(
-                      tween: ColorTween(begin: C.teal, end: _accent),
-                      duration: const Duration(milliseconds: 450),
-                      curve: Curves.easeOutCubic,
-                      builder: (_, color, __) => Image.asset(
-                        'assets/logo-icon.png',
-                        width: 108, height: 108,
-                        fit: BoxFit.contain,
-                        color: color,
-                      ),
-                    ),
-                  ]),
+                  ),
                 )),
                 const SizedBox(height: 28),
 
@@ -193,7 +167,7 @@ class _GlassButton extends StatelessWidget {
         fontSize: 16,
         fontWeight: FontWeight.w700,
         style: LiquidGlassStyle(
-          shape: const LiquidGlassShape.roundedRectangle(cornerRadius: 16),
+          shape: const LiquidGlassShape.roundedRectangle(cornerRadius: 16, borderWidth: 0),
           appearance: LiquidGlassAppearance(
             color: active
                 ? accent.withValues(alpha: 0.88)
@@ -265,7 +239,7 @@ class _OrgCardState extends State<_OrgCard> {
                 : Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(AppRadii.card),
             border: Border.all(color: selected ? accent : Colors.transparent, width: 2),
-            boxShadow: selected ? primaryGlow(accent, opacity: 0.22) : cardShadow(isDark),
+            boxShadow: cardShadow(isDark),
           ),
           child: Row(children: [
             Container(

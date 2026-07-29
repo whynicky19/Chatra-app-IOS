@@ -201,7 +201,10 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
           style: const TextStyle(fontSize: 13, color: C.text4)),
       ]))),
     ];
-    return ListView.builder(
+    return GestureDetector(
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      behavior: HitTestBehavior.translucent,
+      child: ListView.builder(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 90),
       itemCount: headers.length + widget.assignments.length,
       itemBuilder: (ctx, index) {
@@ -291,7 +294,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
           )),
         );
       },
-    );
+    ));
   }
 
   void _deleteAssignment(dynamic a) async {

@@ -303,7 +303,6 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isSchool = context.select<OrgProvider, bool>((o) => o.isSchool);
-    final primary = isSchool ? C.amber : C.teal;
     final bg = isDark ? C.darkBg : Colors.white;
     final wordColor = isDark ? Colors.white : C.text1;
 
@@ -311,20 +310,6 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
       backgroundColor: bg,
       body: Stack(
         children: [
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  primary.withValues(alpha: isDark ? 0.06 : 0.045),
-                  bg,
-                ],
-                stops: const [0.0, 0.55],
-              ),
-            ),
-            child: const SizedBox.expand(),
-          ),
           SafeArea(
             child: Center(
               child: Column(
@@ -336,21 +321,8 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
                       scale: _logoScale,
                       child: SizedBox(
                         width: 168, height: 168,
-                        child: Stack(alignment: Alignment.center, children: [
-                          DecoratedBox(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(
-                                colors: [
-                                  primary.withValues(alpha: isDark ? 0.24 : 0.16),
-                                  primary.withValues(alpha: 0.0),
-                                ],
-                                stops: const [0.0, 1.0],
-                              ),
-                            ),
-                            child: const SizedBox.expand(),
-                          ),
-                          Image.asset(
+                        child: Center(
+                          child: Image.asset(
                             'assets/logo-icon.png',
                             width: 96, height: 96,
                             fit: BoxFit.contain,
@@ -358,18 +330,15 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
                             errorBuilder: (_, __, ___) => Container(
                               width: 96, height: 96,
                               decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [primary, isSchool ? C.amberDk : C.tealDk],
-                                  begin: Alignment.topLeft, end: Alignment.bottomRight,
-                                ),
+                                color: isDark ? C.darkSurface2 : C.surface2,
                                 borderRadius: BorderRadius.circular(24),
                               ),
                               alignment: Alignment.center,
-                              child: const Text('C',
-                                style: TextStyle(fontSize: 52, fontWeight: FontWeight.w800, color: Colors.white)),
+                              child: Text('C',
+                                style: TextStyle(fontSize: 52, fontWeight: FontWeight.w800, color: wordColor)),
                             ),
                           ),
-                        ]),
+                        ),
                       ),
                     ),
                   ),

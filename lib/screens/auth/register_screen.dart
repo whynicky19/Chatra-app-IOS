@@ -5,7 +5,6 @@ import '../../providers/auth_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../providers/org_provider.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/ambient_glow.dart';
 import '../../widgets/app_logo.dart';
 import '../../widgets/toast.dart';
 import '../legal/terms_screen.dart';
@@ -127,27 +126,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       backgroundColor: isDark ? C.darkBg : C.bg,
       body: Stack(children: [
-        AmbientGlow(alignment: Alignment.topRight,   color: primary, opacity: isDark ? 0.14 : 0.09),
-        AmbientGlow(alignment: Alignment.bottomLeft, color: primary, opacity: isDark ? 0.08 : 0.05),
-
         SafeArea(child: Stack(children: [
-          Positioned(top: 8, left: 16, child: _BackButton(onTap: () => context.read<OrgProvider>().clear())),
-
           Center(child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 56),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 380),
               child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                _reveal(0, Center(child: SizedBox(
-                  width: 84, height: 84,
-                  child: Stack(alignment: Alignment.center, children: [
-                    Container(width: 52, height: 52, decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [BoxShadow(color: primary.withValues(alpha: 0.26), blurRadius: 40, spreadRadius: 8)],
-                    )),
-                    const AppLogo(iconOnly: true, width: 84, height: 84),
-                  ]),
-                ))),
+                _reveal(0, const Center(child: AppLogo(iconOnly: true, width: 84, height: 84))),
                 const SizedBox(height: 20),
 
                 _reveal(1, Column(children: [
@@ -288,7 +273,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       decoration: BoxDecoration(
                         color: canSubmit || auth.isLoading ? primary : adaptiveSurface2(context),
                         borderRadius: BorderRadius.circular(16),
-                        boxShadow: canSubmit ? primaryGlow(primary, opacity: 0.34) : null,
                       ),
                       child: Align(heightFactor: 1, child: auth.isLoading
                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
@@ -317,26 +301,4 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget _fieldLabel(String s) => Padding(
     padding: const EdgeInsets.only(bottom: 7, left: 2),
     child: Text(s, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: C.text3)));
-}
-
-class _BackButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _BackButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 38, height: 38,
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          shape: BoxShape.circle,
-          boxShadow: softShadow(isDark),
-        ),
-        child: Icon(CupertinoIcons.chevron_left, size: 18, color: adaptiveText1(context)),
-      ),
-    );
-  }
 }

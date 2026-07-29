@@ -5,7 +5,6 @@ import '../../providers/auth_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../providers/org_provider.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/ambient_glow.dart';
 import '../../widgets/app_logo.dart';
 import 'verify_email_screen.dart';
 import 'forgot_password_screen.dart';
@@ -81,9 +80,6 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       backgroundColor: isDark ? C.darkBg : C.bg,
       body: Stack(children: [
-        AmbientGlow(alignment: Alignment.topLeft,     color: primary, opacity: isDark ? 0.14 : 0.09),
-        AmbientGlow(alignment: Alignment.bottomRight, color: primary, opacity: isDark ? 0.08 : 0.05),
-
         SafeArea(child: Stack(children: [
           Positioned(top: 8, left: 16, child: _BackButton(onTap: () => context.read<OrgProvider>().clear())),
 
@@ -92,16 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 380),
               child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                _reveal(0, Center(child: SizedBox(
-                  width: 104, height: 104,
-                  child: Stack(alignment: Alignment.center, children: [
-                    Container(width: 60, height: 60, decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [BoxShadow(color: primary.withValues(alpha: 0.26), blurRadius: 44, spreadRadius: 10)],
-                    )),
-                    const AppLogo(width: 104, height: 104),
-                  ]),
-                ))),
+                _reveal(0, const Center(child: AppLogo(width: 104, height: 104))),
                 const SizedBox(height: 24),
 
                 _reveal(1, Column(children: [
@@ -191,7 +178,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       decoration: BoxDecoration(
                         color: primary,
                         borderRadius: BorderRadius.circular(16),
-                        boxShadow: _busy ? null : primaryGlow(primary, opacity: 0.34),
                       ),
                       child: Align(heightFactor: 1, child: _busy
                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))

@@ -52,7 +52,10 @@ class ClassPostsTab extends StatelessWidget {
     }
 
     if (posts.isEmpty) {
-      return CustomScrollView(
+      return GestureDetector(
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      behavior: HitTestBehavior.translucent,
+      child: CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
         SliverFillRemaining(
@@ -70,10 +73,13 @@ class ClassPostsTab extends StatelessWidget {
           ])),
         ),
       ],
-    );
+    ));
     }
 
-    return ListView.builder(padding: const EdgeInsets.fromLTRB(14, 14, 14, 90), itemCount: posts.length, itemBuilder: (ctx, i) {
+    return GestureDetector(
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      behavior: HitTestBehavior.translucent,
+      child: ListView.builder(padding: const EdgeInsets.fromLTRB(14, 14, 14, 90), itemCount: posts.length, itemBuilder: (ctx, i) {
       final p = posts[i];
       final body = preview(p);
       final num = posts.length - i;
@@ -125,6 +131,6 @@ class ClassPostsTab extends StatelessWidget {
           ),
         )),
       );
-    });
+    }));
   }
 }

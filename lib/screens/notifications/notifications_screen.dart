@@ -9,6 +9,7 @@ import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../classes/class_detail_screen.dart';
+import '../../utils/dates.dart';
 
 enum _NType { newAssignment, deadline, grade }
 
@@ -110,7 +111,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         type: _NType.grade,
         title: l.t('notif_graded'),
         body: '"$aTitle" — $score ${l.t('pts')}',
-        date: sub['submitted_at'] != null ? (DateTime.tryParse(sub['submitted_at']) ?? now) : now,
+        date: sub['submitted_at'] != null ? (parseServerDate(sub['submitted_at']) ?? now) : now,
         isRead: _isRead(nKey),
         classId: cid,
       ));
@@ -125,8 +126,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       final aTitle = a['title']?.toString() ?? l.t('assignment');
       final cid = (a['class_id'] as num?)?.toInt();
       final cName = cid != null ? (classNames[cid] ?? '') : '';
-      final createdAt = a['created_at'] != null ? DateTime.tryParse(a['created_at']) : null;
-      final deadline = a['deadline'] != null ? DateTime.tryParse(a['deadline']) : null;
+      final createdAt = a['created_at'] != null ? parseServerDate(a['created_at']) : null;
+      final deadline = a['deadline'] != null ? parseServerDate(a['deadline']) : null;
       final sub = mySubs.firstWhere((s) => s['assignment_id'] == aId, orElse: () => null);
 
       if (createdAt != null && now.difference(createdAt).inDays <= 7) {

@@ -1,3 +1,5 @@
+import 'dates.dart';
+
 /// Дневная квота сообщений ИИ. Считается на сервере (GET /ai/limits) и общая
 /// для приложения и сайта — локально её считать нельзя.
 class AiQuota {
@@ -24,7 +26,7 @@ class AiQuota {
       used: json['used'] is int ? json['used'] as int : 0,
       remaining: json['remaining'] is int ? json['remaining'] as int : null,
       unlimited: json['unlimited'] == true,
-      resetsAt: DateTime.tryParse('${json['resets_at']}')?.toLocal(),
+      resetsAt: parseServerDate('${json['resets_at']}'),
     );
   }
 

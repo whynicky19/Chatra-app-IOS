@@ -13,6 +13,7 @@ import '../../../utils/ai_quota.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/ai_limit_notice.dart';
 import '../../../widgets/toast.dart';
+import '../../../utils/dates.dart';
 import 'ai_message_content.dart';
 
 /// Тело одной переписки с главным ИИ-ассистентом: список сообщений + композер.
@@ -134,12 +135,9 @@ class _AiConversationViewState extends State<AiConversationView> {
   }
 
   String _fmtTime(dynamic iso) {
-    try {
-      final dt = DateTime.parse(iso.toString()).toLocal();
-      return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-    } catch (_) {
-      return _now();
-    }
+    final dt = parseServerDate(iso.toString());
+    if (dt == null) return _now();
+    return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 
   void _saveHistory() {

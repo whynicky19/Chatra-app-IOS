@@ -6,6 +6,7 @@ import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/toast.dart';
+import '../../utils/dates.dart';
 
 class RolloverScreen extends StatefulWidget {
   const RolloverScreen({super.key});
@@ -141,7 +142,7 @@ class _RolloverScreenState extends State<RolloverScreen> {
   }
 
   Future<void> _editDeadline(_RolledCohort rc, dynamic deadline) async {
-    final current = DateTime.tryParse((deadline['due_date'] ?? '').toString()) ?? DateTime.now();
+    final current = parseServerDate((deadline['due_date'] ?? '').toString()) ?? DateTime.now();
     final date = await showDatePicker(
       context: context,
       initialDate: current,
@@ -158,7 +159,7 @@ class _RolloverScreenState extends State<RolloverScreen> {
         time?.hour ?? current.hour, time?.minute ?? current.minute);
     try {
       final updated = await context.read<ApiService>()
-          .updateDeadline((deadline['id'] as num).toInt(), dueDate: newDt.toIso8601String());
+          .updateDeadline((deadline['id'] as num).toInt(), dueDate: toServerDateString(newDt));
       if (!mounted) return;
       setState(() {
         final idx = rc.deadlines.indexWhere((d) => d['id'] == deadline['id']);
@@ -399,7 +400,7 @@ class _RolloverScreenState extends State<RolloverScreen> {
   }
 
   Widget _deadlineRow(L10n l, _RolledCohort rc, dynamic d) {
-    final due = DateTime.tryParse((d['due_date'] ?? '').toString());
+    final due = parseServerDate((d['due_date'] ?? '').toString());
     final published = d['is_published'] == true;
     final primary = Theme.of(context).colorScheme.primary;
     return Padding(

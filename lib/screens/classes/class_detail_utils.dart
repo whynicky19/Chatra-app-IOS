@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../utils/dates.dart';
 
 /// grade.criteria_scores приходит с бэка JSON-строкой (Text-колонка в БД),
 /// а не готовым списком — элементы вида {name, score, max, comment}.
@@ -21,13 +22,9 @@ String cleanPostTitle(String t) =>
     t.replaceFirst(RegExp(r'^\[(LECTURE|HW)\]\[\d+\]\s*'), '').trim();
 
 String fmtDate(String? d) {
-  if (d == null) return '';
-  try {
-    final dt = DateTime.parse(d);
-    return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}.${dt.year}';
-  } catch (_) {
-    return d;
-  }
+  final dt = parseServerDate(d);
+  if (dt == null) return d ?? '';
+  return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}.${dt.year}';
 }
 
 // Обязана понимать подпись ?exp=&sig= — иначе подписанные ссылки не видны как вложения.

@@ -7,6 +7,7 @@ import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/image_cache.dart';
+import '../../utils/dates.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/network_cover_image.dart';
 import '../../widgets/toast.dart';
@@ -579,10 +580,11 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                 final promptTokens     = (entry['prompt_tokens'] as num?)?.toInt() ?? 0;
                 final completionTokens = (entry['completion_tokens'] as num?)?.toInt() ?? 0;
                 final totalTokens      = (entry['total_tokens'] as num?)?.toInt() ?? (promptTokens + completionTokens);
-                final date = entry['created_at'] != null ? (() {
-                  try { final d = DateTime.parse(entry['created_at']); return '${d.day.toString().padLeft(2,'0')}.${d.month.toString().padLeft(2,'0')} ${d.hour.toString().padLeft(2,'0')}:${d.minute.toString().padLeft(2,'0')}'; }
-                  catch (_) { return ''; }
-                })() : '';
+                final date = (() {
+                  final d = parseServerDate(entry['created_at']);
+                  if (d == null) return '';
+                  return '${d.day.toString().padLeft(2,'0')}.${d.month.toString().padLeft(2,'0')} ${d.hour.toString().padLeft(2,'0')}:${d.minute.toString().padLeft(2,'0')}';
+                })();
                 return Container(
                   decoration: BoxDecoration(
                     color: i.isOdd ? adaptiveSurface2(context).withValues(alpha: 0.4) : Colors.transparent,

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../providers/l10n_provider.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/app_dialog.dart';
+import '../class_detail_utils.dart' show fmtDate;
 
 class ClassPostsTab extends StatelessWidget {
   final List<dynamic> posts;
@@ -38,11 +39,6 @@ class ClassPostsTab extends StatelessWidget {
         final b = jsonDecode(p['body']);
         return (b['content'] ?? b['description'] ?? '').replaceAll(RegExp(r'https?://\S+'), '').replaceAll(RegExp(r'\s+'), ' ').trim();
       } catch (_) { return ''; }
-    }
-
-    String fmtDate(String? d) {
-      if (d == null) return '';
-      try { final dt = DateTime.parse(d); return '${dt.day}.${dt.month.toString().padLeft(2, '0')}.${dt.year}'; } catch (_) { return d; }
     }
 
     void showActions(dynamic p) {

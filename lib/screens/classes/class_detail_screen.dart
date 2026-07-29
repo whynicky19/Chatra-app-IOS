@@ -17,6 +17,7 @@ import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_dialog.dart';
 import '../../utils/image_cache.dart';
+import '../../utils/dates.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/toast.dart';
@@ -1067,7 +1068,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     'description': descWithFiles,
                     'max_score': maxScore,
                     'criteria': finalCriteria,
-                    if (deadline != null) 'deadline': deadline!.toIso8601String(),
+                    if (deadline != null) 'deadline': toServerDateString(deadline!),
                   });
 
                   if (!mounted || !ctx.mounted) return;
@@ -1104,7 +1105,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     final dc = TextEditingController(text: cleanContent(rawDesc));
     final sc = TextEditingController(text: '${a['max_score'] ?? 100}');
     DateTime? deadline;
-    try { if (a['deadline'] != null) deadline = DateTime.parse(a['deadline']); } catch (_) {}
+    deadline = parseServerDate(a['deadline']);
 
     final existingUrls = _extractFilesFromText(rawDesc);
     List<String> keepUrls = List<String>.from(existingUrls);
@@ -1301,7 +1302,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     'description': descWithFiles,
                     'max_score': maxScore,
                     'criteria': finalCriteria,
-                    if (deadline != null) 'deadline': deadline!.toIso8601String(),
+                    if (deadline != null) 'deadline': toServerDateString(deadline!),
                   });
                   if (!mounted || !ctx.mounted) return;
                   Navigator.pop(ctx); _loadAssignments(); showToast(context, l.t('updated'));

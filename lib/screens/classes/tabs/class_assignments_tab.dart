@@ -11,6 +11,7 @@ import '../../../widgets/app_dialog.dart';
 import '../../../widgets/toast.dart';
 import '../class_detail_utils.dart';
 import '../assignment_detail_screen.dart';
+import '../../../utils/dates.dart';
 
 class ClassAssignmentsTab extends StatefulWidget {
   final List<dynamic> assignments;
@@ -61,10 +62,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
 
   dynamic _subFor(int aId) => widget.mySubs.firstWhere((s) => s['assignment_id'] == aId, orElse: () => null);
 
-  String _fmtDate(String? d) {
-    if (d == null) return '';
-    try { final dt = DateTime.parse(d); return '${dt.day}.${dt.month.toString().padLeft(2, '0')}.${dt.year}'; } catch (_) { return d; }
-  }
+  String _fmtDate(String? d) => fmtDate(d);
 
   static final _fileUrlRe = fileUrlRe;
   static final _mdFileRe = mdFileRe;
@@ -134,7 +132,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             final now = DateTime.now();
             final upcoming = widget.assignments.where((a) {
               if (a['deadline'] == null) return false;
-              final dl = DateTime.tryParse(a['deadline']);
+              final dl = parseServerDate(a['deadline']);
               if (dl == null) return false;
               final sub = _subFor(a['id']);
               return dl.isAfter(now) && (sub == null || sub['status'] != 'graded');
@@ -153,7 +151,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               ]));
             }
             final next = upcoming.first;
-            final dl = DateTime.parse(next['deadline']);
+            final dl = parseServerDate(next['deadline'])!;
             final diff = dl.difference(now);
             final days = diff.inDays;
             final hours = diff.inHours % 24;
@@ -217,7 +215,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
         final isSubmitted = status == 'submitted';
         final isNeedsReview = status == 'needs_review';
         final deadline = a['deadline'];
-        final isLate = deadline != null && DateTime.tryParse(deadline)?.isBefore(DateTime.now()) == true && sub == null;
+        final isLate = deadline != null && parseServerDate(deadline)?.isBefore(DateTime.now()) == true && sub == null;
 
         final showBadge = isGraded || isNeedsReview || isSubmitted || isLate;
         Color statusColor = isGraded ? C.green : isNeedsReview ? C.amber : isSubmitted ? Theme.of(context).colorScheme.primary : C.red;

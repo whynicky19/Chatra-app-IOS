@@ -12,6 +12,7 @@ import '../../widgets/toast.dart';
 import 'class_detail_utils.dart';
 import 'widgets/detail_page_theme.dart';
 import 'widgets/file_card.dart';
+import '../../utils/dates.dart';
 
 class _UploadFailure implements Exception {
   final String fileName;
@@ -93,10 +94,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
     super.dispose();
   }
 
-  String _fmtDate(String? d) {
-    if (d == null) return '';
-    try { final dt = DateTime.parse(d); return '${dt.day}.${dt.month.toString().padLeft(2, '0')}.${dt.year}'; } catch (_) { return d; }
-  }
+  String _fmtDate(String? d) => fmtDate(d);
 
   List<String> _parseFileUrls(dynamic raw) {
     if (raw == null) return [];
@@ -256,7 +254,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
     final accent = detailAccent(context);
 
     final deadline = a['deadline'];
-    final isLate = deadline != null && DateTime.tryParse(deadline)?.isBefore(DateTime.now()) == true && sub == null;
+    final isLate = deadline != null && parseServerDate(deadline)?.isBefore(DateTime.now()) == true && sub == null;
     final statusColor = sub?['status'] == 'graded' ? C.green
         : sub?['status'] == 'needs_review' ? C.amber
         : sub?['status'] == 'submitted' ? accent

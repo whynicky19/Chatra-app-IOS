@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import '../utils/errors.dart';
+import '../utils/dates.dart';
 import 'auth_provider.dart';
 
 class ClassesProvider extends ChangeNotifier {
@@ -215,7 +216,7 @@ class ClassesProvider extends ChangeNotifier {
         final cid  = (a['class_id'] as num?)?.toInt();
         if (cid == null || !joinedClassIds.contains(cid)) continue;
         if (!unread('assignment:$aId')) continue;
-        final createdAt = a['created_at'] != null ? DateTime.tryParse(a['created_at']) : null;
+        final createdAt = a['created_at'] != null ? parseServerDate(a['created_at']) : null;
         if (createdAt != null && now.difference(createdAt).inDays <= 7) count++;
       }
 

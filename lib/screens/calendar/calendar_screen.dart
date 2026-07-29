@@ -7,6 +7,7 @@ import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../classes/class_detail_screen.dart';
+import '../../utils/dates.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -65,7 +66,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       for (final a in assignments) {
         final dueStr = a['deadline'] as String?;
         if (dueStr == null) continue;
-        final dt = DateTime.tryParse(dueStr);
+        final dt = parseServerDate(dueStr);
         if (dt == null) continue;
         final dueDay = DateTime(dt.year, dt.month, dt.day);
         if (dueDay.isBefore(today)) continue;
@@ -394,7 +395,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         ),
         ...items.map((a) {
           final dueStr = a['deadline'] as String?;
-          final due = dueStr != null ? DateTime.tryParse(dueStr) : null;
+          final due = dueStr != null ? parseServerDate(dueStr) : null;
           final status = _submissionStatus(a);
           final isSubmitted = status == 'submitted' || status == 'graded';
           final classId = (a['class_id'] as num?)?.toInt();

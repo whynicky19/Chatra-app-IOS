@@ -253,8 +253,8 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                   const SizedBox(height: 10),
                   Wrap(spacing: 12, children: [
                     if (deadline != null) Row(mainAxisSize: MainAxisSize.min, children: [
-                      Icon(CupertinoIcons.calendar, size: 12, color: isLate ? C.red : C.text4), const SizedBox(width: 4),
-                      Text(_fmtDate(deadline), style: TextStyle(fontSize: 12, color: isLate ? C.red : C.text4, fontWeight: FontWeight.w500)),
+                      const Icon(CupertinoIcons.calendar, size: 12, color: C.text4), const SizedBox(width: 4),
+                      Text(_fmtDate(deadline), style: const TextStyle(fontSize: 12, color: C.text4, fontWeight: FontWeight.w500)),
                     ]),
                     if (grade != null) Row(mainAxisSize: MainAxisSize.min, children: [
                       const Icon(CupertinoIcons.checkmark_circle_fill, size: 12, color: C.green), const SizedBox(width: 3),

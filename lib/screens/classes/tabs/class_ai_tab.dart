@@ -43,12 +43,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
   late final ScrollController _scrollCtrl;
   late final String _historyKey;
 
-  static const _tips = [
-    {'icon': CupertinoIcons.book, 'key': 'tip_explain'},
-    {'icon': CupertinoIcons.lightbulb, 'key': 'tip_concepts'},
-    {'icon': CupertinoIcons.doc_text, 'key': 'tip_help'},
-    {'icon': CupertinoIcons.exclamationmark_triangle, 'key': 'tip_mistakes'},
-  ];
+  static const _tips = ['tip_explain', 'tip_concepts', 'tip_help', 'tip_mistakes'];
 
   @override
   void initState() {
@@ -371,7 +366,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
     );
   }
 
-  Widget _suggestionRow(Map<String, dynamic> tip, bool isDark, int index) {
+  Widget _suggestionRow(String tipKey, bool isDark, int index) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
       duration: Duration(milliseconds: 320 + index * 70),
@@ -383,7 +378,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
       child: GestureDetector(
         onTap: () {
           HapticFeedback.selectionClick();
-          _send(context.read<L10n>().t(tip['key'] as String));
+          _send(context.read<L10n>().t(tipKey));
         },
         child: Container(
           width: double.infinity,
@@ -394,16 +389,8 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
             border: Border.all(color: adaptiveBorder(context).withValues(alpha: 0.6), width: 0.5),
             boxShadow: softShadow(isDark),
           ),
-          child: Row(children: [
-            Icon(tip['icon'] as IconData, size: 18, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(context.read<L10n>().t(tip['key'] as String),
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveText1(context), letterSpacing: -0.2)),
-            ),
-            const SizedBox(width: 12),
-            Icon(CupertinoIcons.arrow_up_left, size: 16, color: C.text4.withValues(alpha: 0.7)),
-          ]),
+          child: Text(context.read<L10n>().t(tipKey),
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveText1(context), letterSpacing: -0.2)),
         ),
       ),
     );

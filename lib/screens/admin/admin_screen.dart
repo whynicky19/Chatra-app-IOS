@@ -225,36 +225,42 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: Row(children: [
-                _StatCard(value: '${_users.length}', label: l.t('total_label'),    color: isDark ? C.text3 : C.text2, isDark: isDark),
+                _StatCard(value: '${_users.length}', label: l.t('total_label'),    isDark: isDark),
                 const SizedBox(width: 8),
-                _StatCard(value: '$teachers',        label: l.t('teachers_label'), color: const Color(0xFF6366F1), isDark: isDark),
+                _StatCard(value: '$teachers',        label: l.t('teachers_label'), isDark: isDark),
                 const SizedBox(width: 8),
-                _StatCard(value: '$students',        label: l.t('students_label'), color: const Color(0xFF059669), isDark: isDark),
+                _StatCard(value: '$students',        label: l.t('students_label'), isDark: isDark),
               ]),
             ),
           ])),
         ],
         body: Column(children: [
           Container(
+            height: 38,
             margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            decoration: BoxDecoration(
-              color: surface,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: softShadow(isDark),
-            ),
+            padding: const EdgeInsets.all(2.5),
+            decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(11)),
             child: TabBar(
               controller: _tabCtrl,
-              labelColor: primary,
+              dividerColor: Colors.transparent,
+              indicatorSize: TabBarIndicatorSize.tab,
+              indicatorAnimation: TabIndicatorAnimation.elastic,
+              indicator: BoxDecoration(
+                color: surface,
+                borderRadius: BorderRadius.circular(8.5),
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.10), blurRadius: 4, offset: const Offset(0, 1))],
+              ),
+              splashFactory: NoSplash.splashFactory,
+              overlayColor: WidgetStateProperty.all(Colors.transparent),
+              labelColor: adaptiveText1(context),
               unselectedLabelColor: C.text4,
-              indicatorColor: primary,
-              indicatorSize: TabBarIndicatorSize.label,
-              indicatorWeight: 2.5,
-              labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-              unselectedLabelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+              labelPadding: const EdgeInsets.symmetric(horizontal: 2),
+              labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: -0.1),
+              unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: -0.1),
               tabs: [
-                Tab(text: l.t('users')),
-                const Tab(text: 'AI'),
-                Tab(text: l.t('class_tab')),
+                Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text(l.t('users')))),
+                const Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text('AI'))),
+                Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text(l.t('class_tab')))),
               ],
             ),
           ),
@@ -1359,9 +1365,8 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
 
 class _StatCard extends StatelessWidget {
   final String value, label;
-  final Color color;
   final bool isDark;
-  const _StatCard({required this.value, required this.label, required this.color, required this.isDark});
+  const _StatCard({required this.value, required this.label, required this.isDark});
 
   @override
   Widget build(BuildContext context) => Expanded(child: Container(
@@ -1372,9 +1377,6 @@ class _StatCard extends StatelessWidget {
       boxShadow: softShadow(isDark),
     ),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Container(width: 22, height: 3,
-        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
-      const SizedBox(height: 12),
       Text(value, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: adaptiveText1(context), height: 1, letterSpacing: -0.5)),
       const SizedBox(height: 3),
       Text(label, style: const TextStyle(fontSize: 11.5, color: C.text4, fontWeight: FontWeight.w500)),

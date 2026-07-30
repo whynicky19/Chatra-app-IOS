@@ -555,6 +555,9 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(builder: (ctx, setS) {
         return Padding(padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
+          child: GestureDetector(
+          onTap: () => FocusScope.of(ctx).unfocus(),
+          behavior: HitTestBehavior.translucent,
           child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
             Container(width: 40, height: 4, decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 20), Text(l.t('edit_title'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
@@ -618,7 +621,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 } catch (_) { if (mounted && ctx.mounted) showToast(context, l.t('error_generic'), error: true); }
               }, child: Text(l.t('save')))),
             ]),
-          ])));
+          ]))));
       })).then((_) {
         // showModalBottomSheet завершает Future ещё ДО начала анимации закрытия
         // (см. TransitionRoute.completed в SDK) — шторка со своими TextField ещё
@@ -779,7 +782,10 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => Padding(
         padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
-        child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        child: GestureDetector(
+          onTap: () => FocusScope.of(ctx).unfocus(),
+          behavior: HitTestBehavior.translucent,
+          child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
           Container(width: 40, height: 4, decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2))),
           const SizedBox(height: 16),
           Row(children: [
@@ -860,7 +866,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 } catch (_) { if (mounted && ctx.mounted) { showToast(context, l.t('error_generic'), error: true); setS(() => isSubmitting = false); } }
               })),
           ]),
-        ]))))).then((_) {
+        ])))))).then((_) {
         // См. комментарий в _editLectureSheet выше: showModalBottomSheet
         // завершает Future ДО начала анимации закрытия — dispose откладываем.
         Future.delayed(const Duration(milliseconds: 400), () { tc.dispose(); cc.dispose(); });
@@ -886,7 +892,10 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => DraggableScrollableSheet(expand: false, initialChildSize: 0.9, maxChildSize: 0.95,
-        builder: (ctx, scroll) => ListView(controller: scroll, padding: const EdgeInsets.all(24), children: [
+        builder: (ctx, scroll) => GestureDetector(
+          onTap: () => FocusScope.of(ctx).unfocus(),
+          behavior: HitTestBehavior.translucent,
+          child: ListView(controller: scroll, padding: const EdgeInsets.all(24), children: [
           Row(children: [
             Container(width: 44, height: 44, decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: Icon(CupertinoIcons.pencil, color: adaptiveText1(context), size: 22)),
@@ -1094,7 +1103,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               })),
           ]),
           const SizedBox(height: 24),
-        ])))).then((_) {
+        ]))))).then((_) {
       // showModalBottomSheet завершает Future ДО начала анимации закрытия —
       // dispose откладываем, иначе фокусный TextField ещё в дереве ловит
       // "used after being disposed" во время закрывающей анимации.
@@ -1137,7 +1146,10 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => DraggableScrollableSheet(
         expand: false, initialChildSize: 0.9, maxChildSize: 0.95,
-        builder: (ctx, scroll) => ListView(controller: scroll, padding: const EdgeInsets.all(24), children: [
+        builder: (ctx, scroll) => GestureDetector(
+          onTap: () => FocusScope.of(ctx).unfocus(),
+          behavior: HitTestBehavior.translucent,
+          child: ListView(controller: scroll, padding: const EdgeInsets.all(24), children: [
           Row(children: [
             Container(width: 44, height: 44, decoration: BoxDecoration(color: const Color(0xFFF59E0B).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: const Icon(CupertinoIcons.pencil, color: Color(0xFFF59E0B), size: 22)),
@@ -1324,7 +1336,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             )),
           ]),
           const SizedBox(height: 24),
-        ]),
+        ])),
       )),
     ).then((_) {
       Future.delayed(const Duration(milliseconds: 400), () {

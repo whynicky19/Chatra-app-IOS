@@ -156,7 +156,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             'post' => 'report_target_post',
             'assignment' => 'report_target_assignment',
             'submission' => 'report_target_submission',
-            'ai_message' => 'report_target_ai_message',
             _ => 'report_target_user',
           };
           final reasonKey = switch ((r['reason'] ?? '').toString()) {

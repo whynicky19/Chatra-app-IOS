@@ -21,7 +21,6 @@ import '../../widgets/skeleton.dart';
 import '../../widgets/toast.dart';
 import '../notifications/notifications_screen.dart';
 import '../calendar/calendar_screen.dart';
-import '../classes/class_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -474,12 +473,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     showToast(context, l.t('left_class'));
                   }
                 },
-                onMembers: () {
-                  Navigator.pop(ctx);
-                  Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => ClassDetailScreen(classId: id, initialTab: 2),
-                  ));
-                },
                 onDelete: () async {
                   Navigator.pop(ctx);
                   final nameCtrl = TextEditingController();
@@ -833,7 +826,6 @@ class _ClassContextMenu extends StatelessWidget {
   final VoidCallback onShare;
   final VoidCallback onTogglePin;
   final VoidCallback onLeave;
-  final VoidCallback onMembers;
   final VoidCallback onDelete;
 
   const _ClassContextMenu({
@@ -847,7 +839,6 @@ class _ClassContextMenu extends StatelessWidget {
     required this.onShare,
     required this.onTogglePin,
     required this.onLeave,
-    required this.onMembers,
     required this.onDelete,
   });
 
@@ -925,17 +916,6 @@ class _ClassContextMenu extends StatelessWidget {
                   bg: bg2,
                   onTap: onTogglePin,
                 ),
-                if (isTeacher) ...[
-                  const SizedBox(height: 6),
-                  _ActionRow(
-                    icon: CupertinoIcons.person_2_fill,
-                    iconBg: C.green.withValues(alpha: 0.12),
-                    iconColor: C.green,
-                    label: l.t('class_members'),
-                    bg: bg2,
-                    onTap: onMembers,
-                  ),
-                ],
               ]),
             ),
 

@@ -95,13 +95,18 @@ class ClassPostsTab extends StatelessWidget {
     ));
     }
 
+    // Бэкенд отдаёт лекции по возрастанию position (1, 2, 3...) — это нужно
+    // ИИ-репетитору для "объясни 2 лекцию". Для отображения в списке студент
+    // и учитель ждут обратного порядка: новые лекции сверху.
+    final displayPosts = posts.reversed.toList();
+
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       behavior: HitTestBehavior.translucent,
-      child: ListView.builder(padding: const EdgeInsets.fromLTRB(14, 14, 14, 90), itemCount: posts.length, itemBuilder: (ctx, i) {
-      final p = posts[i];
+      child: ListView.builder(padding: const EdgeInsets.fromLTRB(14, 14, 14, 90), itemCount: displayPosts.length, itemBuilder: (ctx, i) {
+      final p = displayPosts[i];
       final body = preview(p);
-      final num = posts.length - i;
+      final num = displayPosts.length - i;
 
       return TweenAnimationBuilder<double>(
         tween: Tween(begin: 0.0, end: 1.0),

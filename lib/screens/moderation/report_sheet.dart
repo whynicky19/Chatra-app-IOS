@@ -12,14 +12,13 @@ import '../settings/settings_shared.dart';
 
 /// Тип объекта жалобы. Значения совпадают с контрактом бэкенда
 /// (POST /reports, поле target_type).
-enum ReportTarget { post, assignment, submission, aiMessage, user }
+enum ReportTarget { post, assignment, submission, user }
 
 extension ReportTargetX on ReportTarget {
   String get wire => switch (this) {
         ReportTarget.post => 'post',
         ReportTarget.assignment => 'assignment',
         ReportTarget.submission => 'submission',
-        ReportTarget.aiMessage => 'ai_message',
         ReportTarget.user => 'user',
       };
 
@@ -27,7 +26,6 @@ extension ReportTargetX on ReportTarget {
         ReportTarget.post => 'report_target_post',
         ReportTarget.assignment => 'report_target_assignment',
         ReportTarget.submission => 'report_target_submission',
-        ReportTarget.aiMessage => 'report_target_ai_message',
         ReportTarget.user => 'report_target_user',
       };
 }

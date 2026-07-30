@@ -54,7 +54,6 @@ class L10n extends ChangeNotifier {
       'report_target_post': 'Публикация',
       'report_target_assignment': 'Задание',
       'report_target_submission': 'Сдача',
-      'report_target_ai_message': 'Ответ ИИ',
       'report_target_user': 'Пользователь',
       // --- Ограничения загрузки файлов ---
       'file_too_large': 'Файл слишком большой. Максимум 25 МБ',
@@ -499,7 +498,6 @@ class L10n extends ChangeNotifier {
       'share_class': 'Поделиться',
       'pin_class': 'Закрепить',
       'unpin_class': 'Открепить',
-      'class_members': 'Участники',
       'confirm_delete_hint': 'Введите название класса для подтверждения',
       'drag_hint': 'Удерживай карточку чтобы изменить порядок',
 
@@ -786,7 +784,6 @@ class L10n extends ChangeNotifier {
       'report_target_post': 'Жарияланым',
       'report_target_assignment': 'Тапсырма',
       'report_target_submission': 'Тапсыру',
-      'report_target_ai_message': 'ИИ жауабы',
       'report_target_user': 'Пайдаланушы',
       // --- Файл жүктеу шектеулері ---
       'file_too_large': 'Файл тым үлкен. Ең көбі 25 МБ',
@@ -1231,7 +1228,6 @@ class L10n extends ChangeNotifier {
       'share_class': 'Бөлісу',
       'pin_class': 'Бекіту',
       'unpin_class': 'Бекітуді алу',
-      'class_members': 'Мүшелер',
       'confirm_delete_hint': 'Растау үшін сынып атауын енгізіңіз',
       'drag_hint': 'Ретін өзгерту үшін картаны ұстаңыз',
 
@@ -1518,7 +1514,6 @@ class L10n extends ChangeNotifier {
       'report_target_post': 'Post',
       'report_target_assignment': 'Assignment',
       'report_target_submission': 'Submission',
-      'report_target_ai_message': 'AI response',
       'report_target_user': 'User',
       // --- Upload limits ---
       'file_too_large': 'File is too large. Maximum 25 MB',
@@ -1963,7 +1958,6 @@ class L10n extends ChangeNotifier {
       'share_class': 'Share',
       'pin_class': 'Pin',
       'unpin_class': 'Unpin',
-      'class_members': 'Members',
       'confirm_delete_hint': 'Enter class name to confirm',
       'drag_hint': 'Hold a card to reorder',
 

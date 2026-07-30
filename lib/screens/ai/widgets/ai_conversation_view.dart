@@ -15,7 +15,6 @@ import '../../../theme/app_theme.dart';
 import '../../../widgets/ai_limit_notice.dart';
 import '../../../widgets/toast.dart';
 import '../../../utils/dates.dart';
-import '../../moderation/report_sheet.dart';
 import 'ai_message_content.dart';
 
 /// Тело одной переписки с главным ИИ-ассистентом: список сообщений + композер.
@@ -526,9 +525,6 @@ class _AiConversationViewState extends State<AiConversationView> {
         alignment: Alignment.centerLeft,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
           GestureDetector(
-            // Долгое нажатие — копирование, как и раньше. Жалоба вынесена в
-            // отдельную кнопку под сообщением: Apple требует явный, находимый
-            // механизм репорта на генеративный контент (Guideline 1.2).
             onLongPress: () {
               HapticFeedback.mediumImpact();
               Clipboard.setData(ClipboardData(text: text));
@@ -553,32 +549,11 @@ class _AiConversationViewState extends State<AiConversationView> {
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.only(left: 7, top: 5),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              if ((m['time'] ?? '').isNotEmpty)
-                Text(m['time']!, style: const TextStyle(fontSize: 10.5, color: C.text4)),
-              if ((m['time'] ?? '').isNotEmpty) const SizedBox(width: 10),
-              GestureDetector(
-                onTap: () => openReportSheet(
-                  context,
-                  target: ReportTarget.aiMessage,
-                  targetId: _threadId ?? 0,
-                ),
-                behavior: HitTestBehavior.opaque,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(CupertinoIcons.flag, size: 10.5, color: C.text4.withValues(alpha: 0.8)),
-                    const SizedBox(width: 3),
-                    Text(l.t('report'),
-                        style: TextStyle(
-                            fontSize: 10.5, color: C.text4.withValues(alpha: 0.8))),
-                  ]),
-                ),
-              ),
-            ]),
-          ),
+          if ((m['time'] ?? '').isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(left: 7, top: 5),
+              child: Text(m['time']!, style: const TextStyle(fontSize: 10.5, color: C.text4)),
+            ),
         ]),
       ),
     );

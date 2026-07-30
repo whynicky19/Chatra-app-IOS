@@ -8,6 +8,7 @@ import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/image_cache.dart';
 import '../../widgets/network_cover_image.dart';
+import '../../utils/haptics.dart';
 
 class ArchiveScreen extends StatelessWidget {
   const ArchiveScreen({super.key});
@@ -92,7 +93,7 @@ class ArchiveScreen extends StatelessWidget {
                     colors: _grads[id % _grads.length],
                     isDark: isDark,
                     onTap: () {
-                      HapticFeedback.lightImpact();
+                      hapticLight();
                       Navigator.pushNamed(context, '/class', arguments: id);
                     },
                   );

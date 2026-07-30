@@ -7,6 +7,7 @@ import '../../providers/org_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/tappable.dart';
+import '../../utils/haptics.dart';
 
 class OrgSelectScreen extends StatefulWidget {
   const OrgSelectScreen({super.key});
@@ -24,14 +25,14 @@ class _OrgSelectScreenState extends State<OrgSelectScreen> {
 
   void _pick(OrgType type) {
     if (_picked == type) return;
-    HapticFeedback.selectionClick();
+    hapticSelection();
     setState(() => _picked = type);
   }
 
   Future<void> _continue() async {
     final picked = _picked;
     if (picked == null) return;
-    HapticFeedback.mediumImpact();
+    hapticMedium();
     await context.read<OrgProvider>().select(picked);
   }
 

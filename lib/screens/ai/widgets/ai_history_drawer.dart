@@ -8,6 +8,7 @@ import '../../../providers/ai_chats_provider.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/app_dialog.dart';
 import '../../../widgets/toast.dart';
+import '../../../utils/haptics.dart';
 
 /// История чатов главного ИИ-ассистента — не отдельный экран, а drawer,
 /// открывающийся поверх текущей переписки (свайпом с левого края или по
@@ -48,7 +49,7 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
         confirmText: l.t('delete'),
         cancelText: l.t('cancel'));
     if (ok == true && mounted) {
-      HapticFeedback.mediumImpact();
+      hapticMedium();
       context.read<AiChatsProvider>().delete(t.id);
     }
   }
@@ -70,7 +71,7 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
 
   void _showActions(AiThread t) {
     final l = context.read<L10n>();
-    HapticFeedback.selectionClick();
+    hapticSelection();
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -99,7 +100,7 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
               _sheetAction(ctx, t.pinned ? CupertinoIcons.pin_slash : CupertinoIcons.pin,
                   t.pinned ? l.t('unpin_chat') : l.t('pin_chat'), () {
                 Navigator.pop(ctx);
-                HapticFeedback.selectionClick();
+                hapticSelection();
                 context.read<AiChatsProvider>().togglePin(t.id);
               }),
               _sheetAction(ctx, CupertinoIcons.trash, l.t('delete'), () {
@@ -288,7 +289,7 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
               return ok == true;
             },
             onDismissed: (_) {
-              HapticFeedback.mediumImpact();
+              hapticMedium();
               context.read<AiChatsProvider>().delete(t.id);
             },
             background: Container(
@@ -313,7 +314,7 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
     final active = t.id == widget.activeThreadId;
     return GestureDetector(
       onTap: () {
-        HapticFeedback.selectionClick();
+        hapticSelection();
         widget.onSelect(t);
       },
       child: Container(

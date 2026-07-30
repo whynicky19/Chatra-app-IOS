@@ -7,6 +7,7 @@ import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/toast.dart';
 import '../../utils/dates.dart';
+import '../../utils/haptics.dart';
 
 class RolloverScreen extends StatefulWidget {
   const RolloverScreen({super.key});
@@ -317,7 +318,7 @@ class _RolloverScreenState extends State<RolloverScreen> {
       padding: const EdgeInsets.only(bottom: 10),
       child: GestureDetector(
         onTap: () {
-          HapticFeedback.selectionClick();
+          hapticSelection();
           setState(() => checked ? _checked.remove(id) : _checked.add(id));
         },
         child: Container(

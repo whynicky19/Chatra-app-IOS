@@ -10,6 +10,7 @@ import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../classes/class_detail_screen.dart';
 import '../../utils/dates.dart';
+import '../../utils/haptics.dart';
 
 enum _NType { newAssignment, deadline, grade }
 
@@ -301,7 +302,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         direction: DismissDirection.endToStart,
                         dismissThresholds: const {DismissDirection.endToStart: 0.4},
                         onDismissed: (_) {
-                          HapticFeedback.mediumImpact();
+                          hapticMedium();
                           _dismiss(n.key);
                         },
                         background: Container(

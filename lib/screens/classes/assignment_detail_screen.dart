@@ -306,24 +306,23 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
               child: Padding(
                 padding: EdgeInsets.fromLTRB(20, 6, 20, showSubmitBar || showRetractBar || showViewWorksBar ? 24 : 48),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [
+                  Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 10, runSpacing: 8, children: [
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.chip)),
                       child: Text(statusText, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: statusColor)),
                     ),
-                    const SizedBox(width: 10),
-                    Icon(CupertinoIcons.star_fill, size: 13, color: detailText2(context)),
-                    const SizedBox(width: 4),
-                    Text('${a['max_score'] ?? 100} ${l.t('pts')}', style: TextStyle(fontSize: 15, color: detailText2(context), fontWeight: FontWeight.w500)),
-                    if (deadline != null) ...[
-                      const SizedBox(width: 10),
-                      Container(width: 3, height: 3, decoration: BoxDecoration(color: detailText2(context), shape: BoxShape.circle)),
-                      const SizedBox(width: 10),
-                      Icon(CupertinoIcons.calendar, size: 13, color: detailText2(context)),
+                    Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(CupertinoIcons.star_fill, size: 13, color: detailText2(context)),
                       const SizedBox(width: 4),
-                      Text(_fmtDate(deadline), style: TextStyle(fontSize: 15, color: detailText2(context), fontWeight: FontWeight.w500)),
-                    ],
+                      Text('${a['max_score'] ?? 100} ${l.t('pts')}', style: TextStyle(fontSize: 15, color: detailText2(context), fontWeight: FontWeight.w500)),
+                    ]),
+                    if (deadline != null)
+                      Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(CupertinoIcons.calendar, size: 13, color: detailText2(context)),
+                        const SizedBox(width: 4),
+                        Text(_fmtDate(deadline), style: TextStyle(fontSize: 15, color: detailText2(context), fontWeight: FontWeight.w500)),
+                      ]),
                   ]),
                   const SizedBox(height: 26),
                   FutureBuilder<Map<String, dynamic>>(

@@ -15,6 +15,7 @@ import '../../../widgets/ai_limit_notice.dart';
 import '../../../widgets/app_dialog.dart';
 import '../../../widgets/toast.dart';
 import '../../ai/widgets/ai_message_content.dart';
+import '../../../utils/haptics.dart';
 
 class ClassAiTab extends StatefulWidget {
   final int classId;
@@ -245,7 +246,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
           child: _headerButton(
             icon: CupertinoIcons.trash,
             color: Theme.of(context).colorScheme.primary,
-            onTap: () { HapticFeedback.lightImpact(); _clearHistory(); },
+            onTap: () { hapticLight(); _clearHistory(); },
           ),
         ),
       ])),
@@ -386,7 +387,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
       ),
       child: GestureDetector(
         onTap: () {
-          HapticFeedback.selectionClick();
+          hapticSelection();
           _send(context.read<L10n>().t(tipKey));
         },
         child: Container(
@@ -454,7 +455,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
       alignment: Alignment.centerLeft,
       child: GestureDetector(
         onLongPress: () {
-          HapticFeedback.mediumImpact();
+          hapticMedium();
           Clipboard.setData(ClipboardData(text: text));
           showToast(context, context.read<L10n>().t('copied'));
         },

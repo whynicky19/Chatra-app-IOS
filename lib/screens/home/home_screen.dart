@@ -22,6 +22,7 @@ import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
 import '../notifications/notifications_screen.dart';
 import '../calendar/calendar_screen.dart';
+import '../../utils/haptics.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -128,10 +129,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final isOldPinned = oldIndex < pinnedCount;
     final isNewPinned = newIndex < pinnedCount;
     if (isOldPinned != isNewPinned) {
-      HapticFeedback.heavyImpact();
+      hapticHeavy();
       return;
     }
-    HapticFeedback.lightImpact();
+    hapticLight();
     final list = classes.toList();
     final item = list.removeAt(oldIndex);
     list.insert(newIndex, item);
@@ -324,8 +325,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     leaveLabel: l.t('leave_class'),
                     leaveSub: l.t('leave_class_sub'),
                     leaveBtnLabel: l.t('leave_btn'),
-                    onTap: () { HapticFeedback.lightImpact(); Navigator.pushNamed(context, '/class', arguments: id); },
-                    onLongPress: () { HapticFeedback.heavyImpact(); _showContextMenu(cls); },
+                    onTap: () { hapticLight(); Navigator.pushNamed(context, '/class', arguments: id); },
+                    onLongPress: () { hapticHeavy(); _showContextMenu(cls); },
                     onDelete: () async {
                       final prov = context.read<ClassesProvider>();
                       final ok = await prov.deleteClass(id);
@@ -359,7 +360,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 child: _ArchiveEntry(
                   count: provider.archivedClasses.length,
                   onTap: () {
-                    HapticFeedback.lightImpact();
+                    hapticLight();
                     Navigator.pushNamed(context, '/archive');
                   },
                 ),

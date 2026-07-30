@@ -28,6 +28,7 @@ import 'widgets/class_cover_sliver.dart';
 import 'lecture_detail_screen.dart';
 import 'lecture_editor_screen.dart';
 import 'assignment_editor_screen.dart';
+import '../../utils/haptics.dart';
 
 class ClassDetailScreen extends StatefulWidget {
   final int classId;
@@ -72,7 +73,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     _tabCtrl.addListener(() {
       if (_tabCtrl.index == 1 && _assignments.isEmpty) _loadAssignments();
       if (_tabCtrl.indexIsChanging) {
-        HapticFeedback.selectionClick();
+        hapticSelection();
       } else {
         final isAi = _tabCtrl.index == 2;
         if (_aiTabActive != isAi) {
@@ -615,7 +616,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     ),
                 ],
                 onChanged: (v) {
-                  HapticFeedback.selectionClick();
+                  hapticSelection();
                   setState(() => _selectedCohortId = (v == activeId) ? null : v);
                   onChangedExtra?.call();
                 },

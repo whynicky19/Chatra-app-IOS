@@ -7,6 +7,7 @@ import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/errors.dart';
 import '../../widgets/ambient_glow.dart';
+import '../../utils/haptics.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback onDone;
@@ -53,7 +54,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _next(int total) {
-    HapticFeedback.selectionClick();
+    hapticSelection();
     if (_page >= total - 1) {
       _finish();
     } else {

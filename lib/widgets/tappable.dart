@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -7,6 +8,16 @@ import 'package:flutter/services.dart';
 ///
 /// `onTap == null` — виджет неактивен: не реагирует ни визуально, ни на
 /// касание (как задизейбленная кнопка).
+///
+/// Хаптика по умолчанию ВЫКЛЮЧЕНА: изначально стояла на каждой кнопке —
+/// после массового перевода GestureDetector → Tappable это означало вибрацию
+/// на буквально любой тап в приложении, что ощущалось навязчиво. Оставлена
+/// как opt-in (`haptic: true`) для мест, где отклик действительно уместен
+/// (свайпы/переключатели), а не как поведение по умолчанию для всех кнопок.
+/// На Android вибромотор физически "гудит" заметнее, чем Taptic Engine на
+/// iOS, поэтому там хаптика от Tappable подавляется совсем — вибрация
+/// остаётся только у нижней навигации (main_shell.dart, отдельный код, не
+/// через Tappable).
 class Tappable extends StatefulWidget {
   const Tappable({
     super.key,
@@ -14,7 +25,7 @@ class Tappable extends StatefulWidget {
     this.onTap,
     this.onLongPress,
     this.scale = 0.97,
-    this.haptic = true,
+    this.haptic = false,
     this.behavior,
     this.borderRadius,
   });
@@ -49,7 +60,9 @@ class _TappableState extends State<Tappable> {
       onTapCancel: active ? () => _setPressed(false) : null,
       onTap: active
           ? () {
-              if (widget.haptic) HapticFeedback.selectionClick();
+              if (widget.haptic && defaultTargetPlatform != TargetPlatform.android) {
+                HapticFeedback.selectionClick();
+              }
               widget.onTap?.call();
             }
           : null,

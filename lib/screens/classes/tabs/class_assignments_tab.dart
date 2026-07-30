@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:provider/provider.dart';
 import '../../../providers/l10n_provider.dart';
 import '../../../services/api_service.dart';
@@ -14,6 +13,7 @@ import '../../../widgets/toast.dart';
 import '../class_detail_utils.dart';
 import '../assignment_detail_screen.dart';
 import '../../../utils/dates.dart';
+import '../../../utils/haptics.dart';
 
 class ClassAssignmentsTab extends StatefulWidget {
   final List<dynamic> assignments;
@@ -846,7 +846,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                   Expanded(flex: 2, child: ElevatedButton(
                     style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
                     onPressed: saving || score == null ? null : () async {
-                      HapticFeedback.lightImpact();
+                      hapticLight();
                       setD(() => saving = true);
                       try {
                         await context.read<ApiService>().gradeSubmission(

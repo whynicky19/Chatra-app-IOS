@@ -1,9 +1,10 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/services.dart' show Clipboard, ClipboardData, HapticFeedback;
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/l10n_provider.dart';
 import '../../../widgets/toast.dart';
+import '../../../utils/haptics.dart';
 
 /// Рендерит текст сообщения ассистента: формулы LaTeX, markdown-списки и
 /// таблицы. Документ разбирается построчно на параграфы/списки/таблицы;
@@ -199,7 +200,7 @@ class AiMessageContent extends StatelessWidget {
             top: -4, right: -4,
             child: Builder(builder: (ctx) => GestureDetector(
               onTap: () {
-                HapticFeedback.selectionClick();
+                hapticSelection();
                 Clipboard.setData(ClipboardData(text: code));
                 showToast(ctx, ctx.read<L10n>().t('copied'));
               },

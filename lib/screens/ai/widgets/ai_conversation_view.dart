@@ -16,6 +16,7 @@ import '../../../widgets/ai_limit_notice.dart';
 import '../../../widgets/toast.dart';
 import '../../../utils/dates.dart';
 import 'ai_message_content.dart';
+import '../../../utils/haptics.dart';
 
 /// Тело одной переписки с главным ИИ-ассистентом: список сообщений + композер.
 /// Встраивается как body в [AiScreen] (не пуш-экран) — история открывается
@@ -244,7 +245,7 @@ class _AiConversationViewState extends State<AiConversationView> {
       showToast(context, context.read<L10n>().t('ai_daily_exhausted'), error: true);
       return;
     }
-    HapticFeedback.lightImpact();
+    hapticLight();
     setState(() => _msgs.add({'role': 'user', 'text': text, 'time': _now()}));
     _saveHistory();
     _ctrl.clear();
@@ -343,7 +344,7 @@ class _AiConversationViewState extends State<AiConversationView> {
   /// заново запрашивает ответ на тот же (уже стоящий в _msgs) вопрос.
   Future<void> _regenerateLast() async {
     if (_loading || _msgs.isEmpty || _msgs.last['role'] != 'assistant') return;
-    HapticFeedback.lightImpact();
+    hapticLight();
     setState(() => _msgs.removeLast());
     _saveHistory();
     await _requestReply();
@@ -467,7 +468,7 @@ class _AiConversationViewState extends State<AiConversationView> {
       ),
       child: GestureDetector(
         onTap: () {
-          HapticFeedback.selectionClick();
+          hapticSelection();
           _send(tip['prompt'] as String);
         },
         child: Container(
@@ -594,7 +595,7 @@ class _AiConversationViewState extends State<AiConversationView> {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
           GestureDetector(
             onLongPress: () {
-              HapticFeedback.mediumImpact();
+              hapticMedium();
               Clipboard.setData(ClipboardData(text: text));
               showToast(context, l.t('copied'));
             },

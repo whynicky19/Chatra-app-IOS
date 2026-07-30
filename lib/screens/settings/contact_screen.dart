@@ -8,6 +8,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/tappable.dart';
 import '../../widgets/telegram_logo.dart';
 import '../../widgets/toast.dart';
+import '../../utils/haptics.dart';
 
 const String kDeveloperTelegramUrl = 'https://t.me/whynickyy';
 
@@ -55,7 +56,7 @@ class _ContactScreenState extends State<ContactScreen> with SingleTickerProvider
   }
 
   Future<void> _openTelegram() async {
-    HapticFeedback.lightImpact();
+    hapticLight();
     final handle = _telegramHandle;
     for (final uri in [
       if (handle != null) Uri.parse('tg://resolve?domain=$handle'),

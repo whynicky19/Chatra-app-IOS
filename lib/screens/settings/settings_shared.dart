@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
 
 class SettingsActionCard extends StatelessWidget {
@@ -28,7 +29,7 @@ class SettingsActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final surface = Theme.of(context).colorScheme.surface;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return GestureDetector(
+    return Tappable(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -85,11 +86,11 @@ class SettingsSubScreen extends StatelessWidget {
                 onPressed: () => Navigator.pop(context),
               ),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800,
+                Text(title, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800,
                   color: adaptiveText1(context), letterSpacing: -0.3)),
                 if (subtitle != null) ...[
                   const SizedBox(height: 1),
-                  Text(subtitle!, style: const TextStyle(fontSize: 12.5, color: C.text4)),
+                  Text(subtitle!, style: const TextStyle(fontSize: 13, color: C.text4)),
                 ],
               ])),
             ]),
@@ -280,7 +281,7 @@ class SheetScaffold extends StatelessWidget {
             const SizedBox(height: 14),
           ],
           Text(title, textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: adaptiveText1(context), letterSpacing: -0.3)),
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: adaptiveText1(context), letterSpacing: -0.3)),
           const SizedBox(height: 22),
           ...children,
         ])),
@@ -319,7 +320,7 @@ class SheetField extends StatelessWidget {
         ),
       ),
       if (helper != null) Padding(padding: const EdgeInsets.only(top: 6, left: 2),
-        child: Text(helper!, style: const TextStyle(fontSize: 12, color: C.text4))),
+        child: Text(helper!, style: const TextStyle(fontSize: 13, color: C.text4))),
     ]);
   }
 }
@@ -348,7 +349,7 @@ class SheetButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return Tappable(
       onTap: enabled ? onTap : null,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
@@ -361,7 +362,7 @@ class SheetButton extends StatelessWidget {
         child: Align(heightFactor: 1, child: busy
           ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
           : Text(label, textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700,
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700,
               color: enabled ? Colors.white : C.text4))),
       ),
     );

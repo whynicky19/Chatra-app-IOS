@@ -115,7 +115,7 @@ class _ReportSheetState extends State<_ReportSheet> {
       children: [
         Text(l.t('report_sub'),
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 13.5, color: C.text4, height: 1.4)),
+            style: const TextStyle(fontSize: 13, color: C.text4, height: 1.4)),
         const SizedBox(height: 20),
         Padding(
           padding: const EdgeInsets.only(bottom: 8, left: 2),
@@ -159,7 +159,7 @@ class _ReportSheetState extends State<_ReportSheet> {
                       child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
                   : Text(l.t('report_send'),
                       style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
+                          fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white)),
             ),
           ),
         ),
@@ -202,7 +202,7 @@ class _ReasonRow extends StatelessWidget {
           Expanded(
             child: Text(label,
                 style: TextStyle(
-                    fontSize: 14.5,
+                    fontSize: 15,
                     fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                     color: adaptiveText1(context))),
           ),

@@ -40,7 +40,7 @@ class LectureDetailScreen extends StatelessWidget {
         textTheme: CupertinoTextThemeData(
           primaryColor: accent,
           navLargeTitleTextStyle: TextStyle(
-            fontSize: 33, fontWeight: FontWeight.w800, letterSpacing: -0.5,
+            fontSize: 34, fontWeight: FontWeight.w800, letterSpacing: -0.5,
             color: detailText1(context),
           ),
           navTitleTextStyle: TextStyle(
@@ -69,12 +69,12 @@ class LectureDetailScreen extends StatelessWidget {
                     Text(
                       content,
                       textAlign: TextAlign.left,
-                      style: TextStyle(fontSize: 16.5, height: 1.65, letterSpacing: 0.1, color: detailText1(context)),
+                      style: TextStyle(fontSize: 17, height: 1.65, letterSpacing: 0.1, color: detailText1(context)),
                     ),
                   if (files.isNotEmpty) ...[
                     SizedBox(height: content.isNotEmpty ? 36 : 0),
                     Text(l.t('attached_files_edit'),
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: detailText1(context))),
+                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: detailText1(context))),
                     const SizedBox(height: 12),
                     for (final f in files) ...[
                       FileCard(
@@ -92,7 +92,7 @@ class LectureDetailScreen extends StatelessWidget {
                           Icon(CupertinoIcons.book, size: 34, color: detailText2(context)),
                           const SizedBox(height: 14),
                           Text(l.t('content_empty'),
-                              style: TextStyle(fontSize: 14, color: detailText2(context), fontWeight: FontWeight.w500)),
+                              style: TextStyle(fontSize: 15, color: detailText2(context), fontWeight: FontWeight.w500)),
                         ]),
                       ),
                     ),
@@ -118,13 +118,13 @@ class _MetaRow extends StatelessWidget {
     return Row(children: [
       Icon(CupertinoIcons.calendar, size: 14, color: text2),
       const SizedBox(width: 5),
-      Text(dateLabel, style: TextStyle(fontSize: 14, color: text2, fontWeight: FontWeight.w500)),
+      Text(dateLabel, style: TextStyle(fontSize: 15, color: text2, fontWeight: FontWeight.w500)),
       if (fileCount > 0) ...[
         const SizedBox(width: 10),
         Container(width: 3, height: 3, decoration: BoxDecoration(color: text2, shape: BoxShape.circle)),
         const SizedBox(width: 10),
         Text('$fileCount ${fileCount == 1 ? l.t('file') : l.t('files')}',
-            style: TextStyle(fontSize: 14, color: text2, fontWeight: FontWeight.w500)),
+            style: TextStyle(fontSize: 15, color: text2, fontWeight: FontWeight.w500)),
       ],
     ]);
   }

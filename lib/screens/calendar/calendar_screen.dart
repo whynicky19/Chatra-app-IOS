@@ -315,7 +315,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
               ),
               child: Column(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
                 Text(dayName, style: TextStyle(
-                  fontSize: 10, fontWeight: FontWeight.w700,
+                  fontSize: 11, fontWeight: FontWeight.w700,
                   color: isSelected ? Colors.white70 : C.text4,
                 )),
                 const SizedBox(height: 2),
@@ -334,7 +334,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text('$count', style: TextStyle(
-                      fontSize: 10, fontWeight: FontWeight.w800,
+                      fontSize: 11, fontWeight: FontWeight.w800,
                       color: isSelected ? Colors.white : (allDone ? C.green : Theme.of(context).colorScheme.primary),
                     )),
                   ),
@@ -388,7 +388,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(AppRadii.chip)),
               child: Text('${items.length}', style: TextStyle(
-                fontSize: 10, fontWeight: FontWeight.w800,
+                fontSize: 11, fontWeight: FontWeight.w800,
                 color: Theme.of(context).colorScheme.primary)),
             ),
           ]),
@@ -448,13 +448,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       const SizedBox(width: 3),
                       Text(
                         '${due.hour.toString().padLeft(2,'0')}:${due.minute.toString().padLeft(2,'0')}',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isSubmitted ? C.green : C.text3),
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isSubmitted ? C.green : C.text3),
                       ),
                     ],
                     if (classId != null && (classNames[classId] ?? '').isNotEmpty) ...[
                       const SizedBox(width: 8),
                       Flexible(child: Text(classNames[classId]!,
-                        style: const TextStyle(fontSize: 12, color: C.text4),
+                        style: const TextStyle(fontSize: 13, color: C.text4),
                         maxLines: 1, overflow: TextOverflow.ellipsis)),
                     ],
                   ]),

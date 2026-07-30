@@ -21,7 +21,11 @@ void main() {
     final marker = RegExp(r"\n    '(RU|KZ|EN)': \{");
     final langs = marker.allMatches(source).map((m) => m.group(1)!).toList();
     final idx = langs.indexOf(lang);
-    expect(idx, isNonNegative, reason: 'блок языка $lang не найден');
+    // expect() требует активной test()-зоны — здесь её ещё нет (парсинг
+    // словаря происходит до объявления тестов), поэтому проверка через throw.
+    if (idx < 0) {
+      throw StateError('блок языка $lang не найден в l10n_provider.dart');
+    }
     return RegExp(r"^      '([a-z0-9_]+)':", multiLine: true)
         .allMatches(blocks[idx + 1])
         .map((m) => m.group(1)!)

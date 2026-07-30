@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/errors.dart';
+import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
 import '../../widgets/telegram_logo.dart';
 import '../legal/privacy_policy_screen.dart';
@@ -56,7 +57,7 @@ class AboutSettingsScreen extends StatelessWidget {
             MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
         ),
         const SizedBox(height: 16),
-        GestureDetector(
+        Tappable(
           onTap: () => Navigator.push(context,
             MaterialPageRoute(builder: (_) => const ContactScreen())),
           child: Container(
@@ -116,7 +117,7 @@ class _VersionLabelState extends State<_VersionLabel> {
     return SizedBox(
       height: 20,
       child: Center(
-        child: GestureDetector(
+        child: Tappable(
           onTap: _version == null
               ? null
               : () {
@@ -124,7 +125,7 @@ class _VersionLabelState extends State<_VersionLabel> {
                   showToast(context, l.t('copied'));
                 },
           child: Text(text,
-              style: const TextStyle(fontSize: 12.5, color: C.text4)),
+              style: const TextStyle(fontSize: 13, color: C.text4)),
         ),
       ),
     );

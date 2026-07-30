@@ -124,7 +124,7 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
         child: Row(children: [
           Icon(icon, size: 21, color: color),
           const SizedBox(width: 14),
-          Text(label, style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w600, color: color)),
+          Text(label, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: color)),
         ]),
       ),
     );
@@ -262,7 +262,7 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
           return Padding(
             padding: EdgeInsets.only(left: 8, top: i == 0 ? 2 : 14, bottom: 8),
             child: Text(item.toUpperCase(),
-                style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: C.text4, letterSpacing: 1.0)),
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: C.text4, letterSpacing: 1.0)),
           );
         }
         final t = item as AiThread;
@@ -336,13 +336,13 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                          fontSize: 14.5,
+                          fontSize: 15,
                           fontWeight: FontWeight.w600,
                           color: active ? primary : adaptiveText1(context),
                           letterSpacing: -0.1))),
             ]),
             const SizedBox(height: 2),
-            Text(_relTime(t.updatedAt, l), style: const TextStyle(fontSize: 11.5, color: C.text4)),
+            Text(_relTime(t.updatedAt, l), style: const TextStyle(fontSize: 11, color: C.text4)),
           ])),
           GestureDetector(
             onTap: () => _showActions(t),
@@ -372,7 +372,7 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
                   child: Icon(CupertinoIcons.sparkles, size: 30, color: adaptiveText1(context).withValues(alpha: 0.4))),
               const SizedBox(height: 14),
               Text(l.t('no_chats'),
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: adaptiveText1(context).withValues(alpha: 0.8))),
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: adaptiveText1(context).withValues(alpha: 0.8))),
               const SizedBox(height: 6),
               SizedBox(
                   width: 240,
@@ -395,7 +395,7 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
           const SizedBox(height: 12),
           Text(l.t('no_search_results'),
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: adaptiveText1(context).withValues(alpha: 0.55))),
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveText1(context).withValues(alpha: 0.55))),
         ]),
       ),
     );

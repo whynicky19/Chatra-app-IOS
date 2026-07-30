@@ -6,6 +6,7 @@ import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 import '../../providers/org_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/tappable.dart';
 
 class OrgSelectScreen extends StatefulWidget {
   const OrgSelectScreen({super.key});
@@ -79,11 +80,11 @@ class _OrgSelectScreenState extends State<OrgSelectScreen> {
                 _reveal(2, Column(children: [
                   Text(l.t('welcome'),
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, letterSpacing: -0.6, height: 1.12, color: adaptiveText1(context))),
+                    style: TextStyle(fontSize: 34, fontWeight: FontWeight.w800, letterSpacing: -0.6, height: 1.12, color: adaptiveText1(context))),
                   AnimatedDefaultTextStyle(
                     duration: const Duration(milliseconds: 450),
                     curve: Curves.easeOutCubic,
-                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, letterSpacing: -0.6, height: 1.12,
+                    style: TextStyle(fontSize: 34, fontWeight: FontWeight.w800, letterSpacing: -0.6, height: 1.12,
                       color: hasPick ? _accent : adaptiveText1(context)),
                     child: Text(l.t('org_brand_line'), textAlign: TextAlign.center),
                   ),
@@ -131,7 +132,7 @@ class _OrgSelectScreenState extends State<OrgSelectScreen> {
                 const SizedBox(height: 12),
                 Text(l.t('org_change_hint'),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 12, color: C.text4)),
+                  style: const TextStyle(fontSize: 13, color: C.text4)),
               ]),
             ),
           )),
@@ -164,7 +165,7 @@ class _GlassButton extends StatelessWidget {
         width: w,
         height: 54,
         foregroundColor: active ? Colors.white : C.text4,
-        fontSize: 16,
+        fontSize: 17,
         fontWeight: FontWeight.w700,
         style: LiquidGlassStyle(
           shape: const LiquidGlassShape.roundedRectangle(cornerRadius: 16, borderWidth: 0),
@@ -211,24 +212,16 @@ class _OrgCard extends StatefulWidget {
 }
 
 class _OrgCardState extends State<_OrgCard> {
-  bool _pressed = false;
-
   @override
   Widget build(BuildContext context) {
     final isDark   = Theme.of(context).brightness == Brightness.dark;
     final selected = widget.selected;
     final accent   = widget.accent;
 
-    return GestureDetector(
+    return Tappable(
       onTap: widget.onTap,
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedScale(
-        scale: _pressed ? 0.975 : 1.0,
-        duration: const Duration(milliseconds: 120),
-        curve: Curves.easeOut,
-        child: AnimatedContainer(
+      scale: 0.975,
+      child: AnimatedContainer(
           duration: const Duration(milliseconds: 240),
           curve: Curves.easeOutCubic,
           width: double.infinity,
@@ -275,7 +268,7 @@ class _OrgCardState extends State<_OrgCard> {
             ),
           ]),
         ),
-      ),
     );
   }
 }
+

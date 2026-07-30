@@ -94,7 +94,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 child: TextButton(
                   onPressed: _finish,
                   child: Text(l.t('onb_skip'),
-                      style: const TextStyle(fontSize: 14.5, color: C.text4)),
+                      style: const TextStyle(fontSize: 15, color: C.text4)),
                 ),
               ),
             ),
@@ -152,7 +152,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       isLast ? l.t('onb_start') : l.t('onb_next'),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: 17,
                           fontWeight: FontWeight.w700,
                           color: Colors.white),
                     ),
@@ -202,7 +202,7 @@ class _Page extends StatelessWidget {
             Text(tag.toUpperCase(),
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.6,
                     color: primary)),
@@ -210,7 +210,7 @@ class _Page extends StatelessWidget {
             Text(title,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                    fontSize: 30,
+                    fontSize: 28,
                     fontWeight: FontWeight.w800,
                     height: 1.15,
                     letterSpacing: -0.8,
@@ -221,7 +221,7 @@ class _Page extends StatelessWidget {
               child: Text(body,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                      fontSize: 15.5, height: 1.6, color: C.text4)),
+                      fontSize: 15, height: 1.6, color: C.text4)),
             ),
             const SizedBox(height: 24),
           ],
@@ -369,7 +369,7 @@ class _AiMock extends StatelessWidget {
                 const SizedBox(width: 5),
                 Text('Chatra AI',
                     style: TextStyle(
-                        fontSize: 11.5,
+                        fontSize: 11,
                         fontWeight: FontWeight.w800,
                         color: primary)),
               ]),

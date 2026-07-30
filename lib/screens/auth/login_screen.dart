@@ -6,6 +6,7 @@ import '../../providers/l10n_provider.dart';
 import '../../providers/org_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_logo.dart';
+import '../../widgets/tappable.dart';
 import 'verify_email_screen.dart';
 import 'forgot_password_screen.dart';
 
@@ -63,7 +64,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (MediaQuery.of(context).disableAnimations) return child;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
-      duration: Duration(milliseconds: 420 + step * 110),
+      duration: Duration(milliseconds: 220 + step * 45),
       curve: Curves.easeOutCubic,
       builder: (_, t, c) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 18 * (1 - t)), child: c)),
       child: child,
@@ -94,7 +95,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 _reveal(1, Column(children: [
                   Text(l.t('welcome'),
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800, letterSpacing: -0.6, height: 1.15, color: adaptiveText1(context))),
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -0.6, height: 1.15, color: adaptiveText1(context))),
                   const SizedBox(height: 8),
                   Text(l.t('login_sub'),
                     textAlign: TextAlign.center,
@@ -147,7 +148,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 10),
                   Align(
                     alignment: Alignment.centerRight,
-                    child: GestureDetector(
+                    child: Tappable(
                       onTap: _openForgot,
                       child: Text(l.t('forgot_password_link'),
                         style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: primary)),
@@ -178,7 +179,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 24),
 
                 _reveal(3, Column(children: [
-                  GestureDetector(
+                  Tappable(
                     onTap: _busy ? null : _submit,
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
@@ -190,16 +191,16 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       child: Align(heightFactor: 1, child: _busy
                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
-                        : Text(l.t('login'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.1))),
+                        : Text(l.t('login'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.1))),
                     ),
                   ),
                   const SizedBox(height: 20),
                   Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Text('${l.t('no_account')} ', style: const TextStyle(fontSize: 13.5, color: C.text4)),
-                    GestureDetector(
+                    Text('${l.t('no_account')} ', style: const TextStyle(fontSize: 13, color: C.text4)),
+                    Tappable(
                       onTap: widget.onGoRegister,
                       child: Text(l.t('register_link'), style: TextStyle(
-                          fontSize: 13.5, color: primary, fontWeight: FontWeight.w700))),
+                          fontSize: 13, color: primary, fontWeight: FontWeight.w700))),
                   ]),
                 ])),
               ])),
@@ -222,7 +223,7 @@ class _BackButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return GestureDetector(
+    return Tappable(
       onTap: onTap,
       child: Container(
         width: 38, height: 38,

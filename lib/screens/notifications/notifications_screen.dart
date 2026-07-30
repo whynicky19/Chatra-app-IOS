@@ -259,9 +259,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               child: Icon(CupertinoIcons.chevron_left, size: 20, color: adaptiveText1(context)))),
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(l.t('notifications'), style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: adaptiveText1(context), letterSpacing: -0.4, height: 1.05)),
+            Text(l.t('notifications'), style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: adaptiveText1(context), letterSpacing: -0.4, height: 1.05)),
             if (!_loading)
-              Text(unread > 0 ? '$unread ${l.t('notif_unread')}' : l.t('all_read'), style: const TextStyle(fontSize: 12, color: C.text4)),
+              Text(unread > 0 ? '$unread ${l.t('notif_unread')}' : l.t('all_read'), style: const TextStyle(fontSize: 13, color: C.text4)),
           ])),
           GestureDetector(onTap: _load,
             child: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
@@ -284,7 +284,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       return Padding(
                         padding: EdgeInsets.only(left: 6, top: i == 0 ? 2 : 14, bottom: 8),
                         child: Text(item.toUpperCase(), style: const TextStyle(
-                          fontSize: 11.5, fontWeight: FontWeight.w800, color: C.text4, letterSpacing: 1.0)),
+                          fontSize: 11, fontWeight: FontWeight.w800, color: C.text4, letterSpacing: 1.0)),
                       );
                     }
                     final n = item as _Notif;
@@ -352,7 +352,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                               Row(children: [
                                 Expanded(child: Text(n.title, style: TextStyle(
-                                  fontSize: 14, fontWeight: n.isRead ? FontWeight.w600 : FontWeight.w800,
+                                  fontSize: 15, fontWeight: n.isRead ? FontWeight.w600 : FontWeight.w800,
                                   color: adaptiveText1(context)))),
                                 if (!n.isRead) Container(width: 8, height: 8, decoration: BoxDecoration(color: cfg['color'] as Color, shape: BoxShape.circle)),
                                 if (canNavigate) const Padding(padding: EdgeInsets.only(left: 6),
@@ -395,7 +395,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       const SizedBox(height: 20),
       Text(l.t('no_notif'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
       const SizedBox(height: 6),
-      Text(l.t('no_notif_sub'), style: const TextStyle(fontSize: 14, color: C.text4, height: 1.5), textAlign: TextAlign.center),
+      Text(l.t('no_notif_sub'), style: const TextStyle(fontSize: 15, color: C.text4, height: 1.5), textAlign: TextAlign.center),
     ]));
   }
 }

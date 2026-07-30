@@ -18,6 +18,7 @@ import '../../theme/app_theme.dart';
 import '../../utils/image_cache.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/skeleton.dart';
+import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
 import '../notifications/notifications_screen.dart';
 import '../calendar/calendar_screen.dart';
@@ -201,7 +202,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   _HeaderBtn(icon: CupertinoIcons.lock, onTap: _showJoinDialog, isDark: isDark),
                   const SizedBox(width: 8),
                 ],
-                GestureDetector(onTap: _showCreateClass,
+                Tappable(onTap: _showCreateClass,
                   child: Container(
                     width: 42, height: 42,
                     decoration: BoxDecoration(
@@ -212,7 +213,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     child: const Icon(CupertinoIcons.add, color: Colors.white, size: 20),
                   )),
               ] else ...[
-                GestureDetector(
+                Tappable(
                   onTap: () async {
                     await Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()));
                     if (!context.mounted) return;
@@ -235,7 +236,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   ]),
                 ),
                 const SizedBox(width: 8),
-                GestureDetector(onTap: _showJoinDialog,
+                Tappable(onTap: _showJoinDialog,
                   child: Container(
                     width: 42, height: 42,
                     decoration: BoxDecoration(
@@ -279,7 +280,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     const SizedBox(width: 10),
                     Expanded(child: Text(l.t('drag_hint'),
                       style: TextStyle(fontSize: 13, color: primary, fontWeight: FontWeight.w500))),
-                    GestureDetector(
+                    Tappable(
                       onTap: _dismissDragHint,
                       child: Icon(CupertinoIcons.xmark, color: primary, size: 18),
                     ),
@@ -373,7 +374,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 duration: const Duration(milliseconds: 500),
                 curve: Curves.easeOutCubic,
                 builder: (_, t, child) => Opacity(opacity: t, child: child),
-                child: GestureDetector(
+                child: Tappable(
                   onTap: _showJoinDialog,
                   child: Container(
                     margin: const EdgeInsets.only(top: 2),
@@ -394,7 +395,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       const SizedBox(height: 12),
                       Text(l.t('add_subject'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
                       const SizedBox(height: 3),
-                      Text(l.t('enter_teacher_code'), style: const TextStyle(fontSize: 12, color: C.text4)),
+                      Text(l.t('enter_teacher_code'), style: const TextStyle(fontSize: 13, color: C.text4)),
                     ]),
                   ),
                 ),
@@ -487,12 +488,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       const SizedBox(height: 6),
                       Text(l.t('confirm_delete_hint'),
                         textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 13.5, color: C.text4, height: 1.45)),
+                        style: const TextStyle(fontSize: 13, color: C.text4, height: 1.45)),
                       const SizedBox(height: 16),
                       TextField(
                         controller: nameCtrl,
                         autofocus: true,
-                        style: const TextStyle(fontSize: 14),
+                        style: const TextStyle(fontSize: 15),
                         decoration: InputDecoration(hintText: title),
                         onChanged: (_) => setS(() {}),
                       ),
@@ -585,7 +586,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           child: SingleChildScrollView(padding: const EdgeInsets.all(28), child: Column(mainAxisSize: MainAxisSize.min, children: [
             Align(alignment: Alignment.topRight,
-              child: GestureDetector(onTap: () => Navigator.pop(ctx),
+              child: Tappable(onTap: () => Navigator.pop(ctx),
                 child: Container(width: 32, height: 32, decoration: BoxDecoration(color: adaptiveSurface2(context), shape: BoxShape.circle),
                   child: const Icon(CupertinoIcons.xmark, size: 16, color: C.text4)))),
             const SizedBox(height: 4),
@@ -614,7 +615,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   controller: controllers[i], focusNode: focusNodes[i],
                   textAlign: TextAlign.center, maxLength: i == 0 ? 6 : 1,
                   textCapitalization: TextCapitalization.characters,
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary),
                   decoration: InputDecoration(
                     counterText: '',
                     filled: true, fillColor: adaptiveSurface2(context),
@@ -653,7 +654,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     Row(children: [
                       const Icon(CupertinoIcons.checkmark_circle_fill, size: 15, color: C.green),
                       const SizedBox(width: 6),
-                      Expanded(child: Text(foundClass!['title'] ?? '', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      Expanded(child: Text(foundClass!['title'] ?? '', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis)),
                     ]),
                     if ((foundClass!['teacher_name'] ?? '').toString().isNotEmpty) Padding(padding: const EdgeInsets.only(top: 2, left: 21),
                       child: Text(foundClass!['teacher_name'], style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary))),
@@ -740,14 +741,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ])),
             Expanded(child: SingleChildScrollView(padding: const EdgeInsets.fromLTRB(24, 16, 24, 0), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               _fl3(l.t('class_cover')),
-              GestureDetector(onTap: () async {
+              Tappable(onTap: () async {
                 final img = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1200, imageQuality: 85);
                 if (img != null) setS(() => coverFile = img);
               }, child: Container(height: 160, width: double.infinity,
                 decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: adaptiveBorder(context), width: 1.5), color: coverFile != null ? null : adaptiveSurface2(context)),
                 child: coverFile != null
                     ? ClipRRect(borderRadius: BorderRadius.circular(16), child: Image.file(File(coverFile!.path), fit: BoxFit.cover, width: double.infinity))
-                    : Column(mainAxisAlignment: MainAxisAlignment.center, children: [Container(width: 50, height: 50, decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)), child: Icon(CupertinoIcons.photo, size: 26, color: adaptiveText1(context))), const SizedBox(height: 10), Text(l.t('click_to_upload'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: adaptiveText1(context))), const Text('JPG, PNG', style: TextStyle(fontSize: 12, color: C.text4))]))),
+                    : Column(mainAxisAlignment: MainAxisAlignment.center, children: [Container(width: 50, height: 50, decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)), child: Icon(CupertinoIcons.photo, size: 26, color: adaptiveText1(context))), const SizedBox(height: 10), Text(l.t('click_to_upload'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveText1(context))), const Text('JPG, PNG', style: TextStyle(fontSize: 13, color: C.text4))]))),
               const SizedBox(height: 20),
               _fl3(l.t('class_name_required')), TextField(controller: nameC, decoration: InputDecoration(hintText: l.t('class_name_hint'))),
               const SizedBox(height: 16), _fl3(l.t('class_desc')), TextField(controller: descC, decoration: InputDecoration(hintText: l.t('class_desc_hint')), maxLines: 3),
@@ -947,7 +948,7 @@ class _SmallAction extends StatelessWidget {
   const _SmallAction({required this.icon, required this.bg, required this.iconColor, required this.onTap});
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
+  Widget build(BuildContext context) => Tappable(
     onTap: onTap,
     child: Container(
       width: 34, height: 34,
@@ -995,7 +996,7 @@ class _ActionRow extends StatelessWidget {
                 child: Icon(icon, size: 17, color: iconColor),
               ),
               const SizedBox(width: 12),
-              Expanded(child: Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: labelColor))),
+              Expanded(child: Text(label, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: labelColor))),
               Icon(CupertinoIcons.chevron_right, size: 16, color: labelColor.withValues(alpha: 0.35)),
             ]),
           ),
@@ -1043,12 +1044,12 @@ class _ArchiveEntry extends StatelessWidget {
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(l.t('archive'),
-                    style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800,
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800,
                         color: adaptiveText1(context), letterSpacing: -0.3)),
                 const SizedBox(height: 1),
                 Text(l.t('archive_entry_sub'),
                     maxLines: 1, overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 12.5,
+                    style: TextStyle(fontSize: 13,
                         color: adaptiveText1(context).withValues(alpha: 0.5))),
               ]),
             ),
@@ -1060,7 +1061,7 @@ class _ArchiveEntry extends StatelessWidget {
                 borderRadius: BorderRadius.circular(100),
               ),
               child: Text('$count',
-                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800,
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800,
                       color: adaptiveText1(context).withValues(alpha: 0.6))),
             ),
             const SizedBox(width: 6),
@@ -1123,9 +1124,10 @@ class _ClassCard extends StatelessWidget {
     final teacherName = cls['teacher_name'] ?? '';
 
     return RepaintBoundary(
-      child: GestureDetector(
+      child: Tappable(
         onTap: onTap,
         onLongPress: onLongPress,
+        scale: 0.98,
         child: Container(
           margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
@@ -1160,7 +1162,7 @@ class _ClassCard extends StatelessWidget {
                     colors: [Colors.transparent, Colors.black.withValues(alpha: 0.45)],
                   )))),
                   if (isTeacher && (cls['invite_code'] as String? ?? '').isNotEmpty)
-                    Positioned(top: 10, left: 10, child: GestureDetector(
+                    Positioned(top: 10, left: 10, child: Tappable(
                       onTap: onCopyCode,
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -1168,7 +1170,7 @@ class _ClassCard extends StatelessWidget {
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
                           const Icon(CupertinoIcons.doc_on_doc, size: 11, color: Colors.white60),
                           const SizedBox(width: 4),
-                          Text(cls['invite_code'] as String, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 2)),
+                          Text(cls['invite_code'] as String, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 2)),
                         ]),
                       ))),
                   if (isPinned)
@@ -1241,7 +1243,7 @@ class _HeaderBtn extends StatelessWidget {
   const _HeaderBtn({required this.icon, required this.onTap, required this.isDark});
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
+  Widget build(BuildContext context) => Tappable(
     onTap: onTap,
     child: Container(width: 42, height: 42,
       decoration: BoxDecoration(
@@ -1273,7 +1275,7 @@ class _MetaChip extends StatelessWidget {
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(icon, size: 12, color: c),
         const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c)),
+        Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c)),
       ]),
     );
   }
@@ -1287,7 +1289,7 @@ class _ActionBtn extends StatelessWidget {
   const _ActionBtn({required this.icon, required this.color, required this.isDark, required this.onTap});
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
+  Widget build(BuildContext context) => Tappable(
     onTap: onTap,
     child: Container(width: 34, height: 34,
       decoration: BoxDecoration(
@@ -1316,10 +1318,10 @@ class _EmptyState extends StatelessWidget {
           ),
           child: Icon(CupertinoIcons.book, color: Theme.of(context).colorScheme.primary, size: 40)),
         const SizedBox(height: 22),
-        Text(l.t('no_classes'), style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: adaptiveText1(context), letterSpacing: -0.4)),
+        Text(l.t('no_classes'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: adaptiveText1(context), letterSpacing: -0.4)),
         const SizedBox(height: 8),
         Text(isTeacher ? l.t('create_first_class') : l.t('enter_teacher_code'),
-          style: const TextStyle(fontSize: 14, color: C.text4), textAlign: TextAlign.center),
+          style: const TextStyle(fontSize: 15, color: C.text4), textAlign: TextAlign.center),
         const SizedBox(height: 28),
         if (isTeacher) ...[
           SizedBox(width: double.infinity, child: ElevatedButton.icon(

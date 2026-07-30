@@ -113,7 +113,7 @@ class _QuotaCard extends StatelessWidget {
         if (quota.unlimited) ...[
           const SizedBox(height: 16),
           Text(l.t('ai_unlimited_note'),
-            style: const TextStyle(fontSize: 13.5, color: C.text4, height: 1.45)),
+            style: const TextStyle(fontSize: 13, color: C.text4, height: 1.45)),
         ] else ...[
           const SizedBox(height: 20),
 
@@ -151,16 +151,16 @@ class _QuotaCard extends StatelessWidget {
           Row(crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic, children: [
             Text('${quota.used} / ${quota.limit}',
-              style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700,
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700,
                 letterSpacing: -0.6, color: adaptiveText1(context))),
             const SizedBox(width: 7),
             Text(l.t('ai_used_suffix'),
-              style: const TextStyle(fontSize: 13.5, color: C.text4, fontWeight: FontWeight.w500)),
+              style: const TextStyle(fontSize: 13, color: C.text4, fontWeight: FontWeight.w500)),
           ]),
 
           const SizedBox(height: 3),
           Text('${l.t('ai_messages_left')}: ${quota.left}',
-            style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600,
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
               color: exhausted || low ? accent : C.text3)),
 
           const SizedBox(height: 16),
@@ -172,7 +172,7 @@ class _QuotaCard extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(child: Text(
               _resetLabel(l),
-              style: const TextStyle(fontSize: 13.5, color: C.text4, fontWeight: FontWeight.w500),
+              style: const TextStyle(fontSize: 13, color: C.text4, fontWeight: FontWeight.w500),
             )),
           ]),
         ],

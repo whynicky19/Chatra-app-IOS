@@ -16,7 +16,7 @@ void showToast(BuildContext context, String msg, {bool error = false}) {
       ),
       const SizedBox(width: 10),
       Expanded(child: Text(msg, style: const TextStyle(
-        fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white, height: 1.3,
+        fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white, height: 1.3,
       ))),
     ]),
     backgroundColor: error ? C.red : Theme.of(context).colorScheme.primary,

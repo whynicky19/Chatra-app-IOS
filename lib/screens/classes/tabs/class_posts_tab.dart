@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../providers/l10n_provider.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/app_dialog.dart';
+import '../../../widgets/tappable.dart';
 import '../../moderation/report_sheet.dart';
 import '../class_detail_utils.dart' show fmtDate;
 
@@ -113,8 +114,9 @@ class ClassPostsTab extends StatelessWidget {
         duration: Duration(milliseconds: 260 + i * 55),
         curve: Curves.easeOutCubic,
         builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 18 * (1 - t)), child: child)),
-        child: RepaintBoundary(child: GestureDetector(
+        child: RepaintBoundary(child: Tappable(
           onTap: () => onShowPost(p, num),
+          scale: 0.98,
           child: Container(
             margin: const EdgeInsets.only(bottom: 12),
             decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(AppRadii.card), boxShadow: cardShadow(isDark)),
@@ -130,7 +132,7 @@ class ClassPostsTab extends StatelessWidget {
                 // Меню доступно всем: учителю — правка/удаление, студенту —
                 // жалоба. Раньше оно было только у преподавателя, из-за чего
                 // пожаловаться на контент было невозможно в принципе.
-                GestureDetector(
+                Tappable(
                   onTap: () => showActions(p),
                   child: Container(width: 34, height: 34, alignment: Alignment.center,
                     child: const Icon(CupertinoIcons.ellipsis, size: 18, color: C.text4)),
@@ -145,10 +147,10 @@ class ClassPostsTab extends StatelessWidget {
                 child: Row(children: [
                   const Icon(CupertinoIcons.clock, size: 12, color: C.text4),
                   const SizedBox(width: 4),
-                  Text(fmtDate(p['created_at'] ?? ''), style: const TextStyle(fontSize: 12, color: C.text4)),
+                  Text(fmtDate(p['created_at'] ?? ''), style: const TextStyle(fontSize: 13, color: C.text4)),
                   const Spacer(),
                   Row(mainAxisSize: MainAxisSize.min, children: [
-                    Text(l.t('open'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: accentColor)),
+                    Text(l.t('open'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: accentColor)),
                     const SizedBox(width: 3),
                     Icon(CupertinoIcons.chevron_right, size: 12, color: accentColor),
                   ]),

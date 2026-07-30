@@ -6,6 +6,7 @@ import '../../providers/l10n_provider.dart';
 import '../../providers/org_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_logo.dart';
+import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
 import '../legal/privacy_policy_screen.dart';
 import '../legal/terms_screen.dart';
@@ -92,7 +93,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (MediaQuery.of(context).disableAnimations) return child;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
-      duration: Duration(milliseconds: 420 + step * 110),
+      duration: Duration(milliseconds: 220 + step * 45),
       curve: Curves.easeOutCubic,
       builder: (_, t, c) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 18 * (1 - t)), child: c)),
       child: child,
@@ -114,7 +115,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         child: Row(children: [
           Icon(error ? CupertinoIcons.exclamationmark_circle : CupertinoIcons.info_circle, size: 14, color: color),
           const SizedBox(width: 7),
-          Expanded(child: Text(text, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w600))),
+          Expanded(child: Text(text, style: TextStyle(fontSize: 13, color: color, fontWeight: FontWeight.w600))),
         ]),
       ),
     );
@@ -247,7 +248,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 20),
 
                 _reveal(3, Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-                  GestureDetector(
+                  Tappable(
                     onTap: () => setState(() => _agreedTerms = !_agreedTerms),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 160),
@@ -269,19 +270,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   // сбора данных, а не только в настройках после входа —
                   // Apple 5.1.1(i) и требования GDPR об информировании.
                   Expanded(child: Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
-                    GestureDetector(
+                    Tappable(
                       onTap: () => setState(() => _agreedTerms = !_agreedTerms),
                       child: Text('${l.t('terms_agree')} · ',
                         style: const TextStyle(fontSize: 13, color: C.text4, fontWeight: FontWeight.w500)),
                     ),
-                    GestureDetector(
+                    Tappable(
                       onTap: () => Navigator.push(context,
                         MaterialPageRoute(builder: (_) => const TermsScreen())),
                       child: Text(l.t('terms_view'),
                         style: TextStyle(fontSize: 13, color: primary, fontWeight: FontWeight.w700)),
                     ),
                     const Text(' · ', style: TextStyle(fontSize: 13, color: C.text4)),
-                    GestureDetector(
+                    Tappable(
                       onTap: () => Navigator.push(context,
                         MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
                       child: Text(l.t('pp_title'),
@@ -292,7 +293,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 18),
 
                 _reveal(3, Column(children: [
-                  GestureDetector(
+                  Tappable(
                     onTap: canSubmit ? _submit : null,
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 250),
@@ -306,17 +307,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       child: Align(heightFactor: 1, child: auth.isLoading
                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
                         : Text(l.t('register_btn'), style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.1,
+                            fontSize: 17, fontWeight: FontWeight.w700, letterSpacing: 0.1,
                             color: canSubmit ? Colors.white : C.text4))),
                     ),
                   ),
                   const SizedBox(height: 20),
                   Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Text('${l.t('has_account')} ', style: const TextStyle(fontSize: 13.5, color: C.text4)),
-                    GestureDetector(
+                    Text('${l.t('has_account')} ', style: const TextStyle(fontSize: 13, color: C.text4)),
+                    Tappable(
                       onTap: widget.onGoLogin,
                       child: Text(l.t('login_link'), style: TextStyle(
-                          fontSize: 13.5, color: primary, fontWeight: FontWeight.w700))),
+                          fontSize: 13, color: primary, fontWeight: FontWeight.w700))),
                   ]),
                 ])),
               ]),

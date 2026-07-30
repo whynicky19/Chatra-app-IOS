@@ -107,7 +107,7 @@ class AppDialogActions extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
           ),
           child: Align(heightFactor: 1, child: Text(cancelText, textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: adaptiveText1(context).withValues(alpha: 0.75)))),
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: adaptiveText1(context).withValues(alpha: 0.75)))),
         ),
       )),
       const SizedBox(width: 10),
@@ -125,7 +125,7 @@ class AppDialogActions extends StatelessWidget {
           child: Align(heightFactor: 1, child: busy
             ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
             : Text(confirmText, textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white))),
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white))),
         ),
       )),
     ]);
@@ -153,7 +153,7 @@ Future<bool?> showConfirmDialog(
         const SizedBox(height: 6),
         Text(message,
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 13.5, color: C.text4, height: 1.45)),
+          style: const TextStyle(fontSize: 13, color: C.text4, height: 1.45)),
       ],
       const SizedBox(height: 20),
       AppDialogActions(
@@ -218,7 +218,7 @@ Future<void> showAppActionSheet(
               boxShadow: cardShadow(isDark),
             ),
             child: Text(cancelText, textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700, color: Theme.of(ctx).colorScheme.primary)),
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Theme.of(ctx).colorScheme.primary)),
           ),
         ),
       ]),
@@ -242,7 +242,7 @@ class _AppActionSheetTile extends StatelessWidget {
           Icon(action.icon, size: 19, color: color),
           const SizedBox(width: 14),
           Text(action.label,
-            style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w600,
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600,
               color: action.destructive ? color : adaptiveText1(context))),
         ]),
       ),
@@ -272,14 +272,14 @@ Future<String?> showInputDialog(
         style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: adaptiveText1(ctx), letterSpacing: -0.3)),
       if (message != null && message.isNotEmpty) ...[
         const SizedBox(height: 6),
-        Text(message, textAlign: TextAlign.center, style: const TextStyle(fontSize: 13.5, color: C.text4, height: 1.45)),
+        Text(message, textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, color: C.text4, height: 1.45)),
       ],
       const SizedBox(height: 16),
       TextField(
         controller: ctrl,
         maxLines: maxLines,
         autofocus: true,
-        style: const TextStyle(fontSize: 14),
+        style: const TextStyle(fontSize: 15),
         decoration: InputDecoration(hintText: hint),
       ),
       const SizedBox(height: 16),

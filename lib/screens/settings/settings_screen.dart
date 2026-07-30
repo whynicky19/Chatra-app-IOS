@@ -7,6 +7,7 @@ import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/cupertino_liquid_switch.dart';
+import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
 import 'about_settings_screen.dart';
 import 'ai_limits_screen.dart';
@@ -61,7 +62,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             style: TextStyle(fontSize: 34, fontWeight: FontWeight.w700,
               color: adaptiveText1(context), letterSpacing: -0.4, height: 1.1)),
           const SizedBox(height: 3),
-          Text(l.t('settings_sub'), style: const TextStyle(fontSize: 14, color: C.text4)),
+          Text(l.t('settings_sub'), style: const TextStyle(fontSize: 15, color: C.text4)),
         ])), 0.0, 0.4),
 
         _animated(_SectionLabel(l.t('profile').toUpperCase()), 0.05, 0.45),
@@ -96,7 +97,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                       const Icon(CupertinoIcons.xmark_circle, size: 14, color: C.red),
                       const SizedBox(width: 7),
                       Expanded(child: Text(l.t('name_letters_only'),
-                        style: const TextStyle(fontSize: 12, color: C.red, fontWeight: FontWeight.w600))),
+                        style: const TextStyle(fontSize: 13, color: C.red, fontWeight: FontWeight.w600))),
                     ]),
                   )),
               const SizedBox(height: 14),
@@ -107,7 +108,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                   child: Icon(CupertinoIcons.mail, size: 18, color: C.text4)))),
               if (_nameCtrl.text.trim().isNotEmpty && _nameCtrl.text.trim() != auth.fullName.trim()) ...[
                 const SizedBox(height: 20),
-                GestureDetector(
+                Tappable(
                   onTap: _saving ? null : () async {
                     setState(() => _saving = true);
                     await auth.updateProfile(_nameCtrl.text.trim());
@@ -154,7 +155,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
         const SizedBox(height: 16),
 
-        _animated(GestureDetector(
+        _animated(Tappable(
           onTap: () => _showLanguagePicker(context, l),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -220,7 +221,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         const SizedBox(height: 16),
 
         _animated(
-          GestureDetector(
+          Tappable(
             onTap: () async {
               final ok = await showConfirmDialog(context,
                 title: '${l.t('logout')}?',
@@ -369,7 +370,7 @@ class _LanguageOptionRow extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
+  Widget build(BuildContext context) => Tappable(
     onTap: onTap,
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

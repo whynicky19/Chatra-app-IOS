@@ -279,7 +279,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
         textTheme: CupertinoTextThemeData(
           primaryColor: accent,
           navLargeTitleTextStyle: TextStyle(
-            fontSize: 30, fontWeight: FontWeight.w800, letterSpacing: -0.5,
+            fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -0.5,
             color: detailText1(context),
           ),
           navTitleTextStyle: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: detailText1(context)),
@@ -310,19 +310,19 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
-                      child: Text(statusText, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: statusColor)),
+                      child: Text(statusText, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: statusColor)),
                     ),
                     const SizedBox(width: 10),
                     Icon(CupertinoIcons.star_fill, size: 13, color: detailText2(context)),
                     const SizedBox(width: 4),
-                    Text('${a['max_score'] ?? 100} ${l.t('pts')}', style: TextStyle(fontSize: 14, color: detailText2(context), fontWeight: FontWeight.w500)),
+                    Text('${a['max_score'] ?? 100} ${l.t('pts')}', style: TextStyle(fontSize: 15, color: detailText2(context), fontWeight: FontWeight.w500)),
                     if (deadline != null) ...[
                       const SizedBox(width: 10),
                       Container(width: 3, height: 3, decoration: BoxDecoration(color: detailText2(context), shape: BoxShape.circle)),
                       const SizedBox(width: 10),
                       Icon(CupertinoIcons.calendar, size: 13, color: detailText2(context)),
                       const SizedBox(width: 4),
-                      Text(_fmtDate(deadline), style: TextStyle(fontSize: 14, color: detailText2(context), fontWeight: FontWeight.w500)),
+                      Text(_fmtDate(deadline), style: TextStyle(fontSize: 15, color: detailText2(context), fontWeight: FontWeight.w500)),
                     ],
                   ]),
                   const SizedBox(height: 26),
@@ -338,7 +338,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                         if (descText.isNotEmpty) ...[
                           Row(children: [
                             Expanded(child: Text(l.t('description'),
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: detailText1(context)))),
+                                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: detailText1(context)))),
                             GestureDetector(
                               onTap: () => setState(() => _descHidden = !_descHidden),
                               child: Text(_descHidden ? l.t('show') : l.t('hide'),
@@ -353,7 +353,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                                 : Padding(
                                     padding: const EdgeInsets.only(top: 10, bottom: 8),
                                     child: Text(descText,
-                                        style: TextStyle(fontSize: 16.5, height: 1.65, letterSpacing: 0.1, color: detailText1(context))),
+                                        style: TextStyle(fontSize: 17, height: 1.65, letterSpacing: 0.1, color: detailText1(context))),
                                   ),
                           ),
                           const SizedBox(height: 24),
@@ -369,7 +369,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                           )
                         else if (allFiles.isNotEmpty) ...[
                           Text(l.t('attached_files_edit'),
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: detailText1(context))),
+                              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: detailText1(context))),
                           const SizedBox(height: 12),
                           for (final f in allFiles) ...[
                             FileCard(name: fileDisplayName(f), onTap: () => widget.onOpenFile(f, fileDisplayName(f))),
@@ -380,7 +380,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                         if (descText.isEmpty && !isLoading && allFiles.isEmpty)
                           Padding(
                             padding: const EdgeInsets.symmetric(vertical: 24),
-                            child: Text(l.t('content_empty'), style: TextStyle(fontSize: 14, color: detailText2(context), fontWeight: FontWeight.w500)),
+                            child: Text(l.t('content_empty'), style: TextStyle(fontSize: 15, color: detailText2(context), fontWeight: FontWeight.w500)),
                           ),
                       ]);
                     },
@@ -389,7 +389,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                     final refFiles = _extractReferenceFiles(a);
                     if (refFiles.isEmpty) return <Widget>[];
                     return [
-                      Text(l.t('reference_files'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: detailText1(context))),
+                      Text(l.t('reference_files'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: detailText1(context))),
                       const SizedBox(height: 12),
                       for (final f in refFiles) ...[
                         FileCard(name: fileDisplayName(f), onTap: () => widget.onOpenFile(f, fileDisplayName(f))),
@@ -411,9 +411,9 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                           child: Row(children: [
                             Icon(CupertinoIcons.list_bullet, size: 16, color: accent),
                             const SizedBox(width: 8),
-                            Text(l.t('criteria'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: detailText1(context))),
+                            Text(l.t('criteria'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: detailText1(context))),
                             const SizedBox(width: 4),
-                            Text('(${criteria.length})', style: TextStyle(fontSize: 12, color: detailText2(context))),
+                            Text('(${criteria.length})', style: TextStyle(fontSize: 13, color: detailText2(context))),
                             const Spacer(),
                             AnimatedRotation(turns: _criteriaExpanded ? 0.5 : 0.0, duration: const Duration(milliseconds: 200),
                                 child: Icon(CupertinoIcons.chevron_down, size: 18, color: accent)),
@@ -430,9 +430,9 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                                   decoration: BoxDecoration(color: detailSurface(context), borderRadius: BorderRadius.circular(14)),
                                   child: Row(children: [
                                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                      Text(c['name'] ?? '', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: detailText1(context))),
+                                      Text(c['name'] ?? '', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: detailText1(context))),
                                       if (c['description'] != null && c['description'].toString().isNotEmpty)
-                                        Padding(padding: const EdgeInsets.only(top: 4), child: Text(c['description'], style: TextStyle(fontSize: 12.5, color: detailText2(context)))),
+                                        Padding(padding: const EdgeInsets.only(top: 4), child: Text(c['description'], style: TextStyle(fontSize: 13, color: detailText2(context)))),
                                     ])),
                                     Text('${c['weight'] ?? 0}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: accent)),
                                   ]),
@@ -450,7 +450,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Row(children: [
                           RichText(text: TextSpan(children: [
-                            TextSpan(text: '${sub['grade']['score']}', style: TextStyle(fontSize: 38, fontWeight: FontWeight.w900, color: accent, height: 1)),
+                            TextSpan(text: '${sub['grade']['score']}', style: TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: accent, height: 1)),
                             TextSpan(text: ' / ${a['max_score']}', style: TextStyle(fontSize: 17, color: detailText2(context), fontWeight: FontWeight.w600)),
                           ])),
                           const Spacer(),
@@ -459,12 +459,12 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                             child: Row(mainAxisSize: MainAxisSize.min, children: [
                               Icon(sub['grade']['graded_by'] == 'ai' ? CupertinoIcons.bolt_fill : CupertinoIcons.person, size: 13, color: accent),
                               const SizedBox(width: 4),
-                              Text(sub['grade']['graded_by'] == 'ai' ? l.t('ai_check') : l.t('teacher_short'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: accent)),
+                              Text(sub['grade']['graded_by'] == 'ai' ? l.t('ai_check') : l.t('teacher_short'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: accent)),
                             ])),
                         ]),
                         if (widget.isTeacher && sub['ai_confidence'] != null) ...[
                           const SizedBox(height: 8),
-                          Text('${l.t('confidence_label')}: ${sub['ai_confidence']}%', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: detailText2(context))),
+                          Text('${l.t('confidence_label')}: ${sub['ai_confidence']}%', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: detailText2(context))),
                         ],
                         if (sub['grade']['feedback'] != null) ...[
                           const SizedBox(height: 14),
@@ -477,7 +477,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                       final criteria = parseCriteriaScores(sub['grade']['criteria_scores']);
                       if (criteria.isEmpty) return <Widget>[];
                       return [
-                        Text(l.t('by_criteria'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: detailText1(context))),
+                        Text(l.t('by_criteria'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: detailText1(context))),
                         const SizedBox(height: 12),
                         for (final c in criteria) ...[
                           Container(
@@ -488,7 +488,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                               Row(children: [
                                 Expanded(child: Text(c['name'] ?? '', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: detailText1(context)))),
                                 RichText(text: TextSpan(children: [
-                                  TextSpan(text: '${c['score'] ?? 0}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: accent)),
+                                  TextSpan(text: '${c['score'] ?? 0}', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: accent)),
                                   TextSpan(text: ' / ${c['max'] ?? 0}', style: TextStyle(fontSize: 13, color: detailText2(context))),
                                 ])),
                               ]),
@@ -508,7 +508,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                       child: Row(children: [
                         SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: accent)),
                         const SizedBox(width: 12),
-                        Expanded(child: Text(l.t(_checkSteps[_checkStepIdx]), style: TextStyle(fontSize: 13.5, color: accent, fontWeight: FontWeight.w500))),
+                        Expanded(child: Text(l.t(_checkSteps[_checkStepIdx]), style: TextStyle(fontSize: 13, color: accent, fontWeight: FontWeight.w500))),
                       ]),
                     ),
                     const SizedBox(height: 20),
@@ -520,18 +520,18 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         const Icon(CupertinoIcons.exclamationmark_circle, size: 16, color: C.amber),
                         const SizedBox(width: 10),
-                        Expanded(child: Text(l.t('needs_review_student_msg'), style: TextStyle(fontSize: 13.5, height: 1.5, color: detailText2(context)))),
+                        Expanded(child: Text(l.t('needs_review_student_msg'), style: TextStyle(fontSize: 13, height: 1.5, color: detailText2(context)))),
                       ]),
                     ),
                     const SizedBox(height: 20),
                   ],
                   if (sub != null && (sub['text_content'] != null || sub['file_urls'] != null)) ...[
-                    Text(l.t('your_answer'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: detailText1(context))),
+                    Text(l.t('your_answer'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: detailText1(context))),
                     const SizedBox(height: 12),
                     if (sub['text_content'] != null && sub['text_content'].toString().isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 10),
-                        child: Text(sub['text_content'], style: TextStyle(fontSize: 15.5, height: 1.6, color: detailText1(context))),
+                        child: Text(sub['text_content'], style: TextStyle(fontSize: 15, height: 1.6, color: detailText1(context))),
                       ),
                     ...(() {
                       final urls = _parseFileUrls(sub['file_urls']);
@@ -552,12 +552,12 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                       child: Row(children: [
                         Icon(CupertinoIcons.lock, size: 15, color: detailText2(context)),
                         const SizedBox(width: 8),
-                        Expanded(child: Text(l.t('archive_readonly'), style: TextStyle(fontSize: 12.5, color: detailText2(context), fontWeight: FontWeight.w500))),
+                        Expanded(child: Text(l.t('archive_readonly'), style: TextStyle(fontSize: 13, color: detailText2(context), fontWeight: FontWeight.w500))),
                       ]),
                     ),
                   if (showSubmitBar) ...[
                     const SizedBox(height: 4),
-                    Text(l.t('submit_work'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: detailText1(context))),
+                    Text(l.t('submit_work'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: detailText1(context))),
                     const SizedBox(height: 12),
                     Container(
                       decoration: BoxDecoration(color: detailSurface(context), borderRadius: BorderRadius.circular(16), border: Border.all(color: detailBorder(context))),
@@ -585,7 +585,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                           const SizedBox(width: 10),
                           Expanded(child: Text(
                             _pickedFiles.isEmpty ? l.t('attach_file') : '${l.t('files_selected')}: ${_pickedFiles.length}',
-                            style: TextStyle(fontSize: 14.5, color: _pickedFiles.isEmpty ? detailText2(context) : accent, fontWeight: _pickedFiles.isEmpty ? FontWeight.normal : FontWeight.w600),
+                            style: TextStyle(fontSize: 15, color: _pickedFiles.isEmpty ? detailText2(context) : accent, fontWeight: _pickedFiles.isEmpty ? FontWeight.normal : FontWeight.w600),
                           )),
                           Icon(CupertinoIcons.chevron_right, color: detailText2(context), size: 17),
                         ]),
@@ -598,7 +598,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                         child: Row(children: [
                           Icon(CupertinoIcons.doc, size: 14, color: accent),
                           const SizedBox(width: 6),
-                          Expanded(child: Text(f.name, style: TextStyle(fontSize: 12.5, color: detailText2(context)), overflow: TextOverflow.ellipsis)),
+                          Expanded(child: Text(f.name, style: TextStyle(fontSize: 13, color: detailText2(context)), overflow: TextOverflow.ellipsis)),
                           GestureDetector(onTap: () => setState(() => _pickedFiles.removeWhere((x) => x.name == f.name)),
                             child: Icon(CupertinoIcons.xmark, size: 14, color: detailText2(context))),
                         ]),
@@ -666,7 +666,7 @@ class _BottomActionBar extends StatelessWidget {
             onPressed: busy ? null : onTap,
             child: busy
                 ? const SizedBox(width: 20, height: 20, child: CupertinoActivityIndicator(color: Colors.white))
-                : Text(label, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: secondary ? detailText1(context) : Colors.white)),
+                : Text(label, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: secondary ? detailText1(context) : Colors.white)),
           ),
         ),
       ),

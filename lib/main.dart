@@ -60,7 +60,7 @@ class _MisconfiguredApp extends StatelessWidget {
                   Text(
                     'Сборка без адреса сервера',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
                   ),
                   SizedBox(height: 8),
                   Text(
@@ -218,9 +218,11 @@ class _AuthGateState extends State<_AuthGate> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 400), () {
-      if (mounted) setState(() => _splashDone = true);
-    });
+    // Раньше здесь была искусственная задержка в 400мс — избыточна: сплэш и
+    // так висит на экране, пока не завершатся auth.init()/org.init()/
+    // theme.init() (см. условие ниже в build), этого достаточно как нижней
+    // границы показа сплэша.
+    _splashDone = true;
     OnboardingScreen.isSeen().then((seen) {
       if (mounted) setState(() => _onboardingSeen = seen);
     });
@@ -246,7 +248,7 @@ class _AuthGateState extends State<_AuthGate> {
     }
 
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 250),
       switchInCurve: Curves.easeOut,
       child: auth.isAuthenticated
           ? const MainShell(key: ValueKey('main'))
@@ -296,7 +298,9 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1150));
+    // Интервалы кривых ниже заданы в долях [0,1] от длительности контроллера,
+    // поэтому пересчитывать их отдельно не нужно — они уже пропорциональны.
+    _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
     _logoFade = CurvedAnimation(parent: _c, curve: const Interval(0.0, 0.5, curve: Curves.easeOut));
     _logoScale = Tween<double>(begin: 0.8, end: 1.0).animate(
       CurvedAnimation(parent: _c, curve: const Interval(0.0, 0.7, curve: Curves.easeOutBack)),
@@ -350,7 +354,7 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
                               ),
                               alignment: Alignment.center,
                               child: Text('C',
-                                style: TextStyle(fontSize: 52, fontWeight: FontWeight.w800, color: wordColor)),
+                                style: TextStyle(fontSize: 34, fontWeight: FontWeight.w800, color: wordColor)),
                             ),
                           ),
                         ),
@@ -365,7 +369,7 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
                       child: Column(children: [
                         Text('Chatra',
                             style: TextStyle(
-                              fontSize: 32, fontWeight: FontWeight.w800,
+                              fontSize: 34, fontWeight: FontWeight.w800,
                               color: wordColor, letterSpacing: -0.5,
                             )),
                         const SizedBox(height: 5),

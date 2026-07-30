@@ -10,6 +10,7 @@ import '../../providers/org_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/ambient_glow.dart';
 import '../../widgets/app_logo.dart';
+import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
@@ -130,7 +131,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                   autofillHints: const [AutofillHints.oneTimeCode],
                   maxLength: 6,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, letterSpacing: 10),
+                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: 10),
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   decoration: const InputDecoration(hintText: '••••••', counterText: ''),
                   onChanged: (_) { if (_error != null) setState(() => _error = null); },
@@ -148,7 +149,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                     ]))),
                 const SizedBox(height: 24),
 
-                GestureDetector(
+                Tappable(
                   onTap: _busy ? null : _verify,
                   child: AnimatedContainer(duration: const Duration(milliseconds: 200),
                     constraints: const BoxConstraints(minHeight: 52),
@@ -157,14 +158,14 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                       boxShadow: _busy ? null : primaryGlow(primary, opacity: 0.34)),
                     child: Align(heightFactor: 1, child: _busy
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
-                      : Text(l.t('verify_btn'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)))),
+                      : Text(l.t('verify_btn'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white)))),
                 ),
                 const SizedBox(height: 18),
-                Center(child: GestureDetector(
+                Center(child: Tappable(
                   onTap: _cooldown > 0 ? null : () => _resend(),
                   child: Text(
                     _cooldown > 0 ? '${l.t('resend_in')} $_cooldown${l.lang == 'EN' ? 's' : 'с'}' : l.t('resend_code'),
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700,
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700,
                       color: _cooldown > 0 ? C.text4 : primary)),
                 )),
               ]),
@@ -185,7 +186,7 @@ class _BackButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return GestureDetector(onTap: onTap, child: Container(width: 38, height: 38,
+    return Tappable(onTap: onTap, child: Container(width: 38, height: 38,
       decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, shape: BoxShape.circle, boxShadow: softShadow(isDark)),
       child: Icon(CupertinoIcons.chevron_left, size: 18, color: adaptiveText1(context))));
   }

@@ -13,6 +13,7 @@ import '../../../utils/ai_quota.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/ai_limit_notice.dart';
 import '../../../widgets/app_dialog.dart';
+import '../../../widgets/tappable.dart';
 import '../../../widgets/toast.dart';
 import '../../ai/widgets/ai_message_content.dart';
 
@@ -289,7 +290,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
             builder: (context, value, _) {
               final has = value.text.trim().isNotEmpty;
               final active = has && !_loading && !exhausted;
-              return GestureDetector(
+              return Tappable(
                 onTap: exhausted ? null : _send,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 220),
@@ -327,7 +328,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
   }
 
   Widget _headerButton({required IconData icon, required Color color, required VoidCallback onTap}) {
-    return GestureDetector(
+    return Tappable(
       onTap: onTap,
       child: Container(
         width: 38, height: 38,
@@ -351,12 +352,12 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
           child: ConstrainedBox(
             constraints: BoxConstraints(minHeight: constraints.maxHeight),
             child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Text(context.read<L10n>().t('course_chat'), style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.6, color: adaptiveText1(context))),
+              Text(context.read<L10n>().t('course_chat'), style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -0.6, color: adaptiveText1(context))),
               const SizedBox(height: 6),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(16)),
-                child: Text(shortName, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w700)),
+                child: Text(shortName, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w700)),
               ),
               const SizedBox(height: 24),
               ConstrainedBox(
@@ -384,11 +385,8 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
         opacity: t.clamp(0.0, 1.0),
         child: Transform.translate(offset: Offset(0, 10 * (1 - t)), child: child),
       ),
-      child: GestureDetector(
-        onTap: () {
-          HapticFeedback.selectionClick();
-          _send(context.read<L10n>().t(tipKey));
-        },
+      child: Tappable(
+        onTap: () => _send(context.read<L10n>().t(tipKey)),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),

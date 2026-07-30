@@ -86,9 +86,19 @@ const double kBottomBarHeight = 90;
 
 /// Нижний отступ для панели, приклеенной к низу вкладки: с открытой
 /// клавиатурой — её высота, иначе место под таб-бар.
-double bottomBarInset(BuildContext context) =>
-    (MediaQuery.of(context).viewInsets.bottom + 8)
-        .clamp(kBottomBarHeight, double.infinity);
+///
+/// Читаем инсет напрямую из [View], а не из `MediaQuery.of(context)`:
+/// экран ИИ-чата вложен в уже отресайженный Scaffold (main_shell.dart,
+/// resizeToAvoidBottomInset: true) — тот Scaffold обнуляет viewInsets.bottom
+/// для своих потомков (сам сдвинул тело под клавиатуру), поэтому здесь
+/// MediaQuery всегда отдавал бы 0, и функция откатывалась на минимум 90 —
+/// поле ввода зависало в 90px НАД уже поднятой клавиатурой, а не вплотную
+/// к ней. View.of(context) отдаёт реальный инсет независимо от вложенности.
+double bottomBarInset(BuildContext context) {
+  final view = View.of(context);
+  final keyboardHeight = view.viewInsets.bottom / view.devicePixelRatio;
+  return (keyboardHeight + 8).clamp(kBottomBarHeight, double.infinity);
+}
 
 Color adaptiveBorder(BuildContext context) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -114,7 +124,7 @@ InputDecorationTheme _input(Color fill, Color focus) => InputDecorationTheme(
   enabledBorder: const OutlineInputBorder(borderRadius: _r16, borderSide: BorderSide.none),
   focusedBorder: OutlineInputBorder(borderRadius: _r16, borderSide: BorderSide(color: focus, width: 1.8)),
   contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
-  hintStyle: const TextStyle(color: C.text4, fontSize: 14, fontWeight: FontWeight.w400),
+  hintStyle: const TextStyle(color: C.text4, fontSize: 15, fontWeight: FontWeight.w400),
 );
 
 ElevatedButtonThemeData _btnFor(Color primary) => ElevatedButtonThemeData(style: ElevatedButton.styleFrom(
@@ -134,7 +144,7 @@ const _pageTransitions = PageTransitionsTheme(builders: {
 const _textTheme = TextTheme(
   displayLarge:   TextStyle(fontSize: 34, fontWeight: FontWeight.w700, letterSpacing: -0.4, height: 1.1),
   headlineLarge:  TextStyle(fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: -0.3, height: 1.15),
-  headlineMedium: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.2, height: 1.2),
+  headlineMedium: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: -0.2, height: 1.2),
   titleLarge:     TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.1),
   titleMedium:    TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
   titleSmall:     TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
@@ -142,7 +152,7 @@ const _textTheme = TextTheme(
   bodyMedium:     TextStyle(fontSize: 15, fontWeight: FontWeight.w400, height: 1.45),
   bodySmall:      TextStyle(fontSize: 13, fontWeight: FontWeight.w400, height: 1.4),
   labelLarge:     TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-  labelMedium:    TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+  labelMedium:    TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
   labelSmall:     TextStyle(fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.8),
 );
 

@@ -119,7 +119,7 @@ void showImageViewer(BuildContext ctx, String url, String name) {
                 child: const Icon(CupertinoIcons.xmark, color: Colors.white, size: 18)),
             )),
           Positioned(bottom: MediaQuery.of(ctx).padding.bottom + 16, left: 0, right: 0,
-            child: Center(child: Text(name, style: const TextStyle(color: Colors.white70, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis))),
+            child: Center(child: Text(name, style: const TextStyle(color: Colors.white70, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis))),
         ]),
       ),
     ),

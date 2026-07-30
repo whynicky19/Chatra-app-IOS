@@ -97,7 +97,7 @@ class _FileCardState extends State<FileCard> {
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(widget.name,
-                    style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w600, color: detailText1(context)),
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: detailText1(context)),
                     maxLines: 1, overflow: TextOverflow.ellipsis),
                 if (subtitle.isNotEmpty) ...[
                   const SizedBox(height: 2),

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/tappable.dart';
 import '../../widgets/telegram_logo.dart';
 import '../../widgets/toast.dart';
 
@@ -103,13 +104,13 @@ class _ContactScreenState extends State<ContactScreen> with SingleTickerProvider
               const SizedBox(height: 18),
               Text(l.t('contact_developer'),
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700,
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700,
                   color: adaptiveText1(context), letterSpacing: -0.4, height: 1.15)),
               const SizedBox(height: 6),
               Text(
                 l.t('contact_page_desc'),
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14, color: C.text4, height: 1.4)),
+                style: const TextStyle(fontSize: 15, color: C.text4, height: 1.4)),
             ]),
           ), 0.0, 0.5),
 
@@ -133,7 +134,7 @@ class _ContactScreenState extends State<ContactScreen> with SingleTickerProvider
               ]),
               const SizedBox(height: 16),
 
-              GestureDetector(
+              Tappable(
                 onTap: _openTelegram,
                 child: Container(
                   height: 50,

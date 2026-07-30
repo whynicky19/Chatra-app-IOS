@@ -9,6 +9,7 @@ import '../../providers/org_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/ambient_glow.dart';
 import '../../widgets/app_logo.dart';
+import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -130,7 +131,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     autofillHints: const [AutofillHints.oneTimeCode],
                     maxLength: 6,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: 8),
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: 8),
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: const InputDecoration(hintText: '••••••', counterText: ''),
                     onChanged: (_) => setState(() { if (_error != null) _error = null; }),
@@ -153,7 +154,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     onChanged: (_) => setState(() { if (_error != null) _error = null; }),
                   ),
                   Padding(padding: const EdgeInsets.only(top: 6, left: 2),
-                    child: Text(l.t('password_min_8'), style: const TextStyle(fontSize: 12, color: C.text4))),
+                    child: Text(l.t('password_min_8'), style: const TextStyle(fontSize: 13, color: C.text4))),
                 ],
 
                 if (_error != null) Padding(padding: const EdgeInsets.only(top: 14),
@@ -167,7 +168,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     ]))),
                 const SizedBox(height: 24),
 
-                GestureDetector(
+                Tappable(
                   onTap: _busy ? null : (_codeSent ? _reset : _sendCode),
                   child: AnimatedContainer(duration: const Duration(milliseconds: 200),
                     constraints: const BoxConstraints(minHeight: 52),
@@ -179,14 +180,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     child: Align(heightFactor: 1, child: _busy
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
                       : Text(_codeSent ? l.t('reset_btn') : l.t('send_code'),
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700,
+                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700,
                             color: (_codeSent ? canReset : _emailValid) ? Colors.white : C.text4)))),
                 ),
                 if (_codeSent) ...[
                   const SizedBox(height: 16),
-                  Center(child: GestureDetector(
+                  Center(child: Tappable(
                     onTap: _busy ? null : _sendCode,
-                    child: Text(l.t('resend_code'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: primary)))),
+                    child: Text(l.t('resend_code'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: primary)))),
                 ],
               ]),
             ),
@@ -206,7 +207,7 @@ class _BackButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return GestureDetector(onTap: onTap, child: Container(width: 38, height: 38,
+    return Tappable(onTap: onTap, child: Container(width: 38, height: 38,
       decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, shape: BoxShape.circle, boxShadow: softShadow(isDark)),
       child: Icon(CupertinoIcons.chevron_left, size: 18, color: adaptiveText1(context))));
   }

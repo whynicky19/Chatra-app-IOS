@@ -90,7 +90,7 @@ class ClassCoverSliver extends StatelessWidget {
               child: Opacity(opacity: collapsedTitleOpacity, child: Center(
                 child: Text(title,
                   maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white,
+                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white,
                     shadows: [Shadow(color: Colors.black54, blurRadius: 6)])),
               ))),
           // Настройки/редактирование скрыты в панели инструментов намеренно: они должны
@@ -127,7 +127,7 @@ class ClassCoverSliver extends StatelessWidget {
               ),
               const SizedBox(height: 8),
             ],
-            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white, shadows: [Shadow(color: Colors.black54, blurRadius: 6)]), maxLines: 2, overflow: TextOverflow.ellipsis),
+            Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Colors.white, shadows: [Shadow(color: Colors.black54, blurRadius: 6)]), maxLines: 2, overflow: TextOverflow.ellipsis),
             if (desc.isNotEmpty) ...[
               const SizedBox(height: 4),
               Text(desc, style: const TextStyle(color: Colors.white70, fontSize: 13)),

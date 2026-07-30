@@ -85,20 +85,18 @@ Color adaptivePrimaryLt(BuildContext context) {
 const double kBottomBarHeight = 90;
 
 /// Нижний отступ для панели, приклеенной к низу вкладки: с открытой
-/// клавиатурой — небольшой зазор, иначе место под таб-бар.
+/// клавиатурой — её высота, иначе место под таб-бар.
 ///
-/// Экран ИИ-чата вложен в уже отресайженный Scaffold (main_shell.dart,
-/// resizeToAvoidBottomInset: true) — тот Scaffold сам сдвигает (сжимает)
-/// всё тело под клавиатуру целиком, так что композер и так оказывается
-/// прямо над ней без всякого дополнительного отступа. Если сюда добавить
-/// ЕЩЁ и высоту клавиатуры поверх этого — двойной учёт, поле ввода зависает
-/// на большом расстоянии выше клавиатуры. View нужен только как флаг
-/// "клавиатура открыта" — не как источник величины отступа
-/// (MediaQuery.viewInsets.bottom здесь всегда 0, см. main_shell.dart).
-double bottomBarInset(BuildContext context) {
-  final keyboardOpen = View.of(context).viewInsets.bottom > 0;
-  return keyboardOpen ? 8 : kBottomBarHeight;
-}
+/// Важно: main_shell.dart НЕ оборачивает вкладки в свой Scaffold (там
+/// Material) — иначе тут получилось бы два независимых "менеджера"
+/// клавиатуры (внешний Scaffold плюс этот расчёт) вразнобой по кадрам,
+/// и поле ввода дёргалось при открытии/закрытии клавиатуры. Экран
+/// (AiScreen) сам resizeToAvoidBottomInset: false, так что
+/// MediaQuery.viewInsets.bottom здесь — живое значение, обновляется
+/// каждый кадр вместе с реальной анимацией клавиатуры.
+double bottomBarInset(BuildContext context) =>
+    (MediaQuery.of(context).viewInsets.bottom + 8)
+        .clamp(kBottomBarHeight, double.infinity);
 
 Color adaptiveBorder(BuildContext context) {
   final isDark = Theme.of(context).brightness == Brightness.dark;

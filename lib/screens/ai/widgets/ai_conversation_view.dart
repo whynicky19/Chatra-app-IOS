@@ -382,6 +382,11 @@ class _AiConversationViewState extends State<AiConversationView> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    // watch, а не read: раньше L10n читался только внутри _emptyState, и при
+    // смене языка прямо в открытом чате с перепиской (messageList, не empty
+    // state) build ничего не перезапускал — дисклеймер и другие l.t() тексты
+    // «зависали» на старом языке, пока экран не переоткроют.
+    final l = context.watch<L10n>();
 
     return Column(children: [
       Expanded(
@@ -402,7 +407,7 @@ class _AiConversationViewState extends State<AiConversationView> {
           // AnimatedSwitcher лишний раз проигрывал бы fade+slide переход
           // empty → list ровно в момент, когда сообщения появляются.
           child: (_msgs.isEmpty && widget.threadId == null)
-              ? _emptyState(context.watch<L10n>())
+              ? _emptyState(l)
               : AnimatedOpacity(
                   // Список уже доскроллен вниз (см. _scrollDown reveal) —
                   // остаётся только мягко проявить его одним fade-in, без
@@ -413,6 +418,23 @@ class _AiConversationViewState extends State<AiConversationView> {
                   child: _messageList(isDark),
                 ),
         ),
+      ),
+      // Дисклеймер живёт только в пустом чате — как только появляется первое
+      // сообщение, он плавно схлопывается, освобождая место композеру.
+      AnimatedSize(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+        alignment: Alignment.bottomCenter,
+        child: _msgs.isEmpty
+            ? Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 10),
+                child: Text(
+                  l.t('ai_disclaimer'),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 11.5, color: C.text4, height: 1.3),
+                ),
+              )
+            : const SizedBox(width: double.infinity),
       ),
       _AiInputBar(ctrl: _ctrl, loading: _loading, quota: _quota, onSend: _send, onStop: _stop),
     ]);
@@ -770,12 +792,6 @@ class _AiInputBar extends StatelessWidget {
             },
           ),
         ]),
-        const SizedBox(height: 8),
-        Text(
-          l.t('ai_disclaimer'),
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 11.5, color: C.text4, height: 1.3),
-        ),
       ]),
     );
   }

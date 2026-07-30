@@ -183,9 +183,11 @@ class _MainShellState extends State<MainShell>
         color: Theme.of(context).scaffoldBackgroundColor,
         child: Stack(children: [
           Positioned.fill(
-            child: _LazyIndexedStack(
-              index: idx,
-              children: screens,
+            child: FloatingNavBarScope(
+              child: _LazyIndexedStack(
+                index: idx,
+                children: screens,
+              ),
             ),
           ),
           Positioned(

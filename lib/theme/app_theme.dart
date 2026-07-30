@@ -84,6 +84,22 @@ Color adaptivePrimaryLt(BuildContext context) {
 /// уезжают под навбар. Safe-area здесь недостаточно.
 const double kBottomBarHeight = 90;
 
+/// Отмечает поддерево вкладки main_shell, поверх которой плавает навбар
+/// (он рисуется в отдельном верхнем слое Stack — см. main_shell.dart). Тосты
+/// (widgets/toast.dart) читают этот флаг, чтобы резервировать место под
+/// навбар ТОЛЬКО там, где он реально есть: на отдельных экранах-маршрутах
+/// (логин, детали класса, настройки...) навбара нет, и такой отступ там
+/// просто задирал бы тост неоправданно высоко.
+class FloatingNavBarScope extends InheritedWidget {
+  const FloatingNavBarScope({super.key, required super.child});
+
+  static bool of(BuildContext context) =>
+      context.getElementForInheritedWidgetOfExactType<FloatingNavBarScope>() != null;
+
+  @override
+  bool updateShouldNotify(FloatingNavBarScope oldWidget) => false;
+}
+
 /// Нижний отступ для панели, приклеенной к низу вкладки: с открытой
 /// клавиатурой — её высота, иначе место под таб-бар.
 ///

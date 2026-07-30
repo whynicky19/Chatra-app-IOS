@@ -163,125 +163,128 @@ class _MainShellState extends State<MainShell>
     // смениться (админ вышел) и вкладок стало меньше.
     final idx = _idx >= screens.length ? 0 : _idx;
 
-    // Раньше стояло resizeToAvoidBottomInset: false — это убирало прыжки
-    // плавающего навбара, но заодно отключало подстройку под клавиатуру для
-    // ВСЕХ вкладок, и поле ввода ИИ-чата уезжало под клавиатуру. Теперь
-    // Scaffold ведёт себя штатно, а навбар просто прячется, пока клавиатура
-    // поднята (он всё равно перекрыт).
-    final keyboardUp = MediaQuery.of(context).viewInsets.bottom > 0;
-
-    return Scaffold(
-      body: Stack(children: [
-        Positioned.fill(
-          child: _LazyIndexedStack(
-            index: idx,
-            children: screens,
+    // Навбар вынесен ИЗ Scaffold.body в отдельный слой внешнего Stack (см.
+    // ниже). Пока он был частью body, Scaffold (resizeToAvoidBottomInset:
+    // true, нужен другим вкладкам для форм) на клавиатуре СЖИМАЛ весь body
+    // целиком, включая навбар — приходилось either прятать его условно (с
+    // рывком анимации входа) либо он наезжал на клавиатуру. Здесь навбар вне
+    // resize-зоны Scaffold: стоит на фиксированном месте у истинного низа
+    // экрана и, когда открыта клавиатура, просто перекрывается ею как
+    // системным оверлеем — без какой-либо анимации показа/скрытия.
+    return Stack(children: [
+      Scaffold(
+        body: Stack(children: [
+          Positioned.fill(
+            child: _LazyIndexedStack(
+              index: idx,
+              children: screens,
+            ),
           ),
-        ),
-        Positioned(
-          top: 0, left: 0, right: 0,
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 340),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeInCubic,
-            layoutBuilder: (currentChild, previousChildren) => Stack(
-              alignment: Alignment.topCenter,
-              children: [
-                ...previousChildren,
-                if (currentChild != null) currentChild,
-              ],
-            ),
-            transitionBuilder: (child, anim) => FadeTransition(
-              opacity: anim,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, -1),
-                  end: Offset.zero,
-                ).animate(anim),
-                child: child,
+          Positioned(
+            top: 0, left: 0, right: 0,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 340),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              layoutBuilder: (currentChild, previousChildren) => Stack(
+                alignment: Alignment.topCenter,
+                children: [
+                  ...previousChildren,
+                  if (currentChild != null) currentChild,
+                ],
               ),
+              transitionBuilder: (child, anim) => FadeTransition(
+                opacity: anim,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, -1),
+                    end: Offset.zero,
+                  ).animate(anim),
+                  child: child,
+                ),
+              ),
+              child: (_isOnline || _bannerDismissed)
+                  ? const SizedBox.shrink(key: ValueKey('online'))
+                  : _OfflineBanner(
+                      key: const ValueKey('offline'),
+                      title: l.t('no_connection'),
+                      onDismiss: () => setState(() => _bannerDismissed = true),
+                    ),
             ),
-            child: (_isOnline || _bannerDismissed)
-                ? const SizedBox.shrink(key: ValueKey('online'))
-                : _OfflineBanner(
-                    key: const ValueKey('offline'),
-                    title: l.t('no_connection'),
-                    onDismiss: () => setState(() => _bannerDismissed = true),
+          ),
+        ]),
+      ),
+      Positioned(
+        left: 16, right: 16, bottom: 16,
+        child: RepaintBoundary(
+          child: FadeTransition(
+            opacity: CurvedAnimation(
+              parent: _navAnim,
+              curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
+            ),
+            child: SlideTransition(
+              position: Tween<Offset>(begin: const Offset(0, 1.2), end: Offset.zero)
+                  .animate(CurvedAnimation(parent: _navAnim, curve: Curves.easeOutCubic)),
+              child: LayoutBuilder(builder: (context, constraints) {
+                return LiquidGlassBottomNavBar(
+                  items: items
+                      .map((it) => LiquidGlassTabBarItem(
+                            icon: it.inactive,
+                            selectedIcon: it.active,
+                            label: it.label,
+                          ))
+                      .toList(),
+                  selectedIndex: idx,
+                  onChanged: _onTap,
+                  width: constraints.maxWidth,
+                  height: 64,
+                  itemPadding: 6,
+                  style: LiquidGlassStyle(
+                    shape: const LiquidGlassShape.roundedRectangle(
+                      cornerRadius: 32,
+                      borderWidth: 1.0,
+                      lightIntensity: 0.35,
+                      borderType: OpticalBorder(
+                        borderSaturation: 1.0,
+                        ambientIntensity: 0.30,
+                        borderSolidity: 0.25,
+                        lightSpread: 0.35,
+                      ),
+                    ),
+                    appearance: LiquidGlassAppearance(
+                      color: isDark ? const Color(0x26000000) : const Color(0x26FFFFFF),
+                      blur: const LiquidGlassBlur(sigmaX: 6, sigmaY: 6),
+                    ),
+                    refraction: const LiquidGlassRefraction(
+                      distortion: 0.06,
+                      distortionWidth: 24,
+                      chromaticAberration: 0.0,
+                    ),
                   ),
-          ),
-        ),
-        if (!keyboardUp) Positioned(
-          left: 16, right: 16, bottom: 16,
-          child: RepaintBoundary(
-            child: FadeTransition(
-              opacity: CurvedAnimation(
-                parent: _navAnim,
-                curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
-              ),
-              child: SlideTransition(
-                position: Tween<Offset>(begin: const Offset(0, 1.2), end: Offset.zero)
-                    .animate(CurvedAnimation(parent: _navAnim, curve: Curves.easeOutCubic)),
-                child: LayoutBuilder(builder: (context, constraints) {
-                  return LiquidGlassBottomNavBar(
-                    items: items
-                        .map((it) => LiquidGlassTabBarItem(
-                              icon: it.inactive,
-                              selectedIcon: it.active,
-                              label: it.label,
-                            ))
-                        .toList(),
-                    selectedIndex: idx,
-                    onChanged: _onTap,
-                    width: constraints.maxWidth,
-                    height: 64,
-                    itemPadding: 6,
-                    style: LiquidGlassStyle(
-                      shape: const LiquidGlassShape.roundedRectangle(
-                        cornerRadius: 32,
-                        borderWidth: 1.0,
-                        lightIntensity: 0.35,
-                        borderType: OpticalBorder(
-                          borderSaturation: 1.0,
-                          ambientIntensity: 0.30,
-                          borderSolidity: 0.25,
-                          lightSpread: 0.35,
-                        ),
-                      ),
-                      appearance: LiquidGlassAppearance(
-                        color: isDark ? const Color(0x26000000) : const Color(0x26FFFFFF),
-                        blur: const LiquidGlassBlur(sigmaX: 6, sigmaY: 6),
-                      ),
-                      refraction: const LiquidGlassRefraction(
-                        distortion: 0.06,
-                        distortionWidth: 24,
-                        chromaticAberration: 0.0,
-                      ),
-                    ),
-                    itemStyle: LiquidGlassNavItemStyle(
-                      selectedColor: Theme.of(context).colorScheme.primary,
-                      unselectedColor: isDark
-                          ? Colors.white.withValues(alpha: 0.80)
-                          : const Color(0xFF3C4043),
-                      iconSize: 23,
-                      labelFontSize: 10.5,
-                      selectedFontWeight: FontWeight.w700,
-                      unselectedFontWeight: FontWeight.w500,
-                    ),
-                    pillStyle: LiquidGlassNavPillStyle(
-                      mode: LiquidGlassPillMode.none,
-                      animated: true,
-                      animationDuration: const Duration(milliseconds: 240),
-                      animationCurve: Curves.easeOutCubic,
-                      color: isDark ? const Color(0x33FFFFFF) : const Color(0x59FFFFFF),
-                    ),
-                  );
-                }),
-              ),
+                  itemStyle: LiquidGlassNavItemStyle(
+                    selectedColor: Theme.of(context).colorScheme.primary,
+                    unselectedColor: isDark
+                        ? Colors.white.withValues(alpha: 0.80)
+                        : const Color(0xFF3C4043),
+                    iconSize: 23,
+                    labelFontSize: 10.5,
+                    selectedFontWeight: FontWeight.w700,
+                    unselectedFontWeight: FontWeight.w500,
+                  ),
+                  pillStyle: LiquidGlassNavPillStyle(
+                    mode: LiquidGlassPillMode.none,
+                    animated: true,
+                    animationDuration: const Duration(milliseconds: 240),
+                    animationCurve: Curves.easeOutCubic,
+                    color: isDark ? const Color(0x33FFFFFF) : const Color(0x59FFFFFF),
+                  ),
+                );
+              }),
             ),
           ),
         ),
-      ]),
-    );
+      ),
+    ]);
   }
 }
 

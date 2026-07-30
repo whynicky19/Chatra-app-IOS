@@ -34,7 +34,7 @@ class TermsScreen extends StatelessWidget {
                 width: 56, height: 56,
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadii.tile),
                 ),
                 child: Icon(CupertinoIcons.checkmark_shield, size: 28,
                   color: Theme.of(context).colorScheme.primary),

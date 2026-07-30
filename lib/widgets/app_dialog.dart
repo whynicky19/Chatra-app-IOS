@@ -45,7 +45,7 @@ class AppDialogCard extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(AppRadii.card),
                   boxShadow: cardShadow(isDark),
                 ),
                 child: child,
@@ -104,7 +104,7 @@ class AppDialogActions extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             color: adaptiveSurface2(context),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadii.tile),
           ),
           child: Align(heightFactor: 1, child: Text(cancelText, textAlign: TextAlign.center,
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: adaptiveText1(context).withValues(alpha: 0.75)))),
@@ -119,7 +119,7 @@ class AppDialogActions extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             color: enabled || busy ? accent : accent.withValues(alpha: 0.35),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadii.tile),
             boxShadow: enabled ? primaryGlow(accent, opacity: 0.30) : null,
           ),
           child: Align(heightFactor: 1, child: busy
@@ -190,7 +190,7 @@ Future<void> showAppActionSheet(
         Container(
           decoration: BoxDecoration(
             color: Theme.of(ctx).colorScheme.surface,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppRadii.card),
             boxShadow: cardShadow(isDark),
           ),
           clipBehavior: Clip.antiAlias,
@@ -198,7 +198,7 @@ Future<void> showAppActionSheet(
             Padding(
               padding: const EdgeInsets.only(top: 10, bottom: 4),
               child: Container(width: 36, height: 4,
-                decoration: BoxDecoration(color: adaptiveBorder(ctx), borderRadius: BorderRadius.circular(2))),
+                decoration: BoxDecoration(color: adaptiveBorder(ctx), borderRadius: BorderRadius.circular(AppRadii.chip))),
             ),
             for (int i = 0; i < actions.length; i++) ...[
               if (i > 0) Divider(height: 1, indent: 20, endIndent: 20, color: adaptiveBorder(ctx)),
@@ -214,7 +214,7 @@ Future<void> showAppActionSheet(
             padding: const EdgeInsets.symmetric(vertical: 16),
             decoration: BoxDecoration(
               color: Theme.of(ctx).colorScheme.surface,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(AppRadii.card),
               boxShadow: cardShadow(isDark),
             ),
             child: Text(cancelText, textAlign: TextAlign.center,

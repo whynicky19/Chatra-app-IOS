@@ -104,8 +104,8 @@ class _ContactScreenState extends State<ContactScreen> with SingleTickerProvider
               const SizedBox(height: 18),
               Text(l.t('contact_developer'),
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700,
-                  color: adaptiveText1(context), letterSpacing: -0.4, height: 1.15)),
+                style: Theme.of(context).textTheme.headlineLarge!.copyWith(
+                  color: adaptiveText1(context), letterSpacing: -0.4)),
               const SizedBox(height: 6),
               Text(
                 l.t('contact_page_desc'),
@@ -117,7 +117,7 @@ class _ContactScreenState extends State<ContactScreen> with SingleTickerProvider
           _animated(Container(
             decoration: BoxDecoration(
               color: surface,
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(AppRadii.card),
               boxShadow: cardShadow(isDark),
             ),
             padding: const EdgeInsets.all(16),
@@ -140,7 +140,7 @@ class _ContactScreenState extends State<ContactScreen> with SingleTickerProvider
                   height: 50,
                   decoration: BoxDecoration(
                     color: _telegramBlue,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(AppRadii.tile),
                     boxShadow: primaryGlow(_telegramBlue, opacity: 0.30),
                   ),
                   child: Center(child: Text(l.t('write_telegram'),

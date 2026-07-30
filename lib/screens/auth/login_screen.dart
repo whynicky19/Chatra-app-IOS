@@ -166,7 +166,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                       decoration: BoxDecoration(
                         color: C.red.withValues(alpha: isDark ? 0.16 : 0.08),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppRadii.tile),
                       ),
                       child: Row(children: [
                         const Icon(CupertinoIcons.exclamationmark_circle, color: C.red, size: 16),
@@ -187,7 +187,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
                         color: primary,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppRadii.tile),
                       ),
                       child: Align(heightFactor: 1, child: _busy
                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
@@ -213,7 +213,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _fieldLabel(String s) => Padding(
     padding: const EdgeInsets.only(bottom: 7, left: 2),
-    child: Text(s, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: C.text3)));
+    child: Text(s, style: Theme.of(context).textTheme.titleSmall!.copyWith(color: C.text3)));
 }
 
 class _BackButton extends StatelessWidget {

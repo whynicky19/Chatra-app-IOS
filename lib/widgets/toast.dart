@@ -23,7 +23,7 @@ void showToast(BuildContext context, String msg, {bool error = false}) {
     duration: Duration(seconds: error ? 4 : 2),
     margin: const EdgeInsets.fromLTRB(20, 0, 20, 14),
     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.card)),
     elevation: 10,
     behavior: SnackBarBehavior.floating,
   ));

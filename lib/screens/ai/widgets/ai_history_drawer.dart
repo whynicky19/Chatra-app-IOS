@@ -82,7 +82,7 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
           child: Container(
             decoration: BoxDecoration(
               color: surface,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(AppRadii.card),
             ),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               const SizedBox(height: 8),
@@ -90,7 +90,7 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
                   width: 38,
                   height: 4,
                   decoration: BoxDecoration(
-                      color: C.text4.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2))),
+                      color: C.text4.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(AppRadii.chip))),
               const SizedBox(height: 8),
               _sheetAction(ctx, CupertinoIcons.pencil, l.t('rename_chat'), () {
                 Navigator.pop(ctx);
@@ -118,7 +118,7 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
     final color = danger ? C.red : adaptiveText1(ctx);
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppRadii.tile),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
         child: Row(children: [
@@ -203,7 +203,7 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
             height: 38,
             decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(13)),
+                borderRadius: BorderRadius.circular(AppRadii.tile)),
             child: Icon(CupertinoIcons.add, color: Theme.of(context).colorScheme.primary, size: 22),
           ),
         ),
@@ -217,7 +217,7 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
       child: Container(
         decoration: BoxDecoration(
           color: adaptiveSurface2(context),
-          borderRadius: BorderRadius.circular(26),
+          borderRadius: BorderRadius.circular(AppRadii.card),
         ),
         child: TextField(
           controller: _searchCtrl,
@@ -295,7 +295,7 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
               margin: const EdgeInsets.only(bottom: 8),
               decoration: BoxDecoration(
                 color: const Color(0xFFEF4444),
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(AppRadii.card),
               ),
               alignment: Alignment.centerRight,
               padding: const EdgeInsets.only(right: 22),
@@ -321,7 +321,7 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
         decoration: BoxDecoration(
           color: active ? adaptiveTealLt(context) : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadii.tile),
         ),
         child: Row(children: [
           Expanded(
@@ -368,7 +368,7 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
               Container(
                   width: 68,
                   height: 68,
-                  decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(20)),
+                  decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.card)),
                   child: Icon(CupertinoIcons.sparkles, size: 30, color: adaptiveText1(context).withValues(alpha: 0.4))),
               const SizedBox(height: 14),
               Text(l.t('no_chats'),

@@ -53,7 +53,7 @@ class LegalDocScreen extends StatelessWidget {
                 width: 56, height: 56,
                 decoration: BoxDecoration(
                   color: primary.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadii.tile),
                 ),
                 child: Icon(headerIcon, size: 28, color: primary),
               ),
@@ -91,7 +91,7 @@ class LegalDocScreen extends StatelessWidget {
             width: 34, height: 34,
             decoration: BoxDecoration(
               color: primary.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(AppRadii.chip),
             ),
             child: Icon(icon, size: 18, color: primary),
           ),

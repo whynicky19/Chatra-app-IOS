@@ -22,7 +22,7 @@ class AiLimitNotice extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadii.tile),
         border: Border.all(color: adaptiveBorder(context).withValues(alpha: 0.6), width: 0.5),
         boxShadow: softShadow(isDark),
       ),

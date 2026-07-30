@@ -273,7 +273,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
                     color: adaptivePrimaryLt(context),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadii.tile),
                   ),
                   child: Row(children: [
                     Icon(CupertinoIcons.line_horizontal_3, color: primary, size: 20),
@@ -582,7 +582,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         }
 
         return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.card)),
           insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           child: SingleChildScrollView(padding: const EdgeInsets.all(28), child: Column(mainAxisSize: MainAxisSize.min, children: [
             Align(alignment: Alignment.topRight,
@@ -634,11 +634,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 Text(l.t('checking_code'), style: const TextStyle(fontSize: 13, color: C.text4)),
               ])),
             if (!lookingUp && notFoundForCode) Padding(padding: const EdgeInsets.only(top: 16),
-              child: Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: C.redLt, borderRadius: BorderRadius.circular(12)),
+              child: Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: C.redLt, borderRadius: BorderRadius.circular(AppRadii.tile)),
                 child: Row(children: [const Icon(CupertinoIcons.exclamationmark_circle, size: 16, color: C.red), const SizedBox(width: 8), Expanded(child: Text(l.t('not_found'), style: const TextStyle(fontSize: 13, color: C.red, fontWeight: FontWeight.w500)))]))),
             if (!lookingUp && foundClass != null) Padding(padding: const EdgeInsets.only(top: 16),
               child: Container(
-                decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2))),
+                decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2))),
                 clipBehavior: Clip.antiAlias,
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Builder(builder: (_) {
@@ -729,7 +729,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     Map<String, dynamic>? createdClass;
     showDialog(context: context, barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.card)),
         insetPadding: const EdgeInsets.all(20),
         child: Container(
           constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.85),
@@ -745,9 +745,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 final img = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1200, imageQuality: 85);
                 if (img != null) setS(() => coverFile = img);
               }, child: Container(height: 160, width: double.infinity,
-                decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: adaptiveBorder(context), width: 1.5), color: coverFile != null ? null : adaptiveSurface2(context)),
+                decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: adaptiveBorder(context), width: 1.5), color: coverFile != null ? null : adaptiveSurface2(context)),
                 child: coverFile != null
-                    ? ClipRRect(borderRadius: BorderRadius.circular(16), child: Image.file(File(coverFile!.path), fit: BoxFit.cover, width: double.infinity))
+                    ? ClipRRect(borderRadius: BorderRadius.circular(AppRadii.tile), child: Image.file(File(coverFile!.path), fit: BoxFit.cover, width: double.infinity))
                     : Column(mainAxisAlignment: MainAxisAlignment.center, children: [Container(width: 50, height: 50, decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)), child: Icon(CupertinoIcons.photo, size: 26, color: adaptiveText1(context))), const SizedBox(height: 10), Text(l.t('click_to_upload'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveText1(context))), const Text('JPG, PNG', style: TextStyle(fontSize: 13, color: C.text4))]))),
               const SizedBox(height: 20),
               _fl3(l.t('class_name_required')), TextField(controller: nameC, decoration: InputDecoration(hintText: l.t('class_name_hint'))),
@@ -1019,14 +1019,14 @@ class _ArchiveEntry extends StatelessWidget {
     final surface = Theme.of(context).colorScheme.surface;
     return Material(
       color: surface,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(AppRadii.card),
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadii.card),
         onTap: onTap,
         child: Container(
           decoration: BoxDecoration(
             color: surface,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(AppRadii.card),
             boxShadow: cardShadow(isDark),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -1035,7 +1035,7 @@ class _ArchiveEntry extends StatelessWidget {
               width: 42, height: 42,
               decoration: BoxDecoration(
                 color: adaptiveSurface2(context),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadii.tile),
               ),
               child: Icon(CupertinoIcons.archivebox, size: 21,
                   color: adaptiveText1(context).withValues(alpha: 0.65)),

@@ -148,7 +148,7 @@ class _ReportSheetState extends State<_ReportSheet> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               color: C.red,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadii.tile),
             ),
             child: Align(
               heightFactor: 1,
@@ -186,7 +186,7 @@ class _ReasonRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
         decoration: BoxDecoration(
           color: selected ? primary.withValues(alpha: 0.10) : adaptiveSurface2(context),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadii.tile),
           border: Border.all(
             color: selected ? primary : adaptiveBorder(context).withValues(alpha: 0.5),
             width: selected ? 1.4 : 0.5,

@@ -350,7 +350,7 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
                               width: 96, height: 96,
                               decoration: BoxDecoration(
                                 color: isDark ? C.darkSurface2 : C.surface2,
-                                borderRadius: BorderRadius.circular(24),
+                                borderRadius: BorderRadius.circular(AppRadii.card),
                               ),
                               alignment: Alignment.center,
                               child: Text('C',

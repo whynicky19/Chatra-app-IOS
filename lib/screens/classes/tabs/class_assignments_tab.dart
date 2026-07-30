@@ -113,7 +113,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               gradient: LinearGradient(colors: [const Color(0xFF006475), Theme.of(context).colorScheme.primary], begin: Alignment.topLeft, end: Alignment.bottomRight),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadii.tile),
             ),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(l.t('your_rating'), style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1)),
@@ -123,7 +123,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 const TextSpan(text: ' /100', style: TextStyle(color: Colors.white60, fontSize: 15, fontWeight: FontWeight.w600)),
               ])),
               const SizedBox(height: 8),
-              ClipRRect(borderRadius: BorderRadius.circular(3), child: LinearProgressIndicator(
+              ClipRRect(borderRadius: BorderRadius.circular(AppRadii.chip), child: LinearProgressIndicator(
                 value: avg / 100, backgroundColor: Colors.white24, color: Colors.white, minHeight: 4)),
               const SizedBox(height: 4),
               Text('${l.t('performance')}: $pct%', style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w500)),
@@ -146,7 +146,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             if (upcoming.isEmpty) {
               return Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: adaptiveBorder(context))),
+              decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: adaptiveBorder(context))),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(l.t('next_deadline'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
                 const SizedBox(height: 16),
@@ -169,7 +169,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 : '$hours ${l.t('hours_short')} ${diff.inMinutes % 60} ${l.t('minutes_short')}';
             return Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: adaptiveBorder(context))),
+              decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: adaptiveBorder(context))),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(l.t('next_deadline'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
                 const SizedBox(height: 10),
@@ -246,7 +246,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               margin: const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
                 color: surface,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(AppRadii.card),
                 boxShadow: cardShadow(isDark),
               ),
               child: Column(children: [
@@ -283,7 +283,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                   child: Row(children: [
                     if (showBadge) Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(8)),
+                      decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(AppRadii.chip)),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
                         Icon(statusIcon, size: 12, color: statusColor),
                         const SizedBox(width: 4),
@@ -394,9 +394,9 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 try { submittedFileUrls = (jsonDecode(rawUrls) as List).map((f) => context.read<ApiService>().fixUrl(f.toString())).toList(); } catch (_) {}
               }
               return ListView(controller: sc, padding: const EdgeInsets.all(20), children: [
-                Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 16), decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2)))),
+                Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 16), decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(AppRadii.chip)))),
                 Tappable(onTap: () => setS(() => selectedSub = null),
-                  child: Container(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8), decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(12)),
+                  child: Container(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8), decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(AppRadii.tile)),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [const Icon(CupertinoIcons.chevron_left, size: 16, color: C.text4), const SizedBox(width: 6), Text(l.t('back_to_list'), style: const TextStyle(fontSize: 13, color: C.text4))]))),
                 const SizedBox(height: 16),
                 Row(children: [
@@ -412,7 +412,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                   Text(l.t('student_work'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
                   const SizedBox(height: 8),
                   if (selectedSub['text_content'] != null) Container(padding: const EdgeInsets.all(12), margin: const EdgeInsets.only(bottom: 6),
-                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(12)),
+                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(AppRadii.tile)),
                     child: Text(selectedSub['text_content'], style: const TextStyle(fontSize: 13))),
                   ...submittedFileUrls.map((url) {
                     final name = _fileDisplayName(url);
@@ -421,7 +421,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     return Tappable(
                       onTap: () => widget.onOpenFile(url, name),
                       child: Container(padding: const EdgeInsets.all(12), margin: const EdgeInsets.only(bottom: 6),
-                        decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(12)),
+                        decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(AppRadii.tile)),
                         child: Row(children: [
                           Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary), const SizedBox(width: 8),
                           Expanded(child: Text(name, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary), overflow: TextOverflow.ellipsis)),
@@ -433,7 +433,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                   const SizedBox(height: 20),
                   Container(
                     padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(color: C.amber.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(16), border: Border.all(color: C.amber.withValues(alpha: 0.3))),
+                    decoration: BoxDecoration(color: C.amber.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: C.amber.withValues(alpha: 0.3))),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text(l.t('status_needs_review_label'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: C.amber)),
                       if (score != null) ...[
@@ -513,7 +513,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                   ]),
                 ] else if (score != null) ...[
                   const SizedBox(height: 20),
-                  Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(16)),
+                  Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(AppRadii.tile)),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Row(children: [
                         RichText(text: TextSpan(children: [
@@ -632,7 +632,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             final filtered = subs.where((s) => search.isEmpty || (s['student_name'] ?? '').toLowerCase().contains(search.toLowerCase())).toList();
             // Ленивый список: у популярного задания это может быть 50–100+ работ.
             final gradeHeaders = <Widget>[
-              Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 16), decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2)))),
+              Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 16), decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(AppRadii.chip)))),
               Row(children: [
                 _statBox('${subs.length}', l.t('total'), adaptiveText1(context)),
                 const SizedBox(width: 8),
@@ -698,7 +698,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 final isNeedsReview = s['status'] == 'needs_review';
                 return Tappable(onTap: () => setS(() => selectedSub = s),
                   child: Container(margin: const EdgeInsets.only(bottom: 8), padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(16)),
+                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(AppRadii.tile)),
                     child: Row(children: [
                       CircleAvatar(radius: 20, backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15), child: Text(initials, style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w800, fontSize: 13))),
                       const SizedBox(width: 12),
@@ -734,7 +734,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
         onTap: () => _confirmDeleteSubmission(ctx, sub, onDeleted),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: C.red.withValues(alpha: 0.5))),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: C.red.withValues(alpha: 0.5))),
           child: const Icon(CupertinoIcons.trash, size: 18, color: C.red),
         ),
       ),
@@ -769,12 +769,12 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Center(child: Container(
                   width: 36, height: 4, margin: const EdgeInsets.only(bottom: 18),
-                  decoration: BoxDecoration(color: adaptiveBorder(c), borderRadius: BorderRadius.circular(2)),
+                  decoration: BoxDecoration(color: adaptiveBorder(c), borderRadius: BorderRadius.circular(AppRadii.chip)),
                 )),
                 Row(children: [
                   Container(
                     width: 40, height: 40,
-                    decoration: BoxDecoration(color: Theme.of(c).colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
+                    decoration: BoxDecoration(color: Theme.of(c).colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.tile)),
                     child: Icon(CupertinoIcons.pencil, size: 18, color: Theme.of(c).colorScheme.primary),
                   ),
                   const SizedBox(width: 12),

@@ -117,7 +117,7 @@ class ClassCoverSliver extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.45),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadii.chip),
                 ),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
                   const Icon(CupertinoIcons.archivebox, size: 13, color: Colors.white70),

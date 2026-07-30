@@ -255,7 +255,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       body: SafeArea(child: Column(children: [
         Padding(padding: const EdgeInsets.fromLTRB(20, 20, 20, 16), child: Row(children: [
           GestureDetector(onTap: () => Navigator.pop(context),
-            child: Container(width: 40, height: 40, decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
+            child: Container(width: 40, height: 40, decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: Icon(CupertinoIcons.chevron_left, size: 20, color: adaptiveText1(context)))),
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -264,7 +264,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               Text(unread > 0 ? '$unread ${l.t('notif_unread')}' : l.t('all_read'), style: const TextStyle(fontSize: 13, color: C.text4)),
           ])),
           GestureDetector(onTap: _load,
-            child: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
+            child: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: const Icon(CupertinoIcons.refresh, size: 18, color: C.text4))),
         ])),
 
@@ -308,7 +308,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           margin: const EdgeInsets.only(bottom: 10),
                           decoration: BoxDecoration(
                             color: const Color(0xFFEF4444),
-                            borderRadius: BorderRadius.circular(18),
+                            borderRadius: BorderRadius.circular(AppRadii.card),
                           ),
                           alignment: Alignment.centerRight,
                           padding: const EdgeInsets.only(right: 24),
@@ -330,7 +330,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           margin: const EdgeInsets.only(bottom: 10),
                           decoration: BoxDecoration(
                             color: n.isRead ? surface : cfg['bg'] as Color,
-                            borderRadius: BorderRadius.circular(18),
+                            borderRadius: BorderRadius.circular(AppRadii.card),
                             border: n.isRead ? null : Border.all(color: (cfg['color'] as Color).withValues(alpha: 0.22)),
                             boxShadow: cardShadow(isDark),
                           ),

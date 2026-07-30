@@ -121,7 +121,7 @@ class _EmptyArchive extends StatelessWidget {
               width: 76, height: 76,
               decoration: BoxDecoration(
                 color: adaptiveSurface2(context),
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(AppRadii.card),
               ),
               child: Icon(CupertinoIcons.archivebox,
                   size: 34, color: adaptiveText1(context).withValues(alpha: 0.4)),
@@ -225,7 +225,7 @@ class _ArchiveCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
                           color: adaptiveText1(context).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(7),
+                          borderRadius: BorderRadius.circular(AppRadii.chip),
                         ),
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
                           Icon(CupertinoIcons.archivebox, size: 10,

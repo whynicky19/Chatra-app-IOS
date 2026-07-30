@@ -310,7 +310,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppRadii.tile),
                 boxShadow: isSelected ? primaryGlow(Theme.of(context).colorScheme.primary, opacity: 0.2) : softShadow(isDark),
               ),
               child: Column(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -331,7 +331,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       color: isSelected
                           ? Colors.white.withValues(alpha: 0.25)
                           : (allDone ? C.green.withValues(alpha: 0.15) : Theme.of(context).colorScheme.primary.withValues(alpha: 0.12)),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(AppRadii.chip),
                     ),
                     child: Text('$count', style: TextStyle(
                       fontSize: 11, fontWeight: FontWeight.w800,
@@ -422,7 +422,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: bg,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppRadii.tile),
                 boxShadow: cardShadow(isDark),
               ),
               child: Row(children: [
@@ -430,7 +430,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   width: 42, height: 42,
                   decoration: BoxDecoration(
                     color: accentColor.withValues(alpha: isDark ? 0.22 : 0.14),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadii.tile),
                   ),
                   child: Icon(isSubmitted ? CupertinoIcons.checkmark_alt : CupertinoIcons.clock,
                       size: 20, color: accentColor),

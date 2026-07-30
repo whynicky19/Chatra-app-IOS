@@ -309,7 +309,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                   Row(children: [
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
+                      decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.chip)),
                       child: Text(statusText, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: statusColor)),
                     ),
                     const SizedBox(width: 10),
@@ -407,7 +407,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                         onTap: () => setState(() => _criteriaExpanded = !_criteriaExpanded),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          decoration: BoxDecoration(color: detailSurface(context), borderRadius: BorderRadius.circular(16), border: Border.all(color: detailBorder(context))),
+                          decoration: BoxDecoration(color: detailSurface(context), borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: detailBorder(context))),
                           child: Row(children: [
                             Icon(CupertinoIcons.list_bullet, size: 16, color: accent),
                             const SizedBox(width: 8),
@@ -427,7 +427,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                                 padding: const EdgeInsets.only(top: 8),
                                 child: Column(children: criteria.map<Widget>((c) => Container(
                                   margin: const EdgeInsets.only(bottom: 8), padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(color: detailSurface(context), borderRadius: BorderRadius.circular(14)),
+                                  decoration: BoxDecoration(color: detailSurface(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
                                   child: Row(children: [
                                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                                       Text(c['name'] ?? '', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: detailText1(context))),
@@ -446,7 +446,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                   if (sub?['grade'] != null) ...[
                     Container(
                       padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(color: detailSurface(context), borderRadius: BorderRadius.circular(20), border: Border.all(color: detailBorder(context))),
+                      decoration: BoxDecoration(color: detailSurface(context), borderRadius: BorderRadius.circular(AppRadii.card), border: Border.all(color: detailBorder(context))),
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Row(children: [
                           RichText(text: TextSpan(children: [
@@ -455,7 +455,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                           ])),
                           const Spacer(),
                           Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(color: accent.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                            decoration: BoxDecoration(color: accent.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.chip)),
                             child: Row(mainAxisSize: MainAxisSize.min, children: [
                               Icon(sub['grade']['graded_by'] == 'ai' ? CupertinoIcons.bolt_fill : CupertinoIcons.person, size: 13, color: accent),
                               const SizedBox(width: 4),
@@ -504,7 +504,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                   if (sub != null && sub['status'] == 'grading' && sub['grade'] == null) ...[
                     Container(
                       padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(color: accent.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(16), border: Border.all(color: accent.withValues(alpha: 0.2))),
+                      decoration: BoxDecoration(color: accent.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: accent.withValues(alpha: 0.2))),
                       child: Row(children: [
                         SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: accent)),
                         const SizedBox(width: 12),
@@ -516,7 +516,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                   if (sub != null && sub['status'] == 'needs_review') ...[
                     Container(
                       padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(color: C.amber.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(16), border: Border.all(color: C.amber.withValues(alpha: 0.3))),
+                      decoration: BoxDecoration(color: C.amber.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: C.amber.withValues(alpha: 0.3))),
                       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         const Icon(CupertinoIcons.exclamationmark_circle, size: 16, color: C.amber),
                         const SizedBox(width: 10),
@@ -548,7 +548,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      decoration: BoxDecoration(color: detailSurface(context), borderRadius: BorderRadius.circular(14)),
+                      decoration: BoxDecoration(color: detailSurface(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
                       child: Row(children: [
                         Icon(CupertinoIcons.lock, size: 15, color: detailText2(context)),
                         const SizedBox(width: 8),
@@ -560,7 +560,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                     Text(l.t('submit_work'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: detailText1(context))),
                     const SizedBox(height: 12),
                     Container(
-                      decoration: BoxDecoration(color: detailSurface(context), borderRadius: BorderRadius.circular(16), border: Border.all(color: detailBorder(context))),
+                      decoration: BoxDecoration(color: detailSurface(context), borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: detailBorder(context))),
                       child: CupertinoTextField(
                         controller: _tc,
                         maxLines: 4,
@@ -579,7 +579,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                       },
                       child: Container(
                         padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(color: detailSurface(context), borderRadius: BorderRadius.circular(16), border: Border.all(color: detailBorder(context))),
+                        decoration: BoxDecoration(color: detailSurface(context), borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: detailBorder(context))),
                         child: Row(children: [
                           Icon(CupertinoIcons.paperclip, color: accent, size: 19),
                           const SizedBox(width: 10),
@@ -661,7 +661,7 @@ class _BottomActionBar extends StatelessWidget {
           height: 50,
           child: CupertinoButton(
             padding: EdgeInsets.zero,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadii.tile),
             color: secondary ? detailSurface(context) : accent,
             onPressed: busy ? null : onTap,
             child: busy

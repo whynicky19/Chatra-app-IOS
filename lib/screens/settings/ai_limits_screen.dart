@@ -82,7 +82,7 @@ class _QuotaCard extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
       decoration: BoxDecoration(
         color: surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadii.card),
         boxShadow: cardShadow(isDark),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -92,7 +92,7 @@ class _QuotaCard extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(colors: [secondary, primary],
                 begin: Alignment.topLeft, end: Alignment.bottomRight),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadii.chip),
             ),
             child: const Icon(CupertinoIcons.sparkles, size: 17, color: Colors.white),
           ),
@@ -128,7 +128,7 @@ class _QuotaCard extends StatelessWidget {
                   height: 10, width: double.infinity,
                   decoration: BoxDecoration(
                     color: adaptiveSurface2(context),
-                    borderRadius: BorderRadius.circular(5),
+                    borderRadius: BorderRadius.circular(AppRadii.chip),
                   ),
                 ),
                 Container(
@@ -139,7 +139,7 @@ class _QuotaCard extends StatelessWidget {
                       ? null
                       : LinearGradient(colors: [secondary, primary]),
                     color: exhausted || low ? accent : null,
-                    borderRadius: BorderRadius.circular(5),
+                    borderRadius: BorderRadius.circular(AppRadii.chip),
                   ),
                 ),
               ]);
@@ -151,7 +151,7 @@ class _QuotaCard extends StatelessWidget {
           Row(crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic, children: [
             Text('${quota.used} / ${quota.limit}',
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700,
+              style: Theme.of(context).textTheme.headlineLarge!.copyWith(
                 letterSpacing: -0.6, color: adaptiveText1(context))),
             const SizedBox(width: 7),
             Text(l.t('ai_used_suffix'),
@@ -202,7 +202,7 @@ class _InfoCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadii.card),
         boxShadow: cardShadow(isDark),
       ),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [

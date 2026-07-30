@@ -239,7 +239,7 @@ class _OrgCardState extends State<_OrgCard> {
               width: 54, height: 54,
               decoration: BoxDecoration(
                 gradient: LinearGradient(colors: widget.gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppRadii.tile),
               ),
               child: widget.asset != null
                   ? Padding(padding: const EdgeInsets.all(13),

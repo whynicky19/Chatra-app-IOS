@@ -369,7 +369,7 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
               if (_newFiles.isEmpty)
                 Container(
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: Theme.of(context).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(12)),
+                  decoration: BoxDecoration(color: Theme.of(context).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(AppRadii.tile)),
                   child: Row(children: [
                     const Icon(CupertinoIcons.paperclip, size: 15, color: C.text4),
                     const SizedBox(width: 8),
@@ -386,7 +386,7 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: adaptiveSurface2(context),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(AppRadii.tile),
                     border: Border.all(color: adaptiveBorder(context)),
                   ),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -401,7 +401,7 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
                           const Spacer(),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                            decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppRadii.chip)),
                             child: Text(l.t('graded_by_ai'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
                           ),
                         ]),
@@ -488,7 +488,7 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
   Widget _fileRow(String name, VoidCallback onRemove) => Container(
         margin: const EdgeInsets.only(bottom: 6),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
+        decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
         child: Row(children: [
           const Icon(CupertinoIcons.doc, size: 15, color: C.text3),
           const SizedBox(width: 8),

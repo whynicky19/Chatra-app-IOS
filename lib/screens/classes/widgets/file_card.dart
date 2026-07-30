@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import '../../../theme/app_theme.dart';
 import 'detail_page_theme.dart';
 
 class FileTypeVisual {
@@ -79,7 +80,7 @@ class _FileCardState extends State<FileCard> {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
             color: _pressed ? detailSurface(context).withValues(alpha: 0.7) : detailSurface(context),
-            borderRadius: BorderRadius.circular(23),
+            borderRadius: BorderRadius.circular(AppRadii.card),
             border: Border.all(color: detailBorder(context)),
           ),
           child: Row(children: [
@@ -89,7 +90,7 @@ class _FileCardState extends State<FileCard> {
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: visual.color.withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(13),
+                borderRadius: BorderRadius.circular(AppRadii.tile),
               ),
               child: Icon(visual.icon, size: 22, color: visual.color),
             ),

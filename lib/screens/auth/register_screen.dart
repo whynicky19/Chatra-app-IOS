@@ -217,7 +217,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Row(children: [
                         Expanded(child: ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(AppRadii.chip),
                           child: LinearProgressIndicator(
                             value: sc / 100,
                             backgroundColor: adaptiveSurface2(context),
@@ -255,7 +255,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       width: 24, height: 24,
                       decoration: BoxDecoration(
                         color: _agreedTerms ? primary : Colors.transparent,
-                        borderRadius: BorderRadius.circular(7),
+                        borderRadius: BorderRadius.circular(AppRadii.chip),
                         border: Border.all(
                           color: _agreedTerms ? primary : C.text4.withValues(alpha: 0.5),
                           width: 1.6),
@@ -302,7 +302,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
                         color: canSubmit || auth.isLoading ? primary : adaptiveSurface2(context),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppRadii.tile),
                       ),
                       child: Align(heightFactor: 1, child: auth.isLoading
                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
@@ -330,5 +330,5 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Widget _fieldLabel(String s) => Padding(
     padding: const EdgeInsets.only(bottom: 7, left: 2),
-    child: Text(s, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: C.text3)));
+    child: Text(s, style: Theme.of(context).textTheme.titleSmall!.copyWith(color: C.text3)));
 }

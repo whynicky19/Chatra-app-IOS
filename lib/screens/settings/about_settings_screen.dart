@@ -64,7 +64,7 @@ class AboutSettingsScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: surface,
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(AppRadii.card),
               boxShadow: cardShadow(isDark),
             ),
             child: Row(children: [

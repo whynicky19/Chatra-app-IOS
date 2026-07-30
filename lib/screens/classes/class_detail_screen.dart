@@ -306,7 +306,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             Text(name, style: const TextStyle(fontSize: 13, color: C.text4), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis),
             const SizedBox(height: 12),
             ClipRRect(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(AppRadii.chip),
               child: LinearProgressIndicator(value: progress > 0 ? progress : null, color: Theme.of(context).colorScheme.primary, backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12), minHeight: 5),
             ),
             const SizedBox(height: 6),
@@ -444,7 +444,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 child: Container(
                   height: 38,
                   padding: const EdgeInsets.all(2.5),
-                  decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(11)),
+                  decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
                   child: TabBar(
                     controller: _tabCtrl,
                     dividerColor: Colors.transparent,
@@ -452,7 +452,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     indicatorAnimation: TabIndicatorAnimation.elastic,
                     indicator: BoxDecoration(
                       color: surfaceColor,
-                      borderRadius: BorderRadius.circular(8.5),
+                      borderRadius: BorderRadius.circular(AppRadii.chip),
                       boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.10), blurRadius: 4, offset: const Offset(0, 1))],
                     ),
                     splashFactory: NoSplash.splashFactory,
@@ -584,7 +584,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           color: isViewingPast
               ? primary.withValues(alpha: 0.10)
               : adaptiveSurface2(context),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadii.tile),
           border: isViewingPast
               ? Border.all(color: primary.withValues(alpha: 0.4))
               : null,
@@ -723,7 +723,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
         return DraggableScrollableSheet(expand: false, initialChildSize: 0.75, maxChildSize: 0.95, minChildSize: 0.4,
           builder: (ctx, scroll) => Column(children: [
             Container(width: 40, height: 4, margin: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(2))),
+              decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(AppRadii.chip))),
             Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: Row(children: [
               Expanded(child: Text(l.t('assignment_variants'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800))),
               IconButton(icon: const Icon(CupertinoIcons.xmark), onPressed: () => Navigator.pop(ctx)),
@@ -854,7 +854,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               if (img == null) return;
               setS(() { newCoverFile = img; coverRemoved = false; });
             },
-            child: Container(height: 150, decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3), width: 1.5)),
+            child: Container(height: 150, decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3), width: 1.5)),
               clipBehavior: Clip.antiAlias,
               child: Stack(fit: StackFit.expand, children: [
                 if (newCoverFile != null)
@@ -970,7 +970,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(10)),
+                  decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Icon(codeCopied ? CupertinoIcons.checkmark_alt : CupertinoIcons.doc_on_doc, size: 14, color: Theme.of(context).colorScheme.primary),
                     const SizedBox(width: 6),
@@ -982,7 +982,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 onTap: () async { Navigator.pop(ctx); await _regenerateCode(); },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), border: Border.all(color: adaptiveBorder(context))),
+                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadii.chip), border: Border.all(color: adaptiveBorder(context))),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     const Icon(CupertinoIcons.refresh, size: 14, color: C.text4),
                     const SizedBox(width: 6),
@@ -999,7 +999,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           ],
           if (_canManageCohorts) ...[
             Container(
-              decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(16)),
+              decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: SwitchListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 value: rotationYearly,
@@ -1033,7 +1033,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(AppRadii.tile),
                     border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.35)),
                   ),
                   child: Row(children: [

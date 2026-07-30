@@ -387,7 +387,7 @@ class _AiConversationViewState extends State<AiConversationView> {
           constraints: BoxConstraints(minHeight: constraints.maxHeight),
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
             Text('Chatra AI',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: adaptiveText1(context), letterSpacing: -0.6)),
+                style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: adaptiveText1(context), letterSpacing: -0.6)),
             const SizedBox(height: 10),
             Text(subtitle, style: const TextStyle(fontSize: 15, color: C.text4, height: 1.4), textAlign: TextAlign.center),
             const SizedBox(height: 30),
@@ -504,12 +504,12 @@ class _AiConversationViewState extends State<AiConversationView> {
               BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.26), blurRadius: 18, offset: const Offset(0, 6)),
             ],
           ),
-          child: Text(text, style: const TextStyle(fontSize: 15, color: Colors.white, height: 1.55, letterSpacing: -0.1)),
+          child: Text(text, style: const TextStyle(fontSize: 15.5, color: Colors.white, height: 1.55, letterSpacing: -0.1)),
         ),
         const SizedBox(height: 5),
         Padding(
           padding: const EdgeInsets.only(right: 3),
-          child: Text(timeStr, style: const TextStyle(fontSize: 11, color: C.text4)),
+          child: Text(timeStr, style: const TextStyle(fontSize: 10.5, color: C.text4)),
         ),
       ]),
     );
@@ -545,14 +545,14 @@ class _AiConversationViewState extends State<AiConversationView> {
               ),
               child: AiMessageContent(
                 text: text,
-                style: TextStyle(fontSize: 15, height: 1.6, letterSpacing: 0.05, color: adaptiveText1(context)),
+                style: TextStyle(fontSize: 15.5, height: 1.6, letterSpacing: 0.05, color: adaptiveText1(context)),
               ),
             ),
           ),
           if ((m['time'] ?? '').isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(left: 7, top: 5),
-              child: Text(m['time']!, style: const TextStyle(fontSize: 11, color: C.text4)),
+              child: Text(m['time']!, style: const TextStyle(fontSize: 10.5, color: C.text4)),
             ),
         ]),
       ),
@@ -691,7 +691,7 @@ class _AiInputBar extends StatelessWidget {
         Text(
           l.t('ai_disclaimer'),
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 11, color: C.text4, height: 1.3),
+          style: const TextStyle(fontSize: 11.5, color: C.text4, height: 1.3),
         ),
       ]),
     );

@@ -85,19 +85,19 @@ Color adaptivePrimaryLt(BuildContext context) {
 const double kBottomBarHeight = 90;
 
 /// Нижний отступ для панели, приклеенной к низу вкладки: с открытой
-/// клавиатурой — её высота, иначе место под таб-бар.
+/// клавиатурой — небольшой зазор, иначе место под таб-бар.
 ///
-/// Читаем инсет напрямую из [View], а не из `MediaQuery.of(context)`:
-/// экран ИИ-чата вложен в уже отресайженный Scaffold (main_shell.dart,
-/// resizeToAvoidBottomInset: true) — тот Scaffold обнуляет viewInsets.bottom
-/// для своих потомков (сам сдвинул тело под клавиатуру), поэтому здесь
-/// MediaQuery всегда отдавал бы 0, и функция откатывалась на минимум 90 —
-/// поле ввода зависало в 90px НАД уже поднятой клавиатурой, а не вплотную
-/// к ней. View.of(context) отдаёт реальный инсет независимо от вложенности.
+/// Экран ИИ-чата вложен в уже отресайженный Scaffold (main_shell.dart,
+/// resizeToAvoidBottomInset: true) — тот Scaffold сам сдвигает (сжимает)
+/// всё тело под клавиатуру целиком, так что композер и так оказывается
+/// прямо над ней без всякого дополнительного отступа. Если сюда добавить
+/// ЕЩЁ и высоту клавиатуры поверх этого — двойной учёт, поле ввода зависает
+/// на большом расстоянии выше клавиатуры. View нужен только как флаг
+/// "клавиатура открыта" — не как источник величины отступа
+/// (MediaQuery.viewInsets.bottom здесь всегда 0, см. main_shell.dart).
 double bottomBarInset(BuildContext context) {
-  final view = View.of(context);
-  final keyboardHeight = view.viewInsets.bottom / view.devicePixelRatio;
-  return (keyboardHeight + 8).clamp(kBottomBarHeight, double.infinity);
+  final keyboardOpen = View.of(context).viewInsets.bottom > 0;
+  return keyboardOpen ? 8 : kBottomBarHeight;
 }
 
 Color adaptiveBorder(BuildContext context) {
@@ -196,7 +196,7 @@ class AppTheme {
       dialogTheme: DialogThemeData(
         backgroundColor: C.surface,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.card)),
         elevation: 0,
       ),
       switchTheme: SwitchThemeData(
@@ -251,7 +251,7 @@ class AppTheme {
       dialogTheme: DialogThemeData(
         backgroundColor: C.darkSurface,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.card)),
         elevation: 0,
       ),
       switchTheme: SwitchThemeData(

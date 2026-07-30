@@ -59,8 +59,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
         _animated(Padding(padding: const EdgeInsets.fromLTRB(4, 0, 4, 28), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(l.t('settings'),
-            style: TextStyle(fontSize: 34, fontWeight: FontWeight.w700,
-              color: adaptiveText1(context), letterSpacing: -0.4, height: 1.1)),
+            style: Theme.of(context).textTheme.displayLarge!.copyWith(color: adaptiveText1(context))),
           const SizedBox(height: 3),
           Text(l.t('settings_sub'), style: const TextStyle(fontSize: 15, color: C.text4)),
         ])), 0.0, 0.4),
@@ -69,7 +68,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         const SizedBox(height: 8),
 
         _animated(Container(
-          decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(18), boxShadow: cardShadow(isDark)),
+          decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(AppRadii.card), boxShadow: cardShadow(isDark)),
           clipBehavior: Clip.antiAlias,
           child: Column(children: [
             Padding(padding: const EdgeInsets.fromLTRB(20, 20, 20, 20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -121,7 +120,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                     height: 50,
                     decoration: BoxDecoration(
                       color: primary,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(AppRadii.tile),
                       boxShadow: _saving ? null : primaryGlow(primary, opacity: 0.30),
                     ),
                     child: Center(child: _saving
@@ -140,7 +139,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         const SizedBox(height: 8),
 
         _animated(Container(
-          decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(18), boxShadow: cardShadow(isDark)),
+          decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(AppRadii.card), boxShadow: cardShadow(isDark)),
           child: Column(children: [
             _prefRow(
               icon: CupertinoIcons.moon_fill,
@@ -159,11 +158,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           onTap: () => _showLanguagePicker(context, l),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(18), boxShadow: cardShadow(isDark)),
+            decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(AppRadii.card), boxShadow: cardShadow(isDark)),
             child: Row(children: [
               Container(
                 width: 32, height: 32,
-                decoration: BoxDecoration(color: const Color(0xFFFF9500), borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(color: const Color(0xFFFF9500), borderRadius: BorderRadius.circular(AppRadii.chip)),
                 child: const Icon(CupertinoIcons.globe, size: 17, color: Colors.white),
               ),
               const SizedBox(width: 14),
@@ -236,13 +235,13 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
                 color: surface,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(AppRadii.card),
                 boxShadow: cardShadow(isDark),
               ),
               child: Row(children: [
                 Container(
                   width: 32, height: 32,
-                  decoration: BoxDecoration(color: C.red, borderRadius: BorderRadius.circular(8)),
+                  decoration: BoxDecoration(color: C.red, borderRadius: BorderRadius.circular(AppRadii.chip)),
                   child: const Icon(CupertinoIcons.arrow_right_square, size: 17, color: Colors.white),
                 ),
                 const SizedBox(width: 14),
@@ -289,7 +288,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       child: Row(children: [
         Container(
           width: 32, height: 32,
-          decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(8)),
+          decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(AppRadii.chip)),
           child: Icon(icon, size: 17, color: Colors.white),
         ),
         const SizedBox(width: 14),
@@ -376,7 +375,7 @@ class _LanguageOptionRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: selected ? primary.withValues(alpha: isDark ? 0.16 : 0.08) : adaptiveSurface2(context),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadii.tile),
         border: selected ? Border.all(color: primary.withValues(alpha: 0.4)) : null,
       ),
       child: Row(children: [

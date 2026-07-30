@@ -217,7 +217,7 @@ class _RolloverScreenState extends State<RolloverScreen> {
           child: Container(
             width: 40, height: 40,
             decoration: BoxDecoration(
-                color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(12)),
+                color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
             child: Icon(CupertinoIcons.chevron_left, size: 20, color: adaptiveText1(context)),
           ),
         ),
@@ -283,7 +283,7 @@ class _RolloverScreenState extends State<RolloverScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
                 decoration: BoxDecoration(
-                    color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(16)),
+                    color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
                 child: Row(children: [
                   Icon(CupertinoIcons.calendar, size: 18, color: primary),
                   const SizedBox(width: 10),
@@ -324,7 +324,7 @@ class _RolloverScreenState extends State<RolloverScreen> {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadii.tile),
             border: Border.all(
                 color: checked ? primary.withValues(alpha: 0.5) : adaptiveBorder(context)),
           ),
@@ -333,7 +333,7 @@ class _RolloverScreenState extends State<RolloverScreen> {
               width: 24, height: 24,
               decoration: BoxDecoration(
                 color: checked ? primary : Colors.transparent,
-                borderRadius: BorderRadius.circular(7),
+                borderRadius: BorderRadius.circular(AppRadii.chip),
                 border: Border.all(color: checked ? primary : C.text4, width: 1.6),
               ),
               child: checked
@@ -433,7 +433,7 @@ class _RolloverScreenState extends State<RolloverScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                           color: primary.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(6)),
+                          borderRadius: BorderRadius.circular(AppRadii.chip)),
                       child: Text(l.t('draft'),
                           style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
                               color: primary)),

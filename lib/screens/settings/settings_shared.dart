@@ -35,18 +35,18 @@ class SettingsActionCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: surface,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(AppRadii.card),
           boxShadow: cardShadow(isDark),
         ),
         child: Row(children: [
           Container(
             width: 32, height: 32,
-            decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(8)),
+            decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(AppRadii.chip)),
             child: Icon(icon, size: 17, color: Colors.white),
           ),
           const SizedBox(width: 14),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600,
+            Text(title, style: Theme.of(context).textTheme.titleMedium!.copyWith(
               color: titleColor ?? adaptiveText1(context))),
             const SizedBox(height: 1),
             Text(sub, style: const TextStyle(fontSize: 13, color: C.text4)),
@@ -226,7 +226,7 @@ class _DeleteAccountSheetState extends State<DeleteAccountSheet> {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             color: C.red.withValues(alpha: isDark ? 0.16 : 0.08),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadii.tile),
           ),
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Icon(CupertinoIcons.exclamationmark_triangle, color: C.red, size: 18),
@@ -273,7 +273,7 @@ class SheetScaffold extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
         child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 20),
-            decoration: BoxDecoration(color: C.text4.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)))),
+            decoration: BoxDecoration(color: C.text4.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(AppRadii.chip)))),
           if (icon != null) ...[
             Center(child: Container(width: 52, height: 52,
               decoration: BoxDecoration(color: accent.withValues(alpha: 0.12), shape: BoxShape.circle),
@@ -304,7 +304,7 @@ class SheetField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Padding(padding: const EdgeInsets.only(bottom: 7, left: 2),
-        child: Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: C.text3))),
+        child: Text(label, style: Theme.of(context).textTheme.titleSmall!.copyWith(color: C.text3))),
       TextField(
         controller: controller,
         obscureText: obscure,
@@ -357,7 +357,7 @@ class SheetButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: enabled ? color : adaptiveSurface2(context),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadii.tile),
         ),
         child: Align(heightFactor: 1, child: busy
           ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))

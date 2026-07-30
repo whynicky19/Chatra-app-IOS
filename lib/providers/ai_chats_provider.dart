@@ -20,7 +20,19 @@ class AiChatsProvider extends ChangeNotifier {
   AiChatsProvider(this._api, this._auth);
 
   void clearError() {
+    if (errorMessage == null) return;
     errorMessage = null;
+    notifyListeners();
+  }
+
+  /// Очистка при выходе/смене аккаунта — иначе список ИИ-тредов предыдущего
+  /// пользователя виден новому до завершения load().
+  void reset() {
+    threads = [];
+    loading = false;
+    errorMessage = null;
+    _legacyCleaned = false;
+    notifyListeners();
   }
 
   /// Сортировка как на бэке: закреплённые сверху, внутри — по свежести.

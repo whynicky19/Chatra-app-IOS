@@ -24,7 +24,8 @@ class MainShell extends StatefulWidget {
   @override State<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
+class _MainShellState extends State<MainShell>
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   int _idx = 0;
   late AnimationController _navAnim;
 
@@ -33,10 +34,12 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
   StreamSubscription<List<ConnectivityResult>>? _connectSub;
   Timer? _offlineDebounce;
   Timer? _recheckTimer;
+  int _recheckAttempt = 0;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _navAnim = AnimationController(vsync: this, duration: const Duration(milliseconds: 950));
     _navAnim.forward();
 
@@ -46,6 +49,18 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
     MainShell.sectionRequest.addListener(_onSectionRequest);
     // Пуш мог прийти до построения шелла (холодный старт по тапу).
     WidgetsBinding.instance.addPostFrameCallback((_) => _onSectionRequest());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // В фоне опрашивать сеть незачем: это чистый расход батареи, а iOS ещё и
+    // помечает приложение как активное в фоне.
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+      _recheckTimer?.cancel();
+      _recheckTimer = null;
+    } else if (state == AppLifecycleState.resumed) {
+      Connectivity().checkConnectivity().then(_applyConnectivity);
+    }
   }
 
   void _onSectionRequest() {
@@ -60,38 +75,55 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
 
   void _applyConnectivity(List<ConnectivityResult> results) {
     final online = results.isEmpty || results.any((v) => v != ConnectivityResult.none);
-    _offlineDebounce?.cancel();
     if (online) {
+      _offlineDebounce?.cancel();
+      _offlineDebounce = null;
       _recheckTimer?.cancel();
       _recheckTimer = null;
+      _recheckAttempt = 0;
       if (!_isOnline && mounted) {
         setState(() {
           _isOnline = true;
           _bannerDismissed = false;
         });
       }
-    } else {
-      _offlineDebounce = Timer(const Duration(seconds: 3), () {
-        if (mounted && _isOnline) {
-          setState(() {
-            _isOnline = false;
-            _bannerDismissed = false;
-          });
-          _startRecheck();
-        }
-      });
+      return;
     }
+
+    // Уже офлайн — второй дебаунс заводить не нужно. Раньше он пересоздавался
+    // на каждый тик перепроверки и вхолостую тикал рядом с ней.
+    if (!_isOnline || _offlineDebounce?.isActive == true) return;
+
+    _offlineDebounce = Timer(const Duration(seconds: 3), () {
+      if (mounted && _isOnline) {
+        setState(() {
+          _isOnline = false;
+          _bannerDismissed = false;
+        });
+        _startRecheck();
+      }
+    });
   }
 
+  /// Перепроверка с экспоненциальным откатом 2→4→…→60 с, а не Timer.periodic
+  /// раз в 2 секунды навсегда. Поток onConnectivityChanged всё равно
+  /// поймает возврат сети — это лишь подстраховка.
   void _startRecheck() {
     _recheckTimer?.cancel();
-    _recheckTimer = Timer.periodic(const Duration(seconds: 2), (_) {
-      Connectivity().checkConnectivity().then(_applyConnectivity);
+    final seconds = (2 << _recheckAttempt).clamp(2, 60);
+    _recheckTimer = Timer(Duration(seconds: seconds), () async {
+      if (!mounted) return;
+      _recheckAttempt++;
+      final results = await Connectivity().checkConnectivity();
+      if (!mounted) return;
+      _applyConnectivity(results);
+      if (mounted && !_isOnline) _startRecheck();
     });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     MainShell.sectionRequest.removeListener(_onSectionRequest);
     _offlineDebounce?.cancel();
     _recheckTimer?.cancel();
@@ -127,14 +159,22 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
       _NavItem(CupertinoIcons.gear,               CupertinoIcons.gear_alt_fill,          l.t('nav_settings')),
     ];
 
-    if (_idx >= screens.length) _idx = 0;
+    // Локальная переменная вместо мутации поля прямо в build(): роль могла
+    // смениться (админ вышел) и вкладок стало меньше.
+    final idx = _idx >= screens.length ? 0 : _idx;
+
+    // Раньше стояло resizeToAvoidBottomInset: false — это убирало прыжки
+    // плавающего навбара, но заодно отключало подстройку под клавиатуру для
+    // ВСЕХ вкладок, и поле ввода ИИ-чата уезжало под клавиатуру. Теперь
+    // Scaffold ведёт себя штатно, а навбар просто прячется, пока клавиатура
+    // поднята (он всё равно перекрыт).
+    final keyboardUp = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return Scaffold(
-      resizeToAvoidBottomInset: false,
       body: Stack(children: [
         Positioned.fill(
           child: _LazyIndexedStack(
-            index: _idx,
+            index: idx,
             children: screens,
           ),
         ),
@@ -170,7 +210,7 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
                   ),
           ),
         ),
-        Positioned(
+        if (!keyboardUp) Positioned(
           left: 16, right: 16, bottom: 16,
           child: RepaintBoundary(
             child: FadeTransition(
@@ -190,7 +230,7 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
                               label: it.label,
                             ))
                         .toList(),
-                    selectedIndex: _idx,
+                    selectedIndex: idx,
                     onChanged: _onTap,
                     width: constraints.maxWidth,
                     height: 64,

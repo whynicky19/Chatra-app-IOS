@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -57,7 +58,8 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
       final res = await auth.resendVerification(widget.email, orgType: widget.orgType);
       if (!mounted) return;
       _startCooldown();
-      if (res != null && res.devCode.isNotEmpty) _code.text = res.devCode;
+      // Только debug — см. комментарий в forgot_password_screen.dart.
+      if (kDebugMode && res != null && res.devCode.isNotEmpty) _code.text = res.devCode;
       if (res != null && !res.sent) {
         showToast(context, l.t('code_send_error'), error: true);
       } else if (!initial) {
@@ -124,6 +126,8 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                 TextField(
                   controller: _code,
                   keyboardType: TextInputType.number,
+                  // oneTimeCode — iOS сам предложит код из входящей SMS/почты.
+                  autofillHints: const [AutofillHints.oneTimeCode],
                   maxLength: 6,
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, letterSpacing: 10),

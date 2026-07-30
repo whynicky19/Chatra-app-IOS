@@ -13,7 +13,19 @@ import '../widgets/toast.dart';
 Future<void> openRemoteFile(BuildContext context, ApiService api, String url, String name) async {
   final cleanUrl = url.split('#').first;
 
+  // Ссылку на навигатор берём ДО первого await: если экран закроют во время
+  // скачивания, context станет невалидным, а модалку всё равно нужно снять —
+  // иначе пользователь остаётся с barrierDismissible:false спиннером навсегда.
+  final nav = Navigator.of(context, rootNavigator: true);
+  final l = context.read<L10n>();
+
   var dialogClosed = false;
+  void closeDialog() {
+    if (dialogClosed) return;
+    dialogClosed = true;
+    if (nav.canPop()) nav.pop();
+  }
+
   showCupertinoDialog(
     context: context,
     barrierDismissible: false,
@@ -24,11 +36,11 @@ Future<void> openRemoteFile(BuildContext context, ApiService api, String url, St
       ),
     ),
   );
-  void closeDialog() {
-    if (!dialogClosed && context.mounted) {
-      dialogClosed = true;
-      Navigator.pop(context);
-    }
+
+  Future<void> openInBrowser() async {
+    final uri = Uri.tryParse(cleanUrl);
+    if (uri == null) return;
+    try { await launchUrl(uri, mode: LaunchMode.externalApplication); } catch (_) {}
   }
 
   try {
@@ -42,33 +54,30 @@ Future<void> openRemoteFile(BuildContext context, ApiService api, String url, St
     final file = File(filePath);
 
     if (!await file.exists()) {
-      await api.dio.download(cleanUrl, filePath,
+      // Чужой хост (R2/CDN) качаем клиентом без Authorization — токен наружу
+      // уходить не должен.
+      await api.clientForUrl(cleanUrl).download(cleanUrl, filePath,
           options: Options(receiveTimeout: const Duration(minutes: 5)));
     }
-    if (!context.mounted) return;
     closeDialog();
 
     final result = await OpenFile.open(filePath);
-    if (result.type != ResultType.done && context.mounted) {
-      await launchUrl(Uri.parse(cleanUrl), mode: LaunchMode.externalApplication);
-    }
+    if (result.type != ResultType.done) await openInBrowser();
   } on DioException catch (e) {
-    if (!context.mounted) return;
     closeDialog();
     final code = e.response?.statusCode;
     if (code == 404) {
-      showToast(context, context.read<L10n>().t('file_not_found_server'), error: true);
+      if (context.mounted) showToast(context, l.t('file_not_found_server'), error: true);
       return;
     }
     // 403 = подпись истекла; в браузере юзер увидит сырой JSON, поэтому говорим честно.
     if (code == 403) {
-      showToast(context, context.read<L10n>().t('file_link_expired'), error: true);
+      if (context.mounted) showToast(context, l.t('file_link_expired'), error: true);
       return;
     }
-    try { await launchUrl(Uri.parse(cleanUrl), mode: LaunchMode.externalApplication); } catch (_) {}
+    await openInBrowser();
   } catch (_) {
-    if (!context.mounted) return;
     closeDialog();
-    try { await launchUrl(Uri.parse(cleanUrl), mode: LaunchMode.externalApplication); } catch (_) {}
+    await openInBrowser();
   }
 }

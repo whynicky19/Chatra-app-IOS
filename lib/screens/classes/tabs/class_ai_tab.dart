@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/l10n_provider.dart';
 import '../../../services/api_service.dart';
+import '../../../utils/ai_context.dart';
 import '../../../utils/ai_quota.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/ai_limit_notice.dart';
@@ -117,8 +118,12 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
   }
 
   void _saveHistory() {
+    // Снапшот до асинхронного разрыва: _msgs может измениться (новый ответ ИИ,
+    // очистка чата), пока мы ждём SharedPreferences — тогда jsonEncode сериализует
+    // промежуточное состояние или упадёт на конкурентной модификации.
+    final snapshot = List<Map<String, String>>.from(_msgs);
     SharedPreferences.getInstance().then((prefs) {
-      try { prefs.setString(_historyKey, jsonEncode(_msgs)); } catch (_) {}
+      try { prefs.setString(_historyKey, jsonEncode(snapshot)); } catch (_) {}
     }).catchError((_) {});
   }
 
@@ -150,7 +155,9 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
     });
   }
 
-  void _send([String? override]) async {
+  // Future<void>, а не async void: из async void исключения не всплывают
+  // к вызывающему коду и теряются.
+  Future<void> _send([String? override]) async {
     final text = override ?? _ctrl.text.trim();
     if (text.isEmpty || _loading) return;
     if (_quota?.exhausted == true) {
@@ -184,7 +191,9 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
             'записывай в LaTeX: инлайн — \$...\$ или \\(...\\), блочные — \$\$...\$\$ '
             'или \\[...\\]. Код — в блоках ```язык.$lectureBlock'},
         ...visionPre,
-        ..._msgs.map((m) => {'role': m['role']!, 'content': m['text']!}),
+        // Только хвост переписки — см. utils/ai_context.dart. В классном чате
+        // это особенно важно: к истории добавляется ещё и lectureContext.
+        ...aiContextWindow(_msgs),
       ];
       final data = await api.aiChat(
         apiMsgs,

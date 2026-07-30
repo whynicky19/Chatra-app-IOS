@@ -1,11 +1,30 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- Объявляем явно, а не полагаемся на транзитивное подтягивание из
+         манифестов Firebase: набор зависимостей может измениться, и релиз
+         молча останется без сети (в шаблоне Flutter INTERNET есть только
+         в debug/profile). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <!-- Push-уведомления (Android 13+ требует runtime-разрешение). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+    <!-- Микрофон в приложении не используется: голосовых сообщений и записи
+         аудио нет. Разрешение приходило транзитивно из плагина record —
+         вырезаем, иначе Play показывает «Микрофон» в карточке приложения и
+         требует обоснование неиспользуемого чувствительного разрешения. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" tools:node="remove"/>
+    <!-- Точные будильники не нужны: локальные уведомления не планируются по
+         расписанию. Без удаления Play требует заполнить отдельную форму. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove"/>
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" tools:node="remove"/>
+
     <application
-        android:label="chatra_app"
+        android:label="Chatra"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -37,6 +56,14 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="chatra_default" />
+        <!-- Без явной монохромной иконки Android 5+ берёт иконку приложения и
+             рисует её силуэтом — в статус-баре получается белый квадрат. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notification" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notification_color" />
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileProvider"

@@ -87,7 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 56),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 380),
-              child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              child: AutofillGroup(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 _reveal(0, const Center(child: AppLogo(width: 104, height: 104))),
                 const SizedBox(height: 24),
 
@@ -108,6 +108,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _email,
                     keyboardType: TextInputType.emailAddress,
                     autocorrect: false,
+                    // autofillHints включают менеджеры паролей и системное
+                    // автозаполнение iOS/Android — без них вход приходится
+                    // набирать руками.
+                    autofillHints: const [AutofillHints.username, AutofillHints.email],
+                    textInputAction: TextInputAction.next,
                     decoration: const InputDecoration(
                       hintText: 'you@example.com',
                       prefixIcon: Padding(padding: EdgeInsets.only(left: 4),
@@ -122,6 +127,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextField(
                     controller: _pw,
                     obscureText: !_showPw,
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    autofillHints: const [AutofillHints.password],
+                    textInputAction: TextInputAction.done,
                     decoration: InputDecoration(
                       hintText: '••••••••',
                       prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
@@ -193,7 +202,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           fontSize: 13.5, color: primary, fontWeight: FontWeight.w700))),
                   ]),
                 ])),
-              ]),
+              ])),
             ),
           )),
         ])),

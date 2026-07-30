@@ -57,10 +57,11 @@ android/key.properties
 # iOS
 ios/Pods/
 ios/.symlinks/
+# ВНИМАНИЕ: ios/Podfile.lock НЕ игнорируем — без него версии CocoaPods
+# не зафиксированы и сборки на разных машинах/в CI расходятся.
 
 # flutter-plugins (старый формат)
 .flutter-plugins.claude/
 .claude/skills/
 *.md.save
-ios/Podfile.lock
 .claude/worktrees

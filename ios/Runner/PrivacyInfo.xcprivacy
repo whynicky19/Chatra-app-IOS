@@ -79,10 +79,14 @@
 				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
 			</array>
 		</dict>
-		<!-- Аудио: образец голоса для AI-аватара и голосовые сообщения. -->
+		<!-- Аудио НЕ собирается: голосовых сообщений и «AI-аватара» в
+		     приложении нет, микрофон не запрашивается. Блок
+		     NSPrivacyCollectedDataTypeAudioData удалён — он описывал
+		     нереализованную функцию и расходился с меткой App Privacy. -->
+		<!-- Диагностика: Crashlytics (отчёты о падениях). -->
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
-			<string>NSPrivacyCollectedDataTypeAudioData</string>
+			<string>NSPrivacyCollectedDataTypeCrashData</string>
 			<key>NSPrivacyCollectedDataTypeLinked</key>
 			<true/>
 			<key>NSPrivacyCollectedDataTypeTracking</key>
@@ -117,6 +121,27 @@
 			<key>NSPrivacyAccessedAPITypeReasons</key>
 			<array>
 				<string>C617.1</string>
+			</array>
+		</dict>
+		<!-- Disk space: path_provider/cached_network_image проверяют место
+		     перед записью во временную папку. E174.1 — запись файлов
+		     внутри контейнера приложения. -->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryDiskSpace</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>E174.1</string>
+			</array>
+		</dict>
+		<!-- System boot time: используется Crashlytics для привязки отчёта
+		     к сессии. 35F9.1 — измерение времени внутри приложения. -->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategorySystemBootTime</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>35F9.1</string>
 			</array>
 		</dict>
 	</array>

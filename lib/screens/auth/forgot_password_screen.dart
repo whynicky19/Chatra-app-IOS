@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -48,7 +49,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           .forgotPassword(_email.text.trim(), orgType: widget.orgType);
       if (!mounted) return;
       setState(() { _codeSent = true; _busy = false; });
-      if (devCode.isNotEmpty) _code.text = devCode;
+      // Автоподстановка кода — ТОЛЬКО в debug. В релизе принимать код из тела
+      // ответа нельзя: если бэкенд по любой причине вернёт dev_code в проде
+      // (забытый флаг, fallback при сбое SMTP, staging-домен в --dart-define),
+      // это превращается в захват любого аккаунта по одному лишь e-mail.
+      if (kDebugMode && devCode.isNotEmpty) _code.text = devCode;
       showToast(context, l.t('code_sent'));
     } catch (_) {
       if (!mounted) return;
@@ -110,6 +115,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     controller: _email,
                     keyboardType: TextInputType.emailAddress,
                     autocorrect: false,
+                    autofillHints: const [AutofillHints.username, AutofillHints.email],
+                    textInputAction: TextInputAction.done,
                     decoration: const InputDecoration(hintText: 'you@example.com',
                       prefixIcon: Padding(padding: EdgeInsets.only(left: 4), child: Icon(CupertinoIcons.mail, size: 18, color: C.text4))),
                     onChanged: (_) => setState(() { if (_error != null) _error = null; }),
@@ -120,6 +127,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   TextField(
                     controller: _code,
                     keyboardType: TextInputType.number,
+                    autofillHints: const [AutofillHints.oneTimeCode],
                     maxLength: 6,
                     textAlign: TextAlign.center,
                     style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: 8),
@@ -132,6 +140,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   TextField(
                     controller: _pw,
                     obscureText: !_showPw,
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    autofillHints: const [AutofillHints.newPassword],
                     decoration: InputDecoration(
                       hintText: '••••••••',
                       prefixIcon: const Padding(padding: EdgeInsets.only(left: 4), child: Icon(CupertinoIcons.lock, size: 18, color: C.text4)),

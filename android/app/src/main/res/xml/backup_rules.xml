@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Что НЕ попадает в облачный бэкап Android.
+
+  История переписки с ИИ кэшируется в SharedPreferences открытым текстом
+  (учебные вопросы, тексты заданий, иногда персональные данные). В бэкапе
+  это лежало бы в незашифрованном виде. Локальный кэш не нужен для
+  восстановления: история синхронизируется с сервером при входе.
+
+  Токены хранятся не здесь, а в EncryptedSharedPreferences
+  (flutter_secure_storage), и в бэкап не попадают.
+-->
+<full-backup-content>
+    <exclude domain="sharedpref" path="FlutterSharedPreferences.xml" />
+</full-backup-content>

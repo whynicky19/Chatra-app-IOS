@@ -85,7 +85,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               TextField(controller: _nameCtrl, onChanged: (_) => setState(() {}), decoration: const InputDecoration(
                 prefixIcon: Padding(padding: EdgeInsets.only(left: 4),
                   child: Icon(CupertinoIcons.person, size: 18, color: C.text4)))),
-              if (_nameCtrl.text.isNotEmpty && !_isCyrillicName(_nameCtrl.text))
+              if (_nameCtrl.text.isNotEmpty && !_isValidName(_nameCtrl.text))
                 Padding(padding: const EdgeInsets.only(top: 7),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -95,7 +95,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                     child: Row(children: [
                       const Icon(CupertinoIcons.xmark_circle, size: 14, color: C.red),
                       const SizedBox(width: 7),
-                      Expanded(child: Text(l.t('name_cyrillic_only'),
+                      Expanded(child: Text(l.t('name_letters_only'),
                         style: const TextStyle(fontSize: 12, color: C.red, fontWeight: FontWeight.w600))),
                     ]),
                   )),
@@ -261,9 +261,14 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     );
   }
 
-  bool _isCyrillicName(String name) {
-    if (name.trim().isEmpty) return true;
-    return RegExp(r'^[а-яА-ЯёЁәӘғҒқҚңҢөӨұҰүҮһҺіІ\s\-]+$').hasMatch(name.trim());
+  /// Любые буквы Unicode, пробел, дефис, апостроф — без цифр и спецсимволов.
+  ///
+  /// Здесь была та же кириллица-only проверка, что и на экране регистрации:
+  /// пользователь с латинским именем не мог сохранить профиль.
+  bool _isValidName(String name) {
+    final n = name.trim();
+    if (n.isEmpty) return true;
+    return RegExp(r"^[\p{L}\p{M}\s\-']+$", unicode: true).hasMatch(n);
   }
 
   Widget _fieldLabel(String s) => Padding(padding: const EdgeInsets.only(bottom: 7),

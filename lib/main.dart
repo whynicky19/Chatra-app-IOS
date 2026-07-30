@@ -117,6 +117,11 @@ Future<void> _start() async {
     if (auth.userId != lastUid) {
       lastUid = auth.userId;
       CrashReporting.setUser(auth.userId);
+      // Провайдеры живут всё время работы процесса. Без явного сброса при
+      // смене аккаунта (в том числе при выходе, когда userId → null) новый
+      // пользователь видит классы, посты, бейдж и ИИ-треды предыдущего.
+      classes.reset();
+      aiChats.reset();
     }
   });
 
@@ -181,9 +186,19 @@ class ChatraApp extends StatelessWidget {
       home: const _AuthGate(),
       onGenerateRoute: (s) {
         switch (s.name) {
-          case '/class': return MaterialPageRoute(builder: (_) => ClassDetailScreen(classId: s.arguments as int));
-          case '/archive': return MaterialPageRoute(builder: (_) => const ArchiveScreen());
-          default: return MaterialPageRoute(builder: (_) => const _AuthGate());
+          case '/class':
+            // Без проверки типа push с неожиданным class_id ронял построение
+            // маршрута TypeError'ом.
+            final id = s.arguments;
+            if (id is! int) return null;
+            return MaterialPageRoute(builder: (_) => ClassDetailScreen(classId: id));
+          case '/archive':
+            return MaterialPageRoute(builder: (_) => const ArchiveScreen());
+          default:
+            // Раньше здесь возвращался ещё один _AuthGate — неизвестный
+            // маршрут клал второй сплэш/шелл поверх существующего вместо
+            // понятной ошибки.
+            return null;
         }
       },
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import '../services/api_service.dart';
+import '../utils/initials.dart';
 
 class AuthProvider extends ChangeNotifier {
   final ApiService api;
@@ -30,14 +31,7 @@ class AuthProvider extends ChangeNotifier {
     return email.split('@').first;
   }
 
-  String get initials {
-    if (fullName.isNotEmpty) {
-      final parts = fullName.split(' ');
-      if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-      return fullName[0].toUpperCase();
-    }
-    return email.isNotEmpty ? email[0].toUpperCase() : '?';
-  }
+  String get initials => initialsFrom(fullName, email: email);
 
   String? _sessionEndReason;
   String? consumeSessionEndReason() {

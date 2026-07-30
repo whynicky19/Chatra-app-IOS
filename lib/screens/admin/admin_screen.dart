@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/errors.dart';
 import '../../utils/image_cache.dart';
 import '../../utils/dates.dart';
 import '../../widgets/app_dialog.dart';
@@ -38,7 +39,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 3, vsync: this);
+    _tabCtrl = TabController(length: 4, vsync: this);
     _initAll();
   }
 
@@ -50,7 +51,197 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
   @override void dispose() { _searchDebounce?.cancel(); _tabCtrl.dispose(); super.dispose(); }
 
   Future<void> _initAll() async {
-    await Future.wait([_load(), _loadClasses(), _loadAi()]);
+    await Future.wait([_load(), _loadClasses(), _loadAi(), _loadReports()]);
+  }
+
+  // ── Очередь модерации ──────────────────────────────────────────────────
+  // Строка 'no_reports' и пуш 'admin_report' в PushService существовали
+  // давно, но экрана к ним не было. Без него нечем закрыть требование
+  // App Store Guideline 1.2 о реакции на жалобы.
+  List<dynamic> _reports = [];
+  bool _reportsLoading = true;
+
+  Future<void> _loadReports() async {
+    if (mounted) setState(() => _reportsLoading = true);
+    try {
+      _reports = await context.read<ApiService>().adminReports();
+    } catch (e) {
+      logError('AdminScreen.loadReports', e);
+    }
+    if (mounted) setState(() => _reportsLoading = false);
+  }
+
+  Future<void> _resolveReport(dynamic r) async {
+    final l = context.read<L10n>();
+    final id = (r['id'] as num?)?.toInt();
+    if (id == null) return;
+    final ok = await showConfirmDialog(
+      context,
+      title: l.t('report_resolve'),
+      confirmText: l.t('report_resolve'),
+      cancelText: l.t('cancel'),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      await context.read<ApiService>().adminResolveReport(id);
+      if (!mounted) return;
+      _removeReportFromList(id);
+      showToast(context, l.t('report_resolved'));
+    } catch (e) {
+      logError('AdminScreen.resolveReport', e);
+      if (mounted) showToast(context, l.t('report_error'), error: true);
+    }
+  }
+
+  void _removeReportFromList(int id) {
+    setState(() => _reports = _reports.where((x) => (x['id'] as num?)?.toInt() != id).toList());
+  }
+
+  Future<void> _deleteReportContent(dynamic r) async {
+    final l = context.read<L10n>();
+    final id = (r['id'] as num?)?.toInt();
+    if (id == null) return;
+    final ok = await showConfirmDialog(
+      context,
+      title: l.t('report_delete_content'),
+      message: l.t('report_delete_content_msg'),
+      danger: true,
+      confirmText: l.t('delete'),
+      cancelText: l.t('cancel'),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      await context.read<ApiService>().adminDeleteReportContent(id);
+      if (!mounted) return;
+      _removeReportFromList(id);
+      showToast(context, l.t('report_content_deleted'));
+    } catch (e) {
+      logError('AdminScreen.deleteReportContent', e);
+      if (mounted) showToast(context, l.t('report_error'), error: true);
+    }
+  }
+
+  Widget _reportsTab() {
+    final l = context.watch<L10n>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (_reportsLoading && _reports.isEmpty) {
+      return const Center(child: CupertinoActivityIndicator(radius: 13));
+    }
+    if (_reports.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: _loadReports,
+        child: ListView(children: [
+          const SizedBox(height: 90),
+          Icon(CupertinoIcons.checkmark_shield, size: 44, color: C.text4.withValues(alpha: 0.6)),
+          const SizedBox(height: 14),
+          Center(
+            child: Text(l.t('no_reports'),
+                style: TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w700, color: adaptiveText1(context))),
+          ),
+        ]),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadReports,
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(14, 8, 14, 100),
+        itemCount: _reports.length,
+        itemBuilder: (_, i) {
+          final r = _reports[i];
+          final targetType = (r['target_type'] ?? '').toString();
+          final targetKey = switch (targetType) {
+            'post' => 'report_target_post',
+            'assignment' => 'report_target_assignment',
+            'submission' => 'report_target_submission',
+            'ai_message' => 'report_target_ai_message',
+            _ => 'report_target_user',
+          };
+          final reasonKey = switch ((r['reason'] ?? '').toString()) {
+            'spam' => 'report_reason_spam',
+            'abuse' => 'report_reason_abuse',
+            'inappropriate' => 'report_reason_inappropriate',
+            'academic' => 'report_reason_academic',
+            _ => 'report_reason_other',
+          };
+          final comment = (r['comment'] ?? '').toString();
+          final reporter = (r['reporter_name'] ?? r['reporter_email'] ?? '').toString();
+          final className = (r['class_name'] ?? '').toString();
+          final targetTitle = (r['target_title'] ?? '').toString();
+          final canDeleteContent = targetType == 'post' || targetType == 'assignment';
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(AppRadii.card),
+              boxShadow: cardShadow(isDark),
+            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: C.red.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(l.t(reasonKey),
+                      style: const TextStyle(
+                          fontSize: 10.5, fontWeight: FontWeight.w700, color: C.red)),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('${l.t(targetKey)} #${r['target_id']}',
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 12, color: C.text4)),
+                ),
+                const SizedBox(width: 8),
+                Text(fmtDateTimeLocal((r['created_at'] ?? '').toString()),
+                    style: const TextStyle(fontSize: 11, color: C.text4)),
+              ]),
+              if (className.isNotEmpty || targetTitle.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  [
+                    if (className.isNotEmpty) '${l.t('report_class_prefix')}: $className',
+                    if (targetTitle.isNotEmpty) targetTitle,
+                  ].join(' · '),
+                  style: const TextStyle(
+                      fontSize: 12.5, fontWeight: FontWeight.w600, color: C.text3),
+                ),
+              ],
+              if (comment.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Text(comment,
+                    style: TextStyle(fontSize: 13.5, height: 1.4, color: adaptiveText1(context))),
+              ],
+              if (reporter.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text('${l.t('report')}: $reporter',
+                    style: const TextStyle(fontSize: 11.5, color: C.text4)),
+              ],
+              const SizedBox(height: 12),
+              Wrap(spacing: 8, runSpacing: 8, children: [
+                _ReportActionChip(
+                  label: l.t('report_resolve'),
+                  color: Theme.of(context).colorScheme.primary,
+                  onTap: () => _resolveReport(r),
+                ),
+                if (canDeleteContent)
+                  _ReportActionChip(
+                    label: l.t('report_delete_content'),
+                    color: C.red,
+                    onTap: () => _deleteReportContent(r),
+                  ),
+              ]),
+            ]),
+          );
+        },
+      ),
+    );
   }
 
   Future<void> _load() async {
@@ -72,7 +263,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
       final id = (c['id'] as num?)?.toInt();
       if (id == null) return const MapEntry(0, <dynamic>[]);
       try {
-        final members = await api.getClassMembers(id);
+        final members = await api.getClassMembers(id, isAdmin: true);
         return MapEntry(id, members);
       } catch (_) {
         return MapEntry(id, <dynamic>[]);
@@ -261,6 +452,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                 Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text(l.t('users')))),
                 const Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text('AI'))),
                 Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text(l.t('class_tab')))),
+                Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text(l.t('reports_queue')))),
               ],
             ),
           ),
@@ -268,6 +460,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             _memoUsersTab(tabSig),
             _memoAiTab(tabSig),
             _memoClassesTab(tabSig),
+            _reportsTab(),
           ])),
         ]),
       )),
@@ -808,7 +1001,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           Future<void> doRefresh() async {
             final api = context.read<ApiService>();
             try {
-              final fresh = await api.getClassMembers(classId);
+              final fresh = await api.getClassMembers(classId, isAdmin: true);
               if (mounted) setState(() => _classMembers[classId] = fresh);
             } catch (_) {}
             if (mounted) setS(() {});
@@ -1428,6 +1621,29 @@ class _AiFilterChip extends StatelessWidget {
           boxShadow: selected ? primaryGlow(primary, opacity: 0.28) : null,
         ),
         child: Text(label, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: selected ? Colors.white : C.text3)),
+      ),
+    );
+  }
+}
+
+class _ReportActionChip extends StatelessWidget {
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+  const _ReportActionChip({required this.label, required this.color, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Text(label,
+            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: color)),
       ),
     );
   }

@@ -18,6 +18,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/app_dialog.dart';
 import '../../utils/image_cache.dart';
 import '../../utils/dates.dart';
+import '../../utils/upload_limits.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/toast.dart';
@@ -340,7 +341,10 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       if (!await file.exists()) {
         if (!mounted || cancelled) return;
         final api = context.read<ApiService>();
-        await api.dio.download(
+        // clientForUrl, а не api.dio: файлы лежат в R2, и на чужой хост
+        // Authorization отправлять нельзя — иначе access-токен утекает в
+        // логи CDN.
+        await api.clientForUrl(cleanUrl).download(
           cleanUrl,
           filePath,
           cancelToken: cancelToken,
@@ -578,13 +582,14 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             const SizedBox(height: 12),
             GestureDetector(
               onTap: () async {
-                final result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
-                if (result != null && mounted) {
+                final picked = await pickUploadFiles(context, alreadyPicked: editFiles.length);
+                if (picked != null && mounted) {
                   final api = context.read<ApiService>();
-                  for (final pf in result.files) {
-                    if (pf.path == null) continue;
+                  for (final pf in picked) {
+                    final path = pf.path;
+                    if (path == null) continue;
                     try {
-                      final res = await api.uploadFile(pf.path!, pf.name);
+                      final res = await api.uploadFile(path, pf.name);
                       final url = res['url'] ?? res['file_url'] ?? res['path'];
                       if (url == null || url.toString().isEmpty) throw Exception('upload_failed');
                       setS(() => editFiles.add('$url#${Uri.encodeComponent(pf.name)}'));
@@ -796,8 +801,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           const SizedBox(height: 20),
           _fieldLabel2(l.t('attach_files')),
           GestureDetector(onTap: () async {
-            final result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
-            if (result != null) setS(() => lectureFiles.addAll(result.files));
+            final picked = await pickUploadFiles(context, alreadyPicked: lectureFiles.length);
+            if (picked != null) setS(() => lectureFiles.addAll(picked));
           }, child: Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: adaptiveBorder(context))),
             child: Column(children: [
               const Icon(CupertinoIcons.arrow_up_doc, size: 24, color: C.text3), const SizedBox(height: 6),
@@ -832,12 +837,15 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   // Сбой аплоада обязан прервать публикацию: иначе пост уходит с неполным списком файлов.
                   // Файлы грузятся параллельно (Future.wait), а не по одному — иначе N файлов ждут N последовательных запросов.
                   try {
+                    // Последовательно, а не Future.wait: параллельные multipart-потоки
+                    // держат в памяти сразу все файлы (риск OOM на бюджетных Android),
+                    // а eagerError отменяет только ожидание — трафик продолжает литься.
                     final validFiles = lectureFiles.where((pf) => pf.path != null).toList();
-                    final results = await Future.wait(validFiles.map((pf) => api.uploadFile(pf.path!, pf.name)), eagerError: true);
-                    for (var i = 0; i < validFiles.length; i++) {
-                      final url = results[i]['url'] ?? results[i]['file_url'] ?? results[i]['path'];
+                    for (final pf in validFiles) {
+                      final res = await api.uploadFile(pf.path!, pf.name);
+                      final url = res['url'] ?? res['file_url'] ?? res['path'];
                       if (url == null || url.toString().isEmpty) throw Exception('upload_failed');
-                      fileUrls.add('$url#${Uri.encodeComponent(validFiles[i].name)}');
+                      fileUrls.add('$url#${Uri.encodeComponent(pf.name)}');
                     }
                   } catch (_) {
                     if (mounted && ctx.mounted) { showToast(context, l.t('upload_failed'), error: true); setS(() => isSubmitting = false); }
@@ -919,8 +927,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             const Spacer(),
             GestureDetector(
               onTap: () async {
-                final result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
-                if (result != null) setS(() => attachedFiles.addAll(result.files));
+                final picked = await pickUploadFiles(context, alreadyPicked: attachedFiles.length);
+                if (picked != null) setS(() => attachedFiles.addAll(picked));
               },
               child: Text('+ ${l.t('add')}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
             ),
@@ -953,8 +961,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               ]),
               const SizedBox(height: 12),
               GestureDetector(onTap: () async {
-                final result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
-                if (result != null) setS(() => referenceFiles.addAll(result.files));
+                final picked = await pickUploadFiles(context, alreadyPicked: referenceFiles.length);
+                if (picked != null) setS(() => referenceFiles.addAll(picked));
               },
               child: Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: adaptiveBorder(context))),
                 child: Column(children: [
@@ -1032,14 +1040,16 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
 
                   final fileUrls = <String>[];
                   // Сбой аплоада обязан прервать создание задания: иначе оно уходит с неполным списком файлов.
-                  // Файлы грузятся параллельно (Future.wait), а не по одному — иначе N файлов ждут N последовательных запросов.
+                  // Последовательно, а не Future.wait: параллельные multipart-потоки
+                  // держат в памяти сразу все файлы (риск OOM на бюджетных Android),
+                  // а eagerError отменяет только ожидание — трафик продолжает литься.
                   try {
                     final validFiles = [...attachedFiles, ...referenceFiles].where((pf) => pf.path != null).toList();
-                    final results = await Future.wait(validFiles.map((pf) => api.uploadFile(pf.path!, pf.name)), eagerError: true);
-                    for (var i = 0; i < validFiles.length; i++) {
-                      final url = results[i]['url'] ?? results[i]['file_url'] ?? results[i]['path'];
+                    for (final pf in validFiles) {
+                      final res = await api.uploadFile(pf.path!, pf.name);
+                      final url = res['url'] ?? res['file_url'] ?? res['path'];
                       if (url == null || url.toString().isEmpty) throw Exception('upload_failed');
-                      fileUrls.add('$url#${Uri.encodeComponent(validFiles[i].name)}');
+                      fileUrls.add('$url#${Uri.encodeComponent(pf.name)}');
                     }
                   } catch (_) {
                     if (mounted && ctx.mounted) { showToast(context, l.t('upload_failed'), error: true); setS(() => isSubmitting = false); }
@@ -1187,8 +1197,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             const Spacer(),
             GestureDetector(
               onTap: () async {
-                final r = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
-                if (r != null) setS(() => newFiles.addAll(r.files));
+                final picked = await pickUploadFiles(context, alreadyPicked: newFiles.length);
+                if (picked != null) setS(() => newFiles.addAll(picked));
               },
               child: Text('+ ${l.t('add')}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
             ),
@@ -1274,8 +1284,9 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   // Сбой аплоада обязан прервать сохранение: иначе задание уходит с потерянным файлом.
                   try {
                     for (final pf in newFiles) {
-                      if (pf.path == null) continue;
-                      final res = await api.uploadFile(pf.path!, pf.name);
+                      final path = pf.path;
+                      if (path == null) continue;
+                      final res = await api.uploadFile(path, pf.name);
                       final url = res['url'] ?? res['file_url'] ?? res['path'];
                       if (url == null || url.toString().isEmpty) throw Exception('upload_failed');
                       uploadedUrls.add('$url#${Uri.encodeComponent(pf.name)}');

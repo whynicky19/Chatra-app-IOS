@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../../providers/l10n_provider.dart';
 import '../../../services/api_service.dart';
 import '../../../theme/app_theme.dart';
+import '../../../utils/initials.dart';
 import '../../../widgets/app_dialog.dart';
 import '../../../widgets/toast.dart';
 import '../class_detail_utils.dart';
@@ -137,7 +138,10 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               final sub = _subFor(a['id']);
               return dl.isAfter(now) && (sub == null || sub['status'] != 'graded');
             }).toList();
-            upcoming.sort((a, b) => (a['deadline'] ?? '').compareTo(b['deadline'] ?? ''));
+            // toString перед сравнением: если сервер отдаст дату числом,
+            // compareTo на dynamic упадёт в рантайме.
+            upcoming.sort((a, b) =>
+                '${a['deadline'] ?? ''}'.compareTo('${b['deadline'] ?? ''}'));
             if (upcoming.isEmpty) {
               return Container(
               padding: const EdgeInsets.all(16),
@@ -151,7 +155,10 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               ]));
             }
             final next = upcoming.first;
-            final dl = parseServerDate(next['deadline'])!;
+            // Без force unwrap: связь с фильтром выше неявная и легко ломается
+            // при рефакторинге, а падение здесь — красный экран внутри build.
+            final dl = parseServerDate(next['deadline']);
+            if (dl == null) return const SizedBox.shrink();
             final diff = dl.difference(now);
             final days = diff.inDays;
             final hours = diff.inHours % 24;
@@ -371,8 +378,8 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             final graded = subs.where((s) => s['status'] == 'graded').length;
             final pending = subs.length - graded;
             if (selectedSub != null) {
-              final name = selectedSub['student_name'] ?? '#${selectedSub['student_id']}';
-              final initials = name.length >= 2 ? '${name[0]}${name.split(' ').length > 1 ? name.split(' ').last[0] : name[1]}'.toUpperCase() : name[0].toUpperCase();
+              final name = (selectedSub['student_name'] ?? '#${selectedSub['student_id']}').toString();
+              final initials = initialsFrom(name);
               final grade = selectedSub['grade'];
               final score = grade?['score'];
               final feedback = grade?['feedback'];
@@ -682,8 +689,8 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               itemBuilder: (ctx, index) {
                 if (index < gradeHeaders.length) return gradeHeaders[index];
                 final s = filtered[index - gradeHeaders.length];
-                final name = s['student_name'] ?? s['student_email'] ?? '#${s['student_id']}';
-                final initials = name.length >= 2 ? '${name[0]}${name.split(' ').length > 1 ? name.split(' ').last[0] : name[1]}'.toUpperCase() : name[0].toUpperCase();
+                final name = (s['student_name'] ?? s['student_email'] ?? '#${s['student_id']}').toString();
+                final initials = initialsFrom(name);
                 final score = s['grade']?['score'];
                 final isGraded = s['status'] == 'graded';
                 final isNeedsReview = s['status'] == 'needs_review';

@@ -21,7 +21,7 @@ plugins {
 
 android {
     namespace = "kz.chatra.app"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 35
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -37,8 +37,12 @@ android {
 
     defaultConfig {
         applicationId = "kz.chatra.app"
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        // Версии зафиксированы явно, а не взяты из flutter.*: иначе итоговый
+        // targetSdk зависит от версии Flutter SDK на машине сборки, и после
+        // отката SDK получается AAB с устаревшим target, который Play не
+        // принимает (требование targetSdk >= 35 действует с 31.08.2025).
+        minSdk = 24          // требование firebase_messaging 16.x
+        targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -56,9 +60,27 @@ android {
 
     buildTypes {
         release {
+            // Уменьшение размера и обфускация Java/Kotlin-части.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+
             signingConfig = if (hasReleaseKeystore) {
                 signingConfigs.getByName("release")
             } else {
+                // Раньше здесь было только предупреждение в логе — его легко
+                // не заметить, и в Play уезжал AAB, подписанный debug-ключом
+                // (консоль отклоняет такую загрузку). Для CI и для любой
+                // осознанной релизной сборки падаем сразу.
+                if (project.hasProperty("ciRelease")) {
+                    throw GradleException(
+                        "android/key.properties не найден — релизная сборка запрещена. " +
+                        "См. key.properties.example."
+                    )
+                }
                 logger.warn("⚠️  android/key.properties не найден — release подписан DEBUG-ключом. Такой билд Google Play не примет.")
                 signingConfigs.getByName("debug")
             }

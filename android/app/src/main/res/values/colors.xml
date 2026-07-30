@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#FFFFFF</color>
+    <!-- Акцент уведомлений: фирменный бирюзовый (совпадает с primaryColor
+         для org_type=university в OrgProvider). -->
+    <color name="notification_color">#FF00B1C9</color>
 </resources>

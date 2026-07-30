@@ -28,17 +28,8 @@
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsLocalNetworking</key>
-		<true/>
-	</dict>
-	<key>NSLocalNetworkUsageDescription</key>
-	<string>Доступ к локальной сети нужен для подключения к дев-серверу при разработке</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Доступ к микрофону для голосовых сообщений и записи образца голоса для AI-аватара</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Доступ к фото нужен, чтобы прикреплять изображения в чате</string>
+	<string>Доступ к фотогалерее нужен, чтобы прикреплять изображения к материалам, заданиям и обложкам классов</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -62,6 +53,10 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

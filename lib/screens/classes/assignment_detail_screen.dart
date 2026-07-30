@@ -13,6 +13,7 @@ import 'class_detail_utils.dart';
 import 'widgets/detail_page_theme.dart';
 import 'widgets/file_card.dart';
 import '../../utils/dates.dart';
+import '../../utils/upload_limits.dart';
 
 class _UploadFailure implements Exception {
   final String fileName;
@@ -185,8 +186,9 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
       final api = context.read<ApiService>();
       final fileUrls = <String>[];
       for (final pf in _pickedFiles) {
-        if (pf.path == null) continue;
-        final res = await api.uploadFile(pf.path!, pf.name);
+        final path = pf.path;
+        if (path == null) continue;
+        final res = await api.uploadFile(path, pf.name);
         final url = res['url'] ?? res['file_url'] ?? res['path'];
         if (url == null) throw _UploadFailure(pf.name);
         fileUrls.add('$url#${Uri.encodeComponent(pf.name)}');
@@ -572,8 +574,8 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                     const SizedBox(height: 10),
                     GestureDetector(
                       onTap: () async {
-                        final result = await FilePicker.platform.pickFiles(allowMultiple: true, type: FileType.any);
-                        if (result != null) setState(() => _pickedFiles = result.files);
+                        final picked = await pickUploadFiles(context);
+                        if (picked != null) setState(() => _pickedFiles = picked);
                       },
                       child: Container(
                         padding: const EdgeInsets.all(14),

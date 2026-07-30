@@ -7,6 +7,7 @@ import '../../providers/org_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_logo.dart';
 import '../../widgets/toast.dart';
+import '../legal/privacy_policy_screen.dart';
 import '../legal/terms_screen.dart';
 import 'verify_email_screen.dart';
 
@@ -27,16 +28,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   void dispose() { _name.dispose(); _email.dispose(); _pw.dispose(); super.dispose(); }
 
-  bool get _nameIsCyrillic {
+  /// Проверяем не алфавит, а осмысленность: любые буквы Unicode, пробел, дефис,
+  /// апостроф — без цифр и спецсимволов.
+  ///
+  /// Раньше здесь стояло требование «только кириллица». Это блокировало
+  /// регистрацию любому пользователю с латинским именем — в том числе ревьюеру
+  /// App Store, который вводит «John Smith» и получает заблокированную кнопку
+  /// (отклонение по Guideline 2.1 «не удалось завершить регистрацию»).
+  /// Заодно отсекалась казахская латиница.
+  bool get _nameIsValid {
     final n = _name.text.trim();
     if (n.isEmpty) return true;
-    return RegExp(r'^[а-яА-ЯёЁәӘғҒқҚңҢөӨұҰүҮһҺіІ\s\-]+$').hasMatch(n);
+    return RegExp(r"^[\p{L}\p{M}\s\-']+$", unicode: true).hasMatch(n);
   }
 
   bool get _isValid {
-    final parts = _name.text.trim().split(' ').where((s) => s.isNotEmpty).toList();
+    final parts = _name.text.trim().split(RegExp(r'\s+')).where((s) => s.isNotEmpty).toList();
     return parts.length >= 2 &&
-        _nameIsCyrillic &&
+        _nameIsValid &&
         RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(_email.text.trim()) &&
         _pw.text.length >= 8 &&
         _pwScore > 40 &&
@@ -121,7 +130,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final primary = org.primaryColor;
     final canSubmit = !auth.isLoading && _isValid && !_submitted;
 
-    final nameWords = _name.text.trim().split(' ').where((s) => s.isNotEmpty).length;
+    final nameWords = _name.text.trim().split(RegExp(r'\s+')).where((s) => s.isNotEmpty).length;
 
     return Scaffold(
       backgroundColor: isDark ? C.darkBg : C.bg,
@@ -150,6 +159,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   _fieldLabel(l.t('full_name_label')),
                   TextField(
                     controller: _name,
+                    autofillHints: const [AutofillHints.name],
+                    textInputAction: TextInputAction.next,
                     decoration: InputDecoration(
                       hintText: l.t('fio_placeholder'),
                       prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
@@ -159,8 +170,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   if (_name.text.isNotEmpty && nameWords < 2)
                     _hint(l.t('enter_full_name')),
-                  if (_name.text.isNotEmpty && nameWords >= 2 && !_nameIsCyrillic)
-                    _hint(l.t('name_cyrillic_only'), error: true),
+                  if (_name.text.isNotEmpty && nameWords >= 2 && !_nameIsValid)
+                    _hint(l.t('name_letters_only'), error: true),
                   const SizedBox(height: 14),
 
                   _fieldLabel('Email'),
@@ -168,6 +179,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     controller: _email,
                     keyboardType: TextInputType.emailAddress,
                     autocorrect: false,
+                    autofillHints: const [AutofillHints.username, AutofillHints.email],
+                    textInputAction: TextInputAction.next,
                     decoration: const InputDecoration(
                       hintText: 'you@example.com',
                       prefixIcon: Padding(padding: EdgeInsets.only(left: 4),
@@ -181,6 +194,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   TextField(
                     controller: _pw,
                     obscureText: !_showPw,
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    // newPassword — чтобы менеджер паролей предложил
+                    // сгенерировать надёжный, а не подставил существующий.
+                    autofillHints: const [AutofillHints.newPassword],
+                    textInputAction: TextInputAction.done,
                     decoration: InputDecoration(
                       hintText: '••••••••',
                       prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
@@ -246,6 +265,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                   const SizedBox(width: 10),
+                  // Политика конфиденциальности обязана быть доступна В МОМЕНТ
+                  // сбора данных, а не только в настройках после входа —
+                  // Apple 5.1.1(i) и требования GDPR об информировании.
                   Expanded(child: Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
                     GestureDetector(
                       onTap: () => setState(() => _agreedTerms = !_agreedTerms),
@@ -256,6 +278,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       onTap: () => Navigator.push(context,
                         MaterialPageRoute(builder: (_) => const TermsScreen())),
                       child: Text(l.t('terms_view'),
+                        style: TextStyle(fontSize: 13, color: primary, fontWeight: FontWeight.w700)),
+                    ),
+                    const Text(' · ', style: TextStyle(fontSize: 13, color: C.text4)),
+                    GestureDetector(
+                      onTap: () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
+                      child: Text(l.t('pp_title'),
                         style: TextStyle(fontSize: 13, color: primary, fontWeight: FontWeight.w700)),
                     ),
                   ])),

@@ -9,11 +9,13 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/l10n_provider.dart';
 import '../../../providers/ai_chats_provider.dart';
 import '../../../services/api_service.dart';
+import '../../../utils/ai_context.dart';
 import '../../../utils/ai_quota.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/ai_limit_notice.dart';
 import '../../../widgets/toast.dart';
 import '../../../utils/dates.dart';
+import '../../moderation/report_sheet.dart';
 import 'ai_message_content.dart';
 
 /// Тело одной переписки с главным ИИ-ассистентом: список сообщений + композер.
@@ -52,19 +54,25 @@ class _AiConversationViewState extends State<AiConversationView> {
   // резкого появления. Новый пустой чат виден сразу, скрывать нечего.
   bool _listVisible = false;
 
+  /// uid фиксируется один раз в initState. Раньше он читался через
+  /// context.read внутри _loadLocal/_saveHistory — то есть УЖЕ ПОСЛЕ
+  /// асинхронного разрыва (await SharedPreferences / .then). Если пользователь
+  /// закрывал чат в этот момент (отправил сообщение и сразу свайпнул назад),
+  /// context.read на деактивированном виджете бросал
+  /// «Looking up a deactivated widget's ancestor is unsafe».
+  late final String _uidPart;
+
   @override
   void initState() {
     super.initState();
+    _uidPart = context.read<AuthProvider>().userId?.toString() ?? 'anon';
     _threadId = widget.threadId;
     _listVisible = _threadId == null;
     if (_threadId != null) _restoreHistory(_threadId!);
     _loadQuota();
   }
 
-  String _historyKey(int threadId) {
-    final uid = context.read<AuthProvider>().userId;
-    return 'ai_chat_history_v2_${uid ?? 'anon'}_$threadId';
-  }
+  String _historyKey(int threadId) => 'ai_chat_history_v2_${_uidPart}_$threadId';
 
   Future<void> _restoreHistory(int threadId) async {
     final local = await _loadLocal(threadId);
@@ -143,9 +151,13 @@ class _AiConversationViewState extends State<AiConversationView> {
   void _saveHistory() {
     final threadId = _threadId;
     if (threadId == null) return;
+    // Ключ и снапшот считаем ДО асинхронного разрыва: _msgs может измениться,
+    // пока мы ждём SharedPreferences.
+    final key = _historyKey(threadId);
+    final snapshot = List<Map<String, String>>.from(_msgs);
     SharedPreferences.getInstance().then((prefs) {
       try {
-        prefs.setString(_historyKey(threadId), jsonEncode(_msgs));
+        prefs.setString(key, jsonEncode(snapshot));
       } catch (_) {}
     }).catchError((_) {});
   }
@@ -223,7 +235,9 @@ class _AiConversationViewState extends State<AiConversationView> {
     }
   }
 
-  void _send([String? override]) async {
+  // Future<void>, а не async void: из async void исключения не всплывают
+  // к вызывающему коду и теряются.
+  Future<void> _send([String? override]) async {
     final text = override ?? _ctrl.text.trim();
     if (text.isEmpty || _loading) return;
     if (_quota?.exhausted == true) {
@@ -252,7 +266,9 @@ class _AiConversationViewState extends State<AiConversationView> {
               'Все математические формулы пиши в LaTeX: инлайн — между одинарными \$...\$, '
               'формулу на отдельной строке — между двойными \$\$...\$\$. Не используй другой синтаксис для формул.'
         },
-        ..._msgs.map((m) => {'role': m['role']!, 'content': m['text']!}),
+        // Только хвост переписки: полная история росла без ограничений и
+        // упиралась в лимит контекста модели. См. utils/ai_context.dart.
+        ...aiContextWindow(_msgs),
       ];
       final data = await api.aiChat(apiMsgs, threadId: threadId);
       if (!mounted) return;
@@ -510,6 +526,9 @@ class _AiConversationViewState extends State<AiConversationView> {
         alignment: Alignment.centerLeft,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
           GestureDetector(
+            // Долгое нажатие — копирование, как и раньше. Жалоба вынесена в
+            // отдельную кнопку под сообщением: Apple требует явный, находимый
+            // механизм репорта на генеративный контент (Guideline 1.2).
             onLongPress: () {
               HapticFeedback.mediumImpact();
               Clipboard.setData(ClipboardData(text: text));
@@ -534,11 +553,32 @@ class _AiConversationViewState extends State<AiConversationView> {
               ),
             ),
           ),
-          if ((m['time'] ?? '').isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(left: 7, top: 5),
-              child: Text(m['time']!, style: const TextStyle(fontSize: 10.5, color: C.text4)),
-            ),
+          Padding(
+            padding: const EdgeInsets.only(left: 7, top: 5),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              if ((m['time'] ?? '').isNotEmpty)
+                Text(m['time']!, style: const TextStyle(fontSize: 10.5, color: C.text4)),
+              if ((m['time'] ?? '').isNotEmpty) const SizedBox(width: 10),
+              GestureDetector(
+                onTap: () => openReportSheet(
+                  context,
+                  target: ReportTarget.aiMessage,
+                  targetId: _threadId ?? 0,
+                ),
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(CupertinoIcons.flag, size: 10.5, color: C.text4.withValues(alpha: 0.8)),
+                    const SizedBox(width: 3),
+                    Text(l.t('report'),
+                        style: TextStyle(
+                            fontSize: 10.5, color: C.text4.withValues(alpha: 0.8))),
+                  ]),
+                ),
+              ),
+            ]),
+          ),
         ]),
       ),
     );

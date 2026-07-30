@@ -6,6 +6,13 @@ import '../models/ai_thread.dart';
 class ApiService {
   late final Dio _dio;
   Dio get dio => _dio;
+
+  /// Клиент БЕЗ интерцептора авторизации — для скачивания файлов по абсолютным
+  /// URL, которые указывают на чужой хост (R2/CDN, подписанные ссылки).
+  /// Через него Bearer-токен физически не может уйти третьей стороне.
+  late final Dio _plainDio;
+  Dio get downloadClient => _plainDio;
+
   String? _token;
   VoidCallback? onUnauthorized;
   VoidCallback? onAccountBlocked;
@@ -22,6 +29,23 @@ class ApiService {
 
   String baseUrl;
 
+  /// Хост собственного API. Токен добавляется ТОЛЬКО к запросам на него.
+  late final String _apiHost = Uri.parse(baseUrl).host;
+
+  /// Запрос идёт на наш бэкенд? Относительные пути (host пуст до склейки с
+  /// baseUrl) считаем своими; абсолютные — сверяем по хосту.
+  bool _isOwnHost(RequestOptions options) {
+    final host = options.uri.host;
+    return host.isEmpty || host == _apiHost;
+  }
+
+  /// Публичная проверка: нужен вызывающему коду, чтобы выбрать клиент для
+  /// скачивания (свой — [dio], чужой — [downloadClient]).
+  bool isOwnHostUrl(String url) {
+    final host = Uri.tryParse(url)?.host ?? '';
+    return host.isEmpty || host == _apiHost;
+  }
+
   ApiService({required this.baseUrl}) {
     _dio = Dio(BaseOptions(
   baseUrl: baseUrl,
@@ -31,6 +55,11 @@ class ApiService {
     'ngrok-skip-browser-warning': 'true',
   },
 ));
+
+    _plainDio = Dio(BaseOptions(
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(minutes: 5),
+    ));
 
     _dio.interceptors.add(InterceptorsWrapper(
   onRequest: (options, handler) {
@@ -59,7 +88,12 @@ class ApiService {
 
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) {
-        if (_token != null && options.extra['_skipAuth'] != true) {
+        // Токен уходит ТОЛЬКО на собственный хост. Абсолютные URL файлов
+        // указывают на R2/CDN — туда Authorization отправлять нельзя, иначе
+        // access-токен утекает третьей стороне (она логирует заголовки).
+        if (_token != null &&
+            options.extra['_skipAuth'] != true &&
+            _isOwnHost(options)) {
           options.headers['Authorization'] = 'Bearer $_token';
         }
         return handler.next(options);
@@ -71,10 +105,15 @@ class ApiService {
           return handler.next(error);
         }
 
-        if (status == 401 && error.requestOptions.path != '/auth/refresh') {
+        // _authRetried не даёт зациклиться: сервер, который отдаёт 401 даже на
+        // свежий токен, иначе уводит клиент в бесконечный refresh → retry → 401.
+        if (status == 401 &&
+            error.requestOptions.path != '/auth/refresh' &&
+            error.requestOptions.extra['_authRetried'] != true) {
           final newAccess = await _refreshAccessToken();
           if (newAccess != null) {
             final opts = error.requestOptions;
+            opts.extra['_authRetried'] = true;
             opts.headers['Authorization'] = 'Bearer $newAccess';
             try {
               final response = await _dio.fetch(opts);
@@ -127,6 +166,22 @@ class ApiService {
 
   void setToken(String? token) => _token = token;
   String? get token => _token;
+
+  /// Безопасное приведение тела ответа к списку.
+  ///
+  /// Голое `response.data as List` роняет приложение TypeError'ом, когда
+  /// прокси/ngrok/Cloudflare вместо JSON отдают HTML-страницу ошибки или
+  /// пустое тело. Часть методов уже была защищена, часть — нет; теперь
+  /// правило одно на всех.
+  static List<dynamic> _asList(dynamic data) {
+    if (data is List) return data;
+    if (data is Map && data['items'] is List) return data['items'] as List;
+    return const [];
+  }
+
+  /// То же для объектов.
+  static Map<String, dynamic> _asMap(dynamic data) =>
+      data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{};
 
   Future<String?> _refreshAccessToken() {
     return _refreshing ??= _performRefresh().whenComplete(() => _refreshing = null);
@@ -199,7 +254,7 @@ class ApiService {
       data: 'username=${Uri.encodeComponent(email)}&password=${Uri.encodeComponent(password)}',
       options: Options(contentType: 'application/x-www-form-urlencoded'),
     );
-    return response.data;
+    return _asMap(response.data);
   }
 
   Future<Map<String, dynamic>> register(String email, String password, String role,
@@ -210,19 +265,19 @@ class ApiService {
       if (fullName != null) 'full_name': fullName,
       'org_type': orgType,
     });
-    return response.data;
+    return _asMap(response.data);
   }
 
   Future<Map<String, dynamic>> me() async {
     final response = await _dio.get('/auth/me');
-    return response.data;
+    return _asMap(response.data);
   }
 
   Future<Map<String, dynamic>> updateMe(String fullName) async {
     final response = await _dio.patch('/auth/me', data: {
       'full_name': fullName,
     });
-    return response.data;
+    return _asMap(response.data);
   }
 
   Future<void> registerPushToken(String token, {String? platform}) async {
@@ -313,46 +368,46 @@ class ApiService {
 
   Future<Map<String, dynamic>> createPost(String title, String body) async {
     final response = await _dio.post('/posts/create', data: {'title': title, 'body': body});
-    return response.data;
+    return _asMap(response.data);
   }
 
   Future<Map<String, dynamic>> updatePost(int id, String title, String body) async {
     final response = await _dio.put('/posts/$id', data: {'title': title, 'body': body});
-    return response.data;
+    return _asMap(response.data);
   }
 
   Future<void> deletePost(int id) async {
     await _dio.delete('/posts/$id');
   }
 
-  Future<List<dynamic>> getClasses() async {
-    final response = await _dio.get('/classes/');
-    return response.data;
-  }
+  Future<List<dynamic>> getClasses() async =>
+      _asList((await _dio.get('/classes/')).data);
 
-  Future<List<dynamic>> getAllClasses() async {
-    final response = await _dio.get('/classes/all');
-    return response.data;
-  }
+  Future<List<dynamic>> getAllClasses() async =>
+      _asList((await _dio.get('/classes/all')).data);
 
   Future<Map<String, dynamic>> getClass(int id) async {
     final response = await _dio.get('/classes/$id');
-    return response.data;
+    return _asMap(response.data);
   }
 
   Future<Map<String, dynamic>> lookupClassByCode(String code) async {
     final response = await _dio.get('/classes/lookup-by-code', queryParameters: {'code': code});
-    return response.data;
+    return _asMap(response.data);
   }
 
-  Future<List<dynamic>> getClassMembers(int classId, {int? cohortId}) async {
+  /// [isAdmin] — пробовать ли админский фолбэк. Студенту он всегда вернёт 403:
+  /// это лишний round-trip и шум в логах/Crashlytics на каждом открытии класса.
+  Future<List<dynamic>> getClassMembers(int classId,
+      {int? cohortId, bool isAdmin = false}) async {
     final params = cohortId != null ? {'cohort_id': cohortId} : null;
     try {
-      final response = await _dio.get('/classes/$classId/members', queryParameters: params);
-      if (response.data is List) return response.data;
-    } catch (_) {}
-    final response = await _dio.get('/admin/classes/$classId/members', queryParameters: params);
-    return response.data is List ? response.data : [];
+      return _asList((await _dio.get('/classes/$classId/members', queryParameters: params)).data);
+    } catch (_) {
+      if (!isAdmin) rethrow;
+    }
+    return _asList(
+        (await _dio.get('/admin/classes/$classId/members', queryParameters: params)).data);
   }
 
   Future<void> joinClass(int classId) async => _dio.post('/classes/$classId/join', data: {});
@@ -374,7 +429,7 @@ class ApiService {
 
   Future<Map<String, dynamic>> joinByCode(String code) async {
     final response = await _dio.post('/classes/join-by-code', data: {'code': code});
-    return response.data;
+    return _asMap(response.data);
   }
 
   Future<Map<String, dynamic>> createClass(String name,
@@ -386,7 +441,7 @@ class ApiService {
       if (period != null) 'period': period,
       if (coverImage != null) 'cover_image': coverImage,
     });
-    return response.data;
+    return _asMap(response.data);
   }
 
   Future<Map<String, dynamic>> updateClass(int classId,
@@ -397,7 +452,7 @@ class ApiService {
       if (teacher != null) 'teacher': teacher,
       if (coverImage != null) 'cover_image': coverImage,
     });
-    return response.data;
+    return _asMap(response.data);
   }
 
   Future<void> deleteClass(int classId) async => _dio.delete('/classes/$classId');
@@ -410,7 +465,7 @@ class ApiService {
   Future<Map<String, dynamic>> setRotationMode(int classId, String mode) async {
     final response = await _dio.patch('/classes/$classId/rotation-mode',
         data: {'rotation_mode': mode});
-    return response.data;
+    return _asMap(response.data);
   }
 
   Future<List<dynamic>> getRolloverPreview() async {
@@ -439,7 +494,7 @@ class ApiService {
       if (dueDate != null) 'due_date': dueDate,
       if (isPublished != null) 'is_published': isPublished,
     });
-    return response.data;
+    return _asMap(response.data);
   }
 
   Future<Map<String, dynamic>> publishAllDeadlines(int cohortId) async {
@@ -459,35 +514,33 @@ class ApiService {
 
   Future<Map<String, dynamic>> getAssignment(int id) async {
     final response = await _dio.get('/assignments/$id');
-    return response.data;
+    return _asMap(response.data);
   }
 
   Future<Map<String, dynamic>> createAssignment(Map<String, dynamic> body) async {
     final response = await _dio.post('/assignments/', data: body);
-    return response.data;
+    return _asMap(response.data);
   }
 
   Future<Map<String, dynamic>> updateAssignment(int id, Map<String, dynamic> body) async {
     final response = await _dio.put('/assignments/$id', data: body);
-    return response.data;
+    return _asMap(response.data);
   }
 
   Future<void> deleteAssignment(int id) async => _dio.delete('/assignments/$id');
 
   Future<Map<String, dynamic>> submitAssignment(int assignmentId, Map<String, dynamic> body) async {
     final response = await _dio.post('/assignments/$assignmentId/submit', data: body);
-    return response.data;
+    return _asMap(response.data);
   }
 
-  Future<List<dynamic>> getMySubmissions() async {
-    final response = await _dio.get('/assignments/student/my-submissions');
-    return response.data;
-  }
+  Future<List<dynamic>> getMySubmissions() async =>
+      _asList((await _dio.get('/assignments/student/my-submissions')).data);
 
   Future<List<dynamic>> getSubmissions(int assignmentId, {int? cohortId}) async {
     final response = await _dio.get('/assignments/$assignmentId/submissions',
         queryParameters: cohortId != null ? {'cohort_id': cohortId} : null);
-    return response.data;
+    return _asList(response.data);
   }
 
   // Ответ теперь {status: 'graded'|'needs_review', grade, ai_confidence,
@@ -497,7 +550,7 @@ class ApiService {
     try {
       final response = await _dio.post('/submissions/$submissionId/ai-grade',
           options: Options(receiveTimeout: const Duration(minutes: 2)));
-      return response.data;
+      return _asMap(response.data);
     } on DioException catch (e) {
       final detail = (e.response?.data is Map) ? e.response!.data['detail']?.toString() : null;
       throw Exception(detail ?? 'Ошибка оценки ИИ');
@@ -508,19 +561,19 @@ class ApiService {
 
   Future<Map<String, dynamic>> getSubmission(int id) async {
     final response = await _dio.get('/submissions/$id');
-    return response.data;
+    return _asMap(response.data);
   }
 
   Future<Map<String, dynamic>> getMyRating({int? classId}) async {
     final params = classId != null ? '?class_id=$classId' : '';
     final response = await _dio.get('/assignments/student/my-rating$params');
-    return response.data;
+    return _asMap(response.data);
   }
 
   // ── ИИ-треды (мульти-чат главного ассистента) ──────────────────────────
   Future<List<AiThread>> getAiThreads() async {
     final response = await _dio.get('/ai/threads');
-    return (response.data as List)
+    return _asList(response.data)
         .map((e) => AiThread.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
   }
@@ -556,13 +609,13 @@ class ApiService {
     if (lectureContext != null) data['lecture_context'] = lectureContext;
     final response = await _dio.post('/ai/chat', data: data,
         options: Options(receiveTimeout: const Duration(minutes: 2), sendTimeout: const Duration(seconds: 30)));
-    return response.data;
+    return _asMap(response.data);
   }
 
   /// Дневная квота сообщений ИИ: {limit, used, remaining, unlimited, resets_at}.
   Future<Map<String, dynamic>> getAiLimits() async {
     final response = await _dio.get('/ai/limits');
-    return Map<String, dynamic>.from(response.data);
+    return _asMap(response.data);
   }
 
   Future<List<dynamic>> getAiHistory({int? classId, int? threadId}) async {
@@ -571,7 +624,7 @@ class ApiService {
     if (threadId != null) params['thread_id'] = threadId;
     final response = await _dio.get('/ai/history',
         queryParameters: params.isEmpty ? null : params);
-    return response.data as List<dynamic>;
+    return _asList(response.data);
   }
 
   Future<void> clearAiHistory({int? classId, int? threadId}) async {
@@ -586,13 +639,46 @@ class ApiService {
       {int? classId, int? threadId}) async {
     final response = await _dio.post('/ai/history/import',
         data: {'class_id': classId, 'thread_id': threadId, 'messages': messages});
-    return response.data as List<dynamic>;
+    return _asList(response.data);
   }
 
-  Future<List<dynamic>> getNotifStates() async {
-    final response = await _dio.get('/notifications/state');
-    return response.data as List<dynamic>;
+  // ── Модерация UGC ─────────────────────────────────────────────────────
+  // Требование App Store Guideline 1.2 и политики Google Play по
+  // пользовательскому контенту: жалоба на контент, блокировка пользователя
+  // и реакция модератора в течение 24 часов.
+
+  /// [targetType]: post | assignment | submission | ai_message | user
+  Future<void> reportContent({
+    required String targetType,
+    required int targetId,
+    required String reason,
+    String? comment,
+  }) async {
+    await _dio.post('/reports', data: {
+      'target_type': targetType,
+      'target_id': targetId,
+      'reason': reason,
+      if (comment != null && comment.isNotEmpty) 'comment': comment,
+    });
   }
+
+  /// Очередь модерации (только админ).
+  Future<List<dynamic>> adminReports({bool onlyOpen = true}) async => _asList(
+      (await _dio.get('/admin/reports', queryParameters: {'open': onlyOpen})).data);
+
+  Future<void> adminResolveReport(int reportId, {String? action}) async {
+    await _dio.post('/admin/reports/$reportId/resolve',
+        data: {if (action != null) 'action': action});
+  }
+
+  /// Удалить контент, на который пожаловались (лекция/пост или задание),
+  /// и закрыть жалобу.
+  Future<void> adminDeleteReportContent(int reportId) async =>
+      _dio.post('/admin/reports/$reportId/delete-content');
+
+
+  Future<List<dynamic>> getNotifStates() async =>
+      _asList((await _dio.get('/notifications/state')).data);
 
   Future<void> setNotifState(String notifKey, {bool? read, bool? dismissed}) async {
     final data = <String, dynamic>{'notif_key': notifKey};
@@ -618,33 +704,29 @@ class ApiService {
         receiveTimeout: const Duration(minutes: 2),
       ),
     );
-    return response.data;
+    return _asMap(response.data);
   }
 
   Future<List<dynamic>> getUsers() async {
     try {
-      final response = await _dio.get('/admin/users');
-      return response.data;
+      return _asList((await _dio.get('/admin/users')).data);
     } catch (_) {
       try {
-        final response = await _dio.get('/users/');
-        return response.data;
+        return _asList((await _dio.get('/users/')).data);
       } catch (_) {
-        return [];
+        return const [];
       }
     }
   }
 
-  Future<List<dynamic>> adminUsers() async {
-    final response = await _dio.get('/admin/users');
-    return response.data;
-  }
+  Future<List<dynamic>> adminUsers() async =>
+      _asList((await _dio.get('/admin/users')).data);
 
   Future<Map<String, dynamic>> adminCreateUser(String email, String password, String role) async {
     final response = await _dio.post('/admin/users', data: {
       'email': email, 'password': password, 'role': role,
     });
-    return response.data;
+    return _asMap(response.data);
   }
 
   Future<void> adminSetRole(int userId, String role) async =>
@@ -673,10 +755,8 @@ class ApiService {
     return data is List ? data : [];
   }
 
-  Future<List<dynamic>> adminAiSummary() async {
-    final response = await _dio.get('/admin/ai-usage/summary');
-    return response.data;
-  }
+  Future<List<dynamic>> adminAiSummary() async =>
+      _asList((await _dio.get('/admin/ai-usage/summary')).data);
 
   Future<void> adminSetAiUnlimited(int userId, bool unlimited) async =>
       _dio.put('/admin/users/$userId/ai_unlimited', data: {'unlimited': unlimited});
@@ -691,7 +771,7 @@ class ApiService {
 
   Future<Map<String, dynamic>> createAssignmentVariant(int assignmentId, Map<String, dynamic> body) async {
     final response = await _dio.post('/assignments/$assignmentId/variants', data: body);
-    return response.data;
+    return _asMap(response.data);
   }
 
   Future<void> deleteAssignmentVariant(int assignmentId, int variantId) async =>
@@ -709,23 +789,30 @@ class ApiService {
       if (feedback != null) 'feedback': feedback,
       if (criteriaScores != null) 'criteria_scores': criteriaScores,
     });
-    return response.data;
+    return _asMap(response.data);
   }
 
   Future<Map<String, dynamic>> getSubmissionGrade(int submissionId) async {
     final response = await _dio.get('/submissions/$submissionId/grade');
-    return response.data;
+    return _asMap(response.data);
   }
 
+  /// Текст файла по абсолютному URL. Внешние хосты (R2/CDN) идут через
+  /// [_plainDio] — без Authorization, иначе токен утекает наружу.
   Future<String> fetchFileText(String url) async {
     try {
-      final response = await _dio.get<String>(url,
+      final client = isOwnHostUrl(url) ? _dio : _plainDio;
+      final response = await client.get<String>(url,
           options: Options(responseType: ResponseType.plain, receiveTimeout: const Duration(seconds: 10)));
       return response.data ?? '';
     } catch (_) {
       return '';
     }
   }
+
+  /// Клиент для скачивания файла по абсолютному URL: свой хост — с токеном,
+  /// чужой — без. Используется в utils/file_opener.dart.
+  Dio clientForUrl(String url) => isOwnHostUrl(url) ? _dio : _plainDio;
 
   // Абсолютные URL файлов, которые отдаёт бэкенд (R2 и локальные /uploads),
   // уже сами содержат "/api/uploads/..." после хоста (см. file_urls.py,

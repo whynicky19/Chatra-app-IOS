@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../providers/l10n_provider.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/app_dialog.dart';
+import '../../moderation/report_sheet.dart';
 import '../class_detail_utils.dart' show fmtDate;
 
 class ClassPostsTab extends StatelessWidget {
@@ -41,11 +42,29 @@ class ClassPostsTab extends StatelessWidget {
       } catch (_) { return ''; }
     }
 
+    int? postId(dynamic p) => (p['id'] as num?)?.toInt();
+
     void showActions(dynamic p) {
+      final id = postId(p);
       showAppActionSheet(context,
         actions: [
-          AppActionSheetAction(icon: CupertinoIcons.pencil, label: l.t('edit'), onTap: () => onEditPost(p)),
-          AppActionSheetAction(icon: CupertinoIcons.trash, label: l.t('delete'), destructive: true, onTap: () => onDeletePost(p['id'] as int)),
+          if (isTeacher) ...[
+            AppActionSheetAction(icon: CupertinoIcons.pencil, label: l.t('edit'), onTap: () => onEditPost(p)),
+            AppActionSheetAction(icon: CupertinoIcons.trash, label: l.t('delete'), destructive: true, onTap: () => onDeletePost(id!)),
+          ],
+          // Жалоба доступна всем — это требование App Store Guideline 1.2
+          // для приложений с пользовательским контентом.
+          if (id != null)
+            AppActionSheetAction(
+              icon: CupertinoIcons.flag,
+              label: l.t('report'),
+              destructive: true,
+              onTap: () => openReportSheet(
+                context,
+                target: ReportTarget.post,
+                targetId: id,
+              ),
+            ),
         ],
         cancelText: l.t('cancel'),
       );
@@ -103,7 +122,10 @@ class ClassPostsTab extends StatelessWidget {
                   if (body.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 5),
                     child: Text(body, style: const TextStyle(fontSize: 13, color: C.text4, height: 1.45), maxLines: 2, overflow: TextOverflow.ellipsis)),
                 ])),
-                if (isTeacher) GestureDetector(
+                // Меню доступно всем: учителю — правка/удаление, студенту —
+                // жалоба. Раньше оно было только у преподавателя, из-за чего
+                // пожаловаться на контент было невозможно в принципе.
+                GestureDetector(
                   onTap: () => showActions(p),
                   child: Container(width: 34, height: 34, alignment: Alignment.center,
                     child: const Icon(CupertinoIcons.ellipsis, size: 18, color: C.text4)),

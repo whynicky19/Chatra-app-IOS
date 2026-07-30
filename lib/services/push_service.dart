@@ -1,9 +1,10 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../screens/main_shell.dart';
+import '../utils/errors.dart';
 import 'api_service.dart';
 
 @pragma('vm:entry-point')
@@ -76,9 +77,16 @@ class PushService {
     try {
       await _fm.requestPermission(alert: true, badge: true, sound: true);
       final token = await _fm.getToken();
-      if (token != null) await _syncToken(token);
-    } catch (e) {
-      if (kDebugMode) print('PushService.onAuthenticated: $e');
+      // Отсутствие токена — не мелочь: обычно это забытый entitlement
+      // aps-environment или отвалившийся APNs. Раньше это молчало, и пуши
+      // просто не приходили без единого следа. Теперь видно в Crashlytics.
+      if (token == null) {
+        logError('PushService.getToken', StateError('FCM token is null'));
+        return;
+      }
+      await _syncToken(token);
+    } catch (e, st) {
+      logError('PushService.onAuthenticated', e, st);
     }
   }
 
@@ -96,8 +104,8 @@ class PushService {
     try {
       await api.registerPushToken(token, platform: _platform());
       _lastSyncedToken = token;
-    } catch (e) {
-      if (kDebugMode) print('PushService._syncToken: $e');
+    } catch (e, st) {
+      logError('PushService._syncToken', e, st);
     }
   }
 

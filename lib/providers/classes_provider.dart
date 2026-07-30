@@ -23,7 +23,24 @@ class ClassesProvider extends ChangeNotifier {
   ClassesProvider(this._api, this._auth);
 
   void clearError() {
+    if (errorMessage == null) return;
     errorMessage = null;
+    notifyListeners();
+  }
+
+  /// Полная очистка при выходе/смене аккаунта. Провайдер живёт всё время работы
+  /// процесса (создан в main), поэтому без явного сброса классы, посты, бейдж и
+  /// список вступлений предыдущего пользователя остаются на экране до тех пор,
+  /// пока не отработает load() нового — а в офлайне не пропадают вовсе.
+  void reset() {
+    posts = [];
+    _cachedAllClasses = [];
+    joinedClassIds = {};
+    archivedClassIds = {};
+    notifBadge.value = 0;
+    loading = true;
+    errorMessage = null;
+    notifyListeners();
   }
 
   Map<String, dynamic> _normalizeClass(Map<String, dynamic> c) => {
@@ -222,9 +239,9 @@ class ClassesProvider extends ChangeNotifier {
 
       notifBadge.value = count;
     } catch (e) {
+      // Бейдж — фоновая задача, пользователю о её сбое сообщать нечего.
+      // Раньше errorMessage всплывал тостом поверх произвольного экрана.
       logError('ClassesProvider.loadNotifications', e);
-      errorMessage = 'err_load_notifications';
-      notifyListeners();
     }
   }
 

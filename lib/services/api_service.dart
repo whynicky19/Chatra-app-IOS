@@ -3,6 +3,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/ai_thread.dart';
 
+// fixUrl()/fixUrlsInText() — одни из самых "горячих" вызовов в приложении:
+// каждая обложка класса, файл, аватар проходят через них при КАЖДОЙ
+// перестройке списка. RegExp() внутри метода компилировался заново на
+// каждый вызов — статические поля компилируют паттерн один раз.
+final _localhostRe = RegExp(r'https?://localhost:\d+');
+final _loopbackRe = RegExp(r'https?://127\.0\.0\.1:\d+');
+final _relUploadsRe = RegExp(r'(^|\s)(/uploads/\S+)');
+final _absUrlPathRe = RegExp(r'^https?://[^/]+(/.*)$');
+
 class ApiService {
   late final Dio _dio;
   Dio get dio => _dio;
@@ -598,7 +607,8 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> aiChat(List<Map<String, dynamic>> messages,
-      {int? classId, int? threadId, int maxTokens = 1500, double temperature = 0.7, String? lectureContext}) async {
+      {int? classId, int? threadId, int maxTokens = 1500, double temperature = 0.7,
+      String? lectureContext, CancelToken? cancelToken}) async {
     final data = <String, dynamic>{
       'messages': messages,
       'max_tokens': maxTokens,
@@ -608,6 +618,7 @@ class ApiService {
     if (threadId != null) data['thread_id'] = threadId;
     if (lectureContext != null) data['lecture_context'] = lectureContext;
     final response = await _dio.post('/ai/chat', data: data,
+        cancelToken: cancelToken,
         options: Options(receiveTimeout: const Duration(minutes: 2), sendTimeout: const Duration(seconds: 30)));
     return _asMap(response.data);
   }
@@ -827,8 +838,8 @@ class ApiService {
   String fixUrl(String url) {
     if (url.isEmpty) return url;
     var fixed = url
-        .replaceAll(RegExp(r'https?://localhost:\d+'), _uploadHostRoot)
-        .replaceAll(RegExp(r'https?://127\.0\.0\.1:\d+'), _uploadHostRoot);
+        .replaceAll(_localhostRe, _uploadHostRoot)
+        .replaceAll(_loopbackRe, _uploadHostRoot);
     if (!fixed.startsWith('http') && !fixed.startsWith('ws')) {
       fixed = '$baseUrl${fixed.startsWith('/') ? '' : '/'}$fixed';
     }
@@ -838,17 +849,17 @@ class ApiService {
   String fixUrlsInText(String text) {
     if (text.isEmpty) return text;
     var out = text
-        .replaceAll(RegExp(r'https?://localhost:\d+'), _uploadHostRoot)
-        .replaceAll(RegExp(r'https?://127\.0\.0\.1:\d+'), _uploadHostRoot);
+        .replaceAll(_localhostRe, _uploadHostRoot)
+        .replaceAll(_loopbackRe, _uploadHostRoot);
     out = out.replaceAllMapped(
-      RegExp(r'(^|\s)(/uploads/\S+)'),
+      _relUploadsRe,
       (m) => '${m[1]}$baseUrl${m[2]}',
     );
     return out;
   }
 
   String toRelativeUploadUrl(String url) {
-    final m = RegExp(r'^https?://[^/]+(/.*)$').firstMatch(url);
+    final m = _absUrlPathRe.firstMatch(url);
     return m != null ? m.group(1)! : url;
   }
 }

@@ -70,9 +70,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final primary = Theme.of(context).colorScheme.primary;
 
     // Вместо иконок — мини-мокапы реального интерфейса приложения.
+    // Порядок — от простого к главному: материалы → ИИ знает курс → ИИ
+    // проверяет работу. Ключи в словаре исторически названы по мокапам
+    // (onb_1 — классы, onb_3 — ИИ-чат), а не по порядку страниц — при
+    // добавлении третьей страницы (onb_2, проверка заданий) переименовывать
+    // существующие ключи не стали, чтобы не плодить лишний диф.
     final pages = <(Widget, String, String, String)>[
       (const _ClassMock(), 'onb_1_tag', 'onb_1_title', 'onb_1_body'),
       (const _AiMock(), 'onb_3_tag', 'onb_3_title', 'onb_3_body'),
+      (const _CheckMock(), 'onb_2_tag', 'onb_2_title', 'onb_2_body'),
     ];
     final isLast = _page == pages.length - 1;
 
@@ -381,6 +387,84 @@ class _AiMock extends StatelessWidget {
               _bar(context, 120),
             ]),
           ),
+        ),
+      ]),
+    );
+  }
+}
+
+/// Страница 3: сдача проверена ИИ — оценка по критериям и разбор.
+/// Собрана из тех же элементов, что реальная карточка оценки в
+/// class_assignments_tab.dart: крупная оценка "../100", тонкая шкала под
+/// ней, строки критериев с зелёной галочкой и бейдж "проверено ИИ".
+class _CheckMock extends StatelessWidget {
+  const _CheckMock();
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final secondary = Theme.of(context).colorScheme.secondary;
+
+    Widget criterionRow(double w) => Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Row(children: [
+            const Icon(CupertinoIcons.checkmark_circle_fill, size: 15, color: C.green),
+            const SizedBox(width: 8),
+            _bar(context, w, h: 7),
+          ]),
+        );
+
+    return Container(
+      width: 280,
+      padding: const EdgeInsets.all(18),
+      decoration: _cardDecoration(context),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
+          _bar(context, 38, h: 24),
+          const SizedBox(width: 5),
+          Text('/100', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: C.text4)),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: [secondary, primary]),
+              borderRadius: BorderRadius.circular(100),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(CupertinoIcons.sparkles, size: 11, color: Colors.white),
+              const SizedBox(width: 4),
+              const Text('Chatra AI',
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white)),
+            ]),
+          ),
+        ]),
+        const SizedBox(height: 10),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: 0.82,
+            minHeight: 5,
+            backgroundColor: _barColor(context),
+            valueColor: AlwaysStoppedAnimation(primary),
+          ),
+        ),
+        const SizedBox(height: 18),
+        criterionRow(150),
+        criterionRow(190),
+        criterionRow(110),
+        const SizedBox(height: 6),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: _barColor(context).withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            _bar(context, double.infinity, h: 7),
+            const SizedBox(height: 6),
+            _bar(context, 160, h: 7),
+          ]),
         ),
       ]),
     );

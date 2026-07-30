@@ -9,9 +9,14 @@
 ///
 /// Разбиение идёт по `\s+`, пустые части отбрасываются, поэтому индексация
 /// всегда безопасна.
+///
+/// Вызывается на каждую аватарку в списках (пользователи, чаты, сдачи) —
+/// regex вынесен в константу, а не создаётся заново на каждый вызов.
+final _wsRe = RegExp(r'\s+');
+
 String initialsFrom(String? fullName, {String? email}) {
   final parts = (fullName ?? '')
-      .split(RegExp(r'\s+'))
+      .split(_wsRe)
       .where((s) => s.isNotEmpty)
       .toList();
 

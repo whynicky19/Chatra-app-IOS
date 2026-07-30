@@ -68,6 +68,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
 
   static final _fileUrlRe = fileUrlRe;
   static final _mdFileRe = mdFileRe;
+  static final _extraNewlinesRe = RegExp(r'\n{3,}');
 
   String _fileDisplayName(String url) {
     try {
@@ -81,7 +82,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
     return content
         .replaceAll(_mdFileRe, '')
         .replaceAll(_fileUrlRe, '')
-        .replaceAll(RegExp(r'\n{3,}'), '\n\n')
+        .replaceAll(_extraNewlinesRe, '\n\n')
         .trim();
   }
 
@@ -227,6 +228,9 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
         final isNeedsReview = status == 'needs_review';
         final deadline = a['deadline'];
         final isLate = deadline != null && parseServerDate(deadline)?.isBefore(DateTime.now()) == true && sub == null;
+        // Раньше считался дважды на карточку (в условии isNotEmpty и в самом
+        // Text) — оба реплейса на каждую видимую карточку при каждом скролле.
+        final desc = a['description'] != null ? _cleanContent(a['description'].toString()) : '';
 
         final showBadge = isGraded || isNeedsReview || isSubmitted || isLate;
         Color statusColor = isGraded ? C.green : isNeedsReview ? C.amber : isSubmitted ? Theme.of(context).colorScheme.primary : C.red;
@@ -259,9 +263,9 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                         child: const Icon(CupertinoIcons.ellipsis, size: 18, color: C.text4)),
                     ),
                   ]),
-                  if (a['description'] != null && _cleanContent(a['description'].toString()).isNotEmpty)
+                  if (desc.isNotEmpty)
                     Padding(padding: const EdgeInsets.only(top: 4),
-                      child: Text(_cleanContent(a['description'].toString()), style: const TextStyle(fontSize: 13, color: C.text4, height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis)),
+                      child: Text(desc, style: const TextStyle(fontSize: 13, color: C.text4, height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis)),
                   const SizedBox(height: 10),
                   Wrap(spacing: 12, children: [
                     if (deadline != null) Row(mainAxisSize: MainAxisSize.min, children: [

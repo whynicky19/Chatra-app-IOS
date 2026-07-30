@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:dio/dio.dart' show DioException;
+import 'package:dio/dio.dart' show CancelToken, DioException;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -40,6 +40,7 @@ class _AiConversationViewState extends State<AiConversationView> {
   final _scroll = ScrollController();
   final List<Map<String, String>> _msgs = [];
   bool _loading = false;
+  CancelToken? _cancelToken;
   AiQuota? _quota;
   int? _threadId;
   // Сообщения с индексом < этого порога — уже загруженная история: у них
@@ -244,13 +245,21 @@ class _AiConversationViewState extends State<AiConversationView> {
       return;
     }
     HapticFeedback.lightImpact();
-    setState(() {
-      _msgs.add({'role': 'user', 'text': text, 'time': _now()});
-      _loading = true;
-    });
+    setState(() => _msgs.add({'role': 'user', 'text': text, 'time': _now()}));
     _saveHistory();
     _ctrl.clear();
     _scrollDown();
+    await _requestReply();
+  }
+
+  /// Пересылает боту хвост текущей `_msgs` (последнее сообщение в списке —
+  /// вопрос, на который нужен ответ) и добавляет ответ. Общая часть для
+  /// обычной отправки, повтора неудачной отправки и перегенерации ответа —
+  /// все три отличаются только тем, что делают с `_msgs` ДО вызова этого
+  /// метода, сама отправка и обработка результата одинаковые.
+  Future<void> _requestReply() async {
+    setState(() => _loading = true);
+    _cancelToken = CancelToken();
     try {
       final threadId = await _ensureThread();
       if (!mounted) return;
@@ -269,7 +278,7 @@ class _AiConversationViewState extends State<AiConversationView> {
         // упиралась в лимит контекста модели. См. utils/ai_context.dart.
         ...aiContextWindow(_msgs),
       ];
-      final data = await api.aiChat(apiMsgs, threadId: threadId);
+      final data = await api.aiChat(apiMsgs, threadId: threadId, cancelToken: _cancelToken);
       if (!mounted) return;
       setState(() {
         _msgs.add({'role': 'assistant', 'text': data['content'] ?? context.read<L10n>().t('no_answer'), 'time': _now()});
@@ -284,20 +293,60 @@ class _AiConversationViewState extends State<AiConversationView> {
       }
     } catch (e) {
       if (!mounted) return;
-      final l = context.read<L10n>();
-      final resp = (e is DioException) ? e.response : null;
-      final detail = (resp?.data is Map) ? resp!.data['detail']?.toString() : null;
-      final text = resp?.statusCode == 429
-          ? (detail ?? l.t('ai_daily_exhausted'))
-          : e.toString().contains('503')
-              ? l.t('ai_not_configured')
-              : l.t('connection_error');
-      setState(() => _msgs.add({'role': 'assistant', 'text': text, 'time': _now()}));
-      _saveHistory();
-      if (resp?.statusCode == 429) _loadQuota();
+      // Отменено кнопкой «Остановить» — не ошибка: без тоста, без пометки
+      // сообщения неудачным, ничего не летит в Crashlytics (тут и так нет
+      // логирования этой ветки).
+      if (e is DioException && CancelToken.isCancel(e)) {
+        // ничего не делаем — просто перестаём ждать ответ.
+      } else {
+        final l = context.read<L10n>();
+        final resp = (e is DioException) ? e.response : null;
+        final detail = (resp?.data is Map) ? resp!.data['detail']?.toString() : null;
+        final errText = resp?.statusCode == 429
+            ? (detail ?? l.t('ai_daily_exhausted'))
+            : e.toString().contains('503')
+                ? l.t('ai_not_configured')
+                : l.t('connection_error');
+        showToast(context, errText, error: true);
+        // Раньше сюда добавлялось фейковое сообщение ассистента с текстом
+        // ошибки. Теперь вместо этого помечаем последнее (не отправленное)
+        // сообщение — оно рисуется приглушённым с кнопкой «Повторить»,
+        // см. _userMessage.
+        if (_msgs.isNotEmpty && _msgs.last['role'] == 'user') {
+          setState(() => _msgs[_msgs.length - 1] = {..._msgs.last, 'failed': 'true'});
+        }
+        _saveHistory();
+        if (resp?.statusCode == 429) _loadQuota();
+      }
     }
+    _cancelToken = null;
     if (mounted) setState(() => _loading = false);
     _scrollDown();
+  }
+
+  /// Кнопка «Остановить» на композере — отменяет текущий запрос к ИИ.
+  void _stop() => _cancelToken?.cancel();
+
+  /// «Повторить» под неотправленным (failed) сообщением: снимает пометку
+  /// и переспрашивает тем же текстом.
+  Future<void> _retryFailed(int index) async {
+    if (_loading || index != _msgs.length - 1) return;
+    setState(() {
+      final m = Map<String, String>.from(_msgs[index])..remove('failed');
+      _msgs[index] = m;
+    });
+    _saveHistory();
+    await _requestReply();
+  }
+
+  /// «Повторить» под последним ответом ассистента: удаляет этот ответ и
+  /// заново запрашивает ответ на тот же (уже стоящий в _msgs) вопрос.
+  Future<void> _regenerateLast() async {
+    if (_loading || _msgs.isEmpty || _msgs.last['role'] != 'assistant') return;
+    HapticFeedback.lightImpact();
+    setState(() => _msgs.removeLast());
+    _saveHistory();
+    await _requestReply();
   }
 
   // animate=false — мгновенный переход в конец при открытии чата/подгрузке
@@ -364,7 +413,7 @@ class _AiConversationViewState extends State<AiConversationView> {
                 ),
         ),
       ),
-      _AiInputBar(ctrl: _ctrl, loading: _loading, quota: _quota, onSend: _send),
+      _AiInputBar(ctrl: _ctrl, loading: _loading, quota: _quota, onSend: _send, onStop: _stop),
     ]);
   }
 
@@ -459,7 +508,7 @@ class _AiConversationViewState extends State<AiConversationView> {
         final m = _msgs[i];
         final isUser = m['role'] == 'user';
         final bubble = RepaintBoundary(
-          child: isUser ? _userMessage(m) : _aiMessage(m, isDark),
+          child: isUser ? _userMessage(m, i) : _aiMessage(m, i, isDark),
         );
         // Уже загруженная история появляется сразу, без entrance-анимации —
         // она играла бы для каждого сообщения при каждом открытии чата
@@ -481,44 +530,63 @@ class _AiConversationViewState extends State<AiConversationView> {
     );
   }
 
-  Widget _userMessage(Map<String, String> m) {
+  Widget _userMessage(Map<String, String> m, int index) {
     final text = m['text'] ?? '';
     final timeStr = m['time'] ?? '';
+    final failed = m['failed'] == 'true';
+    final l = context.read<L10n>();
     return Padding(
       padding: const EdgeInsets.only(bottom: 18, left: 48),
       child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 14),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-                colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight),
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(24),
-              topRight: Radius.circular(24),
-              bottomLeft: Radius.circular(24),
-              bottomRight: Radius.circular(7),
+        Opacity(
+          opacity: failed ? 0.5 : 1,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 14),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                  colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
+                bottomLeft: Radius.circular(24),
+                bottomRight: Radius.circular(7),
+              ),
+              boxShadow: [
+                BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.26), blurRadius: 18, offset: const Offset(0, 6)),
+              ],
             ),
-            boxShadow: [
-              BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.26), blurRadius: 18, offset: const Offset(0, 6)),
-            ],
+            child: Text(text, style: const TextStyle(fontSize: 15.5, color: Colors.white, height: 1.55, letterSpacing: -0.1)),
           ),
-          child: Text(text, style: const TextStyle(fontSize: 15.5, color: Colors.white, height: 1.55, letterSpacing: -0.1)),
         ),
         const SizedBox(height: 5),
-        Padding(
-          padding: const EdgeInsets.only(right: 3),
-          child: Text(timeStr, style: const TextStyle(fontSize: 10.5, color: C.text4)),
-        ),
+        if (failed)
+          GestureDetector(
+            onTap: () => _retryFailed(index),
+            behavior: HitTestBehavior.opaque,
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(CupertinoIcons.exclamationmark_circle, size: 12, color: C.red),
+              const SizedBox(width: 3),
+              Text(l.t('not_sent'), style: const TextStyle(fontSize: 10.5, color: C.red)),
+              const SizedBox(width: 6),
+              Text('· ${l.t('retry')}',
+                  style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
+            ]),
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.only(right: 3),
+            child: Text(timeStr, style: const TextStyle(fontSize: 10.5, color: C.text4)),
+          ),
       ]),
     );
   }
 
-  Widget _aiMessage(Map<String, String> m, bool isDark) {
+  Widget _aiMessage(Map<String, String> m, int index, bool isDark) {
     final text = m['text'] ?? '';
     final l = context.read<L10n>();
-    final copied = l.lang == 'KZ' ? 'Көшірілді' : l.lang == 'EN' ? 'Copied' : 'Скопировано';
+    final isLast = index == _msgs.length - 1;
     return Padding(
       padding: const EdgeInsets.only(bottom: 16, right: 52),
       child: Align(
@@ -528,7 +596,7 @@ class _AiConversationViewState extends State<AiConversationView> {
             onLongPress: () {
               HapticFeedback.mediumImpact();
               Clipboard.setData(ClipboardData(text: text));
-              showToast(context, copied);
+              showToast(context, l.t('copied'));
             },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 13),
@@ -549,11 +617,25 @@ class _AiConversationViewState extends State<AiConversationView> {
               ),
             ),
           ),
-          if ((m['time'] ?? '').isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(left: 7, top: 5),
-              child: Text(m['time']!, style: const TextStyle(fontSize: 10.5, color: C.text4)),
-            ),
+          Padding(
+            padding: const EdgeInsets.only(left: 7, top: 5),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              if ((m['time'] ?? '').isNotEmpty)
+                Text(m['time']!, style: const TextStyle(fontSize: 10.5, color: C.text4)),
+              if (isLast && !_loading) ...[
+                if ((m['time'] ?? '').isNotEmpty) const SizedBox(width: 10),
+                GestureDetector(
+                  onTap: _regenerateLast,
+                  behavior: HitTestBehavior.opaque,
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(CupertinoIcons.arrow_2_squarepath, size: 10.5, color: C.text4.withValues(alpha: 0.8)),
+                    const SizedBox(width: 3),
+                    Text(l.t('retry'), style: TextStyle(fontSize: 10.5, color: C.text4.withValues(alpha: 0.8))),
+                  ]),
+                ),
+              ],
+            ]),
+          ),
         ]),
       ),
     );
@@ -589,8 +671,9 @@ class _AiInputBar extends StatelessWidget {
   final bool loading;
   final AiQuota? quota;
   final VoidCallback onSend;
+  final VoidCallback onStop;
 
-  const _AiInputBar({required this.ctrl, required this.loading, required this.onSend, this.quota});
+  const _AiInputBar({required this.ctrl, required this.loading, required this.onSend, required this.onStop, this.quota});
 
   @override
   Widget build(BuildContext context) {
@@ -653,7 +736,7 @@ class _AiInputBar extends StatelessWidget {
               final hasText = value.text.trim().isNotEmpty;
               final active = hasText && !loading && !exhausted;
               return GestureDetector(
-                onTap: exhausted ? null : onSend,
+                onTap: loading ? onStop : (exhausted ? null : onSend),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 220),
                   curve: Curves.easeOutCubic,
@@ -661,15 +744,14 @@ class _AiInputBar extends StatelessWidget {
                   height: 48,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: active ? Theme.of(context).colorScheme.primary : surface,
-                    boxShadow: active ? primaryGlow(Theme.of(context).colorScheme.primary, opacity: 0.32) : softShadow(isDark),
+                    color: (active || loading) ? Theme.of(context).colorScheme.primary : surface,
+                    boxShadow: (active || loading) ? primaryGlow(Theme.of(context).colorScheme.primary, opacity: 0.32) : softShadow(isDark),
                   ),
+                  // Пока идёт генерация — квадратик "стоп" вместо крутилки: и
+                  // видно, что запрос ещё летит, и его можно отменить тапом.
                   child: loading
-                      ? Center(
-                          child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2.2, color: Theme.of(context).colorScheme.primary)))
+                      ? const Center(
+                          child: Icon(CupertinoIcons.stop_fill, color: Colors.white, size: 18))
                       : AnimatedSwitcher(
                           duration: const Duration(milliseconds: 180),
                           switchInCurve: Curves.easeOutBack,

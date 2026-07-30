@@ -1,5 +1,9 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData, HapticFeedback;
 import 'package:flutter_math_fork/flutter_math.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/l10n_provider.dart';
+import '../../../widgets/toast.dart';
 
 /// Рендерит текст сообщения ассистента: формулы LaTeX, markdown-списки и
 /// таблицы. Документ разбирается построчно на параграфы/списки/таблицы;
@@ -180,12 +184,33 @@ class AiMessageContent extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
         decoration: BoxDecoration(color: const Color(0xFF0A0A16), borderRadius: BorderRadius.circular(8)),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Text(code, style: codeStyle),
-        ),
+        child: Stack(children: [
+          Padding(
+            // Место справа под кнопку копирования, чтобы не наезжала на код.
+            padding: const EdgeInsets.only(right: 30, top: 2),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Text(code, style: codeStyle),
+            ),
+          ),
+          Positioned(
+            top: -4, right: -4,
+            child: Builder(builder: (ctx) => GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                Clipboard.setData(ClipboardData(text: code));
+                showToast(ctx, ctx.read<L10n>().t('copied'));
+              },
+              behavior: HitTestBehavior.opaque,
+              child: const Padding(
+                padding: EdgeInsets.all(6),
+                child: Icon(CupertinoIcons.doc_on_doc, size: 15, color: Color(0x99FFFFFF)),
+              ),
+            )),
+          ),
+        ]),
       ),
     );
   }

@@ -9,6 +9,14 @@ import '../../../widgets/tappable.dart';
 import '../../moderation/report_sheet.dart';
 import '../class_detail_utils.dart' show fmtDate;
 
+// Список лекций перерисовывается на каждое изменение _posts — regex внутри
+// clean()/preview() иначе компилировался бы заново на каждую карточку при
+// каждой перестройке (ListView.builder вызывает их для каждого видимого
+// элемента).
+final _lectureTitleRe = RegExp(r'^\[LECTURE\]\[\d+\]\s*');
+final _urlRe = RegExp(r'https?://\S+');
+final _wsRe = RegExp(r'\s+');
+
 class ClassPostsTab extends StatelessWidget {
   final List<dynamic> posts;
   final bool isTeacher;
@@ -34,12 +42,12 @@ class ClassPostsTab extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accentColor = Theme.of(context).colorScheme.primary;
 
-    String clean(String t) => t.replaceFirst(RegExp(r'^\[LECTURE\]\[\d+\]\s*'), '').trim();
+    String clean(String t) => t.replaceFirst(_lectureTitleRe, '').trim();
 
     String preview(dynamic p) {
       try {
         final b = jsonDecode(p['body']);
-        return (b['content'] ?? b['description'] ?? '').replaceAll(RegExp(r'https?://\S+'), '').replaceAll(RegExp(r'\s+'), ' ').trim();
+        return (b['content'] ?? b['description'] ?? '').replaceAll(_urlRe, '').replaceAll(_wsRe, ' ').trim();
       } catch (_) { return ''; }
     }
 

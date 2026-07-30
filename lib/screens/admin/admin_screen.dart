@@ -13,6 +13,11 @@ import '../../widgets/app_dialog.dart';
 import '../../widgets/network_cover_image.dart';
 import '../../widgets/toast.dart';
 
+// Инициалы считаются на каждую строку списка (пользователи, классы,
+// AI-расход) — regex вынесен один раз, а не пересобирается на каждый item
+// при каждой перерисовке.
+final _wsRe = RegExp(r'\s+');
+
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
   @override State<AdminScreen> createState() => _AdminState();
@@ -716,7 +721,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             final name   = u['name'] as String;
             final tokens = u['tokens'] as int;
             final count  = u['count'] as int;
-            final initials = name.trim().isEmpty ? '?' : name.trim().split(RegExp(r'\s+')).take(2).map((w) => w.isEmpty ? '' : w[0].toUpperCase()).join();
+            final initials = name.trim().isEmpty ? '?' : name.trim().split(_wsRe).take(2).map((w) => w.isEmpty ? '' : w[0].toUpperCase()).join();
             final pct = maxTokens > 0 ? (tokens / maxTokens).clamp(0.0, 1.0) : 0.0;
             return TweenAnimationBuilder<double>(
               tween: Tween(begin: 0.0, end: 1.0),
@@ -923,8 +928,8 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                         Container(width: 30, height: 30,
                           decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, shape: BoxShape.circle),
                           child: Center(child: Text(
-                            creatorName.trim().split(RegExp(r'\s+')).take(2).map((w) => w.isEmpty ? '' : w[0].toUpperCase()).join().isNotEmpty
-                                ? creatorName.trim().split(RegExp(r'\s+')).take(2).map((w) => w.isEmpty ? '' : w[0].toUpperCase()).join()
+                            creatorName.trim().split(_wsRe).take(2).map((w) => w.isEmpty ? '' : w[0].toUpperCase()).join().isNotEmpty
+                                ? creatorName.trim().split(_wsRe).take(2).map((w) => w.isEmpty ? '' : w[0].toUpperCase()).join()
                                 : '?',
                             style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: adaptiveText2(context)),
                           ))),
@@ -1084,7 +1089,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                         final role     = (s['role'] ?? '').toString();
                         final display  = name.isNotEmpty ? name : email.split('@').first;
                         final initials = display.trim().isEmpty ? '?' : display.trim()
-                            .split(RegExp(r'\s+')).take(2)
+                            .split(_wsRe).take(2)
                             .map((w) => w.isEmpty ? '' : w[0].toUpperCase()).join();
                         final isTeacher  = role == 'teacher' || role == 'admin';
                         final roleColor  = isTeacher ? const Color(0xFF6366F1) : C.text4;

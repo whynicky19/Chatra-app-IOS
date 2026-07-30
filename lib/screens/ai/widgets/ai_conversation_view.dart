@@ -42,6 +42,7 @@ class _AiConversationViewState extends State<AiConversationView> {
   final List<Map<String, String>> _msgs = [];
   bool _loading = false;
   CancelToken? _cancelToken;
+  String? _pendingRequestId;
   AiQuota? _quota;
   int? _threadId;
   // Сообщения с индексом < этого порога — уже загруженная история: у них
@@ -261,6 +262,11 @@ class _AiConversationViewState extends State<AiConversationView> {
   Future<void> _requestReply() async {
     setState(() => _loading = true);
     _cancelToken = CancelToken();
+    // Свой id на каждый запрос — если пользователь нажмёт «Стоп», именно он
+    // уходит на /ai/chat/cancel (см. _stop), отдельно от CancelToken, который
+    // рвёт только клиентское соединение и не обязательно долетает до сервера.
+    final requestId = '${DateTime.now().microsecondsSinceEpoch}_${identityHashCode(_cancelToken)}';
+    _pendingRequestId = requestId;
     try {
       final threadId = await _ensureThread();
       if (!mounted) return;
@@ -279,7 +285,7 @@ class _AiConversationViewState extends State<AiConversationView> {
         // упиралась в лимит контекста модели. См. utils/ai_context.dart.
         ...aiContextWindow(_msgs),
       ];
-      final data = await api.aiChat(apiMsgs, threadId: threadId, cancelToken: _cancelToken);
+      final data = await api.aiChat(apiMsgs, threadId: threadId, cancelToken: _cancelToken, requestId: requestId);
       if (!mounted) return;
       setState(() {
         _msgs.add({'role': 'assistant', 'text': data['content'] ?? context.read<L10n>().t('no_answer'), 'time': _now()});
@@ -321,12 +327,20 @@ class _AiConversationViewState extends State<AiConversationView> {
       }
     }
     _cancelToken = null;
+    _pendingRequestId = null;
     if (mounted) setState(() => _loading = false);
     _scrollDown();
   }
 
-  /// Кнопка «Остановить» на композере — отменяет текущий запрос к ИИ.
-  void _stop() => _cancelToken?.cancel();
+  /// Кнопка «Остановить» на композере — отменяет текущий запрос к ИИ и
+  /// отдельно сообщает бэкенду не сохранять ответ, если он всё же придёт
+  /// (см. ApiService.cancelAiChat — CancelToken рвёт только наше соединение,
+  /// сервер не всегда это замечает).
+  void _stop() {
+    _cancelToken?.cancel();
+    final requestId = _pendingRequestId;
+    if (requestId != null) context.read<ApiService>().cancelAiChat(requestId);
+  }
 
   /// «Повторить» под неотправленным (failed) сообщением: снимает пометку
   /// и переспрашивает тем же текстом.

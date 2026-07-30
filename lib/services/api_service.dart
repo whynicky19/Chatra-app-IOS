@@ -608,7 +608,7 @@ class ApiService {
 
   Future<Map<String, dynamic>> aiChat(List<Map<String, dynamic>> messages,
       {int? classId, int? threadId, int maxTokens = 1500, double temperature = 0.7,
-      String? lectureContext, CancelToken? cancelToken}) async {
+      String? lectureContext, CancelToken? cancelToken, String? requestId}) async {
     final data = <String, dynamic>{
       'messages': messages,
       'max_tokens': maxTokens,
@@ -617,10 +617,23 @@ class ApiService {
     if (classId != null) data['class_id'] = classId;
     if (threadId != null) data['thread_id'] = threadId;
     if (lectureContext != null) data['lecture_context'] = lectureContext;
+    if (requestId != null) data['request_id'] = requestId;
     final response = await _dio.post('/ai/chat', data: data,
         cancelToken: cancelToken,
         options: Options(receiveTimeout: const Duration(minutes: 2), sendTimeout: const Duration(seconds: 30)));
     return _asMap(response.data);
+  }
+
+  /// Сообщает бэкенду, что ответ на этот запрос больше не нужен — кнопка
+  /// «Остановить» рвёт клиентское соединение через `CancelToken`, но сам
+  /// запрос к OpenAI на сервере это не прерывает (может достаточно долго
+  /// висеть на keep-alive-сокете, так и не заметив разрыва). Без этого сигнала
+  /// сервер всё равно сохранял бы отменённый ответ в историю. Шлём отдельным
+  /// запросом (без cancelToken), поэтому свою же отмену он не отменяет.
+  Future<void> cancelAiChat(String requestId) async {
+    try {
+      await _dio.post('/ai/chat/cancel', data: {'request_id': requestId});
+    } catch (_) {}
   }
 
   /// Дневная квота сообщений ИИ: {limit, used, remaining, unlimited, resets_at}.

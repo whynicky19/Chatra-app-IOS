@@ -1,12 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:dio/dio.dart' show DioException;
 import 'package:provider/provider.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../widgets/network_cover_image.dart';
@@ -23,6 +20,8 @@ import '../../widgets/toast.dart';
 import '../notifications/notifications_screen.dart';
 import '../calendar/calendar_screen.dart';
 import '../../utils/haptics.dart';
+import '../classes/join_class_dialog.dart';
+import '../classes/create_class_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -529,292 +528,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   void _showJoinDialog() {
-    final provider = context.read<ClassesProvider>();
-    final api = context.read<ApiService>();
-    final l = context.read<L10n>();
-    final controllers = List.generate(6, (_) => TextEditingController());
-    final focusNodes  = List.generate(6, (_) => FocusNode());
-    bool busy = false;
-    Timer? lookupDebounce;
-    bool lookingUp = false;
-    Map<String, dynamic>? foundClass;
-    bool notFoundForCode = false;
-
-    showDialog(context: context, barrierDismissible: true,
-      builder: (ctx) => StatefulBuilder(builder: (ctx, setS) {
-        String get6Code() => controllers.map((c) => c.text.toUpperCase()).join();
-
-        void scheduleLookup(String code) {
-          lookupDebounce?.cancel();
-          if (code.length < 6) {
-            foundClass = null; notFoundForCode = false; lookingUp = false;
-            return;
-          }
-          lookingUp = true; foundClass = null; notFoundForCode = false;
-          lookupDebounce = Timer(const Duration(milliseconds: 400), () async {
-            try {
-              final cls = await api.lookupClassByCode(code);
-              if (!ctx.mounted || get6Code() != code) return;
-              setS(() { lookingUp = false; foundClass = {
-                ...cls, 'title': cls['name'], 'teacher_name': cls['teacher'],
-              }; });
-            } catch (_) {
-              if (!ctx.mounted || get6Code() != code) return;
-              setS(() { lookingUp = false; notFoundForCode = true; });
-            }
-          });
-        }
-
-        void onKey(int i, String val) {
-          if (val.length > 1) {
-            final clean = val.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
-            for (int j = 0; j < 6 && j < clean.length; j++) {
-              controllers[j].text = clean[j];
-            }
-            focusNodes[5].requestFocus(); setS(() { scheduleLookup(get6Code()); }); return;
-          }
-          if (val.isNotEmpty && i < 5) {
-            focusNodes[i + 1].requestFocus();
-          } else if (val.isEmpty && i > 0) {
-            focusNodes[i - 1].requestFocus();
-            controllers[i - 1].selection = TextSelection(baseOffset: 0, extentOffset: controllers[i - 1].text.length);
-          }
-          setS(() { scheduleLookup(get6Code()); });
-        }
-
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.card)),
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          child: SingleChildScrollView(padding: const EdgeInsets.all(28), child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Align(alignment: Alignment.topRight,
-              child: Tappable(onTap: () => Navigator.pop(ctx),
-                child: Container(width: 32, height: 32, decoration: BoxDecoration(color: adaptiveSurface2(context), shape: BoxShape.circle),
-                  child: const Icon(CupertinoIcons.xmark, size: 16, color: C.text4)))),
-            const SizedBox(height: 4),
-            Container(width: 68, height: 68, decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(AppRadii.card)),
-              child: Icon(CupertinoIcons.lock, color: Theme.of(context).colorScheme.primary, size: 32)),
-            const SizedBox(height: 16),
-            Text(l.t('join_class_title'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
-            const SizedBox(height: 8),
-            Text(l.t('join_class_hint'),
-              textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, color: C.text4, height: 1.5)),
-            const SizedBox(height: 24),
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: List.generate(6, (i) =>
-              SizedBox(width: 44, height: 52, child: Focus(
-                onKeyEvent: (node, event) {
-                  if (event is KeyDownEvent &&
-                      event.logicalKey == LogicalKeyboardKey.backspace &&
-                      controllers[i].text.isEmpty && i > 0) {
-                    controllers[i - 1].clear();
-                    focusNodes[i - 1].requestFocus();
-                    setS(() { scheduleLookup(get6Code()); });
-                    return KeyEventResult.handled;
-                  }
-                  return KeyEventResult.ignored;
-                },
-                child: TextField(
-                  controller: controllers[i], focusNode: focusNodes[i],
-                  textAlign: TextAlign.center, maxLength: i == 0 ? 6 : 1,
-                  textCapitalization: TextCapitalization.characters,
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary),
-                  decoration: InputDecoration(
-                    counterText: '',
-                    filled: true, fillColor: adaptiveSurface2(context),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadii.tile), borderSide: BorderSide.none),
-                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadii.tile), borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2)),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                  onChanged: (val) => onKey(i, val),
-                  onTap: () => controllers[i].selection = TextSelection(baseOffset: 0, extentOffset: controllers[i].text.length),
-                ),
-              )))),
-            if (lookingUp) Padding(padding: const EdgeInsets.only(top: 16),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
-                const SizedBox(width: 10),
-                Text(l.t('checking_code'), style: const TextStyle(fontSize: 13, color: C.text4)),
-              ])),
-            if (!lookingUp && notFoundForCode) Padding(padding: const EdgeInsets.only(top: 16),
-              child: Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: C.redLt, borderRadius: BorderRadius.circular(AppRadii.tile)),
-                child: Row(children: [const Icon(CupertinoIcons.exclamationmark_circle, size: 16, color: C.red), const SizedBox(width: 8), Expanded(child: Text(l.t('not_found'), style: const TextStyle(fontSize: 13, color: C.red, fontWeight: FontWeight.w500)))]))),
-            if (!lookingUp && foundClass != null) Padding(padding: const EdgeInsets.only(top: 16),
-              child: Container(
-                decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2))),
-                clipBehavior: Clip.antiAlias,
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Builder(builder: (_) {
-                    final coverImg = cardCoverUrl(foundClass!);
-                    return SizedBox(height: 80, width: double.infinity,
-                      child: coverImg != null && coverImg.toString().startsWith('data:')
-                          ? Builder(builder: (_) { final bytes = decodeBase64Image(coverImg.toString()); return bytes != null ? Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, gaplessPlayback: true, cacheWidth: 480) : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))); })
-                          : coverImg != null
-                              ? NetworkCoverImage(url: context.read<ApiService>().fixUrl(coverImg.toString()), memCacheWidth: 480, errorBuilder: (_) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))))
-                              : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary]))));
-                  }),
-                  Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Row(children: [
-                      const Icon(CupertinoIcons.checkmark_circle_fill, size: 15, color: C.green),
-                      const SizedBox(width: 6),
-                      Expanded(child: Text(foundClass!['title'] ?? '', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                    ]),
-                    if ((foundClass!['teacher_name'] ?? '').toString().isNotEmpty) Padding(padding: const EdgeInsets.only(top: 2, left: 21),
-                      child: Text(foundClass!['teacher_name'], style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary))),
-                  ])),
-                ]))),
-            const SizedBox(height: 24),
-            const Divider(height: 1),
-            const SizedBox(height: 20),
-            Row(children: [
-              Expanded(child: OutlinedButton(
-                onPressed: () => Navigator.pop(ctx),
-                style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-                child: Text(l.t('cancel')))),
-              const SizedBox(width: 12),
-              Expanded(child: ElevatedButton(
-                style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-                onPressed: busy || notFoundForCode ? null : () async {
-                  final code = get6Code();
-                  if (code.length < 6) { showToast(context, l.t('enter_6_chars'), error: true); return; }
-                  setS(() => busy = true);
-                  try {
-                    final cls = await provider.joinByCode(code);
-                    final id = cls['id'] as int;
-                    final title = cls['title'] ?? '';
-                    if (!ctx.mounted) return;
-                    Navigator.pop(ctx);
-                    if (!mounted) return;
-                    showToast(context, '${l.t('joined_class')} $title');
-                    Navigator.pushNamed(context, '/class', arguments: id);
-                  } catch (e) {
-                    setS(() => busy = false);
-                    final detail = (e is DioException && e.response?.data is Map)
-                        ? e.response?.data['detail']
-                        : null;
-                    final String key = detail == 'no_active_cohort'
-                        ? 'no_active_cohort'
-                        : detail == 'archived_rejoin_blocked'
-                            ? 'archived_rejoin_blocked'
-                            : 'not_found';
-                    showToast(context, l.t(key), error: true);
-                  }
-                },
-                child: busy
-                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : Text(l.t('join_enter_class')))),
-            ]),
-          ])),
-        );
-      }),
-    ).then((_) {
-      lookupDebounce?.cancel();
-      // Диалог завершает Future ещё до начала анимации закрытия (см.
-      // TransitionRoute.completed в SDK) — если во время закрытия клавиатура
-      // тоже уходит, ещё видимые TextField перестраиваются с уже
-      // задиспоженным контроллером ("used after being disposed"). Даём
-      // закрывающей анимации время закончиться перед dispose().
-      Future.delayed(const Duration(milliseconds: 400), () {
-        for (final c in controllers) { c.dispose(); }
-        for (final f in focusNodes) { f.dispose(); }
-      });
-    });
+    showJoinClassDialog(context);
   }
 
-  void _showCreateClass() {
+  Future<void> _showCreateClass() async {
     final provider = context.read<ClassesProvider>();
-    final l = context.read<L10n>();
-    final nameC = TextEditingController(), descC = TextEditingController(),
-          teacherC = TextEditingController(), periodC = TextEditingController();
-    XFile? coverFile;
-    bool submitting = false;
-    bool created = false;
-    Map<String, dynamic>? createdClass;
-    showDialog(context: context, barrierDismissible: false,
-      builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.card)),
-        insetPadding: const EdgeInsets.all(20),
-        child: Container(
-          constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.85),
-          child: Column(children: [
-            Padding(padding: const EdgeInsets.fromLTRB(24, 20, 16, 0), child: Row(children: [
-              Text(l.t('create_class_title'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
-              const Spacer(),
-              IconButton(icon: const Icon(CupertinoIcons.xmark, size: 22), onPressed: () => Navigator.pop(ctx)),
-            ])),
-            Expanded(child: SingleChildScrollView(padding: const EdgeInsets.fromLTRB(24, 16, 24, 0), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _fl3(l.t('class_cover')),
-              Tappable(onTap: () async {
-                final img = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1200, imageQuality: 85);
-                if (img != null) setS(() => coverFile = img);
-              }, child: Container(height: 160, width: double.infinity,
-                decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: adaptiveBorder(context), width: 1.5), color: coverFile != null ? null : adaptiveSurface2(context)),
-                child: coverFile != null
-                    ? ClipRRect(borderRadius: BorderRadius.circular(AppRadii.tile), child: Image.file(File(coverFile!.path), fit: BoxFit.cover, width: double.infinity))
-                    : Column(mainAxisAlignment: MainAxisAlignment.center, children: [Container(width: 50, height: 50, decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)), child: Icon(CupertinoIcons.photo, size: 26, color: adaptiveText1(context))), const SizedBox(height: 10), Text(l.t('click_to_upload'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveText1(context))), const Text('JPG, PNG', style: TextStyle(fontSize: 13, color: C.text4))]))),
-              const SizedBox(height: 20),
-              _fl3(l.t('class_name_required')), TextField(controller: nameC, decoration: InputDecoration(hintText: l.t('class_name_hint'))),
-              const SizedBox(height: 16), _fl3(l.t('class_desc')), TextField(controller: descC, decoration: InputDecoration(hintText: l.t('class_desc_hint')), maxLines: 3),
-              const SizedBox(height: 16), _fl3(l.t('period_label')), TextField(controller: periodC, decoration: InputDecoration(hintText: l.t('period_hint'))),
-              const SizedBox(height: 16), _fl3(l.t('teacher_label')), TextField(controller: teacherC, decoration: InputDecoration(hintText: l.t('your_name_hint'))),
-              const SizedBox(height: 24),
-            ]))),
-            Padding(padding: const EdgeInsets.fromLTRB(24, 8, 24, 20), child: Row(children: [
-              Expanded(child: OutlinedButton(onPressed: submitting ? null : () => Navigator.pop(ctx), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)), child: Text(l.t('cancel')))),
-              const SizedBox(width: 12),
-              Expanded(child: ElevatedButton(
-                style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-                onPressed: submitting ? null : () async {
-                  if (nameC.text.trim().isEmpty) {
-                    showToast(context, l.t('enter_class_name'), error: true);
-                    return;
-                  }
-                  setS(() => submitting = true);
-                  try {
-                    final api = context.read<ApiService>();
-                    String? coverUrl;
-                    if (coverFile != null) {
-                      final res = await api.uploadFile(coverFile!.path, coverFile!.name);
-                      coverUrl = (res['url'] ?? res['file_url'] ?? res['path'])?.toString();
-                    }
-                    final createdCls = await api.createClass(nameC.text.trim(),
-                        description: descC.text.trim(),
-                        teacher: teacherC.text.trim(),
-                        period: periodC.text.trim(),
-                        coverImage: coverUrl);
-                    if (!mounted || !ctx.mounted) return;
-                    created = true;
-                    createdClass = createdCls;
-                    Navigator.pop(ctx);
-                    showToast(context, l.t('class_created'));
-                  } catch (e) {
-                    if (mounted) {
-                      final detail = (e is DioException && e.response?.data is Map) ? e.response?.data['detail'] : null;
-                      showToast(context, detail?.toString() ?? l.t('error'), error: true);
-                    }
-                    if (ctx.mounted) setS(() => submitting = false);
-                  }
-                },
-                child: submitting
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : Text(l.t('create')))),
-            ])),
-          ]),
-        ),
-      ))).then((_) {
-      Future.delayed(const Duration(milliseconds: 400), () {
-        nameC.dispose();
-        descC.dispose();
-        teacherC.dispose();
-        periodC.dispose();
-      });
-      if (created && mounted) {
-        if (createdClass != null) provider.addCreatedClass(createdClass!);
-        provider.load();
-      }
-    });
+    final created = await Navigator.push<Map<String, dynamic>>(
+      context, MaterialPageRoute(builder: (_) => const CreateClassScreen()));
+    if (created != null && mounted) {
+      provider.addCreatedClass(created);
+      provider.load();
+    }
   }
-
-  Widget _fl3(String s) => Padding(padding: const EdgeInsets.only(bottom: 8),
-    child: Text(s, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)));
 }
 
 class _ClassContextMenu extends StatelessWidget {

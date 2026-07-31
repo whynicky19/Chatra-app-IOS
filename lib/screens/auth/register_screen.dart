@@ -142,13 +142,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 380),
               child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                _reveal(0, const Center(child: AppLogo(iconOnly: true, width: 84, height: 84))),
+                _reveal(0, const Center(child: AppLogo(iconOnly: true, width: 96, height: 96))),
                 const SizedBox(height: 20),
 
                 _reveal(1, Column(children: [
                   Text(l.t('register'),
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -0.6, height: 1.15, color: adaptiveText1(context))),
+                    style: TextStyle(fontSize: 31, fontWeight: FontWeight.w800, letterSpacing: -0.6, height: 1.15, color: adaptiveText1(context))),
                   const SizedBox(height: 8),
                   Text(l.t('register_sub'),
                     textAlign: TextAlign.center,

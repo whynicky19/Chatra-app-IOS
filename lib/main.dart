@@ -345,7 +345,7 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
                             'assets/logo-icon.png',
                             width: 96, height: 96,
                             fit: BoxFit.contain,
-                            color: isSchool ? C.amber : null,
+                            color: isSchool ? C.amber : (isDark ? Colors.white : null),
                             errorBuilder: (_, __, ___) => Container(
                               width: 96, height: 96,
                               decoration: BoxDecoration(

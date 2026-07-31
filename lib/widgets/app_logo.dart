@@ -12,10 +12,11 @@ class AppLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isSchool = context.select<OrgProvider, bool>((o) => o.isSchool);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Image.asset(
       iconOnly ? 'assets/logo-icon.png' : 'assets/logo.png',
       width: width, height: height, fit: fit,
-      color: isSchool ? C.amber : null,
+      color: isSchool ? C.amber : (isDark ? Colors.white : null),
     );
   }
 }

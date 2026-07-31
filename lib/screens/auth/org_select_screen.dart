@@ -64,16 +64,11 @@ class _OrgSelectScreenState extends State<OrgSelectScreen> {
               child: Column(mainAxisSize: MainAxisSize.min, children: [
                 _reveal(1, SizedBox(
                   width: 108, height: 108,
-                  child: TweenAnimationBuilder<Color?>(
-                    tween: ColorTween(begin: C.teal, end: _accent),
-                    duration: const Duration(milliseconds: 450),
-                    curve: Curves.easeOutCubic,
-                    builder: (_, color, __) => Image.asset(
-                      'assets/logo-icon.png',
-                      width: 108, height: 108,
-                      fit: BoxFit.contain,
-                      color: color,
-                    ),
+                  child: Image.asset(
+                    'assets/logo-icon.png',
+                    width: 108, height: 108,
+                    fit: BoxFit.contain,
+                    color: isDark ? Colors.white : null,
                   ),
                 )),
                 const SizedBox(height: 28),

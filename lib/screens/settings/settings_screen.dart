@@ -60,8 +60,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         _animated(Padding(padding: const EdgeInsets.fromLTRB(4, 0, 4, 28), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(l.t('settings'),
             style: Theme.of(context).textTheme.displayLarge!.copyWith(color: adaptiveText1(context))),
-          const SizedBox(height: 3),
-          Text(l.t('settings_sub'), style: const TextStyle(fontSize: 15, color: C.text4)),
         ])), 0.0, 0.4),
 
         _animated(_SectionLabel(l.t('profile').toUpperCase()), 0.05, 0.45),

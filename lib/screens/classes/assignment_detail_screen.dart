@@ -344,23 +344,38 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: accent)),
                             ),
                           ]),
+                          const SizedBox(height: 12),
                           AnimatedSize(
                             duration: const Duration(milliseconds: 220),
                             curve: Curves.easeInOut,
+                            alignment: Alignment.topCenter,
                             child: _descHidden
-                                ? const SizedBox(height: 8)
-                                : Padding(
-                                    padding: const EdgeInsets.only(top: 10, bottom: 8),
+                                ? const SizedBox.shrink()
+                                : Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: detailSurface(context),
+                                      borderRadius: BorderRadius.circular(AppRadii.card),
+                                      border: Border.all(color: detailBorder(context)),
+                                    ),
                                     child: Text(descText,
-                                        style: TextStyle(fontSize: 17, height: 1.65, letterSpacing: 0.1, color: detailText1(context))),
+                                        style: TextStyle(fontSize: 16, height: 1.6, letterSpacing: 0.1, color: detailText1(context))),
                                   ),
                           ),
                           const SizedBox(height: 24),
                         ],
                         if (isLoading)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            child: Row(children: [
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            margin: const EdgeInsets.only(bottom: 12),
+                            decoration: BoxDecoration(
+                              color: detailSurface(context),
+                              borderRadius: BorderRadius.circular(AppRadii.card),
+                              border: Border.all(color: detailBorder(context)),
+                            ),
+                            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                               SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: accent)),
                               const SizedBox(width: 10),
                               Text(l.t('loading_files'), style: TextStyle(fontSize: 13, color: detailText2(context))),
@@ -377,9 +392,19 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                           const SizedBox(height: 12),
                         ],
                         if (descText.isEmpty && !isLoading && allFiles.isEmpty)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 24),
-                            child: Text(l.t('content_empty'), style: TextStyle(fontSize: 15, color: detailText2(context), fontWeight: FontWeight.w500)),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 28),
+                            decoration: BoxDecoration(
+                              color: detailSurface(context),
+                              borderRadius: BorderRadius.circular(AppRadii.card),
+                              border: Border.all(color: detailBorder(context)),
+                            ),
+                            child: Column(children: [
+                              Icon(CupertinoIcons.doc_text, size: 26, color: detailText2(context)),
+                              const SizedBox(height: 10),
+                              Text(l.t('content_empty'), style: TextStyle(fontSize: 15, color: detailText2(context), fontWeight: FontWeight.w500)),
+                            ]),
                           ),
                       ]);
                     },
@@ -528,8 +553,15 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                     Text(l.t('your_answer'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: detailText1(context))),
                     const SizedBox(height: 12),
                     if (sub['text_content'] != null && sub['text_content'].toString().isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
+                      Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: detailSurface(context),
+                          borderRadius: BorderRadius.circular(AppRadii.card),
+                          border: Border.all(color: detailBorder(context)),
+                        ),
                         child: Text(sub['text_content'], style: TextStyle(fontSize: 15, height: 1.6, color: detailText1(context))),
                       ),
                     ...(() {

@@ -62,7 +62,7 @@ class L10n extends ChangeNotifier {
       'file_read_error': 'Не удалось прочитать файл',
       // --- Валидация имени ---
       'name_letters_only': 'Имя может содержать только буквы, пробел и дефис',
-      'classes': 'Классы',
+      'classes': 'Предметы',
       'classes_sub': 'Управляйте обучением и открывайте новые горизонты',
       'create_class': 'Создать класс',
       'join_code': 'По коду',
@@ -249,7 +249,6 @@ class L10n extends ChangeNotifier {
       'upload_error': 'Ошибка загрузки',
 
       'settings': 'Настройки',
-      'settings_sub': 'Управляйте профилем и настройками',
       'profile': 'Профиль',
       'academic_profile': 'Академический профиль',
       'full_name': 'ПОЛНОЕ ИМЯ',
@@ -431,7 +430,7 @@ class L10n extends ChangeNotifier {
       'email_taken': 'Этот email уже зарегистрирован',
       'register_error': 'Ошибка регистрации. Попробуйте снова',
 
-      'nav_classes': 'Классы',
+      'nav_classes': 'Предметы',
       'nav_ai': 'ИИ',
       'nav_admin': 'Админ',
       'nav_settings': 'Настройки',
@@ -456,7 +455,7 @@ class L10n extends ChangeNotifier {
       'no_classes_admin': 'Классов нет',
       'requests_count': 'запросов',
       'students_count': 'учащихся',
-      'class_tab': 'Классы',
+      'class_tab': 'Предметы',
       'create_first_class': 'Создайте первый класс',
       'hours_short': 'ч.',
       'minutes_short': 'мин.',
@@ -800,7 +799,7 @@ class L10n extends ChangeNotifier {
       'file_read_error': 'Файлды оқу мүмкін болмады',
       // --- Атты тексеру ---
       'name_letters_only': 'Атта тек әріптер, бос орын және сызықша болуы мүмкін',
-      'classes': 'Сыныптар',
+      'classes': 'Пәндер',
       'classes_sub': 'Оқуды басқарыңыз және жаңа білім ашыңыз',
       'create_class': 'Сынып құру',
       'join_code': 'Код бойынша',
@@ -987,7 +986,6 @@ class L10n extends ChangeNotifier {
       'upload_error': 'Жүктеу қатесі',
 
       'settings': 'Баптаулар',
-      'settings_sub': 'Профильді және баптауларды басқарыңыз',
       'profile': 'Профиль',
       'academic_profile': 'Академиялық профиль',
       'full_name': 'ТОЛЫҚ АТЫ',
@@ -1169,7 +1167,7 @@ class L10n extends ChangeNotifier {
       'email_taken': 'Бұл email тіркелген',
       'register_error': 'Тіркелу қатесі. Қайтадан көріңіз',
 
-      'nav_classes': 'Сыныптар',
+      'nav_classes': 'Пәндер',
       'nav_ai': 'ЖИ',
       'nav_admin': 'Админ',
       'nav_settings': 'Баптау',
@@ -1194,7 +1192,7 @@ class L10n extends ChangeNotifier {
       'no_classes_admin': 'Сыныптар жоқ',
       'requests_count': 'сұраныс',
       'students_count': 'оқушы',
-      'class_tab': 'Сыныптар',
+      'class_tab': 'Пәндер',
       'create_first_class': 'Бірінші сыныбыңызды жасаңыз',
       'hours_short': 'сағ.',
       'minutes_short': 'мин.',
@@ -1538,7 +1536,7 @@ class L10n extends ChangeNotifier {
       'file_read_error': 'Could not read the file',
       // --- Name validation ---
       'name_letters_only': 'Name may contain only letters, spaces and hyphens',
-      'classes': 'Classes',
+      'classes': 'Subjects',
       'classes_sub': 'Manage your learning and explore new horizons',
       'create_class': 'Create Class',
       'join_code': 'Join by Code',
@@ -1725,7 +1723,6 @@ class L10n extends ChangeNotifier {
       'upload_error': 'Upload error',
 
       'settings': 'Settings',
-      'settings_sub': 'Manage your profile and preferences',
       'profile': 'Profile',
       'academic_profile': 'Academic Profile',
       'full_name': 'FULL NAME',
@@ -1907,7 +1904,7 @@ class L10n extends ChangeNotifier {
       'email_taken': 'This email is already registered',
       'register_error': 'Registration error. Try again',
 
-      'nav_classes': 'Classes',
+      'nav_classes': 'Subjects',
       'nav_ai': 'AI',
       'nav_admin': 'Admin',
       'nav_settings': 'Settings',
@@ -1932,7 +1929,7 @@ class L10n extends ChangeNotifier {
       'no_classes_admin': 'No classes',
       'requests_count': 'requests',
       'students_count': 'students',
-      'class_tab': 'Classes',
+      'class_tab': 'Subjects',
       'create_first_class': 'Create your first class',
       'hours_short': 'h.',
       'minutes_short': 'min.',

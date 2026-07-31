@@ -319,54 +319,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             Text(l.t('delete'), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
                           ]),
                         ),
-                        child: GestureDetector(
-                        onTap: () {
-                          _markRead(n.key);
-                          if (canNavigate) {
-                            Navigator.push(context, MaterialPageRoute(
-                              builder: (_) => ClassDetailScreen(classId: n.classId!, initialTab: 1)));
-                          }
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          decoration: BoxDecoration(
-                            color: n.isRead ? surface : cfg['bg'] as Color,
-                            borderRadius: BorderRadius.circular(AppRadii.card),
-                            border: n.isRead ? null : Border.all(color: (cfg['color'] as Color).withValues(alpha: 0.22)),
-                            boxShadow: cardShadow(isDark),
-                          ),
-                          child: Padding(padding: const EdgeInsets.all(14), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Builder(builder: (_) {
-                              final c = cfg['color'] as Color;
-                              return Container(width: 44, height: 44,
-                                decoration: BoxDecoration(
-                                  gradient: n.isRead ? null : LinearGradient(
-                                    colors: [c.withValues(alpha: 0.85), c],
-                                    begin: Alignment.topLeft, end: Alignment.bottomRight),
-                                  color: n.isRead ? c.withValues(alpha: 0.10) : null,
-                                  borderRadius: BorderRadius.circular(AppRadii.tile),
-                                  boxShadow: n.isRead ? null : [BoxShadow(color: c.withValues(alpha: 0.30), blurRadius: 9, spreadRadius: -2, offset: const Offset(0, 3))],
-                                ),
-                                child: Icon(cfg['icon'] as IconData, size: 20, color: n.isRead ? c : Colors.white));
-                            }),
-                            const SizedBox(width: 12),
-                            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              Row(children: [
-                                Expanded(child: Text(n.title, style: TextStyle(
-                                  fontSize: 15, fontWeight: n.isRead ? FontWeight.w600 : FontWeight.w800,
-                                  color: adaptiveText1(context)))),
-                                if (!n.isRead) Container(width: 8, height: 8, decoration: BoxDecoration(color: cfg['color'] as Color, shape: BoxShape.circle)),
-                                if (canNavigate) const Padding(padding: EdgeInsets.only(left: 6),
-                                  child: Icon(CupertinoIcons.chevron_right, size: 11, color: C.text4)),
-                              ]),
-                              const SizedBox(height: 4),
-                              Text(n.body, style: const TextStyle(fontSize: 13, color: C.text4, height: 1.4)),
-                              const SizedBox(height: 6),
-                              Text(_timeAgo(n.date, l), style: TextStyle(
-                                fontSize: 11, color: C.text4.withValues(alpha: 0.7), fontWeight: FontWeight.w600)),
-                            ])),
-                          ])),
-                        ),
+                        child: _NotifCard(
+                          notif: n,
+                          config: cfg,
+                          canNavigate: canNavigate,
+                          isDark: isDark,
+                          surface: surface,
+                          timeAgo: _timeAgo(n.date, l),
+                          onTap: () {
+                            _markRead(n.key);
+                            if (canNavigate) {
+                              Navigator.push(context, MaterialPageRoute(
+                                builder: (_) => ClassDetailScreen(classId: n.classId!, initialTab: 1)));
+                            }
+                          },
                         ),
                       )),
                     );
@@ -398,5 +364,105 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       const SizedBox(height: 6),
       Text(l.t('no_notif_sub'), style: const TextStyle(fontSize: 15, color: C.text4, height: 1.5), textAlign: TextAlign.center),
     ]));
+  }
+}
+
+/// Карточка одного уведомления: единый цвет поверхности для всех карточек
+/// (вместо цветной заливки под каждый тип) + цветная полоса слева и
+/// градиентный значок для непрочитанных — Apple Notification Center, а не
+/// разноцветные плашки. Лёгкое сжатие при нажатии — как у FileCard.
+class _NotifCard extends StatefulWidget {
+  final _Notif notif;
+  final Map<String, dynamic> config;
+  final bool canNavigate;
+  final bool isDark;
+  final Color surface;
+  final String timeAgo;
+  final VoidCallback onTap;
+
+  const _NotifCard({
+    required this.notif,
+    required this.config,
+    required this.canNavigate,
+    required this.isDark,
+    required this.surface,
+    required this.timeAgo,
+    required this.onTap,
+  });
+
+  @override
+  State<_NotifCard> createState() => _NotifCardState();
+}
+
+class _NotifCardState extends State<_NotifCard> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final n = widget.notif;
+    final c = widget.config['color'] as Color;
+    final icon = widget.config['icon'] as IconData;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _pressed ? 0.98 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: widget.surface,
+            borderRadius: BorderRadius.circular(AppRadii.card),
+            boxShadow: cardShadow(widget.isDark),
+            border: Border.all(color: adaptiveBorder(context).withValues(alpha: 0.5)),
+          ),
+          child: Stack(children: [
+            if (!n.isRead)
+              Positioned(left: 0, top: 0, bottom: 0, width: 3.5,
+                child: Container(color: c)),
+            Padding(
+              padding: EdgeInsets.fromLTRB(n.isRead ? 14 : 17, 14, 14, 14),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Container(width: 44, height: 44,
+                  decoration: BoxDecoration(
+                    gradient: n.isRead ? null : LinearGradient(
+                      colors: [c.withValues(alpha: 0.85), c],
+                      begin: Alignment.topLeft, end: Alignment.bottomRight),
+                    color: n.isRead ? c.withValues(alpha: 0.10) : null,
+                    borderRadius: BorderRadius.circular(AppRadii.tile),
+                    boxShadow: n.isRead ? null : [BoxShadow(color: c.withValues(alpha: 0.30), blurRadius: 9, spreadRadius: -2, offset: const Offset(0, 3))],
+                  ),
+                  child: Icon(icon, size: 20, color: n.isRead ? c : Colors.white)),
+                const SizedBox(width: 12),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(children: [
+                    Expanded(child: Text(n.title, style: TextStyle(
+                      fontSize: 15, fontWeight: n.isRead ? FontWeight.w600 : FontWeight.w800,
+                      color: adaptiveText1(context)))),
+                    if (!n.isRead) ...[
+                      Container(width: 7, height: 7, decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
+                      const SizedBox(width: 6),
+                    ],
+                    if (widget.canNavigate)
+                      Icon(CupertinoIcons.chevron_right, size: 13, color: C.text4.withValues(alpha: 0.6)),
+                  ]),
+                  const SizedBox(height: 4),
+                  Text(n.body, style: const TextStyle(fontSize: 13, color: C.text4, height: 1.4)),
+                  const SizedBox(height: 6),
+                  Text(widget.timeAgo, style: TextStyle(
+                    fontSize: 11, color: C.text4.withValues(alpha: 0.7), fontWeight: FontWeight.w600)),
+                ])),
+              ]),
+            ),
+          ]),
+        ),
+      ),
+    );
   }
 }

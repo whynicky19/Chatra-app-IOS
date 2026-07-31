@@ -173,6 +173,9 @@ class _ArchiveCard extends StatelessWidget {
     final coverImg = cardCoverUrl(cls);
     final title = (cls['name'] ?? cls['title'] ?? '').toString();
     final teacher = (cls['teacher'] ?? cls['teacher_name'] ?? '').toString();
+    // Полноширинная карточка — кэш-растр по ширине экрана × DPR, иначе на
+    // retina обложка декодируется мельче виджета и размывается при растяжке.
+    final coverCacheWidth = (MediaQuery.of(context).size.width * MediaQuery.of(context).devicePixelRatio).round();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
@@ -200,12 +203,12 @@ class _ArchiveCard extends StatelessWidget {
                               final bytes = decodeBase64Image(coverImg.toString());
                               return bytes != null
                                   ? Image.memory(bytes, fit: BoxFit.cover, width: double.infinity,
-                                      gaplessPlayback: true, cacheWidth: 480)
+                                      gaplessPlayback: true, cacheWidth: coverCacheWidth)
                                   : const SizedBox.shrink();
                             })
                           : NetworkCoverImage(
                               url: context.read<ApiService>().fixUrl(coverImg.toString()),
-                              memCacheWidth: 480,
+                              memCacheWidth: coverCacheWidth,
                             ),
                     Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                       begin: Alignment.topCenter, end: Alignment.bottomCenter,

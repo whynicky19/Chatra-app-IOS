@@ -33,18 +33,21 @@ class ClassCoverSliver extends StatelessWidget {
     final primary = Theme.of(context).colorScheme.primary;
     final isData = coverImg != null && coverImg.toString().startsWith('data:');
     final isNetwork = coverImg != null && !isData;
+    // Полноэкранная обложка — кэш-растр по ширине экрана × DPR, иначе на
+    // retina обложка декодируется мельче виджета и размывается при растяжке.
+    final coverCacheWidth = (MediaQuery.of(context).size.width * MediaQuery.of(context).devicePixelRatio).round();
 
     Widget cover;
     if (isNetwork) {
       cover = RepaintBoundary(child: NetworkCoverImage(
         url: coverImg.toString(),
         alignment: Alignment.topCenter,
-        memCacheWidth: 800,
+        memCacheWidth: coverCacheWidth,
       ));
     } else if (isData) {
       final bytes = decodeBase64Image(coverImg.toString());
       cover = bytes != null
-          ? Image.memory(bytes, fit: BoxFit.cover, alignment: Alignment.topCenter, gaplessPlayback: true, cacheWidth: 1080)
+          ? Image.memory(bytes, fit: BoxFit.cover, alignment: Alignment.topCenter, gaplessPlayback: true, cacheWidth: coverCacheWidth)
           : const SizedBox.shrink();
     } else {
       cover = const SizedBox.shrink();

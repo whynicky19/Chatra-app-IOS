@@ -578,6 +578,10 @@ class _ClassContextMenu extends StatelessWidget {
     final primary = Theme.of(context).colorScheme.primary;
     final code = (cls['invite_code'] as String?) ?? '';
     final teacherName = cls['teacher_name'] as String? ?? '';
+    // Кэш-растр должен покрывать физические пиксели карточки (288 логических
+    // × DPR), иначе на retina-экранах картинка декодируется мельче виджета и
+    // растягивается — отсюда размытость.
+    final coverCacheWidth = (288 * MediaQuery.of(context).devicePixelRatio).round();
 
     return Material(
       color: Colors.transparent,
@@ -595,9 +599,9 @@ class _ClassContextMenu extends StatelessWidget {
             SizedBox(height: 110, width: double.infinity,
               child: Stack(fit: StackFit.expand, children: [
                 coverImg != null && coverImg.toString().startsWith('data:')
-                    ? Builder(builder: (_) { final bytes = decodeBase64Image(coverImg.toString()); return bytes != null ? Image.memory(bytes, fit: BoxFit.cover, gaplessPlayback: true, cacheWidth: 480) : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))); })
+                    ? Builder(builder: (_) { final bytes = decodeBase64Image(coverImg.toString()); return bytes != null ? Image.memory(bytes, fit: BoxFit.cover, gaplessPlayback: true, cacheWidth: coverCacheWidth) : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))); })
                     : coverImg != null
-                        ? NetworkCoverImage(url: context.read<ApiService>().fixUrl(coverImg.toString()), memCacheWidth: 480, errorBuilder: (_) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))))
+                        ? NetworkCoverImage(url: context.read<ApiService>().fixUrl(coverImg.toString()), memCacheWidth: coverCacheWidth, errorBuilder: (_) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))))
                         : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight))),
                 Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                   begin: Alignment.topCenter, end: Alignment.bottomCenter,
@@ -848,6 +852,10 @@ class _ClassCard extends StatelessWidget {
     final surface  = Theme.of(context).colorScheme.surface;
     final coverImg = cardCoverUrl(cls);
     final teacherName = cls['teacher_name'] ?? '';
+    // Карточка на всю ширину экрана — берём ширину экрана как верхнюю
+    // границу физического размера, чтобы не декодировать мельче виджета
+    // на retina-экранах.
+    final coverCacheWidth = (MediaQuery.of(context).size.width * MediaQuery.of(context).devicePixelRatio).round();
 
     return RepaintBoundary(
       child: Tappable(
@@ -873,12 +881,12 @@ class _ClassCard extends StatelessWidget {
                         ? Builder(builder: (_) {
                             final bytes = decodeBase64Image(coverImg.toString());
                             return bytes != null
-                                ? Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, gaplessPlayback: true, cacheWidth: 480)
+                                ? Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, gaplessPlayback: true, cacheWidth: coverCacheWidth)
                                 : gradient;
                           })
                         : NetworkCoverImage(
                             url: context.read<ApiService>().fixUrl(coverImg.toString()),
-                            memCacheWidth: 480,
+                            memCacheWidth: coverCacheWidth,
                             errorBuilder: (_) => gradient,
                           );
                   }),

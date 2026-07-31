@@ -1,44 +1,17 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../../../providers/l10n_provider.dart';
-import '../../../theme/app_theme.dart';
-
-enum ScoreLevel { excellent, good, needsImprovement, poor }
-
-ScoreLevel scoreLevelFor(double pct) {
-  if (pct >= 0.85) return ScoreLevel.excellent;
-  if (pct >= 0.70) return ScoreLevel.good;
-  if (pct >= 0.50) return ScoreLevel.needsImprovement;
-  return ScoreLevel.poor;
-}
-
-String scoreLevelLabel(L10n l, ScoreLevel level) {
-  switch (level) {
-    case ScoreLevel.excellent: return l.t('score_excellent');
-    case ScoreLevel.good: return l.t('score_good');
-    case ScoreLevel.needsImprovement: return l.t('score_needs_improvement');
-    case ScoreLevel.poor: return l.t('score_poor');
-  }
-}
-
-List<Color> scoreGradient(ScoreLevel level) {
-  switch (level) {
-    case ScoreLevel.excellent: return const [Color(0xFF34D399), Color(0xFF059669)];
-    case ScoreLevel.good: return const [Color(0xFF60A5FA), Color(0xFF2563EB)];
-    case ScoreLevel.needsImprovement: return const [Color(0xFFFBBF24), Color(0xFFD97706)];
-    case ScoreLevel.poor: return const [Color(0xFFF87171), Color(0xFFDC2626)];
-  }
-}
 
 /// Круговой индикатор результата в духе Apple Fitness/Activity: анимированная
-/// заливка кольца при появлении, градиент по цветовой "полосе" результата,
-/// мягкое цветное свечение под кольцом вместо плоской тени.
+/// заливка кольца при появлении, мягкое цветное свечение под кольцом вместо
+/// плоской тени. Один акцентный цвет (не завязан на "полосу" результата —
+/// экран задания везде использует единый голубой акцент).
 class ScoreRing extends StatefulWidget {
   final num score;
   final num maxScore;
   final double size;
+  final Color accentColor;
 
-  const ScoreRing({super.key, required this.score, required this.maxScore, this.size = 200});
+  const ScoreRing({super.key, required this.score, required this.maxScore, required this.accentColor, this.size = 200});
 
   @override
   State<ScoreRing> createState() => _ScoreRingState();
@@ -75,8 +48,7 @@ class _ScoreRingState extends State<ScoreRing> with SingleTickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final level = scoreLevelFor(_pct);
-    final colors = scoreGradient(level);
+    final colors = [widget.accentColor.withValues(alpha: 0.75), widget.accentColor];
 
     return AnimatedBuilder(
       animation: _animation,
@@ -89,7 +61,7 @@ class _ScoreRingState extends State<ScoreRing> with SingleTickerProviderStateMix
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: colors[1].withValues(alpha: (isDark ? 0.38 : 0.26) * _animation.value),
+                color: widget.accentColor.withValues(alpha: (isDark ? 0.35 : 0.22) * _animation.value),
                 blurRadius: widget.size * 0.22,
                 spreadRadius: -widget.size * 0.03,
                 offset: Offset(0, widget.size * 0.06),
@@ -103,15 +75,12 @@ class _ScoreRingState extends State<ScoreRing> with SingleTickerProviderStateMix
               trackColor: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.055),
             ),
             child: Center(
-              // Внутри кольца — только цифры (счёт/максимум), в духе Apple
-              // Fitness: подпись уровня результата теперь выводится снаружи,
-              // под кольцом (см. вызывающий код), а не перегружает композицию.
               child: Column(mainAxisSize: MainAxisSize.min, children: [
                 Text('${widget.score}',
                     style: TextStyle(fontSize: widget.size * 0.24, fontWeight: FontWeight.w800,
                         color: isDark ? Colors.white : const Color(0xFF111111), height: 1, letterSpacing: -0.5)),
                 Text('/ ${widget.maxScore}',
-                    style: TextStyle(fontSize: widget.size * 0.10, fontWeight: FontWeight.w600, color: C.text4)),
+                    style: TextStyle(fontSize: widget.size * 0.10, fontWeight: FontWeight.w600, color: const Color(0xFF8E8E93))),
               ]),
             ),
           ),

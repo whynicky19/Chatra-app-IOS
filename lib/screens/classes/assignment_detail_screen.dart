@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart' show DioException;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
@@ -34,9 +35,13 @@ String _submitErrorText(L10n l, Object e) {
   return l.t('submit_error');
 }
 
-double _lerp(double a, double b, double t) => a + (b - a) * t;
-
 String _fmtBytes(int bytes) => bytes < 1048576 ? '${(bytes / 1024).toStringAsFixed(0)} KB' : '${(bytes / 1048576).toStringAsFixed(1)} MB';
+
+const _imageExts = {'jpg', 'jpeg', 'png', 'gif', 'webp'};
+
+/// Единый голубой акцент экрана задания — не завязан на тему организации
+/// (teal/amber), сознательный выбор именно для этой страницы.
+const _kAccent = Color(0xFF4A6EF5);
 
 /// Полноэкранная страница задания (замена модального bottom sheet).
 class AssignmentDetailScreen extends StatefulWidget {
@@ -65,12 +70,12 @@ class AssignmentDetailScreen extends StatefulWidget {
   State<AssignmentDetailScreen> createState() => _AssignmentDetailScreenState();
 }
 
-class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> with SingleTickerProviderStateMixin {
+class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
   late Future<Map<String, dynamic>> _assignmentFuture;
   final _tc = TextEditingController();
   bool _busy = false;
   bool _descHidden = false;
-  bool _criteriaExpanded = false;
+  bool _rubricExpanded = false;
   List<PlatformFile> _pickedFiles = [];
   final Set<String> _uploadedNames = {};
   String? _uploadingName;
@@ -80,11 +85,6 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> with Si
   static const _checkSteps = ['check_step_1', 'check_step_2', 'check_step_3', 'check_step_4', 'check_step_5'];
   int _checkStepIdx = 0;
   Timer? _checkStepTimer;
-
-  // Однократный "pop-in" заголовочного кольца при первом появлении экрана —
-  // отдельно от собственной анимации заливки кольца (см. score_ring.dart).
-  late final AnimationController _entryCtrl;
-  late final Animation<double> _entryAnim;
 
   dynamic get a => widget.assignment;
   dynamic get sub => widget.submission;
@@ -98,20 +98,12 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> with Si
         if (_checkStepIdx < _checkSteps.length - 1) setState(() => _checkStepIdx++);
       });
     }
-    _entryCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 550));
-    _entryAnim = CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutBack);
-    if (sub?['grade'] != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) _entryCtrl.forward(); });
-    } else {
-      _entryCtrl.value = 1;
-    }
   }
 
   @override
   void dispose() {
     _tc.dispose();
     _checkStepTimer?.cancel();
-    _entryCtrl.dispose();
     super.dispose();
   }
 
@@ -320,7 +312,6 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> with Si
     final l = context.read<L10n>();
     final bg = detailBg(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = detailAccent(context);
 
     final deadline = a['deadline'];
     final isLate = deadline != null && parseServerDate(deadline)?.isBefore(DateTime.now()) == true && sub == null;
@@ -331,301 +322,241 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> with Si
 
     final grade = sub?['grade'];
     final gradedByTeacher = grade != null && sub['grade']['graded_by'] == 'teacher';
+    final gradedByAi = grade != null && !gradedByTeacher;
     final criteriaScores = grade != null
         ? parseCriteriaScores(sub['grade']['criteria_scores']).cast<Map>().map((e) => e.cast<String, dynamic>()).toList()
         : <Map<String, dynamic>>[];
     final rubric = _rubricCriteria();
 
-    // Кольцо уменьшено на ~28% относительно прежнего размера и всегда
-    // целиком помещается в область заголовка — расчёт от ширины контента.
-    final contentWidth = MediaQuery.of(context).size.width - 40;
-    final ringSize = (contentWidth * 0.46).clamp(120.0, 160.0);
-    final topInset = MediaQuery.of(context).padding.top;
-
-    final scorePct = grade != null && (a['max_score'] as num? ?? 100) > 0
-        ? (((grade['score'] as num? ?? 0) / (a['max_score'] as num? ?? 100))).clamp(0.0, 1.0).toDouble()
-        : 0.0;
-    final scoreLevel = scoreLevelFor(scorePct);
-    final bandLabel = scoreLevelLabel(l, scoreLevel);
-    final bandColor = scoreGradient(scoreLevel)[1];
-
     return CupertinoTheme(
       data: CupertinoThemeData(
         brightness: isDark ? Brightness.dark : Brightness.light,
-        primaryColor: accent,
+        primaryColor: _kAccent,
         scaffoldBackgroundColor: bg,
         barBackgroundColor: bg,
-        textTheme: CupertinoTextThemeData(
-          primaryColor: accent,
-          navLargeTitleTextStyle: TextStyle(
-            fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -0.5,
-            color: detailText1(context),
-          ),
-          navTitleTextStyle: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: detailText1(context)),
-        ),
       ),
       child: Scaffold(
         backgroundColor: bg,
-        body: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            // ── Header: назад + заголовок (+ кольцо результата, если оценено) ──
-            if (grade != null)
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: _ScoreHeaderDelegate(
-                  title: a['title'] ?? '',
-                  score: (grade['score'] as num?) ?? 0,
-                  maxScore: (a['max_score'] as num?) ?? 100,
-                  bandLabel: bandLabel,
-                  bandColor: bandColor,
-                  ringSize: ringSize,
-                  topInset: topInset,
-                  bg: bg,
-                  titleColor: detailText1(context),
-                  onBack: () => Navigator.pop(context),
-                  entrance: _entryAnim,
-                ),
-              )
-            else
-              CupertinoSliverNavigationBar(
-                backgroundColor: bg,
-                border: null,
-                stretch: true,
-                largeTitle: Text(a['title'] ?? '', maxLines: 2, overflow: TextOverflow.ellipsis),
-                trailing: widget.isTeacher
-                    ? GestureDetector(
-                        onTap: _openMenu,
-                        child: Icon(CupertinoIcons.ellipsis_circle, size: 26, color: detailText1(context)),
-                      )
-                    : null,
+        body: SafeArea(
+          child: ListView(
+            physics: const BouncingScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(20, 8, 20, showSubmitBar || showRetractBar || showViewWorksBar ? 24 : 24),
+            children: [
+              _topBar(context, isDark),
+              const SizedBox(height: 16),
+              _titleBlock(context, l, grade),
+              const SizedBox(height: 12),
+              _statusChips(context, l, isLate, gradedByAi),
+              const SizedBox(height: 12),
+              _dueReviewedRow(context, l, deadline, isLate, grade),
+              const SizedBox(height: 24),
+
+              if (grade == null && sub != null && sub['status'] == 'grading') ...[
+                _pendingBanner(context, _kAccent, icon: CupertinoIcons.hourglass,
+                    text: l.t(_checkSteps[_checkStepIdx]), showSpinner: true),
+                const SizedBox(height: 16),
+              ] else if (grade == null && sub != null && sub['status'] == 'needs_review') ...[
+                _pendingBanner(context, C.amber, icon: CupertinoIcons.exclamationmark_circle,
+                    text: l.t('needs_review_student_msg')),
+                const SizedBox(height: 16),
+              ],
+
+              // ── Задание: описание + файлы, единой карточкой ──
+              FutureBuilder<Map<String, dynamic>>(
+                future: _assignmentFuture,
+                builder: (ctx, snap) {
+                  final detailA = snap.data;
+                  final isLoading = snap.connectionState == ConnectionState.waiting;
+                  final descText = cleanContent(((detailA?['description'] ?? a['description'])?.toString()) ?? '');
+                  final allFiles = _extractAssignmentFiles(a, detailA);
+                  if (descText.isEmpty && !isLoading && allFiles.isEmpty) return const SizedBox.shrink();
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: _sectionCard(context, isDark, children: [
+                      Row(children: [
+                        Expanded(child: Text(l.t('description'),
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: detailText1(context)))),
+                        if (descText.isNotEmpty)
+                          GestureDetector(
+                            onTap: () => setState(() => _descHidden = !_descHidden),
+                            child: Text(_descHidden ? l.t('show') : l.t('hide'),
+                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _kAccent)),
+                          ),
+                      ]),
+                      if (descText.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        AnimatedSize(
+                          duration: const Duration(milliseconds: 220),
+                          curve: Curves.easeInOut,
+                          alignment: Alignment.topCenter,
+                          child: _descHidden
+                              ? const SizedBox.shrink()
+                              : Text(descText,
+                                  style: TextStyle(fontSize: 15, height: 1.55, color: detailText2(context))),
+                        ),
+                      ],
+                      if (isLoading) ...[
+                        const SizedBox(height: 12),
+                        Row(children: [
+                          const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: _kAccent)),
+                          const SizedBox(width: 10),
+                          Text(l.t('loading_files'), style: TextStyle(fontSize: 13, color: detailText2(context))),
+                        ]),
+                      ] else if (allFiles.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        for (final f in allFiles) ...[
+                          FileCard(name: fileDisplayName(f), previewUrl: f, onTap: () => widget.onOpenFile(f, fileDisplayName(f))),
+                          const SizedBox(height: 8),
+                        ],
+                      ],
+                    ]),
+                  );
+                },
               ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  _metaLine(context, l, deadline, isLate, accent),
-                  const SizedBox(height: 16),
 
-                  if (grade == null && sub != null && sub['status'] == 'grading') ...[
-                    _pendingBanner(context, accent, icon: CupertinoIcons.hourglass,
-                        text: l.t(_checkSteps[_checkStepIdx]), showSpinner: true),
-                    const SizedBox(height: 16),
-                  ] else if (grade == null && sub != null && sub['status'] == 'needs_review') ...[
-                    _pendingBanner(context, C.amber, icon: CupertinoIcons.exclamationmark_circle,
-                        text: l.t('needs_review_student_msg')),
-                    const SizedBox(height: 16),
-                  ],
-
-                  // ── Раздел задания (описание) ──
-                  FutureBuilder<Map<String, dynamic>>(
-                    future: _assignmentFuture,
-                    builder: (ctx, snap) {
-                      final detailA = snap.data;
-                      final isLoading = snap.connectionState == ConnectionState.waiting;
-                      final descText = cleanContent(((detailA?['description'] ?? a['description'])?.toString()) ?? '');
-                      final allFiles = _extractAssignmentFiles(a, detailA);
-
-                      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        if (descText.isNotEmpty) ...[
-                          Row(children: [
-                            Expanded(child: Text(l.t('description'),
-                                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: detailText1(context)))),
-                            GestureDetector(
-                              onTap: () => setState(() => _descHidden = !_descHidden),
-                              child: Text(_descHidden ? l.t('show') : l.t('hide'),
-                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: accent)),
-                            ),
-                          ]),
-                          const SizedBox(height: 12),
-                          AnimatedSize(
-                            duration: const Duration(milliseconds: 220),
-                            curve: Curves.easeInOut,
-                            alignment: Alignment.topCenter,
-                            child: _descHidden
-                                ? const SizedBox.shrink()
-                                : Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.all(16),
-                                    decoration: _softCard(context, isDark),
-                                    child: Text(descText,
-                                        style: TextStyle(fontSize: 16, height: 1.6, letterSpacing: 0.1, color: detailText1(context))),
-                                  ),
-                          ),
-                          const SizedBox(height: 24),
-                        ],
-
-                        // ── Раздел файлов ──
-                        if (isLoading)
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            margin: const EdgeInsets.only(bottom: 12),
-                            decoration: _softCard(context, isDark),
-                            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                              SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: accent)),
-                              const SizedBox(width: 10),
-                              Text(l.t('loading_files'), style: TextStyle(fontSize: 13, color: detailText2(context))),
-                            ]),
-                          )
-                        else if (allFiles.isNotEmpty) ...[
-                          Text(l.t('attached_files_edit'),
-                              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: detailText1(context))),
-                          const SizedBox(height: 12),
-                          for (final f in allFiles) ...[
-                            FileCard(name: fileDisplayName(f), previewUrl: f, onTap: () => widget.onOpenFile(f, fileDisplayName(f))),
-                            const SizedBox(height: 8),
-                          ],
-                          const SizedBox(height: 16),
-                        ],
-                        if (descText.isEmpty && !isLoading && allFiles.isEmpty)
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(vertical: 28),
-                            decoration: _softCard(context, isDark),
-                            child: Column(children: [
-                              Icon(CupertinoIcons.doc_text, size: 26, color: detailText2(context)),
-                              const SizedBox(height: 10),
-                              Text(l.t('content_empty'), style: TextStyle(fontSize: 15, color: detailText2(context), fontWeight: FontWeight.w500)),
-                            ]),
-                          ),
-                      ]);
-                    },
-                  ),
-
-                  // ── Эталонное решение (только учитель) ──
-                  if (widget.isTeacher) ...(() {
-                    final refFiles = _extractReferenceFiles(a);
-                    if (refFiles.isEmpty) return <Widget>[];
-                    return [
-                      Text(l.t('reference_files'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: detailText1(context))),
+              // ── Эталонное решение (только учитель) ──
+              if (widget.isTeacher) ...(() {
+                final refFiles = _extractReferenceFiles(a);
+                if (refFiles.isEmpty) return <Widget>[];
+                return [
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: _sectionCard(context, isDark, children: [
+                      Text(l.t('reference_files'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: detailText1(context))),
                       const SizedBox(height: 12),
                       for (final f in refFiles) ...[
                         FileCard(name: fileDisplayName(f), previewUrl: f, onTap: () => widget.onOpenFile(f, fileDisplayName(f))),
                         const SizedBox(height: 8),
                       ],
-                      const SizedBox(height: 16),
-                    ];
-                  })(),
+                    ]),
+                  ),
+                ];
+              })(),
 
-                  // ── Ответ студента ──
-                  if (sub != null && (sub['text_content'] != null || sub['file_urls'] != null)) ...[
-                    Text(l.t('your_answer'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: detailText1(context))),
-                    const SizedBox(height: 12),
-                    if (sub['text_content'] != null && sub['text_content'].toString().isNotEmpty)
-                      Container(
-                        width: double.infinity,
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(16),
-                        decoration: _softCard(context, isDark),
-                        child: Text(sub['text_content'], style: TextStyle(fontSize: 15, height: 1.6, color: detailText1(context))),
-                      ),
+              // ── Ответ студента: текст + сетка миниатюр файлов ──
+              if (sub != null && (sub['text_content'] != null || sub['file_urls'] != null))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: _sectionCard(context, isDark, children: [
+                    Text(l.t('your_answer'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: detailText1(context))),
+                    if (sub['text_content'] != null && sub['text_content'].toString().isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(sub['text_content'], style: TextStyle(fontSize: 15, height: 1.55, color: detailText2(context))),
+                    ],
                     ...(() {
                       final urls = _parseFileUrls(sub['file_urls']);
+                      if (urls.isEmpty) return <Widget>[];
                       return [
-                        for (final url in urls) ...[
-                          FileCard(name: fileDisplayName(url), previewUrl: url, onTap: () => widget.onOpenFile(url, fileDisplayName(url))),
-                          const SizedBox(height: 8),
-                        ],
+                        const SizedBox(height: 12),
+                        _answerFileGrid(context, urls),
                       ];
                     })(),
+                  ]),
+                ),
+
+              // ── Предварительная оценка: кольцо + текст + критерии, одной карточкой ──
+              if (grade != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: _assessmentCard(context, l, isDark, grade, criteriaScores, rubric, gradedByAi),
+                )
+              // ── Рубрика оценивания (учитель, пока никто не проверен) ──
+              else if (widget.isTeacher && rubric.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: _rubricPreviewCard(context, l, isDark, rubric),
+                ),
+
+              // ── Анализ ИИ: сильные / слабые стороны, две карточки рядом ──
+              if (grade != null && gradedByAi) ..._aiAnalysisCards(context, l, criteriaScores),
+
+              // ── Комментарий преподавателя ──
+              if (grade != null && gradedByTeacher && (sub['grade']['feedback']?.toString().isNotEmpty ?? false))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: _teacherCommentSection(context, l, isDark, sub['grade']['feedback'].toString()),
+                ),
+
+              if (!widget.isTeacher && widget.viewOnly && sub == null)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(color: detailSurface(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
+                  child: Row(children: [
+                    Icon(CupertinoIcons.lock, size: 15, color: detailText2(context)),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(l.t('archive_readonly'), style: TextStyle(fontSize: 13, color: detailText2(context), fontWeight: FontWeight.w500))),
+                  ]),
+                ),
+
+              if (showSubmitBar) ...[
+                Text(l.t('submit_work'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: detailText1(context))),
+                const SizedBox(height: 12),
+                Container(
+                  decoration: BoxDecoration(color: detailSurface(context), borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: detailBorder(context))),
+                  child: CupertinoTextField(
+                    controller: _tc,
+                    maxLines: 4,
+                    placeholder: l.t('work_text_hint'),
+                    placeholderStyle: TextStyle(color: detailText2(context), fontSize: 15),
+                    style: TextStyle(fontSize: 15, color: detailText1(context)),
+                    padding: const EdgeInsets.all(14),
+                    decoration: const BoxDecoration(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: detailSurface(context),
+                    borderRadius: BorderRadius.circular(AppRadii.tile),
+                    border: Border.all(color: _pickedFiles.isEmpty ? detailBorder(context) : _kAccent.withValues(alpha: 0.4)),
+                  ),
+                  child: GestureDetector(
+                    onTap: () async {
+                      final picked = await pickUploadFiles(context);
+                      if (picked != null) setState(() => _pickedFiles = picked);
+                    },
+                    child: Row(children: [
+                      const Icon(CupertinoIcons.paperclip, color: _kAccent, size: 19),
+                      const SizedBox(width: 10),
+                      Expanded(child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 180),
+                        child: Text(
+                          _pickedFiles.isEmpty ? l.t('attach_file') : '${l.t('files_selected')}: ${_pickedFiles.length}',
+                          key: ValueKey(_pickedFiles.length),
+                          style: TextStyle(fontSize: 15, color: _pickedFiles.isEmpty ? detailText2(context) : _kAccent, fontWeight: _pickedFiles.isEmpty ? FontWeight.normal : FontWeight.w600),
+                        ),
+                      )),
+                      Icon(CupertinoIcons.chevron_right, color: detailText2(context), size: 17),
+                    ]),
+                  ),
+                ),
+                if (_pickedFiles.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  for (final f in _pickedFiles) ...[
+                    _pickedFileRow(context, isDark, f),
                     const SizedBox(height: 8),
                   ],
-
-                  // ── Анализ ИИ: сильные/слабые стороны (только для AI-оценки) ──
-                  if (grade != null && !gradedByTeacher) ..._aiAnalysisSection(context, l, isDark, grade, criteriaScores, accent),
-
-                  // ── Критерии: детальный разбор по факту оценки, либо рубрика
-                  // (превью для учителя, пока ещё никто не проверен) ──
-                  if (grade != null && criteriaScores.isNotEmpty)
-                    ..._criteriaDetailSection(context, l, isDark, criteriaScores, rubric, accent)
-                  else if (widget.isTeacher && rubric.isNotEmpty)
-                    ..._rubricPreviewSection(context, l, isDark, rubric, accent),
-
-                  // ── Отзыв преподавателя (когда оценивал человек) ──
-                  if (grade != null && gradedByTeacher && (sub['grade']['feedback']?.toString().isNotEmpty ?? false))
-                    _teacherCommentSection(context, l, isDark, sub['grade']['feedback'].toString()),
-
-                  if (!widget.isTeacher && widget.viewOnly && sub == null)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      decoration: BoxDecoration(color: detailSurface(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
-                      child: Row(children: [
-                        Icon(CupertinoIcons.lock, size: 15, color: detailText2(context)),
-                        const SizedBox(width: 8),
-                        Expanded(child: Text(l.t('archive_readonly'), style: TextStyle(fontSize: 13, color: detailText2(context), fontWeight: FontWeight.w500))),
-                      ]),
-                    ),
-                  if (showSubmitBar) ...[
-                    Text(l.t('submit_work'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: detailText1(context))),
-                    const SizedBox(height: 12),
-                    Container(
-                      decoration: BoxDecoration(color: detailSurface(context), borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: detailBorder(context))),
-                      child: CupertinoTextField(
-                        controller: _tc,
-                        maxLines: 4,
-                        placeholder: l.t('work_text_hint'),
-                        placeholderStyle: TextStyle(color: detailText2(context), fontSize: 15),
-                        style: TextStyle(fontSize: 15, color: detailText1(context)),
-                        padding: const EdgeInsets.all(14),
-                        decoration: const BoxDecoration(),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: detailSurface(context),
-                        borderRadius: BorderRadius.circular(AppRadii.tile),
-                        border: Border.all(color: _pickedFiles.isEmpty ? detailBorder(context) : accent.withValues(alpha: 0.4)),
-                      ),
-                      child: GestureDetector(
-                        onTap: () async {
-                          final picked = await pickUploadFiles(context);
-                          if (picked != null) setState(() => _pickedFiles = picked);
-                        },
-                        child: Row(children: [
-                          Icon(CupertinoIcons.paperclip, color: accent, size: 19),
-                          const SizedBox(width: 10),
-                          Expanded(child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 180),
-                            child: Text(
-                              _pickedFiles.isEmpty ? l.t('attach_file') : '${l.t('files_selected')}: ${_pickedFiles.length}',
-                              key: ValueKey(_pickedFiles.length),
-                              style: TextStyle(fontSize: 15, color: _pickedFiles.isEmpty ? detailText2(context) : accent, fontWeight: _pickedFiles.isEmpty ? FontWeight.normal : FontWeight.w600),
-                            ),
-                          )),
-                          Icon(CupertinoIcons.chevron_right, color: detailText2(context), size: 17),
-                        ]),
-                      ),
-                    ),
-                    if (_pickedFiles.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      for (final f in _pickedFiles) ...[
-                        _pickedFileRow(context, isDark, accent, f),
-                        const SizedBox(height: 8),
-                      ],
-                    ],
-                  ],
-                ]),
-              ),
-            ),
-          ],
+                ],
+              ],
+            ],
+          ),
         ),
         bottomNavigationBar: showSubmitBar
             ? _BottomActionBar(
                 label: l.t('submit_assignment'),
                 busy: _busy,
-                accent: accent,
+                accent: _kAccent,
                 onTap: _submit,
               )
             : showRetractBar
                 ? _BottomActionBar(
                     label: l.t('retract_resubmit'),
                     busy: _busy,
-                    accent: accent,
+                    accent: _kAccent,
                     secondary: true,
                     onTap: _retract,
                   )
@@ -633,7 +564,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> with Si
                     ? _BottomActionBar(
                         label: l.t('view_works'),
                         busy: false,
-                        accent: accent,
+                        accent: _kAccent,
                         onTap: () => widget.onViewSubmissions(a),
                       )
                     : null,
@@ -641,42 +572,132 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> with Si
     );
   }
 
-  // Мягкая карточка-группа в духе Apple Health/Notion: без явной рамки,
-  // лёгкая заливка + едва заметная тень вместо контура.
-  BoxDecoration _softCard(BuildContext context, bool isDark) {
-    return BoxDecoration(
-      color: detailSurface(context),
-      borderRadius: BorderRadius.circular(AppRadii.card),
-      boxShadow: softShadow(isDark),
+  // ── Плавающая верхняя панель: круглые кнопки "назад" / меню ──
+  Widget _topBar(BuildContext context, bool isDark) {
+    return Row(children: [
+      _circleButton(context, isDark, icon: CupertinoIcons.back, onTap: () => Navigator.pop(context)),
+      const Spacer(),
+      if (widget.isTeacher) _circleButton(context, isDark, icon: CupertinoIcons.ellipsis, onTap: _openMenu),
+    ]);
+  }
+
+  Widget _circleButton(BuildContext context, bool isDark, {required IconData icon, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 38, height: 38,
+        decoration: BoxDecoration(
+          color: detailSurface(context),
+          shape: BoxShape.circle,
+          boxShadow: softShadow(isDark),
+        ),
+        child: Icon(icon, size: 18, color: detailText1(context)),
+      ),
     );
   }
 
-  // Компактная строка метаданных под заголовком: срок сдачи + баллы.
-  Widget _metaLine(BuildContext context, L10n l, dynamic deadline, bool isLate, Color accent) {
+  Widget _titleBlock(BuildContext context, L10n l, dynamic grade) {
+    return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Expanded(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            const Icon(CupertinoIcons.doc_text, size: 13, color: _kAccent),
+            const SizedBox(width: 6),
+            Text(l.t('task_badge'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _kAccent, letterSpacing: 0.2)),
+          ]),
+          const SizedBox(height: 8),
+          Text(a['title'] ?? '', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: detailText1(context), letterSpacing: -0.3, height: 1.15)),
+        ]),
+      ),
+      if (grade != null) ...[
+        const SizedBox(width: 12),
+        _headerScoreCard(context, grade),
+      ],
+    ]);
+  }
+
+  Widget _headerScoreCard(BuildContext context, dynamic grade) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: detailSurface(context),
+        borderRadius: BorderRadius.circular(AppRadii.tile),
+        boxShadow: softShadow(Theme.of(context).brightness == Brightness.dark),
+      ),
+      child: Column(children: [
+        Text('${grade['score']}', style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: _kAccent, height: 1)),
+        Text('/ ${a['max_score']}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: detailText2(context))),
+      ]),
+    );
+  }
+
+  Widget _statusChips(BuildContext context, L10n l, bool isLate, bool gradedByAi) {
+    final chips = <Widget>[];
+    if (sub != null) {
+      chips.add(_chip(l.t('submitted'), CupertinoIcons.checkmark_circle_fill, C.green));
+    }
+    if (sub?['grade'] != null && gradedByAi) {
+      chips.add(_chip(l.t('ai_check'), CupertinoIcons.sparkles, _kAccent));
+    }
+    if (sub?['status'] == 'graded') {
+      chips.add(_chip(l.t('graded'), CupertinoIcons.checkmark_seal_fill, _kAccent));
+    }
+    if (sub?['status'] == 'needs_review') {
+      chips.add(_chip(l.t('needs_review'), CupertinoIcons.exclamationmark_circle_fill, C.amber));
+    }
+    if (isLate) {
+      chips.add(_chip(l.t('overdue'), CupertinoIcons.clock_fill, C.red));
+    }
+    if (chips.isEmpty) return const SizedBox.shrink();
+    return Wrap(spacing: 8, runSpacing: 8, children: chips);
+  }
+
+  Widget _chip(String text, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.chip)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 12, color: color),
+        const SizedBox(width: 5),
+        Text(text, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: color)),
+      ]),
+    );
+  }
+
+  Widget _dueReviewedRow(BuildContext context, L10n l, dynamic deadline, bool isLate, dynamic grade) {
+    final gradedAt = grade?['graded_at']?.toString();
     final chunks = <Widget>[];
     if (deadline != null) {
-      chunks.add(Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(CupertinoIcons.calendar, size: 14, color: isLate ? C.red : detailText2(context)),
-        const SizedBox(width: 5),
-        Text(_fmtDate(deadline), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: isLate ? C.red : detailText2(context))),
-      ]));
+      chunks.add(_metaChunk(context, CupertinoIcons.calendar, l.t('due_date'), _fmtDate(deadline), isLate ? C.red : null));
     }
-    chunks.add(Row(mainAxisSize: MainAxisSize.min, children: [
-      Icon(CupertinoIcons.star_fill, size: 13, color: detailText2(context)),
-      const SizedBox(width: 5),
-      Text('${a['max_score'] ?? 100} ${l.t('pts')}', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: detailText2(context))),
-    ]));
-    return Wrap(spacing: 14, runSpacing: 6, children: chunks);
+    if (gradedAt != null && gradedAt.isNotEmpty) {
+      chunks.add(_metaChunk(context, CupertinoIcons.clock, l.t('reviewed_label'), _fmtDate(gradedAt), null));
+    }
+    if (chunks.isEmpty) return const SizedBox.shrink();
+    final withDividers = <Widget>[];
+    for (var i = 0; i < chunks.length; i++) {
+      if (i > 0) withDividers.add(Container(width: 1, height: 28, margin: const EdgeInsets.symmetric(horizontal: 14), color: detailBorder(context)));
+      withDividers.add(chunks[i]);
+    }
+    return Row(children: withDividers);
+  }
+
+  Widget _metaChunk(BuildContext context, IconData icon, String label, String value, Color? valueColor) {
+    return Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Icon(icon, size: 15, color: detailText2(context)),
+      const SizedBox(width: 6),
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label, style: TextStyle(fontSize: 11, color: detailText2(context))),
+        Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: valueColor ?? detailText1(context))),
+      ]),
+    ]);
   }
 
   Widget _pendingBanner(BuildContext context, Color color, {required IconData icon, required String text, bool showSpinner = false}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(AppRadii.card),
-      ),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(AppRadii.card)),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         if (showSpinner)
           SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: color))
@@ -688,35 +709,170 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> with Si
     );
   }
 
-  List<Widget> _aiAnalysisSection(BuildContext context, L10n l, bool isDark, dynamic grade, List<Map<String, dynamic>> criteriaScores, Color accent) {
+  // Базовая "сгруппированная" карточка в духе Apple Health/Notion — светлая
+  // заливка, мягкая тень вместо рамки, без вложенных под-карточек.
+  Widget _sectionCard(BuildContext context, bool isDark, {required List<Widget> children}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: detailSurface(context),
+        borderRadius: BorderRadius.circular(AppRadii.card),
+        boxShadow: softShadow(isDark),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
+    );
+  }
+
+  Widget _answerFileGrid(BuildContext context, List<String> urls) {
+    return LayoutBuilder(builder: (ctx, constraints) {
+      const gap = 8.0;
+      final tileWidth = (constraints.maxWidth - gap * 2) / 3;
+      return Wrap(
+        spacing: gap, runSpacing: gap,
+        children: [
+          for (final url in urls)
+            SizedBox(width: tileWidth, child: _answerFileTile(context, url, tileWidth)),
+        ],
+      );
+    });
+  }
+
+  Widget _answerFileTile(BuildContext context, String url, double width) {
+    final name = fileDisplayName(url);
+    final ext = name.contains('.') ? name.split('.').last.toLowerCase() : '';
+    final isImage = _imageExts.contains(ext);
+    final visual = fileTypeVisual(ext);
+
+    return GestureDetector(
+      onTap: () => widget.onOpenFile(url, name),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadii.tile),
+          child: isImage
+              ? CachedNetworkImage(
+                  imageUrl: url,
+                  cacheKey: fileCacheKey(url),
+                  width: width, height: width, fit: BoxFit.cover,
+                  placeholder: (_, __) => Container(width: width, height: width, color: detailSurface(context)),
+                  errorWidget: (_, __, ___) => Container(width: width, height: width, color: visual.color.withValues(alpha: 0.14),
+                      child: Icon(visual.icon, color: visual.color)),
+                )
+              : Container(
+                  width: width, height: width,
+                  color: visual.color.withValues(alpha: 0.14),
+                  child: Icon(visual.icon, size: width * 0.32, color: visual.color),
+                ),
+        ),
+        const SizedBox(height: 6),
+        Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: detailText1(context))),
+      ]),
+    );
+  }
+
+  Widget _assessmentCard(BuildContext context, L10n l, bool isDark, dynamic grade, List<Map<String, dynamic>> criteriaScores, List<Map<String, dynamic>> rubric, bool gradedByAi) {
+    final score = (grade['score'] as num?) ?? 0;
+    final maxScore = (a['max_score'] as num?) ?? 100;
+    final feedback = (grade['feedback']?.toString() ?? '').trim();
+
+    return _sectionCard(context, isDark, children: [
+      Row(children: [
+        Expanded(child: Text(l.t('preliminary_assessment'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: detailText1(context)))),
+        if (gradedByAi)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+            decoration: BoxDecoration(color: _kAccent.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.chip)),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(CupertinoIcons.sparkles, size: 11, color: _kAccent),
+              const SizedBox(width: 4),
+              Text(l.t('ai_check'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _kAccent)),
+            ]),
+          ),
+      ]),
+      const SizedBox(height: 16),
+      Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+        ScoreRing(score: score, maxScore: maxScore, size: 108, accentColor: _kAccent),
+        // Текст фидбека здесь — только для оценки ИИ; для учительской оценки
+        // тот же feedback уже показан ниже отдельной секцией "Комментарий
+        // преподавателя" — дублировать его тут не нужно.
+        if (gradedByAi && feedback.isNotEmpty) ...[
+          const SizedBox(width: 16),
+          Expanded(child: Text(feedback, style: TextStyle(fontSize: 14, height: 1.5, color: detailText2(context)))),
+        ],
+      ]),
+      if (criteriaScores.isNotEmpty) ...[
+        const SizedBox(height: 24),
+        Text(l.t('by_criteria'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: detailText1(context))),
+        const SizedBox(height: 12),
+        for (var i = 0; i < criteriaScores.length; i++) ...[
+          _criteriaRow(context, criteriaScores[i], _rubricDescriptionFor((criteriaScores[i]['name'] ?? '').toString(), rubric)),
+          if (i != criteriaScores.length - 1) const SizedBox(height: 16),
+        ],
+      ],
+    ]);
+  }
+
+  Widget _criteriaRow(BuildContext context, Map<String, dynamic> c, String? description) {
+    final score = (c['score'] as num?) ?? 0;
+    final max = (c['max'] as num?) ?? 0;
+    final ratio = max > 0 ? (score.toDouble() / max.toDouble()).clamp(0.0, 1.0) : 0.0;
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(c['name']?.toString() ?? '', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: detailText1(context))),
+          if (description != null) Text(description, style: TextStyle(fontSize: 12, color: detailText2(context))),
+        ])),
+        const SizedBox(width: 8),
+        RichText(text: TextSpan(children: [
+          TextSpan(text: '$score', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: _kAccent)),
+          TextSpan(text: ' / $max', style: TextStyle(fontSize: 12, color: detailText2(context))),
+        ])),
+      ]),
+      const SizedBox(height: 8),
+      SizedBox(
+        width: double.infinity,
+        height: 6,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: Stack(children: [
+            Positioned.fill(child: Container(color: detailBorder(context))),
+            Positioned.fill(
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: ratio),
+                duration: const Duration(milliseconds: 700),
+                curve: Curves.easeOutCubic,
+                builder: (_, value, __) => FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: value,
+                  child: Container(color: _kAccent),
+                ),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    ]);
+  }
+
+  List<Widget> _aiAnalysisCards(BuildContext context, L10n l, List<Map<String, dynamic>> criteriaScores) {
     if (criteriaScores.isEmpty) return const [];
     final (strengths, weaknesses) = _splitStrengthsWeaknesses(criteriaScores);
     if (strengths.isEmpty && weaknesses.isEmpty) return const [];
-    final intro = (grade['feedback']?.toString() ?? '').trim();
 
     return [
-      Row(children: [
-        Icon(CupertinoIcons.sparkles, size: 16, color: accent),
-        const SizedBox(width: 7),
-        Text(l.t('ai_analysis_label'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: detailText1(context))),
+      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        if (strengths.isNotEmpty)
+          Expanded(child: _entranceCard(_bulletCard(context, title: l.t('strengths'), items: strengths, icon: CupertinoIcons.checkmark_circle_fill, color: C.green), 0)),
+        if (strengths.isNotEmpty && weaknesses.isNotEmpty) const SizedBox(width: 12),
+        if (weaknesses.isNotEmpty)
+          Expanded(child: _entranceCard(_bulletCard(context, title: l.t('areas_improve'), items: weaknesses, icon: CupertinoIcons.exclamationmark_triangle_fill, color: C.amber), 1)),
       ]),
-      const SizedBox(height: 12),
-      if (intro.isNotEmpty) ...[
-        Text(intro, style: TextStyle(fontSize: 14, height: 1.55, color: detailText2(context))),
-        const SizedBox(height: 12),
-      ],
-      if (strengths.isNotEmpty) ...[
-        _entranceCard(_bulletCard(context, isDark, title: l.t('strengths'), items: strengths, icon: CupertinoIcons.checkmark_circle_fill, color: C.green), 0),
-        const SizedBox(height: 8),
-      ],
-      if (weaknesses.isNotEmpty)
-        _entranceCard(_bulletCard(context, isDark, title: l.t('areas_improve'), items: weaknesses, icon: CupertinoIcons.exclamationmark_triangle_fill, color: C.amber), 1),
-      const SizedBox(height: 24),
+      const SizedBox(height: 16),
     ];
   }
 
-  // Мягкое появление секций (fade + едва заметный подъём) — то же ощущение,
-  // что и entry-анимация кольца, но для карточек ниже по странице.
+  // Мягкое появление секций (fade + едва заметный подъём).
   Widget _entranceCard(Widget child, int index) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
@@ -727,170 +883,89 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> with Si
     );
   }
 
-  Widget _bulletCard(BuildContext context, bool isDark, {required String title, required List<String> items, required IconData icon, required Color color}) {
+  Widget _bulletCard(BuildContext context, {required String title, required List<String> items, required IconData icon, required Color color}) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: isDark ? 0.10 : 0.07),
-        borderRadius: BorderRadius.circular(AppRadii.card),
-        boxShadow: softShadow(isDark),
-      ),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(color: color.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.10 : 0.07), borderRadius: BorderRadius.circular(AppRadii.card)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: color, letterSpacing: 0.1)),
+        Text(title, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: color, letterSpacing: 0.1)),
         const SizedBox(height: 8),
         for (final item in items) ...[
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Icon(icon, size: 15, color: color),
-              const SizedBox(width: 8),
-              Expanded(child: Text(item, style: TextStyle(fontSize: 14, height: 1.45, color: detailText1(context)))),
+              Icon(icon, size: 13, color: color),
+              const SizedBox(width: 6),
+              Expanded(child: Text(item, style: TextStyle(fontSize: 12.5, height: 1.4, color: detailText1(context)))),
             ]),
           ),
         ],
       ]),
     );
-  }
-
-  List<Widget> _criteriaDetailSection(BuildContext context, L10n l, bool isDark, List<Map<String, dynamic>> criteriaScores, List<Map<String, dynamic>> rubric, Color accent) {
-    return [
-      Text(l.t('by_criteria'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: detailText1(context))),
-      const SizedBox(height: 12),
-      for (final c in criteriaScores) ...[
-        _criteriaCard(context, isDark, c, _rubricDescriptionFor((c['name'] ?? '').toString(), rubric)),
-        const SizedBox(height: 8),
-      ],
-      const SizedBox(height: 12),
-    ];
-  }
-
-  Widget _criteriaCard(BuildContext context, bool isDark, Map<String, dynamic> c, String? description) {
-    final score = (c['score'] as num?) ?? 0;
-    final max = (c['max'] as num?) ?? 0;
-    final ratio = max > 0 ? (score.toDouble() / max.toDouble()).clamp(0.0, 1.0) : 0.0;
-    final level = scoreLevelFor(ratio);
-    final colors = scoreGradient(level);
-    final comment = (c['comment']?.toString() ?? '').trim();
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: _softCard(context, isDark),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Expanded(child: Text(c['name']?.toString() ?? '', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: detailText1(context)))),
-          const SizedBox(width: 8),
-          RichText(text: TextSpan(children: [
-            TextSpan(text: '$score', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: colors[1])),
-            TextSpan(text: ' / $max', style: TextStyle(fontSize: 13, color: detailText2(context))),
-          ])),
-        ]),
-        if (description != null) ...[
-          const SizedBox(height: 4),
-          Text(description, style: TextStyle(fontSize: 13, color: detailText2(context), height: 1.4)),
-        ],
-        const SizedBox(height: 8),
-        SizedBox(
-          width: double.infinity,
-          height: 6,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: Stack(children: [
-              Positioned.fill(child: Container(color: detailBorder(context).withValues(alpha: 0.5))),
-              Positioned.fill(
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0.0, end: ratio),
-                  duration: const Duration(milliseconds: 700),
-                  curve: Curves.easeOutCubic,
-                  builder: (_, value, __) => FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: value,
-                    child: Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))),
-                  ),
-                ),
-              ),
-            ]),
-          ),
-        ),
-        if (comment.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Text(comment, style: TextStyle(fontSize: 13.5, color: detailText2(context), height: 1.5)),
-        ],
-      ]),
-    );
-  }
-
-  List<Widget> _rubricPreviewSection(BuildContext context, L10n l, bool isDark, List<Map<String, dynamic>> rubric, Color accent) {
-    return [
-      GestureDetector(
-        onTap: () => setState(() => _criteriaExpanded = !_criteriaExpanded),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: _softCard(context, isDark),
-          child: Row(children: [
-            Icon(CupertinoIcons.list_bullet, size: 16, color: accent),
-            const SizedBox(width: 8),
-            Text(l.t('criteria'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: detailText1(context))),
-            const SizedBox(width: 4),
-            Text('(${rubric.length})', style: TextStyle(fontSize: 13, color: detailText2(context))),
-            const Spacer(),
-            AnimatedRotation(turns: _criteriaExpanded ? 0.5 : 0.0, duration: const Duration(milliseconds: 200),
-                child: Icon(CupertinoIcons.chevron_down, size: 18, color: accent)),
-          ]),
-        ),
-      ),
-      AnimatedSize(
-        duration: const Duration(milliseconds: 250), curve: Curves.easeInOut,
-        child: _criteriaExpanded
-            ? Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Column(children: rubric.map<Widget>((c) => Container(
-                  margin: const EdgeInsets.only(bottom: 8), padding: const EdgeInsets.all(12),
-                  decoration: _softCard(context, isDark),
-                  child: Row(children: [
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(c['name'] ?? '', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: detailText1(context))),
-                      if (c['description'] != null && c['description'].toString().isNotEmpty)
-                        Padding(padding: const EdgeInsets.only(top: 4), child: Text(c['description'], style: TextStyle(fontSize: 13, color: detailText2(context)))),
-                    ])),
-                    Text('${c['weight'] ?? 0}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: accent)),
-                  ]),
-                )).toList()),
-              )
-            : const SizedBox.shrink(),
-      ),
-      const SizedBox(height: 16),
-    ];
   }
 
   Widget _teacherCommentSection(BuildContext context, L10n l, bool isDark, String feedback) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: _softCard(context, isDark),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Icon(CupertinoIcons.person_crop_circle_fill, size: 16, color: detailText2(context)),
-            const SizedBox(width: 7),
-            Text(l.t('teacher_comment'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: detailText2(context), letterSpacing: 0.1)),
-          ]),
-          const SizedBox(height: 8),
-          Text(feedback, style: TextStyle(fontSize: 15, height: 1.6, color: detailText1(context))),
-        ]),
-      ),
-    );
+    return _sectionCard(context, isDark, children: [
+      Row(children: [
+        Icon(CupertinoIcons.person_crop_circle_fill, size: 16, color: detailText2(context)),
+        const SizedBox(width: 7),
+        Text(l.t('teacher_comment'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: detailText2(context), letterSpacing: 0.1)),
+      ]),
+      const SizedBox(height: 8),
+      Text(feedback, style: TextStyle(fontSize: 15, height: 1.6, color: detailText1(context))),
+    ]);
   }
 
-  Widget _pickedFileRow(BuildContext context, bool isDark, Color accent, PlatformFile f) {
+  // Рубрика оценивания видна учителю ещё до первой проверки — то же
+  // содержимое (assignment.criteria), что позже станет "Оценка по критериям".
+  Widget _rubricPreviewCard(BuildContext context, L10n l, bool isDark, List<Map<String, dynamic>> rubric) {
+    final maxScore = (a['max_score'] as num?) ?? 100;
+    return _sectionCard(context, isDark, children: [
+      GestureDetector(
+        onTap: () => setState(() => _rubricExpanded = !_rubricExpanded),
+        child: Row(children: [
+          const Icon(CupertinoIcons.list_bullet, size: 16, color: _kAccent),
+          const SizedBox(width: 8),
+          Expanded(child: Text(l.t('criteria'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: detailText1(context)))),
+          Text('(${rubric.length})', style: TextStyle(fontSize: 13, color: detailText2(context))),
+          const SizedBox(width: 6),
+          AnimatedRotation(turns: _rubricExpanded ? 0.5 : 0.0, duration: const Duration(milliseconds: 200),
+              child: const Icon(CupertinoIcons.chevron_down, size: 16, color: _kAccent)),
+        ]),
+      ),
+      AnimatedSize(
+        duration: const Duration(milliseconds: 250), curve: Curves.easeInOut,
+        alignment: Alignment.topCenter,
+        child: _rubricExpanded
+            ? Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: Column(children: [
+                  for (var i = 0; i < rubric.length; i++) ...[
+                    Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(rubric[i]['name'] ?? '', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: detailText1(context))),
+                        if ((rubric[i]['description'] ?? '').toString().isNotEmpty)
+                          Text(rubric[i]['description'], style: TextStyle(fontSize: 12, color: detailText2(context))),
+                      ])),
+                      const SizedBox(width: 8),
+                      Text('${rubric[i]['weight'] ?? 0} / $maxScore', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _kAccent)),
+                    ]),
+                    if (i != rubric.length - 1) const SizedBox(height: 12),
+                  ],
+                ]),
+              )
+            : const SizedBox.shrink(),
+      ),
+    ]);
+  }
+
+  Widget _pickedFileRow(BuildContext context, bool isDark, PlatformFile f) {
     final ext = f.name.contains('.') ? f.name.split('.').last.toLowerCase() : '';
     final visual = fileTypeVisual(ext);
     final done = _uploadedNames.contains(f.name);
     final uploading = _uploadingName == f.name;
-    final statusColor = done ? C.green : uploading ? accent : detailText2(context);
+    final statusColor = done ? C.green : uploading ? _kAccent : detailText2(context);
 
     return TweenAnimationBuilder<double>(
       key: ValueKey('${f.name}_${f.size}'),
@@ -933,115 +1008,6 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> with Si
       ),
     );
   }
-}
-
-/// Заголовок-«шапка»: закреплённая строка (назад + название) и круговая
-/// карточка результата, которая плавно и без обрезки сжимается при
-/// прокрутке — тот же приём, что у "сегодняшних колец" в Apple Health.
-class _ScoreHeaderDelegate extends SliverPersistentHeaderDelegate {
-  final String title;
-  final num score;
-  final num maxScore;
-  final String bandLabel;
-  final Color bandColor;
-  final double ringSize;
-  final double topInset;
-  final Color bg;
-  final Color titleColor;
-  final VoidCallback onBack;
-  final Animation<double> entrance;
-
-  static const double _barContent = 48;
-  static const double _labelHeight = 20;
-  static const double _gap = 12;
-  static const double _bottomPad = 16;
-
-  _ScoreHeaderDelegate({
-    required this.title,
-    required this.score,
-    required this.maxScore,
-    required this.bandLabel,
-    required this.bandColor,
-    required this.ringSize,
-    required this.topInset,
-    required this.bg,
-    required this.titleColor,
-    required this.onBack,
-    required this.entrance,
-  });
-
-  double get _pinnedHeight => topInset + _barContent;
-  double get _ringAreaHeight => ringSize + _gap + _labelHeight + _bottomPad;
-
-  @override
-  double get minExtent => _pinnedHeight;
-  @override
-  double get maxExtent => _pinnedHeight + _ringAreaHeight;
-
-  @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    final range = maxExtent - minExtent;
-    final t = range > 0 ? (shrinkOffset / range).clamp(0.0, 1.0) : 1.0;
-    final factor = 1 - t;
-    final currentHeight = maxExtent - shrinkOffset;
-
-    return ClipRect(
-      child: Container(
-        height: currentHeight,
-        color: bg,
-        child: Stack(children: [
-          Positioned(
-            top: _pinnedHeight,
-            left: 0, right: 0,
-            child: Opacity(
-              opacity: factor,
-              child: Transform.scale(
-                scale: _lerp(0.72, 1.0, factor),
-                alignment: Alignment.topCenter,
-                child: FadeTransition(
-                  opacity: entrance,
-                  child: ScaleTransition(
-                    scale: entrance,
-                    child: Column(mainAxisSize: MainAxisSize.min, children: [
-                      ScoreRing(score: score, maxScore: maxScore, size: ringSize),
-                      const SizedBox(height: _gap),
-                      Text(bandLabel, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: bandColor)),
-                    ]),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            top: topInset, left: 4, right: 4, height: _barContent,
-            child: Row(children: [
-              GestureDetector(
-                onTap: onBack,
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Icon(CupertinoIcons.back, size: 26, color: titleColor),
-                ),
-              ),
-              Expanded(child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: titleColor))),
-              const SizedBox(width: 44),
-            ]),
-          ),
-        ]),
-      ),
-    );
-  }
-
-  @override
-  bool shouldRebuild(covariant _ScoreHeaderDelegate old) =>
-      old.score != score ||
-      old.maxScore != maxScore ||
-      old.title != title ||
-      old.bandLabel != bandLabel ||
-      old.bandColor != bandColor ||
-      old.ringSize != ringSize ||
-      old.bg != bg ||
-      old.titleColor != titleColor;
 }
 
 class _BottomActionBar extends StatelessWidget {

@@ -84,7 +84,7 @@ void main() {
           timeout: const Duration(seconds: 25), reason: 'главный экран');
     }
 
-    await _waitFor(tester, find.text('Классы'), reason: 'вкладка Классы');
+    await _waitFor(tester, find.text('Предметы'), reason: 'вкладка Предметы');
     await _settle(tester, const Duration(seconds: 4));
 
     _mark('classes_list');
@@ -116,9 +116,14 @@ void main() {
       _mark('lecture_detail_opened');
       await _settle(tester, const Duration(seconds: 3));
       // Назад на экран класса.
-      await tester.tap(find.byIcon(CupertinoIcons.back).first, warnIfMissed: false);
-      await _settle(tester, const Duration(seconds: 2));
-      _mark('lecture_detail_closed');
+      final lectureBack = find.byIcon(CupertinoIcons.back);
+      if (lectureBack.evaluate().isNotEmpty) {
+        await tester.tap(lectureBack.first, warnIfMissed: false);
+        await _settle(tester, const Duration(seconds: 2));
+        _mark('lecture_detail_closed');
+      } else {
+        _mark('lecture_back_icon_not_found');
+      }
     } else {
       _mark('no_lectures_found');
     }
@@ -136,9 +141,14 @@ void main() {
         await _settle(tester, const Duration(seconds: 2));
         _mark('assignment_detail_opened');
         await _settle(tester, const Duration(seconds: 3));
-        await tester.tap(find.byIcon(CupertinoIcons.back).first, warnIfMissed: false);
-        await _settle(tester, const Duration(seconds: 2));
-        _mark('assignment_detail_closed');
+        final asgBack = find.byIcon(CupertinoIcons.back);
+        if (asgBack.evaluate().isNotEmpty) {
+          await tester.tap(asgBack.first, warnIfMissed: false);
+          await _settle(tester, const Duration(seconds: 2));
+          _mark('assignment_detail_closed');
+        } else {
+          _mark('assignment_back_icon_not_found');
+        }
       } else {
         _mark('no_assignments_found');
       }

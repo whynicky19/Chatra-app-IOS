@@ -82,8 +82,8 @@ void main() {
           timeout: const Duration(seconds: 25), reason: 'главный экран');
     }
 
-    // ── Главная (Классы) ────────────────────────────────────────────────
-    await _waitFor(tester, find.text('Классы'), reason: 'вкладка Классы');
+    // ── Главная (Предметы) ──────────────────────────────────────────────
+    await _waitFor(tester, find.text('Предметы'), reason: 'вкладка Предметы');
     await _settle(tester, const Duration(seconds: 4));
 
     // ── Вкладка ИИ ──────────────────────────────────────────────────────

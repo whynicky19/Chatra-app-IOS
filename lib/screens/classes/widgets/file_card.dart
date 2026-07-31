@@ -1,6 +1,10 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import '../../../theme/app_theme.dart';
+import '../class_detail_utils.dart' show fileCacheKey;
 import 'detail_page_theme.dart';
+
+const _imagePreviewExts = {'jpg', 'jpeg', 'png', 'gif', 'webp'};
 
 class FileTypeVisual {
   final IconData icon;
@@ -44,9 +48,10 @@ FileTypeVisual fileTypeVisual(String ext) {
 class FileCard extends StatefulWidget {
   final String name;
   final String? sizeLabel;
+  final String? previewUrl;
   final VoidCallback onTap;
 
-  const FileCard({super.key, required this.name, this.sizeLabel, required this.onTap});
+  const FileCard({super.key, required this.name, this.sizeLabel, this.previewUrl, required this.onTap});
 
   @override
   State<FileCard> createState() => _FileCardState();
@@ -84,16 +89,38 @@ class _FileCardState extends State<FileCard> {
             border: Border.all(color: detailBorder(context)),
           ),
           child: Row(children: [
-            Container(
-              width: 44,
-              height: 44,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: visual.color.withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(AppRadii.tile),
-              ),
-              child: Icon(visual.icon, size: 22, color: visual.color),
-            ),
+            _imagePreviewExts.contains(ext) && widget.previewUrl != null
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadii.tile),
+                    child: CachedNetworkImage(
+                      imageUrl: widget.previewUrl!,
+                      cacheKey: fileCacheKey(widget.previewUrl!),
+                      width: 44,
+                      height: 44,
+                      fit: BoxFit.cover,
+                      fadeInDuration: const Duration(milliseconds: 150),
+                      placeholder: (_, __) => Container(
+                        width: 44, height: 44,
+                        color: visual.color.withValues(alpha: 0.14),
+                        child: Icon(visual.icon, size: 20, color: visual.color),
+                      ),
+                      errorWidget: (_, __, ___) => Container(
+                        width: 44, height: 44,
+                        color: visual.color.withValues(alpha: 0.14),
+                        child: Icon(visual.icon, size: 20, color: visual.color),
+                      ),
+                    ),
+                  )
+                : Container(
+                    width: 44,
+                    height: 44,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: visual.color.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(AppRadii.tile),
+                    ),
+                    child: Icon(visual.icon, size: 22, color: visual.color),
+                  ),
             const SizedBox(width: 13),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

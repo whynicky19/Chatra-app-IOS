@@ -17,6 +17,7 @@ import 'providers/l10n_provider.dart';
 import 'providers/classes_provider.dart';
 import 'providers/ai_chats_provider.dart';
 import 'theme/app_theme.dart';
+import 'widgets/brand_gradient.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/auth/org_select_screen.dart';
@@ -341,12 +342,11 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
                       child: SizedBox(
                         width: 168, height: 168,
                         child: Center(
-                          child: Image.asset(
-                            'assets/logo-icon.png',
-                            width: 96, height: 96,
-                            fit: BoxFit.contain,
-                            color: isSchool ? C.amber : (isDark ? Colors.white : null),
-                            errorBuilder: (_, __, ___) => Container(
+                          // ТЕСТ: градиентная заливка глифа вместо плоского
+                          // чёрного/белого — только здесь (splash), остальные
+                          // места (login/register/org-select) не трогали.
+                          child: Builder(builder: (_) {
+                            final fallback = Container(
                               width: 96, height: 96,
                               decoration: BoxDecoration(
                                 color: isDark ? C.darkSurface2 : C.surface2,
@@ -355,8 +355,17 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
                               alignment: Alignment.center,
                               child: Text('C',
                                 style: TextStyle(fontSize: 34, fontWeight: FontWeight.w800, color: wordColor)),
-                            ),
-                          ),
+                            );
+                            if (isSchool) {
+                              return Image.asset('assets/logo-icon.png', width: 96, height: 96,
+                                  fit: BoxFit.contain, color: C.amber,
+                                  errorBuilder: (_, __, ___) => fallback);
+                            }
+                            return BrandGradient.mask(
+                              child: Image.asset('assets/logo-icon.png', width: 96, height: 96,
+                                  fit: BoxFit.contain, errorBuilder: (_, __, ___) => fallback),
+                            );
+                          }),
                         ),
                       ),
                     ),

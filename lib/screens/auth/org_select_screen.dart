@@ -7,6 +7,7 @@ import '../../providers/org_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/tappable.dart';
+import '../../widgets/brand_gradient.dart';
 import '../../utils/haptics.dart';
 
 class OrgSelectScreen extends StatefulWidget {
@@ -64,11 +65,12 @@ class _OrgSelectScreenState extends State<OrgSelectScreen> {
               child: Column(mainAxisSize: MainAxisSize.min, children: [
                 _reveal(1, SizedBox(
                   width: 108, height: 108,
-                  child: Image.asset(
-                    'assets/logo-icon.png',
-                    width: 108, height: 108,
-                    fit: BoxFit.contain,
-                    color: isDark ? Colors.white : null,
+                  child: BrandGradient.mask(
+                    child: Image.asset(
+                      'assets/logo-icon.png',
+                      width: 108, height: 108,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 )),
                 const SizedBox(height: 28),

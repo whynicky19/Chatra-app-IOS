@@ -368,7 +368,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
           if (!auth.isTeacher && !provider.loading && provider.classes.isNotEmpty)
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 90),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 90),
               sliver: SliverToBoxAdapter(child: TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0.0, end: 1.0),
                 duration: const Duration(milliseconds: 500),
@@ -377,7 +377,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 child: Tappable(
                   onTap: _showJoinDialog,
                   child: Container(
-                    margin: const EdgeInsets.only(top: 2),
                     padding: const EdgeInsets.symmetric(vertical: 30),
                     decoration: BoxDecoration(
                       color: surface,
@@ -391,7 +390,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           shape: BoxShape.circle,
                           border: Border.all(color: adaptiveBorder(context), width: 1.5),
                         ),
-                        child: Icon(CupertinoIcons.add, color: primary, size: 26)),
+                        child: Icon(CupertinoIcons.add, color: adaptiveText1(context), size: 26)),
                       const SizedBox(height: 12),
                       Text(l.t('add_subject'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
                       const SizedBox(height: 3),

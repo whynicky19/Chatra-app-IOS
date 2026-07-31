@@ -50,13 +50,25 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  # Белый глиф на бирюзовом градиенте, full-bleed (ОС сама скругляет углы).
-  # Сгенерировано скриптом make_icon.py из logo-icon.png.
+  macos:
+    generate: true
+    image_path: "assets/icon_source.png"
+  web:
+    generate: true
+    image_path: "assets/icon_source.png"
+    background_color: "#FFFFFF"
+    theme_color: "#FFFFFF"
+  windows:
+    generate: true
+    image_path: "assets/icon_source.png"
+    icon_size: 48
+  # Чёрный глиф «C» на белом, full-bleed (ОС сама скругляет углы).
+  # Сгенерировано скриптом make_icon.py из icon_glyph.png.
   image_path: "assets/icon_source.png"
   image_path_ios: "assets/icon_source.png"
   remove_alpha_ios: true
   min_sdk_android: 21
-  # Adaptive: фон — картинка с градиентом; в foreground только глиф в
-  # безопасной зоне (лаунчер маскирует иконку в круг/сквиркл).
+  # Adaptive: белый фон; в foreground только глиф в безопасной зоне
+  # (лаунчер маскирует иконку в круг/сквиркл).
   adaptive_icon_background: "assets/icon_bg_adaptive.png"
   adaptive_icon_foreground: "assets/icon_source_adaptive.png"

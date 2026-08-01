@@ -7,7 +7,6 @@ import '../../providers/org_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/tappable.dart';
-import '../../widgets/brand_gradient.dart';
 import '../../utils/haptics.dart';
 
 class OrgSelectScreen extends StatefulWidget {
@@ -23,6 +22,8 @@ class _OrgSelectScreenState extends State<OrgSelectScreen> {
   static const _amberGrad = [Color(0xFFB45309), Color(0xFFF59E0B)];
 
   Color get _accent => _picked == OrgType.school ? C.amber : C.teal;
+
+  double get _logoT => _picked == OrgType.school ? 1.0 : 0.0;
 
   void _pick(OrgType type) {
     if (_picked == type) return;
@@ -65,7 +66,22 @@ class _OrgSelectScreenState extends State<OrgSelectScreen> {
               child: Column(mainAxisSize: MainAxisSize.min, children: [
                 _reveal(1, SizedBox(
                   width: 108, height: 108,
-                  child: BrandGradient.mask(
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(begin: _logoT, end: _logoT),
+                    duration: const Duration(milliseconds: 380),
+                    curve: Curves.easeOutCubic,
+                    builder: (_, t, child) => ShaderMask(
+                      blendMode: BlendMode.srcIn,
+                      shaderCallback: (bounds) => LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Color.lerp(_tealGrad[0], _amberGrad[0], t)!,
+                          Color.lerp(_tealGrad[1], _amberGrad[1], t)!,
+                        ],
+                      ).createShader(bounds),
+                      child: child,
+                    ),
                     child: Image.asset(
                       'assets/logo-icon.png',
                       width: 108, height: 108,

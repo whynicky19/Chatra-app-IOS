@@ -39,10 +39,6 @@ String _fmtBytes(int bytes) => bytes < 1048576 ? '${(bytes / 1024).toStringAsFix
 
 const _imageExts = {'jpg', 'jpeg', 'png', 'gif', 'webp'};
 
-/// Единый голубой акцент экрана задания — не завязан на тему организации
-/// (teal/amber), сознательный выбор именно для этой страницы.
-const _kAccent = Color(0xFF4A6EF5);
-
 /// Полноэкранная страница задания (замена модального bottom sheet).
 class AssignmentDetailScreen extends StatefulWidget {
   final dynamic assignment;
@@ -327,11 +323,12 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
         ? parseCriteriaScores(sub['grade']['criteria_scores']).cast<Map>().map((e) => e.cast<String, dynamic>()).toList()
         : <Map<String, dynamic>>[];
     final rubric = _rubricCriteria();
+    final accent = detailAccent(context);
 
     return CupertinoTheme(
       data: CupertinoThemeData(
         brightness: isDark ? Brightness.dark : Brightness.light,
-        primaryColor: _kAccent,
+        primaryColor: accent,
         scaffoldBackgroundColor: bg,
         barBackgroundColor: bg,
       ),
@@ -346,13 +343,13 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
               const SizedBox(height: 16),
               _titleBlock(context, l, grade),
               const SizedBox(height: 12),
-              _statusChips(context, l, isLate, gradedByAi),
+              _statusChips(context, l, isLate),
               const SizedBox(height: 12),
               _dueReviewedRow(context, l, deadline, isLate, grade),
               const SizedBox(height: 24),
 
               if (grade == null && sub != null && sub['status'] == 'grading') ...[
-                _pendingBanner(context, _kAccent, icon: CupertinoIcons.hourglass,
+                _pendingBanner(context, accent, icon: CupertinoIcons.hourglass,
                     text: l.t(_checkSteps[_checkStepIdx]), showSpinner: true),
                 const SizedBox(height: 16),
               ] else if (grade == null && sub != null && sub['status'] == 'needs_review') ...[
@@ -381,7 +378,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                           GestureDetector(
                             onTap: () => setState(() => _descHidden = !_descHidden),
                             child: Text(_descHidden ? l.t('show') : l.t('hide'),
-                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _kAccent)),
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: accent)),
                           ),
                       ]),
                       if (descText.isNotEmpty) ...[
@@ -399,7 +396,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                       if (isLoading) ...[
                         const SizedBox(height: 12),
                         Row(children: [
-                          const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: _kAccent)),
+                          SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: accent)),
                           const SizedBox(width: 10),
                           Text(l.t('loading_files'), style: TextStyle(fontSize: 13, color: detailText2(context))),
                         ]),
@@ -512,7 +509,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                   decoration: BoxDecoration(
                     color: detailSurface(context),
                     borderRadius: BorderRadius.circular(AppRadii.tile),
-                    border: Border.all(color: _pickedFiles.isEmpty ? detailBorder(context) : _kAccent.withValues(alpha: 0.4)),
+                    border: Border.all(color: _pickedFiles.isEmpty ? detailBorder(context) : accent.withValues(alpha: 0.4)),
                   ),
                   child: GestureDetector(
                     onTap: () async {
@@ -520,14 +517,14 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                       if (picked != null) setState(() => _pickedFiles = picked);
                     },
                     child: Row(children: [
-                      const Icon(CupertinoIcons.paperclip, color: _kAccent, size: 19),
+                      Icon(CupertinoIcons.paperclip, color: accent, size: 19),
                       const SizedBox(width: 10),
                       Expanded(child: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 180),
                         child: Text(
                           _pickedFiles.isEmpty ? l.t('attach_file') : '${l.t('files_selected')}: ${_pickedFiles.length}',
                           key: ValueKey(_pickedFiles.length),
-                          style: TextStyle(fontSize: 15, color: _pickedFiles.isEmpty ? detailText2(context) : _kAccent, fontWeight: _pickedFiles.isEmpty ? FontWeight.normal : FontWeight.w600),
+                          style: TextStyle(fontSize: 15, color: _pickedFiles.isEmpty ? detailText2(context) : accent, fontWeight: _pickedFiles.isEmpty ? FontWeight.normal : FontWeight.w600),
                         ),
                       )),
                       Icon(CupertinoIcons.chevron_right, color: detailText2(context), size: 17),
@@ -549,14 +546,14 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
             ? _BottomActionBar(
                 label: l.t('submit_assignment'),
                 busy: _busy,
-                accent: _kAccent,
+                accent: accent,
                 onTap: _submit,
               )
             : showRetractBar
                 ? _BottomActionBar(
                     label: l.t('retract_resubmit'),
                     busy: _busy,
-                    accent: _kAccent,
+                    accent: accent,
                     secondary: true,
                     onTap: _retract,
                   )
@@ -564,7 +561,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                     ? _BottomActionBar(
                         label: l.t('view_works'),
                         busy: false,
-                        accent: _kAccent,
+                        accent: accent,
                         onTap: () => widget.onViewSubmissions(a),
                       )
                     : null,
@@ -597,13 +594,14 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
   }
 
   Widget _titleBlock(BuildContext context, L10n l, dynamic grade) {
+    final accent = detailAccent(context);
     return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Expanded(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            const Icon(CupertinoIcons.doc_text, size: 13, color: _kAccent),
+            Icon(CupertinoIcons.doc_text, size: 13, color: accent),
             const SizedBox(width: 6),
-            Text(l.t('task_badge'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _kAccent, letterSpacing: 0.2)),
+            Text(l.t('task_badge'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: accent, letterSpacing: 0.2)),
           ]),
           const SizedBox(height: 8),
           Text(a['title'] ?? '', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: detailText1(context), letterSpacing: -0.3, height: 1.15)),
@@ -625,23 +623,14 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
         boxShadow: softShadow(Theme.of(context).brightness == Brightness.dark),
       ),
       child: Column(children: [
-        Text('${grade['score']}', style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: _kAccent, height: 1)),
+        Text('${grade['score']}', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: detailAccent(context), height: 1)),
         Text('/ ${a['max_score']}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: detailText2(context))),
       ]),
     );
   }
 
-  Widget _statusChips(BuildContext context, L10n l, bool isLate, bool gradedByAi) {
+  Widget _statusChips(BuildContext context, L10n l, bool isLate) {
     final chips = <Widget>[];
-    if (sub != null) {
-      chips.add(_chip(l.t('submitted'), CupertinoIcons.checkmark_circle_fill, C.green));
-    }
-    if (sub?['grade'] != null && gradedByAi) {
-      chips.add(_chip(l.t('ai_check'), CupertinoIcons.sparkles, _kAccent));
-    }
-    if (sub?['status'] == 'graded') {
-      chips.add(_chip(l.t('graded'), CupertinoIcons.checkmark_seal_fill, _kAccent));
-    }
     if (sub?['status'] == 'needs_review') {
       chips.add(_chip(l.t('needs_review'), CupertinoIcons.exclamationmark_circle_fill, C.amber));
     }
@@ -774,6 +763,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
     final score = (grade['score'] as num?) ?? 0;
     final maxScore = (a['max_score'] as num?) ?? 100;
     final feedback = (grade['feedback']?.toString() ?? '').trim();
+    final accent = detailAccent(context);
 
     return _sectionCard(context, isDark, children: [
       Row(children: [
@@ -781,17 +771,17 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
         if (gradedByAi)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-            decoration: BoxDecoration(color: _kAccent.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.chip)),
+            decoration: BoxDecoration(color: accent.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.chip)),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(CupertinoIcons.sparkles, size: 11, color: _kAccent),
+              Icon(CupertinoIcons.sparkles, size: 11, color: accent),
               const SizedBox(width: 4),
-              Text(l.t('ai_check'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _kAccent)),
+              Text(l.t('ai_check'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: accent)),
             ]),
           ),
       ]),
       const SizedBox(height: 16),
       Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-        ScoreRing(score: score, maxScore: maxScore, size: 108, accentColor: _kAccent),
+        ScoreRing(score: score, maxScore: maxScore, size: 108, accentColor: accent),
         // Текст фидбека здесь — только для оценки ИИ; для учительской оценки
         // тот же feedback уже показан ниже отдельной секцией "Комментарий
         // преподавателя" — дублировать его тут не нужно.
@@ -816,6 +806,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
     final score = (c['score'] as num?) ?? 0;
     final max = (c['max'] as num?) ?? 0;
     final ratio = max > 0 ? (score.toDouble() / max.toDouble()).clamp(0.0, 1.0) : 0.0;
+    final accent = detailAccent(context);
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -825,7 +816,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
         ])),
         const SizedBox(width: 8),
         RichText(text: TextSpan(children: [
-          TextSpan(text: '$score', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: _kAccent)),
+          TextSpan(text: '$score', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: accent)),
           TextSpan(text: ' / $max', style: TextStyle(fontSize: 12, color: detailText2(context))),
         ])),
       ]),
@@ -845,7 +836,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                 builder: (_, value, __) => FractionallySizedBox(
                   alignment: Alignment.centerLeft,
                   widthFactor: value,
-                  child: Container(color: _kAccent),
+                  child: Container(color: accent),
                 ),
               ),
             ),
@@ -921,17 +912,18 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
   // содержимое (assignment.criteria), что позже станет "Оценка по критериям".
   Widget _rubricPreviewCard(BuildContext context, L10n l, bool isDark, List<Map<String, dynamic>> rubric) {
     final maxScore = (a['max_score'] as num?) ?? 100;
+    final accent = detailAccent(context);
     return _sectionCard(context, isDark, children: [
       GestureDetector(
         onTap: () => setState(() => _rubricExpanded = !_rubricExpanded),
         child: Row(children: [
-          const Icon(CupertinoIcons.list_bullet, size: 16, color: _kAccent),
+          Icon(CupertinoIcons.list_bullet, size: 16, color: accent),
           const SizedBox(width: 8),
           Expanded(child: Text(l.t('criteria'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: detailText1(context)))),
           Text('(${rubric.length})', style: TextStyle(fontSize: 13, color: detailText2(context))),
           const SizedBox(width: 6),
           AnimatedRotation(turns: _rubricExpanded ? 0.5 : 0.0, duration: const Duration(milliseconds: 200),
-              child: const Icon(CupertinoIcons.chevron_down, size: 16, color: _kAccent)),
+              child: Icon(CupertinoIcons.chevron_down, size: 16, color: accent)),
         ]),
       ),
       AnimatedSize(
@@ -949,7 +941,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                           Text(rubric[i]['description'], style: TextStyle(fontSize: 12, color: detailText2(context))),
                       ])),
                       const SizedBox(width: 8),
-                      Text('${rubric[i]['weight'] ?? 0} / $maxScore', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _kAccent)),
+                      Text('${rubric[i]['weight'] ?? 0} / $maxScore', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: accent)),
                     ]),
                     if (i != rubric.length - 1) const SizedBox(height: 12),
                   ],
@@ -965,7 +957,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
     final visual = fileTypeVisual(ext);
     final done = _uploadedNames.contains(f.name);
     final uploading = _uploadingName == f.name;
-    final statusColor = done ? C.green : uploading ? _kAccent : detailText2(context);
+    final statusColor = done ? C.green : uploading ? detailAccent(context) : detailText2(context);
 
     return TweenAnimationBuilder<double>(
       key: ValueKey('${f.name}_${f.size}'),

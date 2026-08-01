@@ -12,6 +12,8 @@ import '../../../widgets/tappable.dart';
 import '../../../widgets/toast.dart';
 import '../class_detail_utils.dart';
 import '../assignment_detail_screen.dart';
+import '../widgets/detail_page_theme.dart';
+import '../widgets/score_ring.dart';
 import '../../../utils/dates.dart';
 import '../../../utils/haptics.dart';
 
@@ -90,6 +92,92 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
     padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.2))),
     child: Column(children: [Text(val, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: color)), const SizedBox(height: 2), Text(label, style: const TextStyle(fontSize: 11, color: C.text4))])));
+
+  // Та же карточка результата, что видит студент на AssignmentDetailScreen —
+  // кольцо с баллом + критерии-полосы вместо старой плоской вёрстки, чтобы
+  // учитель/админ видели идентичный дизайн после проверки работы.
+  Widget _gradedScoreCard(BuildContext context, L10n l, dynamic grade, num score, String? feedback, List<dynamic> criteria, num maxScore) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = detailAccent(context);
+    final gradedByTeacher = grade != null && grade['graded_by'] == 'teacher';
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: detailSurface(context), borderRadius: BorderRadius.circular(AppRadii.card), boxShadow: softShadow(isDark)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Expanded(child: Text(l.t('preliminary_assessment'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: detailText1(context)))),
+          if (!gradedByTeacher)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+              decoration: BoxDecoration(color: accent.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.chip)),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(CupertinoIcons.sparkles, size: 11, color: accent),
+                const SizedBox(width: 4),
+                Text(l.t('ai_check'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: accent)),
+              ]),
+            ),
+        ]),
+        const SizedBox(height: 16),
+        Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+          ScoreRing(score: score, maxScore: maxScore, size: 108, accentColor: accent),
+          if (feedback != null && feedback.isNotEmpty) ...[
+            const SizedBox(width: 16),
+            Expanded(child: Text(feedback, style: TextStyle(fontSize: 14, height: 1.5, color: detailText2(context)))),
+          ],
+        ]),
+        if (criteria.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          Text(l.t('by_criteria'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: detailText1(context))),
+          const SizedBox(height: 12),
+          for (var i = 0; i < criteria.length; i++) ...[
+            _criteriaBar(context, criteria[i]),
+            if (i != criteria.length - 1) const SizedBox(height: 16),
+          ],
+        ],
+      ]),
+    );
+  }
+
+  Widget _criteriaBar(BuildContext context, dynamic c) {
+    final score = (c['score'] as num?) ?? 0;
+    final max = (c['max'] as num?) ?? (c['max_score'] as num?) ?? (c['weight'] as num?) ?? 0;
+    final ratio = max > 0 ? (score.toDouble() / max.toDouble()).clamp(0.0, 1.0) : 0.0;
+    final accent = detailAccent(context);
+    final comment = (c['comment'] ?? c['feedback'])?.toString();
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(c['name']?.toString() ?? '', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: detailText1(context))),
+          if (comment != null && comment.isNotEmpty) Text(comment, style: TextStyle(fontSize: 12, color: detailText2(context))),
+        ])),
+        const SizedBox(width: 8),
+        RichText(text: TextSpan(children: [
+          TextSpan(text: '$score', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: accent)),
+          TextSpan(text: ' / $max', style: TextStyle(fontSize: 12, color: detailText2(context))),
+        ])),
+      ]),
+      const SizedBox(height: 8),
+      SizedBox(
+        width: double.infinity,
+        height: 6,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: Stack(children: [
+            Positioned.fill(child: Container(color: detailBorder(context))),
+            Positioned.fill(
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: ratio),
+                duration: const Duration(milliseconds: 700),
+                curve: Curves.easeOutCubic,
+                builder: (_, value, __) => FractionallySizedBox(alignment: Alignment.centerLeft, widthFactor: value, child: Container(color: accent)),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    ]);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -517,41 +605,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                   ]),
                 ] else if (score != null) ...[
                   const SizedBox(height: 20),
-                  Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(AppRadii.tile)),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Row(children: [
-                        RichText(text: TextSpan(children: [
-                          TextSpan(text: '$score', style: TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.primary)),
-                          const TextSpan(text: ' / 100', style: TextStyle(fontSize: 17, color: C.text4)),
-                        ])),
-                        const Spacer(),
-                        Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppRadii.card)),
-                          child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(CupertinoIcons.bolt_fill, size: 14, color: Theme.of(context).colorScheme.primary), const SizedBox(width: 4), Text(l.t('ai_check'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary))])),
-                      ]),
-                      if (feedback != null) ...[
-                        const SizedBox(height: 12),
-                        Text(l.t('feedback'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
-                        const SizedBox(height: 6),
-                        Text(feedback, style: const TextStyle(fontSize: 15, height: 1.6)),
-                      ],
-                    ])),
-                  if (criteria.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    Text(l.t('by_criteria'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
-                    const SizedBox(height: 8),
-                    ...criteria.map((c) => Container(margin: const EdgeInsets.only(bottom: 8), padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(color: Theme.of(ctx).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(AppRadii.tile)),
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Row(children: [
-                          Expanded(child: Text(c['name'] ?? '', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700))),
-                          RichText(text: TextSpan(children: [
-                            TextSpan(text: '${c['score'] ?? 0}', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary)),
-                            TextSpan(text: ' / ${c['max'] ?? c['max_score'] ?? c['weight'] ?? 0}', style: const TextStyle(fontSize: 13, color: C.text4)),
-                          ])),
-                        ]),
-                        if ((c['comment'] ?? c['feedback']) != null) Padding(padding: const EdgeInsets.only(top: 6), child: Text(c['comment'] ?? c['feedback'], style: const TextStyle(fontSize: 13, color: C.text4, height: 1.5))),
-                      ]))),
-                  ],
+                  _gradedScoreCard(context, l, grade, score, feedback?.toString(), criteria, assignmentMaxScore),
                   const SizedBox(height: 16),
                   ConstrainedBox(constraints: const BoxConstraints(minWidth: double.infinity, minHeight: 50), child: ElevatedButton(
                     style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),

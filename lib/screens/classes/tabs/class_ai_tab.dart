@@ -12,6 +12,7 @@ import '../../../utils/ai_context.dart';
 import '../../../utils/ai_quota.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/ai_limit_notice.dart';
+import '../../../widgets/ai_reading_notice.dart';
 import '../../../widgets/app_dialog.dart';
 import '../../../widgets/toast.dart';
 import '../../ai/widgets/ai_message_content.dart';
@@ -24,6 +25,9 @@ class ClassAiTab extends StatefulWidget {
   final List<String> lectureImageUrls;
   final bool isActive;
   final bool isTeacher;
+  final bool filesLoading;
+  final int filesReady;
+  final int filesTotal;
   const ClassAiTab({
     super.key,
     required this.classId,
@@ -32,6 +36,9 @@ class ClassAiTab extends StatefulWidget {
     this.lectureImageUrls = const [],
     this.isActive = true,
     this.isTeacher = false,
+    this.filesLoading = false,
+    this.filesReady = 0,
+    this.filesTotal = 0,
   });
   @override State<ClassAiTab> createState() => _ClassAiTabState();
 }
@@ -161,6 +168,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
   Future<void> _send([String? override]) async {
     final text = override ?? _ctrl.text.trim();
     if (text.isEmpty || _loading) return;
+    if (widget.filesLoading) return; // кнопка/поле уже задизейблены в build()
     if (_quota?.exhausted == true) {
       showToast(context, context.read<L10n>().t('ai_daily_exhausted'), error: true);
       return;
@@ -186,11 +194,17 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
             'Ты AI-ассистент курса "${widget.className}". Отвечай на русском. '
             'Материалы курса ниже помечены заголовками вида "### Лекция N: <тема>" — '
             'если студент просит объяснить материал по номеру (например "объясни '
-            '2 лекцию"), найди блок с этим номером и объясняй именно его. Объясняй '
-            'подробно: раскрывай ключевые понятия, приводи примеры и связи между '
-            'идеями, а не просто пересказывай заголовок. Математические формулы '
-            'записывай в LaTeX: инлайн — \$...\$ или \\(...\\), блочные — \$\$...\$\$ '
-            'или \\[...\\]. Код — в блоках ```язык.$lectureBlock'},
+            '2 лекцию"), найди блок с этим номером и объясняй именно его. Если для '
+            'лекции есть текст прикреплённого файла (после строки [Файл "..."]) — '
+            'объясняй строго по нему: заголовок и текстовое описание лекции могут '
+            'не совпадать с реальным содержимым файла, доверяй файлу, а не им. '
+            'Если содержимое файла ЯВНО не по теме заголовка/описания лекции — '
+            'прямо скажи об этом в начале ответа, а не притворяйся, что объясняешь '
+            'заявленную тему по несуществующему материалу. '
+            'Объясняй подробно: раскрывай ключевые понятия, приводи примеры и связи '
+            'между идеями, а не просто пересказывай заголовок. Математические '
+            'формулы записывай в LaTeX: инлайн — \$...\$ или \\(...\\), блочные — '
+            '\$\$...\$\$ или \\[...\\]. Код — в блоках ```язык.$lectureBlock'},
         ...visionPre,
         // Только хвост переписки — см. utils/ai_context.dart. В классном чате
         // это особенно важно: к истории добавляется ещё и lectureContext.
@@ -230,6 +244,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
     final surface = Theme.of(context).colorScheme.surface;
     final isDark  = Theme.of(context).brightness == Brightness.dark;
     final exhausted = _quota?.exhausted ?? false;
+    final blocked = exhausted || widget.filesLoading;
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
@@ -258,7 +273,10 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
           border: Border(top: BorderSide(color: adaptiveBorder(context).withValues(alpha: 0.5), width: 0.5)),
         ),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-        if (exhausted) AiLimitNotice(quota: _quota!),
+        if (exhausted)
+          AiLimitNotice(quota: _quota!)
+        else if (widget.filesLoading)
+          AiReadingNotice(ready: widget.filesReady, total: widget.filesTotal),
         Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
           Expanded(child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
@@ -271,11 +289,13 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
             ),
             child: TextField(
               controller: _ctrl,
-              enabled: !exhausted,
+              enabled: !blocked,
               decoration: InputDecoration(
                 hintText: exhausted
                     ? context.read<L10n>().t('ai_limit_reached_title')
-                    : context.read<L10n>().t('ask_about_course'),
+                    : widget.filesLoading
+                        ? context.read<L10n>().t('ai_reading_materials_placeholder')
+                        : context.read<L10n>().t('ask_about_course'),
                 hintStyle: const TextStyle(fontSize: 15, color: C.text4),
                 border: InputBorder.none, enabledBorder: InputBorder.none, focusedBorder: InputBorder.none,
                 filled: false, contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
@@ -289,9 +309,9 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
             valueListenable: _ctrl,
             builder: (context, value, _) {
               final has = value.text.trim().isNotEmpty;
-              final active = has && !_loading && !exhausted;
+              final active = has && !_loading && !blocked;
               return GestureDetector(
-                onTap: exhausted ? null : _send,
+                onTap: blocked ? null : _send,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 220),
                   curve: Curves.easeOutCubic,
@@ -387,20 +407,27 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
       ),
       child: GestureDetector(
         onTap: () {
+          if (widget.filesLoading) {
+            showToast(context, context.read<L10n>().t('ai_reading_materials_placeholder'));
+            return;
+          }
           hapticSelection();
           _send(context.read<L10n>().t(tipKey));
         },
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
-          decoration: BoxDecoration(
-            color: isDark ? C.darkSurface : Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: adaptiveBorder(context).withValues(alpha: 0.6), width: 0.5),
-            boxShadow: softShadow(isDark),
+        child: Opacity(
+          opacity: widget.filesLoading ? 0.5 : 1,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+            decoration: BoxDecoration(
+              color: isDark ? C.darkSurface : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: adaptiveBorder(context).withValues(alpha: 0.6), width: 0.5),
+              boxShadow: softShadow(isDark),
+            ),
+            child: Text(context.read<L10n>().t(tipKey),
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveText1(context), letterSpacing: -0.2)),
           ),
-          child: Text(context.read<L10n>().t(tipKey),
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveText1(context), letterSpacing: -0.2)),
         ),
       ),
     );

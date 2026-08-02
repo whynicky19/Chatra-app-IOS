@@ -327,6 +327,14 @@ class AiMessageContent extends StatelessWidget {
     t = t.replaceAllMapped(_eqnArrayEnvRe, (m) => '\\${m.group(1)}{aligned}');
     t = t.replaceAllMapped(_gatherEnvRe, (m) => '\\${m.group(1)}{aligned}');
     t = t.replaceAll(_equationEnvRe, '');
+    // Модель часто переносит строки внутри формулы через "\\" вообще без
+    // окружения — а голый "\\" вне aligned/array/matrix невалиден и валит
+    // парсинг всей формулы (именно так на экране появляется сырой текст со
+    // "\\" и "\quad \Rightarrow \quad" вместо рендера). Раз перенос строк уже
+    // есть, а окружения нет — заворачиваем сами.
+    if (t.contains(r'\\') && !t.contains(r'\begin{')) {
+      t = '\\begin{aligned}$t\\end{aligned}';
+    }
     return t;
   }
 

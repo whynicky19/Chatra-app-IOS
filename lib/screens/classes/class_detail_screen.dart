@@ -45,6 +45,9 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   List<dynamic> _mySubs = [];
   Map<String, dynamic> _rating = {};
   Map<String, String> _fileTexts = {};
+  bool _filesLoading = false;
+  int _filesReady = 0;
+  int _filesTotal = 0;
   String _cachedLectureContext = '';
   List<String> _cachedLectureImageUrls = [];
   Map<String, dynamic> _classData = {};
@@ -246,6 +249,15 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       }
     }
 
+    if (filePairs.isEmpty) {
+      if (mounted && _filesLoading) setState(() => _filesLoading = false);
+      return;
+    }
+    if (mounted) {
+      setState(() { _filesLoading = true; _filesTotal = filePairs.length; _filesReady = 0; });
+    }
+
+    var processed = 0;
     const maxConcurrent = 3;
     for (var i = 0; i < filePairs.length; i += maxConcurrent) {
       final chunk = filePairs.skip(i).take(maxConcurrent);
@@ -258,14 +270,17 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           final text = (resp.data?['text'] as String?) ?? '';
           if (text.isNotEmpty) result[pair.url] = text;
         } catch (_) {}
+        processed++;
       }));
+      if (mounted) setState(() => _filesReady = processed);
     }
 
     if (mounted) {
       setState(() {
-      _fileTexts = result;
-      _recomputeAiContext();
-    });
+        _filesLoading = false;
+        _fileTexts = result;
+        _recomputeAiContext();
+      });
     }
   }
 
@@ -661,6 +676,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       classId: widget.classId, className: _title, lectureContext: _cachedLectureContext,
       lectureImageUrls: _cachedLectureImageUrls, isActive: _aiTabActive,
       isTeacher: context.read<AuthProvider>().isTeacher,
+      filesLoading: _filesLoading, filesReady: _filesReady, filesTotal: _filesTotal,
     );
   }
 

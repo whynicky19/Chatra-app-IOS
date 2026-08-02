@@ -20,7 +20,6 @@ final _wsRe = RegExp(r'\s+');
 class ClassPostsTab extends StatelessWidget {
   final List<dynamic> posts;
   final bool isTeacher;
-  final Map<String, String> fileTexts;
   final void Function(dynamic post, int num) onShowPost;
   final void Function(dynamic post) onEditPost;
   final void Function(int postId) onDeletePost;
@@ -29,7 +28,6 @@ class ClassPostsTab extends StatelessWidget {
     super.key,
     required this.posts,
     required this.isTeacher,
-    required this.fileTexts,
     required this.onShowPost,
     required this.onEditPost,
     required this.onDeletePost,

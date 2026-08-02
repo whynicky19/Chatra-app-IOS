@@ -608,7 +608,9 @@ class ApiService {
 
   Future<Map<String, dynamic>> aiChat(List<Map<String, dynamic>> messages,
       {int? classId, int? threadId, int maxTokens = 1500, double temperature = 0.7,
-      String? lectureContext, CancelToken? cancelToken, String? requestId}) async {
+      CancelToken? cancelToken, String? requestId}) async {
+    // Материалы класса сервер теперь ищет и собирает сам (RAG, см.
+    // routers/ai.py::ai_chat) — клиент их больше не собирает и не шлёт.
     final data = <String, dynamic>{
       'messages': messages,
       'max_tokens': maxTokens,
@@ -616,7 +618,6 @@ class ApiService {
     };
     if (classId != null) data['class_id'] = classId;
     if (threadId != null) data['thread_id'] = threadId;
-    if (lectureContext != null) data['lecture_context'] = lectureContext;
     if (requestId != null) data['request_id'] = requestId;
     final response = await _dio.post('/ai/chat', data: data,
         cancelToken: cancelToken,

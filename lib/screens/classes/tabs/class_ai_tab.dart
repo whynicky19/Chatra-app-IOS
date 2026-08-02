@@ -12,7 +12,6 @@ import '../../../utils/ai_context.dart';
 import '../../../utils/ai_quota.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/ai_limit_notice.dart';
-import '../../../widgets/ai_reading_notice.dart';
 import '../../../widgets/app_dialog.dart';
 import '../../../widgets/toast.dart';
 import '../../ai/widgets/ai_message_content.dart';
@@ -21,24 +20,14 @@ import '../../../utils/haptics.dart';
 class ClassAiTab extends StatefulWidget {
   final int classId;
   final String className;
-  final String lectureContext;
-  final List<String> lectureImageUrls;
   final bool isActive;
   final bool isTeacher;
-  final bool filesLoading;
-  final int filesReady;
-  final int filesTotal;
   const ClassAiTab({
     super.key,
     required this.classId,
     required this.className,
-    this.lectureContext = '',
-    this.lectureImageUrls = const [],
     this.isActive = true,
     this.isTeacher = false,
-    this.filesLoading = false,
-    this.filesReady = 0,
-    this.filesTotal = 0,
   });
   @override State<ClassAiTab> createState() => _ClassAiTabState();
 }
@@ -168,7 +157,6 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
   Future<void> _send([String? override]) async {
     final text = override ?? _ctrl.text.trim();
     if (text.isEmpty || _loading) return;
-    if (widget.filesLoading) return; // кнопка/поле уже задизейблены в build()
     if (_quota?.exhausted == true) {
       showToast(context, context.read<L10n>().t('ai_daily_exhausted'), error: true);
       return;
@@ -179,34 +167,22 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
     _saveHistory();
     try {
       final api = context.read<ApiService>();
-      // ВАЖНО: текст материалов курса (widget.lectureContext) сюда НЕ
-      // встраиваем — он идёт отдельным полем lectureContext в api.aiChat, и
-      // сервер (routers/ai.py::ai_chat, _truncate_lecture_context) сам
-      // вставляет его первым system-сообщением с безопасной обрезкой по
-      // границе лекции и более полными инструкциями. Раньше он дублировался
-      // ЕЩЁ и здесь необрезанным текстом — модель получала одни и те же
-      // материалы дважды в промпте, что удваивало токены и стоимость запроса
-      // без всякой пользы.
-      final imgs = widget.lectureImageUrls;
-      final List<Map<String, dynamic>> visionPre = imgs.isNotEmpty ? [
-        {'role': 'user', 'content': [
-          {'type': 'text', 'text': 'Прикреплённые файлы-изображения из материалов курса:'},
-          ...imgs.map((url) => {'type': 'image_url', 'image_url': {'url': url, 'detail': 'low'}}),
-        ]},
-        {'role': 'assistant', 'content': 'Ознакомился с прикреплёнными материалами курса.'},
-      ] : [];
+      // Материалы курса клиент больше не собирает и не шлёт — сервер сам
+      // ищет релевантные фрагменты лекций через RAG (векторный поиск по
+      // вопросу, services/rag_search.py) и вставляет их в системный промпт
+      // (routers/ai.py::ai_chat). Раньше здесь тянулся весь текст лекций
+      // класса (до 12 штук) и/или до 3 картинок — теперь этим полностью
+      // занимается бэкенд, и результат не зависит от того, успел ли клиент
+      // догрузить файлы к моменту вопроса.
       final apiMsgs = <Map<String, dynamic>>[
         {'role': 'system', 'content':
             'Ты AI-ассистент курса "${widget.className}". Отвечай на русском.'},
-        ...visionPre,
-        // Только хвост переписки — см. utils/ai_context.dart. В классном чате
-        // это особенно важно: к истории добавляется ещё и lectureContext.
+        // Только хвост переписки — см. utils/ai_context.dart.
         ...aiContextWindow(_msgs),
       ];
       final data = await api.aiChat(
         apiMsgs,
         classId: widget.classId,
-        lectureContext: widget.lectureContext.isNotEmpty ? widget.lectureContext : null,
       );
       if (mounted) {
         setState(() {
@@ -237,7 +213,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
     final surface = Theme.of(context).colorScheme.surface;
     final isDark  = Theme.of(context).brightness == Brightness.dark;
     final exhausted = _quota?.exhausted ?? false;
-    final blocked = exhausted || widget.filesLoading;
+    final blocked = exhausted;
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
@@ -267,9 +243,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
         ),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
         if (exhausted)
-          AiLimitNotice(quota: _quota!)
-        else if (widget.filesLoading)
-          AiReadingNotice(ready: widget.filesReady, total: widget.filesTotal),
+          AiLimitNotice(quota: _quota!),
         Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
           Expanded(child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
@@ -286,9 +260,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
               decoration: InputDecoration(
                 hintText: exhausted
                     ? context.read<L10n>().t('ai_limit_reached_title')
-                    : widget.filesLoading
-                        ? context.read<L10n>().t('ai_reading_materials_placeholder')
-                        : context.read<L10n>().t('ask_about_course'),
+                    : context.read<L10n>().t('ask_about_course'),
                 hintStyle: const TextStyle(fontSize: 15, color: C.text4),
                 border: InputBorder.none, enabledBorder: InputBorder.none, focusedBorder: InputBorder.none,
                 filled: false, contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
@@ -400,27 +372,20 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
       ),
       child: GestureDetector(
         onTap: () {
-          if (widget.filesLoading) {
-            showToast(context, context.read<L10n>().t('ai_reading_materials_placeholder'));
-            return;
-          }
           hapticSelection();
           _send(context.read<L10n>().t(tipKey));
         },
-        child: Opacity(
-          opacity: widget.filesLoading ? 0.5 : 1,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
-            decoration: BoxDecoration(
-              color: isDark ? C.darkSurface : Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: adaptiveBorder(context).withValues(alpha: 0.6), width: 0.5),
-              boxShadow: softShadow(isDark),
-            ),
-            child: Text(context.read<L10n>().t(tipKey),
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveText1(context), letterSpacing: -0.2)),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+          decoration: BoxDecoration(
+            color: isDark ? C.darkSurface : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: adaptiveBorder(context).withValues(alpha: 0.6), width: 0.5),
+            boxShadow: softShadow(isDark),
           ),
+          child: Text(context.read<L10n>().t(tipKey),
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveText1(context), letterSpacing: -0.2)),
         ),
       ),
     );

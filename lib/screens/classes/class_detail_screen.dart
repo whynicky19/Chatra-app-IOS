@@ -44,12 +44,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   List<dynamic> _assignments = [];
   List<dynamic> _mySubs = [];
   Map<String, dynamic> _rating = {};
-  Map<String, String> _fileTexts = {};
-  bool _filesLoading = false;
-  int _filesReady = 0;
-  int _filesTotal = 0;
-  String _cachedLectureContext = '';
-  List<String> _cachedLectureImageUrls = [];
   Map<String, dynamic> _classData = {};
   Map<String, dynamic> _meta = {};
   String _title = '';
@@ -131,7 +125,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     if (!isTeacher) _rating = results[2] as Map<String, dynamic>;
     _recomputeDerived();
     if (mounted) setState(() => _loading = false);
-    _loadFileTexts();
     if (_canManageCohorts) _loadCohorts();
   }
 
@@ -166,123 +159,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     _lectures = _posts.where((p) => (p['title'] ?? '').startsWith('[LECTURE][${widget.classId}]')).toList();
     _meta = _classData;
     _title = (_classData['name'] ?? '${context.read<L10n>().t('class_label')} #${widget.classId}').toString();
-    _recomputeAiContext();
-  }
-
-  void _recomputeAiContext() {
-    // Бэкенд отдаёт _lectures уже в порядке "1, 2, 3..." (posts.position, см.
-    // migrations/017), но номер берём именно из позиции в ЭТОМ полном списке
-    // (до .take(12)), чтобы обрезка не сдвигала нумерацию видимых лекций.
-    final numbered = _lectures.asMap().entries.toList();
-    final all = numbered.take(12);
-    final parts = <String>[];
-    for (final entry in all) {
-      final number = entry.key + 1;
-      final p = entry.value;
-      final title = cleanPostTitle(p['title'] ?? '');
-      String content = '';
-      List<dynamic> files = [];
-      try {
-        final b = jsonDecode(p['body']);
-        content = (b['content'] ?? b['description'] ?? '').toString();
-        if (b['files'] is List) files = b['files'] as List;
-      } catch (_) { content = p['body'] ?? ''; }
-      content = content.replaceAll(RegExp(r'\n{3,}'), '\n\n').trim();
-      if (content.length > 4000) content = content.substring(0, 4000);
-      final sb = StringBuffer();
-      sb.write('### Лекция $number${title.isNotEmpty ? ": $title" : ""}\n');
-      if (content.isNotEmpty) sb.write(content);
-      if (files.isNotEmpty) {
-        for (final f in files) {
-          final url = context.read<ApiService>().fixUrl(f.toString());
-          final name = fileDisplayName(url);
-          final ext = cleanFileUrl(url).split('?').first.split('.').last.toLowerCase();
-          final key = stableFileKey(url);
-          if (_fileTexts.containsKey(key)) {
-            var text = _fileTexts[key]!;
-            if (text.length > 5000) text = '${text.substring(0, 5000)}...';
-            sb.write('\n[Файл "$name"]\n$text');
-          } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(ext)) {
-            sb.write('\n[Изображение: $name]');
-          } else {
-            // Текст файла ещё не подгружен (см. _loadFileTexts — идёт в фоне
-            // после открытия класса) или не удалось извлечь — явно говорим
-            // модели, что содержимого у неё нет, иначе она молча отвечает по
-            // одному названию/описанию лекции, будто прочитала файл.
-            sb.write('\n[Прикреплённый файл "$name" — содержимое НЕ прочитано, '
-                'не придумывай его содержание; если пользователь просит '
-                'объяснить именно этот файл, скажи, что не можешь прочитать '
-                'его сейчас, и предложи попробовать через несколько секунд]');
-          }
-        }
-      }
-      if (sb.isNotEmpty) parts.add(sb.toString());
-    }
-    _cachedLectureContext = parts.join('\n\n');
-
-    final urls = <String>[];
-    for (final p in _lectures) {
-      for (final f in _extractFiles(p)) {
-        final ext = cleanFileUrl(f).split('?').first.split('.').last.toLowerCase();
-        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(ext)) urls.add(f);
-        if (urls.length >= 3) break;
-      }
-      if (urls.length >= 3) break;
-    }
-    _cachedLectureImageUrls = urls;
-  }
-
-  Future<void> _loadFileTexts() async {
-    if (!mounted) return;
-    final api = context.read<ApiService>();
-    final result = <String, String>{};
-
-    final filePairs = <({String url, String cleanUrl})>[];
-    for (final p in _lectures) {
-      List<dynamic> files = [];
-      try {
-        final b = jsonDecode(p['body'] ?? '');
-        if (b['files'] is List) files = b['files'] as List;
-      } catch (_) {}
-      for (final f in files) {
-        final url = context.read<ApiService>().fixUrl(f.toString());
-        filePairs.add((url: url, cleanUrl: cleanFileUrl(url)));
-      }
-    }
-
-    if (filePairs.isEmpty) {
-      if (mounted && _filesLoading) setState(() => _filesLoading = false);
-      return;
-    }
-    if (mounted) {
-      setState(() { _filesLoading = true; _filesTotal = filePairs.length; _filesReady = 0; });
-    }
-
-    var processed = 0;
-    const maxConcurrent = 3;
-    for (var i = 0; i < filePairs.length; i += maxConcurrent) {
-      final chunk = filePairs.skip(i).take(maxConcurrent);
-      await Future.wait(chunk.map((pair) async {
-        try {
-          final resp = await api.dio.get<Map<String, dynamic>>(
-            '/upload/utils/file-text',
-            queryParameters: {'url': pair.cleanUrl},
-          );
-          final text = (resp.data?['text'] as String?) ?? '';
-          if (text.isNotEmpty) result[stableFileKey(pair.url)] = text;
-        } catch (_) {}
-        processed++;
-      }));
-      if (mounted) setState(() => _filesReady = processed);
-    }
-
-    if (mounted) {
-      setState(() {
-        _filesLoading = false;
-        _fileTexts = result;
-        _recomputeAiContext();
-      });
-    }
   }
 
   Future<void> _loadAssignments() async {
@@ -546,7 +422,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               )
             : TabBarView(controller: _tabCtrl, children: [
                 ClassPostsTab(
-                  posts: _lectures, isTeacher: auth.isTeacher, fileTexts: _fileTexts,
+                  posts: _lectures, isTeacher: auth.isTeacher,
                   onShowPost: _showPost, onEditPost: _editPost,
                   onDeletePost: (id) async { try { await context.read<ApiService>().deletePost(id); _load(); } catch (_) {} },
                 ),
@@ -674,10 +550,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       );
     }
     return ClassAiTab(
-      classId: widget.classId, className: _title, lectureContext: _cachedLectureContext,
-      lectureImageUrls: _cachedLectureImageUrls, isActive: _aiTabActive,
+      classId: widget.classId, className: _title, isActive: _aiTabActive,
       isTeacher: context.read<AuthProvider>().isTeacher,
-      filesLoading: _filesLoading, filesReady: _filesReady, filesTotal: _filesTotal,
     );
   }
 

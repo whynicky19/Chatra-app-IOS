@@ -310,12 +310,32 @@ class AiMessageContent extends StatelessWidget {
   static final _inlineCodeRe = RegExp(r'`([^`\n]+)`');
   static final _currencyRe = RegExp(r'^\s*\d[\d,.\s]*\s*$');
 
+  // flutter_math_fork регистрирует только aligned/alignedat/cases (см. пакет
+  // src/parser/tex/environments/eqn_array.dart) — align, align*, gather,
+  // gathered, equation и eqnarray не распознаются вообще и валят парсинг
+  // формулы целиком в onErrorFallback (сырой LaTeX-текст на экране). Модель
+  // же регулярно выбирает эти окружения (особенно align* для систем
+  // уравнений) — заменяем их на ближайший поддерживаемый аналог до рендера.
+  static final _alignEnvRe = RegExp(r'\\(begin|end)\{align\*?\}');
+  static final _eqnArrayEnvRe = RegExp(r'\\(begin|end)\{eqnarray\*?\}');
+  static final _gatherEnvRe = RegExp(r'\\(begin|end)\{gather(?:ed)?\*?\}');
+  static final _equationEnvRe = RegExp(r'\\begin\{equation\*?\}|\\end\{equation\*?\}');
+
+  static String _sanitizeTex(String tex) {
+    var t = tex;
+    t = t.replaceAllMapped(_alignEnvRe, (m) => '\\${m.group(1)}{aligned}');
+    t = t.replaceAllMapped(_eqnArrayEnvRe, (m) => '\\${m.group(1)}{aligned}');
+    t = t.replaceAllMapped(_gatherEnvRe, (m) => '\\${m.group(1)}{aligned}');
+    t = t.replaceAll(_equationEnvRe, '');
+    return t;
+  }
+
   static List<_Seg> _tokenize(String text) {
     final segs = <_Seg>[];
     var last = 0;
     for (final m in _blockRe.allMatches(text)) {
       if (m.start > last) segs.addAll(_tokenizeInline(text.substring(last, m.start)));
-      segs.add(_Seg(_SegType.block, m.group(1) ?? m.group(2) ?? ''));
+      segs.add(_Seg(_SegType.block, _sanitizeTex(m.group(1) ?? m.group(2) ?? '')));
       last = m.end;
     }
     if (last < text.length) segs.addAll(_tokenizeInline(text.substring(last)));
@@ -346,7 +366,7 @@ class AiMessageContent extends StatelessWidget {
       if (isDollarForm && _currencyRe.hasMatch(tex)) {
         segs.add(_Seg(_SegType.text, m.group(0)!));
       } else {
-        segs.add(_Seg(_SegType.inline, tex));
+        segs.add(_Seg(_SegType.inline, _sanitizeTex(tex)));
       }
       last = m.end;
     }

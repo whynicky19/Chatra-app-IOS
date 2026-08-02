@@ -10,6 +10,7 @@ import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
 import '../legal/privacy_policy_screen.dart';
 import '../legal/terms_screen.dart';
+import '../../utils/nav_guard.dart';
 import 'verify_email_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -276,14 +277,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         style: const TextStyle(fontSize: 13, color: C.text4, fontWeight: FontWeight.w500)),
                     ),
                     Tappable(
-                      onTap: () => Navigator.push(context,
+                      onTap: () => guardedPush(context,
                         MaterialPageRoute(builder: (_) => const TermsScreen())),
                       child: Text(l.t('terms_view'),
                         style: TextStyle(fontSize: 13, color: primary, fontWeight: FontWeight.w700)),
                     ),
                     const Text(' · ', style: TextStyle(fontSize: 13, color: C.text4)),
                     Tappable(
-                      onTap: () => Navigator.push(context,
+                      onTap: () => guardedPush(context,
                         MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
                       child: Text(l.t('pp_title'),
                         style: TextStyle(fontSize: 13, color: primary, fontWeight: FontWeight.w700)),

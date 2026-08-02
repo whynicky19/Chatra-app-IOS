@@ -9,6 +9,7 @@ import '../../theme/app_theme.dart';
 import '../../utils/image_cache.dart';
 import '../../widgets/network_cover_image.dart';
 import '../../utils/haptics.dart';
+import '../../utils/nav_guard.dart';
 
 class ArchiveScreen extends StatelessWidget {
   const ArchiveScreen({super.key});
@@ -94,7 +95,7 @@ class ArchiveScreen extends StatelessWidget {
                     isDark: isDark,
                     onTap: () {
                       hapticLight();
-                      Navigator.pushNamed(context, '/class', arguments: id);
+                      guardedPushNamed(context, '/class', arguments: id);
                     },
                   );
                 },

@@ -11,6 +11,8 @@ import '../../theme/app_theme.dart';
 import '../classes/class_detail_screen.dart';
 import '../../utils/dates.dart';
 import '../../utils/haptics.dart';
+import '../../utils/nav_guard.dart';
+import '../../widgets/skeleton.dart';
 
 enum _NType { newAssignment, deadline, grade }
 
@@ -199,6 +201,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     try { context.read<ApiService>().setNotifState(nKey, read: true); } catch (_) {}
   }
 
+  Future<void> _markAllRead() async {
+    final toMark = _notifs.where((n) => !n.isRead).map((n) => n.key).toList();
+    if (toMark.isEmpty) return;
+    hapticLight();
+    setState(() {
+      for (final k in toMark) {
+        _states[k] = {'read': true, 'dismissed': _isDismissed(k)};
+      }
+      _notifs = _notifs.map((n) => n.isRead
+          ? n
+          : _Notif(key: n.key, type: n.type, title: n.title, body: n.body,
+              date: n.date, isRead: true, classId: n.classId)).toList();
+    });
+    try { await context.read<ApiService>().markAllNotifsRead(toMark); } catch (_) {}
+  }
+
   Future<void> _dismiss(String nKey) async {
     setState(() {
       _notifs.removeWhere((n) => n.key == nKey);
@@ -256,21 +274,64 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       body: SafeArea(child: Column(children: [
         Padding(padding: const EdgeInsets.fromLTRB(20, 20, 20, 16), child: Row(children: [
           GestureDetector(onTap: () => Navigator.pop(context),
-            child: Container(width: 40, height: 40, decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
+            child: Container(width: 40, height: 40, alignment: Alignment.center,
+              decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile),
+                border: Border.all(color: adaptiveBorder(context))),
               child: Icon(CupertinoIcons.chevron_left, size: 20, color: adaptiveText1(context)))),
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(l.t('notifications'), style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: adaptiveText1(context), letterSpacing: -0.4, height: 1.05)),
-            if (!_loading)
-              Text(unread > 0 ? '$unread ${l.t('notif_unread')}' : l.t('all_read'), style: const TextStyle(fontSize: 13, color: C.text4)),
+            if (!_loading) ...[
+              const SizedBox(height: 3),
+              Row(children: [
+                if (unread > 0) ...[
+                  Container(width: 6, height: 6, margin: const EdgeInsets.only(right: 5),
+                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, shape: BoxShape.circle)),
+                ] else
+                  Icon(CupertinoIcons.checkmark_circle_fill, size: 13, color: C.green.withValues(alpha: 0.8)),
+                if (unread == 0) const SizedBox(width: 5),
+                Flexible(child: Text(unread > 0 ? '$unread ${l.t('notif_unread')}' : l.t('all_read'),
+                  overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, color: C.text4, fontWeight: FontWeight.w500))),
+              ]),
+            ],
           ])),
-          GestureDetector(onTap: _load,
-            child: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
-              child: const Icon(CupertinoIcons.refresh, size: 18, color: C.text4))),
+          const SizedBox(width: 8),
+          if (!_loading && unread > 0)
+            GestureDetector(
+              onTap: _markAllRead,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(AppRadii.tile),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(CupertinoIcons.checkmark_alt, size: 14, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 5),
+                  Text(l.t('mark_all_read'), style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
+                ]),
+              ),
+            )
+          else
+            GestureDetector(onTap: _load,
+              child: Container(width: 40, height: 40, alignment: Alignment.center,
+                decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile),
+                  border: Border.all(color: adaptiveBorder(context))),
+                child: const Icon(CupertinoIcons.refresh, size: 18, color: C.text4))),
         ])),
 
         Expanded(child: _loading
-          ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary, strokeWidth: 2.5))
+          ? ListView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+              itemCount: 5,
+              itemBuilder: (ctx, i) => TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: 1.0),
+                duration: Duration(milliseconds: 260 + i * 70),
+                curve: Curves.easeOut,
+                builder: (_, t, child) => Opacity(opacity: t, child: child),
+                child: const SkeletonNotifCard(),
+              ),
+            )
           : _notifs.isEmpty
             ? _emptyState()
             : RefreshIndicator(
@@ -329,7 +390,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           onTap: () {
                             _markRead(n.key);
                             if (canNavigate) {
-                              Navigator.push(context, MaterialPageRoute(
+                              guardedPush(context, MaterialPageRoute(
                                 builder: (_) => ClassDetailScreen(classId: n.classId!, initialTab: 1)));
                             }
                           },
@@ -346,11 +407,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Map<String, dynamic> _config(_NType type) {
     switch (type) {
       case _NType.grade:
-        return {'icon': CupertinoIcons.star, 'color': Theme.of(context).colorScheme.primary, 'bg': Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)};
+        return {'icon': CupertinoIcons.rosette, 'color': Theme.of(context).colorScheme.primary, 'bg': Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)};
       case _NType.deadline:
-        return {'icon': CupertinoIcons.timer, 'color': const Color(0xFFEF4444), 'bg': const Color(0xFFEF4444).withValues(alpha: 0.10)};
+        return {'icon': CupertinoIcons.clock_fill, 'color': const Color(0xFFEF4444), 'bg': const Color(0xFFEF4444).withValues(alpha: 0.10)};
       case _NType.newAssignment:
-        return {'icon': CupertinoIcons.doc_text, 'color': const Color(0xFF6366F1), 'bg': const Color(0xFF6366F1).withValues(alpha: 0.08)};
+        return {'icon': CupertinoIcons.doc_text_fill, 'color': const Color(0xFF6366F1), 'bg': const Color(0xFF6366F1).withValues(alpha: 0.08)};
     }
   }
 
@@ -358,7 +419,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final l = context.read<L10n>();
     return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
       Container(width: 80, height: 80, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08), shape: BoxShape.circle),
-        child: Icon(CupertinoIcons.bell, size: 38, color: Theme.of(context).colorScheme.primary)),
+        child: Icon(CupertinoIcons.bell_fill, size: 38, color: Theme.of(context).colorScheme.primary)),
       const SizedBox(height: 20),
       Text(l.t('no_notif'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
       const SizedBox(height: 6),
@@ -427,13 +488,13 @@ class _NotifCardState extends State<_NotifCard> {
             ),
           ),
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Container(width: 40, height: 40,
+            Container(width: 44, height: 44,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: c.withValues(alpha: n.isRead ? 0.10 : 0.15),
+                color: c.withValues(alpha: n.isRead ? 0.09 : 0.16),
                 borderRadius: BorderRadius.circular(AppRadii.tile),
               ),
-              child: Icon(icon, size: 19, color: c)),
+              child: Icon(icon, size: 20, color: c)),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(crossAxisAlignment: CrossAxisAlignment.start, children: [

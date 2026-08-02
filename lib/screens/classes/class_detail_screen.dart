@@ -29,6 +29,7 @@ import 'lecture_detail_screen.dart';
 import 'lecture_editor_screen.dart';
 import 'assignment_editor_screen.dart';
 import '../../utils/haptics.dart';
+import '../../utils/nav_guard.dart';
 
 class ClassDetailScreen extends StatefulWidget {
   final int classId;
@@ -543,7 +544,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   }
 
   void _editPost(dynamic p) async {
-    final changed = await Navigator.push<bool>(context, MaterialPageRoute(
+    final changed = await guardedPush<bool>(context, MaterialPageRoute(
       builder: (_) => LectureEditorScreen(classId: widget.classId, post: Map<String, dynamic>.from(p as Map)),
     ));
     if (changed == true) _load();
@@ -663,7 +664,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     final files = _extractFiles(p);
     final cleanText = cleanContent(content);
 
-    Navigator.push(context, MaterialPageRoute(builder: (_) => LectureDetailScreen(
+    guardedPush(context, MaterialPageRoute(builder: (_) => LectureDetailScreen(
       title: cleanPostTitle(p['title'] ?? ''),
       dateLabel: fmtDate(p['created_at'] ?? ''),
       content: cleanText,
@@ -673,14 +674,14 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   }
 
   void _showAddMenu() async {
-    final changed = await Navigator.push<bool>(context, MaterialPageRoute(
+    final changed = await guardedPush<bool>(context, MaterialPageRoute(
       builder: (_) => LectureEditorScreen(classId: widget.classId),
     ));
     if (changed == true) _load();
   }
 
   void _createAssignment() async {
-    final changed = await Navigator.push<bool>(context, MaterialPageRoute(
+    final changed = await guardedPush<bool>(context, MaterialPageRoute(
       builder: (_) => AssignmentEditorScreen(classId: widget.classId),
     ));
     if (changed == true) _loadAssignments();
@@ -689,7 +690,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   Widget _fieldLabel2(String s) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(s, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)));
 
   void _editAssignment(dynamic a) async {
-    final changed = await Navigator.push<bool>(context, MaterialPageRoute(
+    final changed = await guardedPush<bool>(context, MaterialPageRoute(
       builder: (_) => AssignmentEditorScreen(
         classId: widget.classId,
         assignment: Map<String, dynamic>.from(a as Map),
@@ -1026,7 +1027,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               GestureDetector(
                 onTap: () async {
                   Navigator.pop(ctx);
-                  final changed = await Navigator.push<bool>(context,
+                  final changed = await guardedPush<bool>(context,
                       MaterialPageRoute(builder: (_) => const RolloverScreen()));
                   if (changed == true && mounted) _load();
                 },

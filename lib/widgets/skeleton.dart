@@ -105,3 +105,33 @@ class SkeletonClassCard extends StatelessWidget {
     );
   }
 }
+
+class SkeletonNotifCard extends StatelessWidget {
+  const SkeletonNotifCard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = Theme.of(context).colorScheme.surface;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(AppRadii.card),
+        boxShadow: cardShadow(isDark),
+        border: Border.all(color: adaptiveBorder(context).withValues(alpha: 0.5)),
+      ),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const SkeletonBox(width: 44, height: 44, borderRadius: AppRadii.tile),
+        const SizedBox(width: 12),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const SkeletonBox(width: 150, height: 14, borderRadius: 7),
+          const SizedBox(height: 8),
+          SkeletonBox(width: MediaQuery.of(context).size.width * 0.5, height: 12, borderRadius: 6),
+        ])),
+      ]),
+    );
+  }
+}

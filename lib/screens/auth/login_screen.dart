@@ -9,6 +9,7 @@ import '../../widgets/app_logo.dart';
 import '../../widgets/tappable.dart';
 import 'verify_email_screen.dart';
 import 'forgot_password_screen.dart';
+import '../../utils/nav_guard.dart';
 
 class LoginScreen extends StatefulWidget {
   final VoidCallback? onGoRegister;
@@ -56,7 +57,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _openForgot() {
     final orgType = context.read<OrgProvider>().orgTypeString;
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) =>
+    guardedPush(context, MaterialPageRoute(builder: (_) =>
       ForgotPasswordScreen(orgType: orgType, initialEmail: _email.text.trim().isEmpty ? null : _email.text.trim())));
   }
 

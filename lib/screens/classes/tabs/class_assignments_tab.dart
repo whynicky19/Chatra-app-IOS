@@ -16,6 +16,7 @@ import '../widgets/detail_page_theme.dart';
 import '../widgets/score_ring.dart';
 import '../../../utils/dates.dart';
 import '../../../utils/haptics.dart';
+import '../../../utils/nav_guard.dart';
 
 class ClassAssignmentsTab extends StatefulWidget {
   final List<dynamic> assignments;
@@ -428,7 +429,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
   }
 
   void _showAssignment(dynamic a, dynamic sub) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => AssignmentDetailScreen(
+    guardedPush(context, MaterialPageRoute(builder: (_) => AssignmentDetailScreen(
       assignment: a,
       submission: sub,
       isTeacher: widget.isTeacher,

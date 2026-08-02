@@ -8,6 +8,7 @@ import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../classes/class_detail_screen.dart';
 import '../../utils/dates.dart';
+import '../../utils/nav_guard.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -414,7 +415,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           final accentColor = isSubmitted ? C.green : Theme.of(context).colorScheme.primary;
 
           return GestureDetector(
-            onTap: classId != null ? () => Navigator.push(context, MaterialPageRoute(
+            onTap: classId != null ? () => guardedPush(context, MaterialPageRoute(
               builder: (_) => ClassDetailScreen(classId: classId, initialTab: 1),
             )) : null,
             child: Container(

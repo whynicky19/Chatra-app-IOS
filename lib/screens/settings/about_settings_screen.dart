@@ -14,6 +14,7 @@ import '../legal/terms_of_service_screen.dart';
 import '../legal/terms_screen.dart';
 import 'contact_screen.dart';
 import 'settings_shared.dart';
+import '../../utils/nav_guard.dart';
 
 class AboutSettingsScreen extends StatelessWidget {
   const AboutSettingsScreen({super.key});
@@ -35,7 +36,7 @@ class AboutSettingsScreen extends StatelessWidget {
           iconBg: primary,
           title: l.t('tos_title'),
           sub: l.t('tos_view'),
-          onTap: () => Navigator.push(context,
+          onTap: () => guardedPush(context,
             MaterialPageRoute(builder: (_) => const TermsOfServiceScreen())),
         ),
         const SizedBox(height: 16),
@@ -44,7 +45,7 @@ class AboutSettingsScreen extends StatelessWidget {
           iconBg: primary,
           title: l.t('terms_title'),
           sub: l.t('terms_view'),
-          onTap: () => Navigator.push(context,
+          onTap: () => guardedPush(context,
             MaterialPageRoute(builder: (_) => const TermsScreen())),
         ),
         const SizedBox(height: 16),
@@ -53,12 +54,12 @@ class AboutSettingsScreen extends StatelessWidget {
           iconBg: primary,
           title: l.t('pp_title'),
           sub: l.t('pp_view'),
-          onTap: () => Navigator.push(context,
+          onTap: () => guardedPush(context,
             MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
         ),
         const SizedBox(height: 16),
         Tappable(
-          onTap: () => Navigator.push(context,
+          onTap: () => guardedPush(context,
             MaterialPageRoute(builder: (_) => const ContactScreen())),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

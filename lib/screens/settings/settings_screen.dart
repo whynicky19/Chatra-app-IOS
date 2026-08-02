@@ -9,6 +9,7 @@ import '../../widgets/app_dialog.dart';
 import '../../widgets/cupertino_liquid_switch.dart';
 import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
+import '../../utils/nav_guard.dart';
 import 'about_settings_screen.dart';
 import 'ai_limits_screen.dart';
 import 'security_settings_screen.dart';
@@ -184,7 +185,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             iconBg: primary,
             title: l.t('security_section'),
             sub: l.t('security_section_sub'),
-            onTap: () => Navigator.push(context,
+            onTap: () => guardedPush(context,
               MaterialPageRoute(builder: (_) => const SecuritySettingsScreen())),
           ),
         0.48, 0.88),
@@ -197,7 +198,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             iconBg: primary,
             title: l.t('ai_limit_section'),
             sub: l.t('ai_limit_section_sub'),
-            onTap: () => Navigator.push(context,
+            onTap: () => guardedPush(context,
               MaterialPageRoute(builder: (_) => const AiLimitsScreen())),
           ),
         0.49, 0.89),
@@ -210,7 +211,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             iconBg: primary,
             title: l.t('about_section'),
             sub: l.t('about_section_sub'),
-            onTap: () => Navigator.push(context,
+            onTap: () => guardedPush(context,
               MaterialPageRoute(builder: (_) => const AboutSettingsScreen())),
           ),
         0.5, 0.9),

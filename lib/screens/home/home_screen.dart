@@ -20,6 +20,7 @@ import '../../widgets/toast.dart';
 import '../notifications/notifications_screen.dart';
 import '../calendar/calendar_screen.dart';
 import '../../utils/haptics.dart';
+import '../../utils/nav_guard.dart';
 import '../classes/join_class_dialog.dart';
 import '../classes/create_class_screen.dart';
 
@@ -215,7 +216,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ] else ...[
                 Tappable(
                   onTap: () async {
-                    await Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()));
+                    await guardedPush(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()));
                     if (!context.mounted) return;
                     context.read<ClassesProvider>().loadNotifBadge();
                   },
@@ -324,7 +325,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     leaveLabel: l.t('leave_class'),
                     leaveSub: l.t('leave_class_sub'),
                     leaveBtnLabel: l.t('leave_btn'),
-                    onTap: () { hapticLight(); Navigator.pushNamed(context, '/class', arguments: id); },
+                    onTap: () { hapticLight(); guardedPushNamed(context, '/class', arguments: id); },
                     onLongPress: () { hapticHeavy(); _showContextMenu(cls); },
                     onDelete: () async {
                       final prov = context.read<ClassesProvider>();
@@ -360,7 +361,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   count: provider.archivedClasses.length,
                   onTap: () {
                     hapticLight();
-                    Navigator.pushNamed(context, '/archive');
+                    guardedPushNamed(context, '/archive');
                   },
                 ),
               ),
@@ -523,7 +524,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   void _openCalendar() {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => const CalendarScreen()));
+    guardedPush(context, MaterialPageRoute(builder: (_) => const CalendarScreen()));
   }
 
   void _showJoinDialog() {
@@ -532,7 +533,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Future<void> _showCreateClass() async {
     final provider = context.read<ClassesProvider>();
-    final created = await Navigator.push<Map<String, dynamic>>(
+    final created = await guardedPush<Map<String, dynamic>>(
       context, MaterialPageRoute(builder: (_) => const CreateClassScreen()));
     if (created != null && mounted) {
       provider.addCreatedClass(created);

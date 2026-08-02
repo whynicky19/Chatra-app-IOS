@@ -197,8 +197,9 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           final url = context.read<ApiService>().fixUrl(f.toString());
           final name = fileDisplayName(url);
           final ext = cleanFileUrl(url).split('?').first.split('.').last.toLowerCase();
-          if (_fileTexts.containsKey(url)) {
-            var text = _fileTexts[url]!;
+          final key = stableFileKey(url);
+          if (_fileTexts.containsKey(key)) {
+            var text = _fileTexts[key]!;
             if (text.length > 5000) text = '${text.substring(0, 5000)}...';
             sb.write('\n[Файл "$name"]\n$text');
           } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(ext)) {
@@ -268,7 +269,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             queryParameters: {'url': pair.cleanUrl},
           );
           final text = (resp.data?['text'] as String?) ?? '';
-          if (text.isNotEmpty) result[pair.url] = text;
+          if (text.isNotEmpty) result[stableFileKey(pair.url)] = text;
         } catch (_) {}
         processed++;
       }));

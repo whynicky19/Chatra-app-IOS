@@ -60,6 +60,14 @@ String cleanFileUrl(String url) {
   return idx >= 0 ? url.substring(0, idx) : url;
 }
 
+/// Путь файла без query (?exp=&sig=) и #fragment — подпись сервер выдаёт
+/// заново на КАЖДЫЙ ответ (см. file_urls.py: sign_uploads_in_text), поэтому
+/// полный URL с подписью нельзя использовать как ключ карты между двумя
+/// независимыми вычислениями (например _loadFileTexts и _recomputeAiContext):
+/// один и тот же файл получит разные ?exp=&sig= и ключи не совпадут, даже
+/// если текст успешно загружен.
+String stableFileKey(String url) => cleanFileUrl(url).split('?').first;
+
 // Срезает только непарные скобки: иначе ) из markdown уезжает в sig и ломает подпись (403).
 String trimUrlPunctuation(String url) {
   var s = url;

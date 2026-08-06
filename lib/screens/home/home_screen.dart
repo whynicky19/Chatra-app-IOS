@@ -196,13 +196,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 color: adaptiveText1(context), letterSpacing: -0.4, height: 1.1,
               ))),
               const SizedBox(width: 8),
-              _HeaderBtn(icon: CupertinoIcons.calendar, onTap: _openCalendar, isDark: isDark),
-              const SizedBox(width: 8),
+              if (!auth.isTeacher) ...[
+                _HeaderBtn(icon: CupertinoIcons.calendar, onTap: _openCalendar, isDark: isDark),
+                const SizedBox(width: 8),
+              ],
               if (auth.isTeacher) ...[
-                if (!auth.isAdmin) ...[
-                  _HeaderBtn(icon: CupertinoIcons.lock, onTap: _showJoinDialog, isDark: isDark),
-                  const SizedBox(width: 8),
-                ],
                 Tappable(onTap: _showCreateClass,
                   child: Container(
                     width: 42, height: 42,
@@ -1063,13 +1061,6 @@ class _EmptyState extends StatelessWidget {
             icon: const Icon(CupertinoIcons.add, size: 18),
             label: Text(l.t('create_class')),
             style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-          )),
-          const SizedBox(height: 10),
-          SizedBox(width: double.infinity, child: OutlinedButton.icon(
-            onPressed: onJoin,
-            icon: const Icon(CupertinoIcons.lock, size: 16),
-            label: Text(l.t('enter_code')),
-            style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
           )),
         ] else
           SizedBox(width: double.infinity, child: ElevatedButton.icon(

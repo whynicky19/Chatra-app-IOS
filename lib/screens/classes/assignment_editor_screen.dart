@@ -21,21 +21,12 @@ import 'class_detail_utils.dart' show cleanContent, fileDisplayName, fileUrlRe, 
 /// шторке, вынесено сюда как есть).
 class _Criterion {
   String name;
-  int weight;
-  String desc;
   final TextEditingController nameC;
-  final TextEditingController weightC;
-  final TextEditingController descC;
 
-  _Criterion({this.name = '', this.weight = 0, this.desc = ''})
-      : nameC = TextEditingController(text: name),
-        weightC = TextEditingController(text: '$weight'),
-        descC = TextEditingController(text: desc);
+  _Criterion({this.name = ''}) : nameC = TextEditingController(text: name);
 
   void dispose() {
     nameC.dispose();
-    weightC.dispose();
-    descC.dispose();
   }
 }
 
@@ -64,7 +55,6 @@ class AssignmentEditorScreen extends StatefulWidget {
 class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
   late final TextEditingController _titleC;
   late final TextEditingController _descC;
-  late final TextEditingController _scoreC;
   DateTime? _deadline;
   final List<String> _existingFiles = [];
   final List<PlatformFile> _newFiles = [];
@@ -83,15 +73,13 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
       _titleC = TextEditingController(text: a['title'] ?? '');
       final rawDesc = a['description']?.toString() ?? '';
       _descC = TextEditingController(text: cleanContent(rawDesc));
-      _scoreC = TextEditingController(text: '${a['max_score'] ?? 100}');
       _deadline = parseServerDate(a['deadline']);
       _existingFiles.addAll(_extractFileUrls(rawDesc));
-      _criteria = _parseCriteria(a['criteria'], a['max_score']);
+      _criteria = _parseCriteria(a['criteria']);
     } else {
       _titleC = TextEditingController();
       _descC = TextEditingController();
-      _scoreC = TextEditingController(text: '100');
-      _criteria = [_Criterion(weight: 100)];
+      _criteria = [_Criterion()];
     }
   }
 
@@ -110,26 +98,19 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
     return result;
   }
 
-  List<_Criterion> _parseCriteria(dynamic raw, dynamic maxScore) {
+  List<_Criterion> _parseCriteria(dynamic raw) {
     try {
       final list = (jsonDecode(raw ?? '[]') as List?) ?? [];
-      final parsed = list
-          .map((c) => _Criterion(
-                name: c['name'] ?? '',
-                weight: (c['weight'] as num?)?.toInt() ?? 0,
-                desc: c['description'] ?? c['desc'] ?? '',
-              ))
-          .toList();
+      final parsed = list.map((c) => _Criterion(name: c['name'] ?? '')).toList();
       if (parsed.isNotEmpty) return parsed;
     } catch (_) {}
-    return [_Criterion(weight: (maxScore as num?)?.toInt() ?? 100)];
+    return [_Criterion()];
   }
 
   @override
   void dispose() {
     _titleC.dispose();
     _descC.dispose();
-    _scoreC.dispose();
     for (final c in _criteria) {
       c.dispose();
     }
@@ -234,11 +215,11 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
             ? allUrls.join('\n')
             : '$cleanDesc\n${allUrls.join('\n')}';
 
-    final maxScore = int.tryParse(_scoreC.text) ?? 100;
+    const maxScore = 100;
     final named = _criteria.where((c) => c.name.trim().isNotEmpty).toList();
     final finalCriteria = named.isEmpty
         ? [{'name': l.t('default_criterion'), 'weight': maxScore, 'description': ''}]
-        : named.map((c) => {'name': c.name, 'weight': c.weight, 'description': c.desc}).toList();
+        : named.map((c) => {'name': c.name, 'weight': maxScore, 'description': ''}).toList();
 
     try {
       if (_isEdit) {
@@ -313,14 +294,6 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
                 controller: _descC,
                 decoration: InputDecoration(hintText: l.t('assignment_desc_hint')),
                 maxLines: 4,
-                onChanged: (_) => _markDirty(),
-              ),
-              const SizedBox(height: 16),
-              _label(l.t('max_score')),
-              TextField(
-                controller: _scoreC,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(hintText: '100'),
                 onChanged: (_) => _markDirty(),
               ),
               const SizedBox(height: 16),
@@ -503,32 +476,16 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(color: Theme.of(context).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(AppRadii.tile)),
-      child: Column(children: [
-        Row(children: [
-          Text('${i + 1}', style: const TextStyle(fontSize: 13, color: C.text4)),
-          const SizedBox(width: 8),
-          Expanded(child: TextField(
-            controller: c.nameC,
-            decoration: InputDecoration(hintText: l.t('criterion_short'), contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)),
-            onChanged: (v) { c.name = v; _markDirty(); },
-          )),
-          const SizedBox(width: 8),
-          SizedBox(width: 60, child: TextField(
-            controller: c.weightC,
-            keyboardType: TextInputType.number,
-            textAlign: TextAlign.center,
-            decoration: const InputDecoration(contentPadding: EdgeInsets.symmetric(vertical: 10)),
-            onChanged: (v) { c.weight = int.tryParse(v) ?? 0; _markDirty(); },
-          )),
-          const SizedBox(width: 4),
-          Tappable(onTap: () => _removeCriterion(i), child: const Icon(CupertinoIcons.xmark, size: 16, color: C.red)),
-        ]),
-        const SizedBox(height: 6),
-        TextField(
-          controller: c.descC,
-          decoration: InputDecoration(hintText: l.t('criterion_desc'), contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)),
-          onChanged: (v) { c.desc = v; _markDirty(); },
-        ),
+      child: Row(children: [
+        Text('${i + 1}', style: const TextStyle(fontSize: 13, color: C.text4)),
+        const SizedBox(width: 8),
+        Expanded(child: TextField(
+          controller: c.nameC,
+          decoration: InputDecoration(hintText: l.t('criterion_short'), contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)),
+          onChanged: (v) { c.name = v; _markDirty(); },
+        )),
+        const SizedBox(width: 4),
+        Tappable(onTap: () => _removeCriterion(i), child: const Icon(CupertinoIcons.xmark, size: 16, color: C.red)),
       ]),
     );
   }

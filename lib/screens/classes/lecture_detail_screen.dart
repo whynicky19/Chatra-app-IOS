@@ -65,25 +65,28 @@ class LectureDetailScreen extends StatelessWidget {
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   _MetaRow(dateLabel: dateLabel, fileCount: files.length, l: l),
                   const SizedBox(height: 28),
-                  if (content.isNotEmpty)
-                    Text(
-                      content,
-                      textAlign: TextAlign.left,
-                      style: TextStyle(fontSize: 17, height: 1.65, letterSpacing: 0.1, color: detailText1(context)),
-                    ),
-                  if (files.isNotEmpty) ...[
-                    SizedBox(height: content.isNotEmpty ? 36 : 0),
-                    Text(l.t('attached_files_edit'),
-                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: detailText1(context))),
-                    const SizedBox(height: 12),
-                    for (final f in files) ...[
-                      FileCard(
-                        name: _fileDisplayName(f),
-                        onTap: () => onOpenFile(context, f, _fileDisplayName(f)),
-                      ),
-                      const SizedBox(height: 10),
-                    ],
-                  ],
+                  if (content.isNotEmpty || files.isNotEmpty)
+                    sectionCard(context, isDark, children: [
+                      if (content.isNotEmpty)
+                        Text(
+                          content,
+                          textAlign: TextAlign.left,
+                          style: TextStyle(fontSize: 17, height: 1.65, letterSpacing: 0.1, color: detailText1(context)),
+                        ),
+                      if (files.isNotEmpty) ...[
+                        if (content.isNotEmpty) const SizedBox(height: 20),
+                        Text(l.t('attached_files_edit'),
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: detailText1(context))),
+                        const SizedBox(height: 12),
+                        for (final f in files) ...[
+                          FileCard(
+                            name: _fileDisplayName(f),
+                            onTap: () => onOpenFile(context, f, _fileDisplayName(f)),
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                      ],
+                    ]),
                   if (content.isEmpty && files.isEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 48),

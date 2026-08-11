@@ -372,7 +372,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
 
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 16),
-                    child: _sectionCard(context, isDark, children: [
+                    child: sectionCard(context, isDark, children: [
                       Row(children: [
                         Expanded(child: Text(l.t('description'),
                             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: detailText1(context)))),
@@ -404,6 +404,9 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                         ]),
                       ] else if (allFiles.isNotEmpty) ...[
                         const SizedBox(height: 12),
+                        Text(l.t('task_files'),
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: detailText2(context))),
+                        const SizedBox(height: 8),
                         for (final f in allFiles) ...[
                           FileCard(name: fileDisplayName(f), previewUrl: f, onTap: () => widget.onOpenFile(f, fileDisplayName(f))),
                           const SizedBox(height: 8),
@@ -421,8 +424,10 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                 return [
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16),
-                    child: _sectionCard(context, isDark, children: [
+                    child: sectionCard(context, isDark, children: [
                       Text(l.t('reference_files'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: detailText1(context))),
+                      const SizedBox(height: 4),
+                      Text(l.t('reference_files_hint'), style: TextStyle(fontSize: 12, color: detailText2(context))),
                       const SizedBox(height: 12),
                       for (final f in refFiles) ...[
                         FileCard(name: fileDisplayName(f), previewUrl: f, onTap: () => widget.onOpenFile(f, fileDisplayName(f))),
@@ -437,7 +442,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
               if (sub != null && (sub['text_content'] != null || sub['file_urls'] != null))
                 Padding(
                   padding: const EdgeInsets.only(bottom: 16),
-                  child: _sectionCard(context, isDark, children: [
+                  child: sectionCard(context, isDark, children: [
                     Text(l.t('your_answer'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: detailText1(context))),
                     if (sub['text_content'] != null && sub['text_content'].toString().isNotEmpty) ...[
                       const SizedBox(height: 8),
@@ -702,21 +707,6 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
     );
   }
 
-  // Базовая "сгруппированная" карточка в духе Apple Health/Notion — светлая
-  // заливка, мягкая тень вместо рамки, без вложенных под-карточек.
-  Widget _sectionCard(BuildContext context, bool isDark, {required List<Widget> children}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: detailSurface(context),
-        borderRadius: BorderRadius.circular(AppRadii.card),
-        boxShadow: softShadow(isDark),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
-    );
-  }
-
   Widget _answerFileGrid(BuildContext context, List<String> urls) {
     return LayoutBuilder(builder: (ctx, constraints) {
       const gap = 8.0;
@@ -776,7 +766,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
     final feedback = (grade['feedback']?.toString() ?? '').trim();
     final accent = detailAccent(context);
 
-    return _sectionCard(context, isDark, children: [
+    return sectionCard(context, isDark, children: [
       Row(children: [
         Expanded(child: Text(l.t('preliminary_assessment'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: detailText1(context)))),
         if (gradedByAi)
@@ -908,7 +898,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
   }
 
   Widget _teacherCommentSection(BuildContext context, L10n l, bool isDark, String feedback) {
-    return _sectionCard(context, isDark, children: [
+    return sectionCard(context, isDark, children: [
       Row(children: [
         Icon(CupertinoIcons.person_crop_circle_fill, size: 16, color: detailText2(context)),
         const SizedBox(width: 7),
@@ -924,7 +914,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
   Widget _rubricPreviewCard(BuildContext context, L10n l, bool isDark, List<Map<String, dynamic>> rubric) {
     final maxScore = (a['max_score'] as num?) ?? 100;
     final accent = detailAccent(context);
-    return _sectionCard(context, isDark, children: [
+    return sectionCard(context, isDark, children: [
       Tappable(
         onTap: () => setState(() => _rubricExpanded = !_rubricExpanded),
         child: Row(children: [

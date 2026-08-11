@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../theme/app_theme.dart';
 
 /// Общая тёмная/светлая палитра для полноэкранных страниц лекции/задания —
 /// отдельная от основной темы приложения (там #F2F2F7/#1C1C1E), т.к. дизайн
@@ -32,3 +33,20 @@ Color detailText2(BuildContext context) {
 /// организации), а не хардкодится — иначе страница выпадает из общей темы
 /// при переключении школа/не школа.
 Color detailAccent(BuildContext context) => Theme.of(context).colorScheme.primary;
+
+/// Базовая "сгруппированная" карточка в духе Apple Health/Notion — светлая
+/// заливка, мягкая тень вместо рамки, без вложенных под-карточек. Общая для
+/// всех полноэкранных страниц лекции/задания, чтобы описание и файлы
+/// выглядели одинаково везде, а не только у заданий.
+Widget sectionCard(BuildContext context, bool isDark, {required List<Widget> children}) {
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: detailSurface(context),
+      borderRadius: BorderRadius.circular(AppRadii.card),
+      boxShadow: softShadow(isDark),
+    ),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
+  );
+}

@@ -196,6 +196,7 @@ class L10n extends ChangeNotifier {
       'ai_checking': 'ИИ проверяет вашу работу...',
       'task_badge': 'ЗАДАНИЕ',
       'description': 'Описание',
+      'task_files': 'Файлы задания',
       'show': 'Показать',
       'hide': 'Скрыть',
       'criteria': 'Критерии оценивания',
@@ -212,6 +213,7 @@ class L10n extends ChangeNotifier {
       'needs_review_toast': 'Отправлено на ручную проверку учителем',
       'confidence_label': 'Уверенность распознавания',
       'reference_files': 'Эталонное решение',
+      'reference_files_hint': 'Видно только вам — студенты этот файл не видят',
       'check_step_1': 'Подготавливаем файлы...',
       'check_step_2': 'Анализируем работу...',
       'check_step_3': 'Проверяем критерии...',
@@ -521,7 +523,7 @@ class L10n extends ChangeNotifier {
 
       'join_class_title': 'Войти в класс по коду',
       'join_class_hint': 'Введите 6-значный код класса, который вам дал преподаватель',
-      'join_enter_class': 'Войти в класс',
+      'join_enter_class': 'Войти',
       'enter_teacher_code': 'Введите код от преподавателя',
 
       'create_class_title': 'Создать класс',
@@ -944,6 +946,7 @@ class L10n extends ChangeNotifier {
       'ai_checking': 'ЖИ жұмысыңызды тексеруде...',
       'task_badge': 'ТАПСЫРМА',
       'description': 'Сипаттама',
+      'task_files': 'Тапсырма файлдары',
       'show': 'Көрсету',
       'hide': 'Жасыру',
       'criteria': 'Бағалау критерийлері',
@@ -960,6 +963,7 @@ class L10n extends ChangeNotifier {
       'needs_review_toast': 'Мұғалімнің қолмен тексеруіне жіберілді',
       'confidence_label': 'Тану сенімділігі',
       'reference_files': 'Эталон шешім',
+      'reference_files_hint': 'Тек сізге көрінеді — оқушылар бұл файлды көрмейді',
       'check_step_1': 'Файлдарды дайындап жатырмыз...',
       'check_step_2': 'Жұмысты талдап жатырмыз...',
       'check_step_3': 'Критерийлерді тексеріп жатырмыз...',
@@ -1269,7 +1273,7 @@ class L10n extends ChangeNotifier {
 
       'join_class_title': 'Кодпен сыныпқа кіру',
       'join_class_hint': 'Мұғалімнен алған 6 таңбалы кодты енгізіңіз',
-      'join_enter_class': 'Сыныпқа кіру',
+      'join_enter_class': 'Кіру',
       'enter_teacher_code': 'Мұғалімнен кодты енгізіңіз',
 
       'create_class_title': 'Сынып құру',
@@ -1692,6 +1696,7 @@ class L10n extends ChangeNotifier {
       'ai_checking': 'AI is reviewing your work...',
       'task_badge': 'ASSIGNMENT',
       'description': 'Description',
+      'task_files': 'Assignment files',
       'show': 'Show',
       'hide': 'Hide',
       'criteria': 'Grading criteria',
@@ -1708,6 +1713,7 @@ class L10n extends ChangeNotifier {
       'needs_review_toast': 'Sent for manual review by the teacher',
       'confidence_label': 'Recognition confidence',
       'reference_files': 'Reference solution',
+      'reference_files_hint': 'Visible only to you — students cannot see this file',
       'check_step_1': 'Preparing files...',
       'check_step_2': 'Analyzing your work...',
       'check_step_3': 'Checking criteria...',
@@ -2017,7 +2023,7 @@ class L10n extends ChangeNotifier {
 
       'join_class_title': 'Join Class by Code',
       'join_class_hint': 'Enter the 6-digit code your teacher gave you',
-      'join_enter_class': 'Join Class',
+      'join_enter_class': 'Join',
       'enter_teacher_code': 'Enter code from teacher',
 
       'create_class_title': 'Create Class',

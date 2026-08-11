@@ -151,6 +151,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 10),
                   Align(
                     alignment: Alignment.centerRight,
+                    widthFactor: 1,
                     child: Tappable(
                       onTap: _openForgot,
                       child: Text(l.t('forgot_password_link'),

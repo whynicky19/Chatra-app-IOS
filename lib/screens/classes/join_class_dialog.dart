@@ -142,7 +142,7 @@ class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(mainAxisSize: MainAxisSize.min, children: [
-        Align(alignment: Alignment.topRight,
+        Align(alignment: Alignment.topRight, widthFactor: 1,
           child: Tappable(onTap: () => Navigator.pop(context), label: 'Закрыть',
             child: Container(width: 30, height: 30, decoration: BoxDecoration(color: adaptiveSurface2(context), shape: BoxShape.circle),
               child: const Icon(CupertinoIcons.xmark, size: 15, color: C.text4)))),

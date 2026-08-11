@@ -276,26 +276,46 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   // Политика конфиденциальности обязана быть доступна В МОМЕНТ
                   // сбора данных, а не только в настройках после входа —
                   // Apple 5.1.1(i) и требования GDPR об информировании.
-                  Expanded(child: Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
-                    Tappable(
-                      onTap: () => setState(() => _agreedTerms = !_agreedTerms),
-                      child: Text('${l.t('terms_agree')} · ',
-                        style: TextStyle(fontSize: 13, color: adaptiveText3(context), fontWeight: FontWeight.w500)),
-                    ),
-                    Tappable(
-                      onTap: () => guardedPush(context,
-                        MaterialPageRoute(builder: (_) => const TermsOfServiceScreen())),
-                      child: Text(l.t('terms_view'),
-                        style: TextStyle(fontSize: 13, color: primary, fontWeight: FontWeight.w700)),
-                    ),
-                    const Text(' · ', style: TextStyle(fontSize: 13, color: C.text4)),
-                    Tappable(
-                      onTap: () => guardedPush(context,
-                        MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
-                      child: Text(l.t('pp_title'),
-                        style: TextStyle(fontSize: 13, color: primary, fontWeight: FontWeight.w700)),
-                    ),
-                  ])),
+                  // Wrap с явными spacing/runSpacing вместо разделителей,
+                  // "запечённых" внутрь строк текста (" · " как хвост первой
+                  // строки) — раньше при этом реальные промежутки между
+                  // ссылками были неравномерными (то символ пробела внутри
+                  // текста, то вообще без него), а каждая внутренняя Tappable
+                  // без minSize:0 растягивала свою строку до 44pt высоты,
+                  // из-за чего соседний обычный Text(' · ') оказывался
+                  // заметно смещён по вертикали относительно остальных
+                  // ссылок в той же строке. minSize:0 здесь уместен — это
+                  // инлайн-текст внутри абзаца, а не отдельная кнопка, и
+                  // достаточная область нажатия обеспечивается самим текстом
+                  // и spacing вокруг него.
+                  Expanded(child: Wrap(
+                    spacing: 6, runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Tappable(
+                        onTap: () => setState(() => _agreedTerms = !_agreedTerms),
+                        minSize: 0,
+                        child: Text(l.t('terms_agree'),
+                          style: TextStyle(fontSize: 13, color: adaptiveText3(context), fontWeight: FontWeight.w500)),
+                      ),
+                      const Text('·', style: TextStyle(fontSize: 13, color: C.text4)),
+                      Tappable(
+                        onTap: () => guardedPush(context,
+                          MaterialPageRoute(builder: (_) => const TermsOfServiceScreen())),
+                        minSize: 0,
+                        child: Text(l.t('terms_view'),
+                          style: TextStyle(fontSize: 13, color: primary, fontWeight: FontWeight.w700)),
+                      ),
+                      const Text('·', style: TextStyle(fontSize: 13, color: C.text4)),
+                      Tappable(
+                        onTap: () => guardedPush(context,
+                          MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
+                        minSize: 0,
+                        child: Text(l.t('pp_title'),
+                          style: TextStyle(fontSize: 13, color: primary, fontWeight: FontWeight.w700)),
+                      ),
+                    ],
+                  )),
                 ])),
                 const SizedBox(height: 18),
 

@@ -107,7 +107,17 @@ class _TappableState extends State<Tappable> {
       onLongPress: widget.onLongPress,
       child: ConstrainedBox(
         constraints: BoxConstraints(minWidth: widget.minSize, minHeight: widget.minSize),
+        // widthFactor/heightFactor: 1 — без них Center() по умолчанию
+        // ЗАПОЛНЯЕТ всё доступное пространство родителя (а не просто
+        // центрирует ребёнка внутри своего естественного размера). В
+        // обычных Row/Column родитель и так даёт тесные ограничения по
+        // главной оси, поэтому разница незаметна — но в "щедрых" по ширине
+        // слотах (например, leading: у CupertinoSliverNavigationBar) Center
+        // расползался на всю ширину навбара, визуально утаскивая маленькую
+        // кнопку "назад" в центр экрана вместо стандартной позиции у края.
         child: Center(
+          widthFactor: 1,
+          heightFactor: 1,
           child: AnimatedScale(
             scale: _pressed ? widget.scale : 1.0,
             duration: const Duration(milliseconds: 100),

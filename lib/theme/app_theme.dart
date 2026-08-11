@@ -265,6 +265,13 @@ class AppTheme {
       appBarTheme: const AppBarTheme(
         backgroundColor: C.surface, foregroundColor: C.text1,
         elevation: 0, surfaceTintColor: Colors.transparent,
+        // Material 3 иначе подставляет свой дефолт scrolledUnderElevation
+        // (~3) с непрозрачным shadowColor — под любым AppBar с прокручиваемым
+        // содержимым (assignment_editor_screen.dart, lecture_editor_screen.dart
+        // и т.п.) это рисует заметную тень/линию снизу бара при скролле, даже
+        // при elevation:0. Cupertino-навбары (CupertinoSliverNavigationBar,
+        // border: null) этой темы не касаются — там линия убирается иначе.
+        scrolledUnderElevation: 0, shadowColor: Colors.transparent,
       ),
       cardTheme: CardThemeData(
         color: C.surface, elevation: 0,
@@ -319,6 +326,7 @@ class AppTheme {
       appBarTheme: const AppBarTheme(
         backgroundColor: C.darkSurface, foregroundColor: C.darkText1,
         elevation: 0, surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0, shadowColor: Colors.transparent,
       ),
       cardTheme: CardThemeData(
         color: C.darkSurface, elevation: 0,

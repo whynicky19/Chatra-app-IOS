@@ -193,8 +193,15 @@ class AppButton extends StatelessWidget {
               ? primaryGlow(variant == AppButtonVariant.destructive ? C.red : (color ?? scheme.primary), opacity: 0.30)
               : null,
         ),
-        alignment: Alignment.center,
-        child: content,
+        // НЕ `alignment: Alignment.center` — Container оборачивает контент во
+        // ВНУТРЕННИЙ Align БЕЗ heightFactor (см. flutter/widgets/container.dart),
+        // и когда родитель даёт "щедрую"/неограниченную высоту (например,
+        // Scaffold.bottomNavigationBar), этот Align заполнял её целиком —
+        // кнопка "Отправить работу"/"Просмотр работ" разрасталась на весь
+        // экран, а тело экрана над ней схлопывалось в 0. `Center(heightFactor: 1)`
+        // здесь центрирует контент по ширине (как и раньше), но НЕ разрешает
+        // высоте вылезти за пределы content-height/minHeight.
+        child: Center(heightFactor: 1, child: content),
       ),
     );
   }

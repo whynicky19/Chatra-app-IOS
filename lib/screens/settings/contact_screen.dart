@@ -82,15 +82,23 @@ class _ContactScreenState extends State<ContactScreen> with SingleTickerProvider
         child: ListView(padding: const EdgeInsets.fromLTRB(16, 6, 16, 40), children: [
 
           Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 4),
-            child: Row(children: [
-              IconButton(
-                icon: Icon(CupertinoIcons.back, color: adaptiveText1(context)),
-                tooltip: 'Назад',
-                onPressed: () => Navigator.pop(context),
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Tappable(
+                onTap: () => Navigator.pop(context),
+                label: 'Назад',
+                child: Container(
+                  width: 38, height: 38,
+                  decoration: BoxDecoration(
+                    color: surface,
+                    shape: BoxShape.circle,
+                    boxShadow: softShadow(isDark),
+                  ),
+                  child: Icon(CupertinoIcons.chevron_left, size: 17, color: adaptiveText1(context)),
+                ),
               ),
-              const Spacer(),
-            ]),
+            ),
           ),
 
           _animated(Padding(

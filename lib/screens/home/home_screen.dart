@@ -380,20 +380,19 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 child: Tappable(
                   onTap: _showJoinDialog,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 30),
+                    padding: const EdgeInsets.symmetric(vertical: 26),
                     decoration: BoxDecoration(
                       color: surface,
                       borderRadius: BorderRadius.circular(AppRadii.card),
-                      border: Border.all(color: adaptiveBorder(context), width: 1.5),
-                      boxShadow: softShadow(isDark),
+                      boxShadow: cardShadow(isDark),
                     ),
                     child: Column(mainAxisSize: MainAxisSize.min, children: [
                       Container(width: 52, height: 52,
                         decoration: BoxDecoration(
+                          gradient: LinearGradient(colors: [primary.withValues(alpha: 0.18), primary.withValues(alpha: 0.06)]),
                           shape: BoxShape.circle,
-                          border: Border.all(color: adaptiveBorder(context), width: 1.5),
                         ),
-                        child: Icon(CupertinoIcons.add, color: adaptiveText1(context), size: 26)),
+                        child: Icon(CupertinoIcons.add, color: primary, size: 26)),
                       const SizedBox(height: 12),
                       Text(l.t('add_subject'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
                       const SizedBox(height: 3),

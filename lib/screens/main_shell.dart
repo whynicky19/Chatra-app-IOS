@@ -226,11 +226,12 @@ class _MainShellState extends State<MainShell>
       ),
       Positioned(
         // Снаружи нет Scaffold/SafeArea (см. комментарий выше про клавиатуру) —
-        // bottom:16 сам по себе отмерялся от истинного края экрана, без учёта
+        // bottom:10 сам по себе отмерялся от истинного края экрана, без учёта
         // Home Indicator: на iPhone с ним (safe-area ≈34pt) плавающий бар
         // оказывался заметно ближе к краю, чем должен. Добавляем safe-area
-        // инсет вручную поверх базового отступа.
-        left: 16, right: 16, bottom: 16 + MediaQuery.of(context).padding.bottom,
+        // инсет вручную поверх базового отступа. Базовый отступ занижен с 16
+        // до 10 — ближе к низу, как у плавающих таб-баров в Telegram/iOS.
+        left: 16, right: 16, bottom: 10 + MediaQuery.of(context).padding.bottom,
         child: RepaintBoundary(
           child: FadeTransition(
             opacity: CurvedAnimation(
@@ -241,57 +242,68 @@ class _MainShellState extends State<MainShell>
               position: Tween<Offset>(begin: const Offset(0, 1.2), end: Offset.zero)
                   .animate(CurvedAnimation(parent: _navAnim, curve: Curves.easeOutCubic)),
               child: LayoutBuilder(builder: (context, constraints) {
-                return LiquidGlassBottomNavBar(
-                  items: items
-                      .map((it) => LiquidGlassTabBarItem(
-                            icon: it.inactive,
-                            selectedIcon: it.active,
-                            label: it.label,
-                          ))
-                      .toList(),
-                  selectedIndex: idx,
-                  onChanged: _onTap,
-                  width: constraints.maxWidth,
-                  height: 64,
-                  itemPadding: 6,
-                  style: LiquidGlassStyle(
-                    shape: const LiquidGlassShape.roundedRectangle(
-                      cornerRadius: 32,
-                      borderWidth: 1.0,
-                      lightIntensity: 0.35,
-                      borderType: OpticalBorder(
-                        borderSaturation: 1.0,
-                        ambientIntensity: 0.30,
-                        borderSolidity: 0.25,
-                        lightSpread: 0.35,
+                // Мягкая тень под баром — как у плавающих таб-баров в
+                // Telegram/iOS: не заливка, только boxShadow поверх
+                // прозрачного Container той же формы, что и пилюля бара
+                // (cornerRadius: 32 ниже), иначе тень рисовалась бы
+                // прямоугольником и торчала из-под скруглённых углов.
+                return Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(32),
+                    boxShadow: cardShadow(isDark),
+                  ),
+                  child: LiquidGlassBottomNavBar(
+                    items: items
+                        .map((it) => LiquidGlassTabBarItem(
+                              icon: it.inactive,
+                              selectedIcon: it.active,
+                              label: it.label,
+                            ))
+                        .toList(),
+                    selectedIndex: idx,
+                    onChanged: _onTap,
+                    width: constraints.maxWidth,
+                    height: 64,
+                    itemPadding: 6,
+                    style: LiquidGlassStyle(
+                      shape: const LiquidGlassShape.roundedRectangle(
+                        cornerRadius: 32,
+                        borderWidth: 1.0,
+                        lightIntensity: 0.35,
+                        borderType: OpticalBorder(
+                          borderSaturation: 1.0,
+                          ambientIntensity: 0.30,
+                          borderSolidity: 0.25,
+                          lightSpread: 0.35,
+                        ),
+                      ),
+                      appearance: LiquidGlassAppearance(
+                        color: isDark ? const Color(0x26000000) : const Color(0x26FFFFFF),
+                        blur: const LiquidGlassBlur(sigmaX: 6, sigmaY: 6),
+                      ),
+                      refraction: const LiquidGlassRefraction(
+                        distortion: 0.06,
+                        distortionWidth: 24,
+                        chromaticAberration: 0.0,
                       ),
                     ),
-                    appearance: LiquidGlassAppearance(
-                      color: isDark ? const Color(0x26000000) : const Color(0x26FFFFFF),
-                      blur: const LiquidGlassBlur(sigmaX: 6, sigmaY: 6),
+                    itemStyle: LiquidGlassNavItemStyle(
+                      selectedColor: Theme.of(context).colorScheme.primary,
+                      unselectedColor: isDark
+                          ? Colors.white.withValues(alpha: 0.80)
+                          : const Color(0xFF3C4043),
+                      iconSize: 23,
+                      labelFontSize: 10.5,
+                      selectedFontWeight: FontWeight.w700,
+                      unselectedFontWeight: FontWeight.w500,
                     ),
-                    refraction: const LiquidGlassRefraction(
-                      distortion: 0.06,
-                      distortionWidth: 24,
-                      chromaticAberration: 0.0,
+                    pillStyle: LiquidGlassNavPillStyle(
+                      mode: LiquidGlassPillMode.none,
+                      animated: true,
+                      animationDuration: const Duration(milliseconds: 240),
+                      animationCurve: Curves.easeOutCubic,
+                      color: isDark ? const Color(0x33FFFFFF) : const Color(0x59FFFFFF),
                     ),
-                  ),
-                  itemStyle: LiquidGlassNavItemStyle(
-                    selectedColor: Theme.of(context).colorScheme.primary,
-                    unselectedColor: isDark
-                        ? Colors.white.withValues(alpha: 0.80)
-                        : const Color(0xFF3C4043),
-                    iconSize: 23,
-                    labelFontSize: 10.5,
-                    selectedFontWeight: FontWeight.w700,
-                    unselectedFontWeight: FontWeight.w500,
-                  ),
-                  pillStyle: LiquidGlassNavPillStyle(
-                    mode: LiquidGlassPillMode.none,
-                    animated: true,
-                    animationDuration: const Duration(milliseconds: 240),
-                    animationCurve: Curves.easeOutCubic,
-                    color: isDark ? const Color(0x33FFFFFF) : const Color(0x59FFFFFF),
                   ),
                 );
               }),

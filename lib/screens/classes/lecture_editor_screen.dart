@@ -13,7 +13,7 @@ import '../../widgets/app_button.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
-import 'class_detail_utils.dart' show cleanPostTitle, fileDisplayName;
+import 'class_detail_utils.dart' show cleanPostTitle, encodeUploadedFileUrl, fileDisplayName;
 
 /// Полноэкранная форма лекции — создание (`post == null`) и редактирование.
 /// Раньше это была шторка (`showModalBottomSheet`): её можно было случайно
@@ -118,7 +118,7 @@ class _LectureEditorScreenState extends State<LectureEditorScreen> {
         final res = await api.uploadFile(path, pf.name);
         final url = res['url'] ?? res['file_url'] ?? res['path'];
         if (url == null || url.toString().isEmpty) throw Exception('upload_failed');
-        fileUrls.add('$url#${Uri.encodeComponent(pf.name)}');
+        fileUrls.add('${encodeUploadedFileUrl(url.toString())}#${Uri.encodeComponent(pf.name)}');
       }
     } catch (_) {
       if (mounted) {

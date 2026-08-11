@@ -33,6 +33,16 @@ void main() {
       const u = '$host/uploads/a.docx?exp=1&sig=2';
       expect(extractFileUrls(u), [u]);
     });
+
+    // Бэкенд иногда отдаёт путь с "сырым" (не percent-encoded) пробелом в
+    // имени файла — раньше вся ссылка целиком считалась одним "без
+    // пробелов" куском, и такой URL не находился вообще, оставаясь виден
+    // в описании как обычный текст.
+    test('путь с пробелом в имени файла (не percent-encoded)', () {
+      const u = '$host/uploads/r2/attachments/2a8b9cff_Laboratory work No 1_4.docx'
+          '?exp=1786524120&sig=64234cc794e1ce4777#Laboratory%20work%20No%201.docx';
+      expect(extractFileUrls('Материалы: $u'), [u]);
+    });
   });
 
   group('не тащит лишнюю пунктуацию', () {

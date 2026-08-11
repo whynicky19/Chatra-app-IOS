@@ -166,7 +166,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final l       = context.watch<L10n>();
     final provider = context.watch<ClassesProvider>();
     final isDark  = Theme.of(context).brightness == Brightness.dark;
-    final surface = Theme.of(context).colorScheme.surface;
     final primary = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
@@ -369,40 +368,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ),
             ),
 
-          if (!auth.isTeacher && !provider.loading && provider.classes.isNotEmpty)
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(16, 14, 16, bottomBarClearance(context)),
-              sliver: SliverToBoxAdapter(child: TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0.0, end: 1.0),
-                duration: const Duration(milliseconds: 500),
-                curve: Curves.easeOutCubic,
-                builder: (_, t, child) => Opacity(opacity: t, child: child),
-                child: Tappable(
-                  onTap: _showJoinDialog,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 26),
-                    decoration: BoxDecoration(
-                      color: surface,
-                      borderRadius: BorderRadius.circular(AppRadii.card),
-                      boxShadow: cardShadow(isDark),
-                    ),
-                    child: Column(mainAxisSize: MainAxisSize.min, children: [
-                      Container(width: 52, height: 52,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(colors: [primary.withValues(alpha: 0.18), primary.withValues(alpha: 0.06)]),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(CupertinoIcons.add, color: primary, size: 26)),
-                      const SizedBox(height: 12),
-                      Text(l.t('add_subject'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
-                      const SizedBox(height: 3),
-                      Text(l.t('enter_teacher_code'), style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
-                    ]),
-                  ),
-                ),
-              )),
-            )
-          else if (!provider.loading)
+          // Карточка "Добавить предмет" после списка классов — убрана по
+          // просьбе: у студента и так есть кнопка вступления по коду в шапке
+          // экрана (_showJoinDialog там же), дублировать её отдельной
+          // карточкой снизу не нужно.
+          if (!provider.loading)
             SliverToBoxAdapter(child: SizedBox(height: bottomBarClearance(context))),
         ]),
       ),

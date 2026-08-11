@@ -15,7 +15,7 @@ import '../../widgets/app_dialog.dart';
 import '../../widgets/cupertino_date_sheet.dart';
 import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
-import 'class_detail_utils.dart' show cleanContent, fileDisplayName, fileUrlRe, mdFileRe;
+import 'class_detail_utils.dart' show cleanContent, encodeUploadedFileUrl, fileDisplayName, fileUrlRe, mdFileRe;
 
 /// Контроллеры критерия обязаны жить столько же, сколько сама строка, а не
 /// пересоздаваться на каждой перестройке экрана — иначе TextField теряет
@@ -195,7 +195,7 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
         final res = await api.uploadFile(path, pf.name);
         final url = res['url'] ?? res['file_url'] ?? res['path'];
         if (url == null || url.toString().isEmpty) throw Exception('upload_failed');
-        uploadedUrls.add('$url#${Uri.encodeComponent(pf.name)}');
+        uploadedUrls.add('${encodeUploadedFileUrl(url.toString())}#${Uri.encodeComponent(pf.name)}');
       }
     } catch (_) {
       if (mounted) {

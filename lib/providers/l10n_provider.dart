@@ -371,7 +371,6 @@ class L10n extends ChangeNotifier {
 
       'welcome': 'Добро пожаловать',
       'org_brand_line': 'в Chatra',
-      'org_subtitle': 'Выберите тип организации —\nоформление настроится под него.',
       'org_university': 'Университет',
       'org_uni_sub': 'Высшее образование',
       'org_school': 'Школа',
@@ -1120,7 +1119,6 @@ class L10n extends ChangeNotifier {
 
       'welcome': 'Қош келдіңіз',
       'org_brand_line': 'Chatra-ға',
-      'org_subtitle': 'Ұйым түрін таңдаңыз —\nсыртқы көрінісі соған бейімделеді.',
       'org_university': 'Университет',
       'org_uni_sub': 'Жоғары білім',
       'org_school': 'Мектеп',
@@ -1869,7 +1867,6 @@ class L10n extends ChangeNotifier {
 
       'welcome': 'Welcome',
       'org_brand_line': 'to Chatra',
-      'org_subtitle': 'Choose your organization type —\nthe interface will adapt to it.',
       'org_university': 'University',
       'org_uni_sub': 'Higher education',
       'org_school': 'School',

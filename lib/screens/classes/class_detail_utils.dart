@@ -29,8 +29,16 @@ String fmtDate(String? d) {
 }
 
 // Обязана понимать подпись ?exp=&sig= — иначе подписанные ссылки не видны как вложения.
+//
+// Хост (`[^\s/]+`) отдельно от пути (`[^\n"<>]*?`) — раньше вся ссылка целиком
+// была одним "без пробелов" куском, и если бэкенд возвращал путь с "сырым"
+// (не percent-encoded) пробелом в имени файла (бывает — см. encodeUploadedFileUrl
+// в этом же файле, где мы теперь это чиним на загрузке), regex переставал
+// матчить ссылку целиком, и она оставалась видна в тексте как есть. Пробелы
+// в ХОСТЕ невозможны в принципе, поэтому там ограничение осталось прежним —
+// это не ослабляет матчинг, просто путь после первого "/" уже терпит пробелы.
 final RegExp fileUrlRe = RegExp(
-    r'https?://[^\s"<>]+?\.(pdf|docx?|pptx?|xlsx?|txt|md|csv|rtf|png|jpe?g|gif|webp|mp3|wav|m4a|webm|ogg|mp4)'
+    r'https?://[^\s/]+/[^\n"<>]*?\.(pdf|docx?|pptx?|xlsx?|txt|md|csv|rtf|png|jpe?g|gif|webp|mp3|wav|m4a|webm|ogg|mp4)'
     r'(\?[^\s"<>]*)?(#[^\s"<>]*)?',
     caseSensitive: false);
 // URL внутри скобок может содержать пробелы (оригинальное имя файла в пути,
@@ -59,6 +67,28 @@ String fileDisplayName(String url) {
 String cleanFileUrl(String url) {
   final idx = url.indexOf('#');
   return idx >= 0 ? url.substring(0, idx) : url;
+}
+
+/// Бэкенд иногда отдаёт путь загруженного файла с "сырыми" (не
+/// percent-encoded) пробелами в имени — например
+/// `.../attachments/Laboratory work No 1.docx?exp=...&sig=...`. Такой URL
+/// не проходит по `fileUrlRe`/`mdFileRe` при последующей чистке описания
+/// (обе регулярки требуют "\S+" до расширения) и остаётся виден пользователю
+/// как обычный текст прямо в теле задания/лекции. Кодируем ТОЛЬКО сегмент
+/// имени файла — часть между последним "/" и началом query ("?") — не
+/// трогая scheme/host/уже закодированный query со ?exp=&sig=.
+String encodeUploadedFileUrl(String rawUrl) {
+  final qIdx = rawUrl.indexOf('?');
+  final head = qIdx == -1 ? rawUrl : rawUrl.substring(0, qIdx);
+  final tail = qIdx == -1 ? '' : rawUrl.substring(qIdx);
+  final slashIdx = head.lastIndexOf('/');
+  if (slashIdx == -1) return rawUrl;
+  final dir = head.substring(0, slashIdx + 1);
+  final name = head.substring(slashIdx + 1);
+  // Уже закодированное имя (нет пробелов/спецсимволов) кодировать повторно
+  // не нужно — Uri.encodeComponent на "%20" превратил бы его в "%2520".
+  if (RegExp(r'^[A-Za-z0-9._~%-]*$').hasMatch(name)) return rawUrl;
+  return '$dir${Uri.encodeComponent(name)}$tail';
 }
 
 /// Путь файла без query (?exp=&sig=) и #fragment — подпись сервер выдаёт

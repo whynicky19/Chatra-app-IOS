@@ -142,7 +142,13 @@ class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(mainAxisSize: MainAxisSize.min, children: [
-        Align(alignment: Alignment.topRight, widthFactor: 1,
+        // Без widthFactor: внешний Column здесь без явного crossAxisAlignment
+        // (по умолчанию center) — если Align сжать widthFactor'ом до размера
+        // самой кнопки, Column тут же отцентрирует уже маленький Align по
+        // своим правилам, и кнопка "закрыть" уедет в середину. Без
+        // widthFactor Align сам заполняет всю ширину карточки и кладёт
+        // ребёнка в её правый верхний угол — так и было изначально верно.
+        Align(alignment: Alignment.topRight,
           child: Tappable(onTap: () => Navigator.pop(context), label: 'Закрыть',
             child: Container(width: 30, height: 30, decoration: BoxDecoration(color: adaptiveSurface2(context), shape: BoxShape.circle),
               child: const Icon(CupertinoIcons.xmark, size: 15, color: C.text4)))),

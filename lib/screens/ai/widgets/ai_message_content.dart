@@ -3,6 +3,7 @@ import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/l10n_provider.dart';
+import '../../../widgets/tappable.dart';
 import '../../../widgets/toast.dart';
 import '../../../utils/haptics.dart';
 
@@ -187,7 +188,11 @@ class AiMessageContent extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
         decoration: BoxDecoration(color: const Color(0xFF0A0A16), borderRadius: BorderRadius.circular(8)),
-        child: Stack(children: [
+        // Clip.none: кнопка копирования нарочно чуть "вылезает" за границы
+        // код-блока (top:-4, right:-4) в отступ самого Container — по
+        // умолчанию Stack обрезает всё за своими границами (Clip.hardEdge),
+        // из-за чего иконка подрезалась по верхнему/правому краю.
+        child: Stack(clipBehavior: Clip.none, children: [
           Padding(
             // Место справа под кнопку копирования, чтобы не наезжала на код.
             padding: const EdgeInsets.only(right: 30, top: 2),
@@ -198,12 +203,13 @@ class AiMessageContent extends StatelessWidget {
           ),
           Positioned(
             top: -4, right: -4,
-            child: Builder(builder: (ctx) => GestureDetector(
+            child: Builder(builder: (ctx) => Tappable(
               onTap: () {
                 hapticSelection();
                 Clipboard.setData(ClipboardData(text: code));
                 showToast(ctx, ctx.read<L10n>().t('copied'));
               },
+              label: 'Скопировать код',
               behavior: HitTestBehavior.opaque,
               child: const Padding(
                 padding: EdgeInsets.all(6),

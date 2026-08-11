@@ -149,9 +149,16 @@ class _LoginScreenState extends State<LoginScreen> {
                     onSubmitted: (_) => _submit(),
                   ),
                   const SizedBox(height: 10),
+                  // ВАЖНО: без widthFactor. Column выше — crossAxisAlignment.start,
+                  // и если Align сжимается widthFactor'ом до размера текста
+                  // ссылки, именно ЭТОТ Column выравнивает уже маленький Align
+                  // по СВОЕМУ crossAxisAlignment (start = слева) — ссылка
+                  // "уезжает" налево. Без widthFactor Align сам заполняет всю
+                  // ширину поля и центрирует текст у правого края — то, что
+                  // нужно (уже было так, но по ошибке "защитно" сломал в
+                  // прошлый раз, добавив widthFactor).
                   Align(
                     alignment: Alignment.centerRight,
-                    widthFactor: 1,
                     child: Tappable(
                       onTap: _openForgot,
                       child: Text(l.t('forgot_password_link'),

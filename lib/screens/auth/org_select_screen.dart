@@ -99,10 +99,6 @@ class _OrgSelectScreenState extends State<OrgSelectScreen> {
                       color: hasPick ? _accent : adaptiveText1(context)),
                     child: Text(l.t('org_brand_line'), textAlign: TextAlign.center),
                   ),
-                  const SizedBox(height: 10),
-                  Text(l.t('org_subtitle'),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 15, color: adaptiveText3(context), height: 1.4)),
                 ])),
                 const SizedBox(height: 36),
 

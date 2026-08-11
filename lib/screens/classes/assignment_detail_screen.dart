@@ -202,7 +202,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
         final res = await api.uploadFile(path, pf.name);
         final url = res['url'] ?? res['file_url'] ?? res['path'];
         if (url == null) throw _UploadFailure(pf.name);
-        fileUrls.add('$url#${Uri.encodeComponent(pf.name)}');
+        fileUrls.add('${encodeUploadedFileUrl(url.toString())}#${Uri.encodeComponent(pf.name)}');
         if (mounted) setState(() { _uploadedNames.add(pf.name); _uploadingName = null; });
       }
       await api.submitAssignment(a['id'], {

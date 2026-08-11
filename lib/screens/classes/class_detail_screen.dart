@@ -360,7 +360,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     splashFactory: NoSplash.splashFactory,
                     overlayColor: WidgetStateProperty.all(Colors.transparent),
                     labelColor: adaptiveText1(context),
-                    unselectedLabelColor: C.text4,
+                    unselectedLabelColor: adaptiveText3(context),
                     labelPadding: const EdgeInsets.symmetric(horizontal: 2),
                     labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: -0.1),
                     unselectedLabelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, letterSpacing: -0.1),
@@ -426,6 +426,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   posts: _lectures, isTeacher: auth.isTeacher,
                   onShowPost: _showPost, onEditPost: _editPost,
                   onDeletePost: (id) async { try { await context.read<ApiService>().deletePost(id); _load(); } catch (_) {} },
+                  onRefresh: _load,
                 ),
                 ClassAssignmentsTab(
                   assignments: _assignments, mySubs: _mySubs, rating: _rating,
@@ -627,10 +628,10 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(AppRadii.chip))),
             Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: Row(children: [
               Expanded(child: Text(l.t('assignment_variants'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800))),
-              IconButton(icon: const Icon(CupertinoIcons.xmark), onPressed: () => Navigator.pop(ctx)),
+              IconButton(icon: const Icon(CupertinoIcons.xmark), tooltip: 'Закрыть', onPressed: () => Navigator.pop(ctx)),
             ])),
             Expanded(child: variants == null
-                ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))
+                ? Center(child: CupertinoActivityIndicator(radius: 13, color: Theme.of(context).colorScheme.primary))
                 : ListView(controller: scroll, padding: const EdgeInsets.fromLTRB(20, 8, 20, 24), children: [
                     TextField(controller: variantTitleC, decoration: InputDecoration(hintText: l.t('variant_title_hint'))),
                     const SizedBox(height: 8),
@@ -745,7 +746,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               child: Icon(CupertinoIcons.pencil, color: Theme.of(context).colorScheme.primary, size: 22)),
             const SizedBox(width: 12),
             Expanded(child: Text(l.t('edit_class'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800))),
-            IconButton(icon: const Icon(CupertinoIcons.xmark), onPressed: () => Navigator.pop(ctx)),
+            IconButton(icon: const Icon(CupertinoIcons.xmark), tooltip: 'Закрыть', onPressed: () => Navigator.pop(ctx)),
           ]),
           const SizedBox(height: 24),
           _fieldLabel2(l.t('class_cover')),
@@ -857,7 +858,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               child: Icon(CupertinoIcons.gear_alt_fill, color: Theme.of(context).colorScheme.primary, size: 20)),
             const SizedBox(width: 12),
             Expanded(child: Text(l.t('class_settings'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800))),
-            IconButton(icon: const Icon(CupertinoIcons.xmark), onPressed: () => Navigator.pop(ctx)),
+            IconButton(icon: const Icon(CupertinoIcons.xmark), tooltip: 'Закрыть', onPressed: () => Navigator.pop(ctx)),
           ]),
           const SizedBox(height: 20),
           if (inviteCode.isNotEmpty) ...[

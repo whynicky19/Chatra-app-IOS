@@ -12,6 +12,7 @@ import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/image_cache.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/app_dialog.dart';
 import '../../widgets/network_cover_image.dart';
 import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
@@ -19,12 +20,15 @@ import '../../widgets/toast.dart';
 /// Диалог ввода кода приглашения — оформлен в стиле остального приложения
 /// (нейтральные поверхности, акцентный цвет только у кнопки и активной
 /// рамки поля), но без синего фона/иконки, как было раньше.
+///
+/// Presentation — через `showAppDialog`/`AppDialogCard` (тот же spring-bounce
+/// вход, тот же `AppRadii.card`, тот же фон), что и у всех остальных диалогов
+/// приложения (`showConfirmDialog`, `showInputDialog`). Раньше это был голый
+/// Material `Dialog` с дефолтным плоским fade — единственный диалог в
+/// приложении с другим "мотором" появления.
 Future<void> showJoinClassDialog(BuildContext context) {
-  return showDialog(context: context, barrierDismissible: true,
-    builder: (_) => const Dialog(
-      insetPadding: EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      child: _JoinClassDialogContent(),
-    ),
+  return showAppDialog(context,
+    builder: (_) => const AppDialogCard(child: _JoinClassDialogContent()),
   );
 }
 
@@ -137,9 +141,7 @@ class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
     final primary = Theme.of(context).colorScheme.primary;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(28, 24, 28, 28),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
+    return Column(mainAxisSize: MainAxisSize.min, children: [
         Align(alignment: Alignment.topRight,
           child: Tappable(onTap: () => Navigator.pop(context), label: 'Закрыть',
             child: Container(width: 30, height: 30, decoration: BoxDecoration(color: adaptiveSurface2(context), shape: BoxShape.circle),
@@ -153,7 +155,7 @@ class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
           style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800, letterSpacing: -0.3, color: adaptiveText1(context))),
         const SizedBox(height: 8),
         Text(l.t('join_class_hint'), textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 13, color: C.text4, height: 1.5)),
+          style: TextStyle(fontSize: 13, color: adaptiveText3(context), height: 1.5)),
         const SizedBox(height: 24),
 
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: List.generate(6, (i) =>
@@ -190,7 +192,7 @@ class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
           child: Row(mainAxisSize: MainAxisSize.min, children: [
             const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
             const SizedBox(width: 10),
-            Text(l.t('checking_code'), style: const TextStyle(fontSize: 13, color: C.text4)),
+            Text(l.t('checking_code'), style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
           ])),
 
         if (!_lookingUp && _notFound) Padding(padding: const EdgeInsets.only(top: 16),
@@ -229,7 +231,7 @@ class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
                   Expanded(child: Text(_foundClass!['title'] ?? '', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis)),
                 ]),
                 if ((_foundClass!['teacher_name'] ?? '').toString().isNotEmpty) Padding(padding: const EdgeInsets.only(top: 3, left: 21),
-                  child: Text(_foundClass!['teacher_name'], style: const TextStyle(fontSize: 13, color: C.text4, fontWeight: FontWeight.w600))),
+                  child: Text(_foundClass!['teacher_name'], style: TextStyle(fontSize: 13, color: adaptiveText3(context), fontWeight: FontWeight.w600))),
               ])),
             ]))),
 
@@ -246,7 +248,6 @@ class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
             onPressed: _busy || _notFound ? null : _join,
           )),
         ]),
-      ]),
-    );
+      ]);
   }
 }

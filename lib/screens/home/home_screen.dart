@@ -253,7 +253,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
           if (provider.loading && provider.classes.isEmpty)
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, kBottomBarHeight),
+              padding: EdgeInsets.fromLTRB(16, 4, 16, bottomBarClearance(context)),
               sliver: SliverList(delegate: SliverChildBuilderDelegate(
                 (_, i) => TweenAnimationBuilder<double>(
                   tween: Tween(begin: 0.0, end: 1.0),
@@ -371,7 +371,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
           if (!auth.isTeacher && !provider.loading && provider.classes.isNotEmpty)
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, kBottomBarHeight),
+              padding: EdgeInsets.fromLTRB(16, 14, 16, bottomBarClearance(context)),
               sliver: SliverToBoxAdapter(child: TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0.0, end: 1.0),
                 duration: const Duration(milliseconds: 500),
@@ -404,7 +404,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               )),
             )
           else if (!provider.loading)
-            const SliverToBoxAdapter(child: SizedBox(height: kBottomBarHeight)),
+            SliverToBoxAdapter(child: SizedBox(height: bottomBarClearance(context))),
         ]),
       ),
     );

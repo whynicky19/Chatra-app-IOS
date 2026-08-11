@@ -113,7 +113,7 @@ class _QuotaCard extends StatelessWidget {
         if (quota.unlimited) ...[
           const SizedBox(height: 16),
           Text(l.t('ai_unlimited_note'),
-            style: const TextStyle(fontSize: 13, color: C.text4, height: 1.45)),
+            style: TextStyle(fontSize: 13, color: adaptiveText3(context), height: 1.45)),
         ] else ...[
           const SizedBox(height: 20),
 
@@ -155,7 +155,7 @@ class _QuotaCard extends StatelessWidget {
                 letterSpacing: -0.6, color: adaptiveText1(context))),
             const SizedBox(width: 7),
             Text(l.t('ai_used_suffix'),
-              style: const TextStyle(fontSize: 13, color: C.text4, fontWeight: FontWeight.w500)),
+              style: TextStyle(fontSize: 13, color: adaptiveText3(context), fontWeight: FontWeight.w500)),
           ]),
 
           const SizedBox(height: 3),
@@ -172,7 +172,7 @@ class _QuotaCard extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(child: Text(
               _resetLabel(l),
-              style: const TextStyle(fontSize: 13, color: C.text4, fontWeight: FontWeight.w500),
+              style: TextStyle(fontSize: 13, color: adaptiveText3(context), fontWeight: FontWeight.w500),
             )),
           ]),
         ],
@@ -209,7 +209,7 @@ class _InfoCard extends StatelessWidget {
         Icon(icon, size: 16, color: C.text4),
         const SizedBox(width: 10),
         Expanded(child: Text(text,
-          style: const TextStyle(fontSize: 13, color: C.text4, height: 1.45))),
+          style: TextStyle(fontSize: 13, color: adaptiveText3(context), height: 1.45))),
       ]),
     );
   }

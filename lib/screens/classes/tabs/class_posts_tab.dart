@@ -23,6 +23,7 @@ class ClassPostsTab extends StatelessWidget {
   final void Function(dynamic post, int num) onShowPost;
   final void Function(dynamic post) onEditPost;
   final void Function(int postId) onDeletePost;
+  final Future<void> Function() onRefresh;
 
   const ClassPostsTab({
     super.key,
@@ -31,6 +32,7 @@ class ClassPostsTab extends StatelessWidget {
     required this.onShowPost,
     required this.onEditPost,
     required this.onDeletePost,
+    required this.onRefresh,
   });
 
   @override
@@ -84,6 +86,7 @@ class ClassPostsTab extends StatelessWidget {
       child: CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
+        CupertinoSliverRefreshControl(onRefresh: onRefresh),
         SliverFillRemaining(
           hasScrollBody: false,
           child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -110,7 +113,15 @@ class ClassPostsTab extends StatelessWidget {
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       behavior: HitTestBehavior.translucent,
-      child: ListView.builder(padding: const EdgeInsets.fromLTRB(14, 14, 14, 90), itemCount: displayPosts.length, itemBuilder: (ctx, i) {
+      child: CustomScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      slivers: [
+        CupertinoSliverRefreshControl(onRefresh: onRefresh),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 90),
+          sliver: SliverList(delegate: SliverChildBuilderDelegate(
+            childCount: displayPosts.length,
+            (ctx, i) {
       final p = displayPosts[i];
       final body = preview(p);
       final num = displayPosts.length - i;
@@ -166,6 +177,10 @@ class ClassPostsTab extends StatelessWidget {
           ),
         )),
       );
-    }));
+    },
+          )),
+        ),
+      ]),
+    );
   }
 }

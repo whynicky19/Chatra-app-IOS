@@ -337,13 +337,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             )
           : _notifs.isEmpty
             ? _emptyState()
-            : RefreshIndicator(
-                color: Theme.of(context).colorScheme.primary,
-                onRefresh: _load,
-                child: ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
-                  itemCount: grouped.length,
-                  itemBuilder: (ctx, i) {
+            : CustomScrollView(
+                slivers: [
+                  CupertinoSliverRefreshControl(onRefresh: _load),
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+                    sliver: SliverList(delegate: SliverChildBuilderDelegate(
+                      childCount: grouped.length,
+                      (ctx, i) {
                     final item = grouped[i];
                     if (item is String) {
                       return Padding(
@@ -400,8 +401,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         ),
                       )),
                     );
-                  },
-                ),
+                      },
+                    )),
+                  ),
+                ],
               )),
       ])),
     );

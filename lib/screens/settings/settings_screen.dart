@@ -167,7 +167,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               const SizedBox(width: 14),
               Expanded(child: Text(l.t('language'),
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: adaptiveText1(context)))),
-              Text(_langLabel(l.lang), style: const TextStyle(fontSize: 15, color: C.text4)),
+              Text(_langLabel(l.lang), style: TextStyle(fontSize: 15, color: adaptiveText3(context))),
               const SizedBox(width: 6),
               const Icon(CupertinoIcons.chevron_right, size: 14, color: C.text4),
             ]),
@@ -249,7 +249,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                     style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: C.red)),
                   const SizedBox(height: 1),
                   Text(l.t('logout_sub'),
-                    style: const TextStyle(fontSize: 13, color: C.text4)),
+                    style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
                 ])),
                 const Icon(CupertinoIcons.chevron_right, size: 14, color: C.text4),
               ]),
@@ -294,7 +294,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(title,
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: adaptiveText1(context))),
-          Text(sub, style: const TextStyle(fontSize: 13, color: C.text4)),
+          Text(sub, style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
         ])),
         CupertinoLiquidSwitch(value: value, onChanged: onChanged, accent: primary),
       ]),
@@ -394,6 +394,6 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(left: 4, bottom: 2),
     child: Text(text,
-      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: C.text4, letterSpacing: 1.2)),
+      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: adaptiveText3(context), letterSpacing: 1.2)),
   );
 }

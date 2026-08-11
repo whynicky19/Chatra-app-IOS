@@ -86,6 +86,7 @@ class _ContactScreenState extends State<ContactScreen> with SingleTickerProvider
             child: Row(children: [
               IconButton(
                 icon: Icon(CupertinoIcons.back, color: adaptiveText1(context)),
+                tooltip: 'Назад',
                 onPressed: () => Navigator.pop(context),
               ),
               const Spacer(),
@@ -111,7 +112,7 @@ class _ContactScreenState extends State<ContactScreen> with SingleTickerProvider
               Text(
                 l.t('contact_page_desc'),
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 15, color: C.text4, height: 1.4)),
+                style: TextStyle(fontSize: 15, color: adaptiveText3(context), height: 1.4)),
             ]),
           ), 0.0, 0.5),
 
@@ -130,7 +131,7 @@ class _ContactScreenState extends State<ContactScreen> with SingleTickerProvider
                   Text('Telegram',
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveText1(context))),
                   const SizedBox(height: 1),
-                  Text(_telegramLabel, style: const TextStyle(fontSize: 13, color: C.text4)),
+                  Text(_telegramLabel, style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
                 ])),
               ]),
               const SizedBox(height: 16),

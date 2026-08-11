@@ -158,7 +158,7 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
                                     const SizedBox(height: 12),
                                     Text(l.t('click_to_upload'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveText1(context))),
                                     const SizedBox(height: 2),
-                                    const Text('JPG, PNG', style: TextStyle(fontSize: 12, color: C.text4)),
+                                    Text('JPG, PNG', style: TextStyle(fontSize: 12, color: adaptiveText3(context))),
                                   ]),
                           ),
                           if (_coverFile != null)

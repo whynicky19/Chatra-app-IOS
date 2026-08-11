@@ -11,7 +11,6 @@ import '../../widgets/toast.dart';
 import '../../widgets/telegram_logo.dart';
 import '../legal/privacy_policy_screen.dart';
 import '../legal/terms_of_service_screen.dart';
-import '../legal/terms_screen.dart';
 import 'contact_screen.dart';
 import 'settings_shared.dart';
 import '../../utils/nav_guard.dart';
@@ -41,15 +40,6 @@ class AboutSettingsScreen extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         SettingsActionCard(
-          icon: CupertinoIcons.checkmark_shield,
-          iconBg: primary,
-          title: l.t('terms_title'),
-          sub: l.t('terms_view'),
-          onTap: () => guardedPush(context,
-            MaterialPageRoute(builder: (_) => const TermsScreen())),
-        ),
-        const SizedBox(height: 16),
-        SettingsActionCard(
           icon: CupertinoIcons.lock_shield,
           iconBg: primary,
           title: l.t('pp_title'),
@@ -76,7 +66,7 @@ class AboutSettingsScreen extends StatelessWidget {
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveText1(context))),
                 const SizedBox(height: 1),
                 Text(l.t('contact_developer_sub'),
-                  style: const TextStyle(fontSize: 13, color: C.text4)),
+                  style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
               ])),
               const Icon(CupertinoIcons.chevron_right, size: 14, color: C.text4),
             ]),
@@ -126,7 +116,7 @@ class _VersionLabelState extends State<_VersionLabel> {
                   showToast(context, l.t('copied'));
                 },
           child: Text(text,
-              style: const TextStyle(fontSize: 13, color: C.text4)),
+              style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
         ),
       ),
     );

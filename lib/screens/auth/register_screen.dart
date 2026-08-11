@@ -10,7 +10,7 @@ import '../../widgets/app_button.dart';
 import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
 import '../legal/privacy_policy_screen.dart';
-import '../legal/terms_screen.dart';
+import '../legal/terms_of_service_screen.dart';
 import '../../utils/nav_guard.dart';
 import 'verify_email_screen.dart';
 
@@ -213,6 +213,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       suffixIcon: IconButton(
                         icon: Icon(_showPw ? CupertinoIcons.eye_slash : CupertinoIcons.eye,
                             color: C.text4, size: 18),
+                        tooltip: _showPw ? 'Скрыть пароль' : 'Показать пароль',
                         onPressed: () => setState(() => _showPw = !_showPw),
                       ),
                     ),
@@ -279,11 +280,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     Tappable(
                       onTap: () => setState(() => _agreedTerms = !_agreedTerms),
                       child: Text('${l.t('terms_agree')} · ',
-                        style: const TextStyle(fontSize: 13, color: C.text4, fontWeight: FontWeight.w500)),
+                        style: TextStyle(fontSize: 13, color: adaptiveText3(context), fontWeight: FontWeight.w500)),
                     ),
                     Tappable(
                       onTap: () => guardedPush(context,
-                        MaterialPageRoute(builder: (_) => const TermsScreen())),
+                        MaterialPageRoute(builder: (_) => const TermsOfServiceScreen())),
                       child: Text(l.t('terms_view'),
                         style: TextStyle(fontSize: 13, color: primary, fontWeight: FontWeight.w700)),
                     ),
@@ -306,7 +307,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 20),
                   Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Text('${l.t('has_account')} ', style: const TextStyle(fontSize: 13, color: C.text4)),
+                    Text('${l.t('has_account')} ', style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
                     Tappable(
                       onTap: widget.onGoLogin,
                       child: Text(l.t('login_link'), style: TextStyle(

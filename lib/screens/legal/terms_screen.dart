@@ -20,6 +20,7 @@ class TermsScreen extends StatelessWidget {
             child: Row(children: [
               IconButton(
                 icon: Icon(CupertinoIcons.back, color: adaptiveText1(context)),
+                tooltip: 'Назад',
                 onPressed: () => Navigator.pop(context),
               ),
               Expanded(child: Text(l.t('terms_title'),

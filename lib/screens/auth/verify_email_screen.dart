@@ -117,7 +117,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -0.6, height: 1.15, color: adaptiveText1(context))),
                 const SizedBox(height: 8),
                 Text(l.t('verify_email_sub'), textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 15, color: C.text4, height: 1.4)),
+                  style: TextStyle(fontSize: 15, color: adaptiveText3(context), height: 1.4)),
                 const SizedBox(height: 6),
                 Text('${l.t('sent_to')} ${widget.email}', textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 13, color: primary, fontWeight: FontWeight.w600)),
@@ -171,7 +171,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                   child: Text(
                     _cooldown > 0 ? '${l.t('resend_in')} $_cooldown${l.lang == 'EN' ? 's' : 'с'}' : l.t('resend_code'),
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700,
-                      color: _cooldown > 0 ? C.text4 : primary)),
+                      color: _cooldown > 0 ? adaptiveText3(context) : primary)),
                 )),
               ]),
             ),

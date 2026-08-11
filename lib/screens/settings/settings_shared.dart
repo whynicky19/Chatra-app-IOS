@@ -50,7 +50,7 @@ class SettingsActionCard extends StatelessWidget {
             Text(title, style: Theme.of(context).textTheme.titleMedium!.copyWith(
               color: titleColor ?? adaptiveText1(context))),
             const SizedBox(height: 1),
-            Text(sub, style: const TextStyle(fontSize: 13, color: C.text4)),
+            Text(sub, style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
           ])),
           const Icon(CupertinoIcons.chevron_right, size: 14, color: C.text4),
         ]),
@@ -323,7 +323,7 @@ class SheetField extends StatelessWidget {
         ),
       ),
       if (helper != null) Padding(padding: const EdgeInsets.only(top: 6, left: 2),
-        child: Text(helper!, style: const TextStyle(fontSize: 13, color: C.text4))),
+        child: Text(helper!, style: TextStyle(fontSize: 13, color: adaptiveText3(context)))),
     ]);
   }
 }

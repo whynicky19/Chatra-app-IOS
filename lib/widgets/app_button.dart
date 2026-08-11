@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import 'tappable.dart';
@@ -156,11 +157,7 @@ class AppButton extends StatelessWidget {
     }
 
     final content = loading
-        ? SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(strokeWidth: 2.2, color: fg),
-          )
+        ? CupertinoActivityIndicator(radius: 9, color: fg)
         : Row(
             mainAxisSize: MainAxisSize.min,
             children: [

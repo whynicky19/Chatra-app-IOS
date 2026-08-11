@@ -266,7 +266,7 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
           return Padding(
             padding: EdgeInsets.only(left: 8, top: i == 0 ? 2 : 14, bottom: 8),
             child: Text(item.toUpperCase(),
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: C.text4, letterSpacing: 1.0)),
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: adaptiveText3(context), letterSpacing: 1.0)),
           );
         }
         final t = item as AiThread;
@@ -346,7 +346,7 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
                           letterSpacing: -0.1))),
             ]),
             const SizedBox(height: 2),
-            Text(_relTime(t.updatedAt, l), style: const TextStyle(fontSize: 11, color: C.text4)),
+            Text(_relTime(t.updatedAt, l), style: TextStyle(fontSize: 11, color: adaptiveText3(context))),
           ])),
           Tappable(
             onTap: () => _showActions(t),

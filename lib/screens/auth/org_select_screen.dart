@@ -143,7 +143,7 @@ class _OrgSelectScreenState extends State<OrgSelectScreen> {
                 const SizedBox(height: 12),
                 Text(l.t('org_change_hint'),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 13, color: C.text4)),
+                  style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
               ]),
             ),
           )),
@@ -175,7 +175,7 @@ class _GlassButton extends StatelessWidget {
         onPressed: onPressed,
         width: w,
         height: 54,
-        foregroundColor: active ? Colors.white : C.text4,
+        foregroundColor: active ? Colors.white : adaptiveText3(context),
         fontSize: 17,
         fontWeight: FontWeight.w700,
         style: LiquidGlassStyle(
@@ -262,7 +262,7 @@ class _OrgCardState extends State<_OrgCard> {
               Text(widget.title,
                 style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: adaptiveText1(context))),
               const SizedBox(height: 2),
-              Text(widget.subtitle, style: const TextStyle(fontSize: 13, color: C.text4)),
+              Text(widget.subtitle, style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
             ])),
             AnimatedContainer(
               duration: const Duration(milliseconds: 240),

@@ -12,6 +12,7 @@ import '../../utils/dates.dart';
 import '../../utils/upload_limits.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_dialog.dart';
+import '../../widgets/cupertino_date_sheet.dart';
 import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
 import 'class_detail_utils.dart' show cleanContent, fileDisplayName, fileUrlRe, mdFileRe;
@@ -137,19 +138,17 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
   }
 
   Future<void> _pickDeadline() async {
-    final d = await showDatePicker(
-      context: context,
-      initialDate: _deadline ?? DateTime.now().add(const Duration(days: 7)),
-      firstDate: DateTime.now().subtract(const Duration(days: 1)),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+    final initial = _deadline ?? DateTime.now().add(const Duration(days: 7));
+    final picked = await showCupertinoDateTimeSheet(
+      context,
+      initialDateTime: DateTime(initial.year, initial.month, initial.day,
+          _deadline?.hour ?? 23, _deadline?.minute ?? 59),
+      minimumDate: DateTime.now().subtract(const Duration(days: 1)),
+      maximumDate: DateTime.now().add(const Duration(days: 365)),
+      title: 'Дедлайн',
     );
-    if (d == null || !mounted) return;
-    final t = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay(hour: _deadline?.hour ?? 23, minute: _deadline?.minute ?? 59),
-    );
-    if (!mounted) return;
-    setState(() => _deadline = DateTime(d.year, d.month, d.day, t?.hour ?? 23, t?.minute ?? 59));
+    if (picked == null || !mounted) return;
+    setState(() => _deadline = picked);
     _markDirty();
   }
 
@@ -274,6 +273,7 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
           title: Text(l.t(_isEdit ? 'edit_assignment' : 'new_assignment')),
           leading: IconButton(
             icon: const Icon(CupertinoIcons.xmark),
+            tooltip: 'Закрыть',
             onPressed: () async {
               if (await _confirmDiscard() && context.mounted) Navigator.pop(context);
             },
@@ -320,7 +320,7 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
                 Row(children: [
                   Text(l.t('current_files'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)),
                   const Spacer(),
-                  Text(l.t('tap_x_remove'), style: const TextStyle(fontSize: 11, color: C.text4)),
+                  Text(l.t('tap_x_remove'), style: TextStyle(fontSize: 11, color: adaptiveText3(context))),
                 ]),
                 const SizedBox(height: 8),
                 for (final url in _existingFiles)
@@ -347,7 +347,7 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
                   child: Row(children: [
                     const Icon(CupertinoIcons.paperclip, size: 15, color: C.text4),
                     const SizedBox(width: 8),
-                    Text(l.t('no_new_files'), style: const TextStyle(fontSize: 13, color: C.text4)),
+                    Text(l.t('no_new_files'), style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
                   ]),
                 )
               else
@@ -379,7 +379,7 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
                             child: Text(l.t('graded_by_ai'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
                           ),
                         ]),
-                        Text(l.t('reference_sub'), style: const TextStyle(fontSize: 11, color: C.text4)),
+                        Text(l.t('reference_sub'), style: TextStyle(fontSize: 11, color: adaptiveText3(context))),
                       ])),
                     ]),
                     const SizedBox(height: 12),
@@ -391,8 +391,8 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
                         child: Column(children: [
                           const Icon(CupertinoIcons.arrow_up_doc, size: 28, color: C.text3),
                           const SizedBox(height: 6),
-                          Text(l.t('click_or_choose'), style: const TextStyle(fontSize: 13, color: C.text4)),
-                          const Text('PDF, DOCX, DOC, PPTX, XLSX, TXT, MD', style: TextStyle(fontSize: 11, color: C.text4)),
+                          Text(l.t('click_or_choose'), style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
+                          Text('PDF, DOCX, DOC, PPTX, XLSX, TXT, MD', style: TextStyle(fontSize: 11, color: adaptiveText3(context))),
                         ]),
                       ),
                     ),

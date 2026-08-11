@@ -107,7 +107,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -0.6, height: 1.15, color: adaptiveText1(context))),
                 const SizedBox(height: 8),
                 Text(_codeSent ? l.t('reset_sub') : l.t('forgot_sub'), textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 15, color: C.text4, height: 1.4)),
+                  style: TextStyle(fontSize: 15, color: adaptiveText3(context), height: 1.4)),
                 const SizedBox(height: 28),
 
                 if (!_codeSent) ...[
@@ -149,12 +149,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       prefixIcon: const Padding(padding: EdgeInsets.only(left: 4), child: Icon(CupertinoIcons.lock, size: 18, color: C.text4)),
                       suffixIcon: IconButton(
                         icon: Icon(_showPw ? CupertinoIcons.eye_slash : CupertinoIcons.eye, color: C.text4, size: 18),
+                        tooltip: _showPw ? 'Скрыть пароль' : 'Показать пароль',
                         onPressed: () => setState(() => _showPw = !_showPw)),
                     ),
                     onChanged: (_) => setState(() { if (_error != null) _error = null; }),
                   ),
                   Padding(padding: const EdgeInsets.only(top: 6, left: 2),
-                    child: Text(l.t('password_min_8'), style: const TextStyle(fontSize: 13, color: C.text4))),
+                    child: Text(l.t('password_min_8'), style: TextStyle(fontSize: 13, color: adaptiveText3(context)))),
                 ],
 
                 if (_error != null) Padding(padding: const EdgeInsets.only(top: 14),
@@ -181,7 +182,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
                       : Text(_codeSent ? l.t('reset_btn') : l.t('send_code'),
                           style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700,
-                            color: (_codeSent ? canReset : _emailValid) ? Colors.white : C.text4)))),
+                            color: (_codeSent ? canReset : _emailValid) ? Colors.white : adaptiveText3(context))))),
                 ),
                 if (_codeSent) ...[
                   const SizedBox(height: 16),

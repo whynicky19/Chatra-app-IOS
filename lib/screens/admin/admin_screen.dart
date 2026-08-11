@@ -136,27 +136,30 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
       return const Center(child: CupertinoActivityIndicator(radius: 13));
     }
     if (_reports.isEmpty) {
-      return RefreshIndicator(
-        onRefresh: _loadReports,
-        child: ListView(children: [
-          const SizedBox(height: 90),
-          Icon(CupertinoIcons.checkmark_shield, size: 44, color: C.text4.withValues(alpha: 0.6)),
-          const SizedBox(height: 14),
-          Center(
-            child: Text(l.t('no_reports'),
-                style: TextStyle(
-                    fontSize: 17, fontWeight: FontWeight.w700, color: adaptiveText1(context))),
-          ),
-        ]),
-      );
+      return CustomScrollView(slivers: [
+        CupertinoSliverRefreshControl(onRefresh: _loadReports),
+        SliverToBoxAdapter(
+          child: Column(children: [
+            const SizedBox(height: 90),
+            Icon(CupertinoIcons.checkmark_shield, size: 44, color: C.text4.withValues(alpha: 0.6)),
+            const SizedBox(height: 14),
+            Center(
+              child: Text(l.t('no_reports'),
+                  style: TextStyle(
+                      fontSize: 17, fontWeight: FontWeight.w700, color: adaptiveText1(context))),
+            ),
+          ]),
+        ),
+      ]);
     }
 
-    return RefreshIndicator(
-      onRefresh: _loadReports,
-      child: ListView.builder(
+    return CustomScrollView(slivers: [
+      CupertinoSliverRefreshControl(onRefresh: _loadReports),
+      SliverPadding(
         padding: const EdgeInsets.fromLTRB(14, 8, 14, 100),
-        itemCount: _reports.length,
-        itemBuilder: (_, i) {
+        sliver: SliverList(delegate: SliverChildBuilderDelegate(
+          childCount: _reports.length,
+          (_, i) {
           final r = _reports[i];
           final targetType = (r['target_type'] ?? '').toString();
           final targetKey = switch (targetType) {
@@ -245,9 +248,10 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               ]),
             ]),
           );
-        },
+          },
+        )),
       ),
-    );
+    ]);
   }
 
   Future<void> _load() async {
@@ -403,7 +407,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               child: Row(children: [
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(l.t('admin'), style: Theme.of(context).textTheme.headlineLarge!.copyWith(color: adaptiveText1(context))),
-                  Text(l.t('admin_sub'), style: const TextStyle(fontSize: 13, color: C.text4)),
+                  Text(l.t('admin_sub'), style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
                 ])),
                 Tappable(
                   onTap: _showCreateDialog,
@@ -507,7 +511,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
   Widget _usersTab() {
     final l       = context.read<L10n>();
     final isDark  = Theme.of(context).brightness == Brightness.dark;
-    final primary = Theme.of(context).colorScheme.primary;
     final filtered = _filtered;
     return Column(children: [
       Padding(
@@ -529,13 +532,13 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
       ),
       Expanded(child: _loading
         ? const Center(child: CupertinoActivityIndicator(radius: 13, color: C.text3))
-        : RefreshIndicator(
-            color: primary,
-            onRefresh: _load,
-            child: ListView.builder(
+        : CustomScrollView(slivers: [
+            CupertinoSliverRefreshControl(onRefresh: _load),
+            SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 90),
-              itemCount: filtered.length,
-              itemBuilder: (ctx, i) {
+              sliver: SliverList(delegate: SliverChildBuilderDelegate(
+                childCount: filtered.length,
+                (ctx, i) {
                 final u    = filtered[i];
                 final name = u['full_name'] ?? u['email']?.split('@').first ?? '';
                 final role = u['role'] ?? 'student';
@@ -596,9 +599,11 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                     ]),
                   )),
                 );
-              },
+                },
+              )),
             ),
-          )),
+          ]),
+      ),
     ]);
   }
 
@@ -616,10 +621,11 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     final userSummary  = _perUserSummary();
     final maxTokens    = userSummary.isNotEmpty ? (userSummary.first['tokens'] as int) : 1;
 
-    return RefreshIndicator(
-      color: primary,
-      onRefresh: _loadAi,
-      child: ListView(padding: const EdgeInsets.fromLTRB(16, 8, 16, 90), children: [
+    return CustomScrollView(slivers: [
+      CupertinoSliverRefreshControl(onRefresh: _loadAi),
+      SliverPadding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 90),
+        sliver: SliverList(delegate: SliverChildListDelegate([
 
         Container(
           padding: const EdgeInsets.all(20),
@@ -707,7 +713,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                   ])),
                   Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                     Text(_fmtTokens(tokens), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: adaptiveText1(context))),
-                    Text(l.t('tokens'), style: const TextStyle(fontSize: 11, color: C.text4)),
+                    Text(l.t('tokens'), style: TextStyle(fontSize: 11, color: adaptiveText3(context))),
                   ]),
                 ]),
               )),
@@ -752,7 +758,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                   const SizedBox(width: 12),
                   Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                     Text(_fmtTokens(tokens), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: adaptiveText1(context))),
-                    Text(l.t('tokens'), style: const TextStyle(fontSize: 11, color: C.text4)),
+                    Text(l.t('tokens'), style: TextStyle(fontSize: 11, color: adaptiveText3(context))),
                   ]),
                 ]),
               )),
@@ -848,14 +854,14 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             const SizedBox(height: 14),
             Text(l.t('no_ai_data'), style: const TextStyle(color: C.text4, fontSize: 15, fontWeight: FontWeight.w600)),
           ]))),
-      ]),
-    );
+        ])),
+      ),
+    ]);
   }
 
   Widget _classesTab() {
     final l       = context.read<L10n>();
     final isDark  = Theme.of(context).brightness == Brightness.dark;
-    final primary = Theme.of(context).colorScheme.primary;
     if (_classesLoading) return const Center(child: CupertinoActivityIndicator(radius: 13, color: C.text3));
 
     final classes   = _allClassPosts;
@@ -869,13 +875,13 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     ]));
     }
 
-    return RefreshIndicator(
-      color: primary,
-      onRefresh: () async { await _load(); await _loadClasses(); },
-      child: ListView.builder(
+    return CustomScrollView(slivers: [
+      CupertinoSliverRefreshControl(onRefresh: () async { await _load(); await _loadClasses(); }),
+      SliverPadding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
-        itemCount: classes.length,
-        itemBuilder: (ctx, i) {
+        sliver: SliverList(delegate: SliverChildBuilderDelegate(
+          childCount: classes.length,
+          (ctx, i) {
           final cls         = classes[i];
           final classId     = (cls['id'] as num?)?.toInt() ?? 0;
           final title       = cls['title']?.toString() ?? '';
@@ -939,7 +945,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                           ))),
                         const SizedBox(width: 8),
                         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(l.t('created_by'), style: const TextStyle(fontSize: 11, color: C.text4, fontWeight: FontWeight.w500)),
+                          Text(l.t('created_by'), style: TextStyle(fontSize: 11, color: adaptiveText3(context), fontWeight: FontWeight.w500)),
                           Text(creatorName, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: adaptiveText1(context)), overflow: TextOverflow.ellipsis),
                         ])),
                       ]),
@@ -986,9 +992,10 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               ),
             )),
           );
-        },
+          },
+        )),
       ),
-    );
+    ]);
   }
 
   void _showStudentsSheet(int classId, String className, dynamic coverImg, int colorIdx) {
@@ -1079,16 +1086,17 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                       ),
                     ),
                   ]))
-                : RefreshIndicator(
-                    color: primary,
-                    onRefresh: doRefresh,
-                    child: ListView.separated(
-                      controller: sc,
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-                      itemCount: members.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (_, j) {
+                : CustomScrollView(
+                    controller: sc,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    slivers: [
+                      CupertinoSliverRefreshControl(onRefresh: doRefresh),
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+                        sliver: SliverList.separated(
+                          itemCount: members.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 8),
+                          itemBuilder: (_, j) {
                         final s        = members[j];
                         final name     = (s['full_name'] ?? '').toString().trim();
                         final email    = (s['email'] ?? '').toString();
@@ -1128,8 +1136,10 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                             ]),
                           ]),
                         );
-                      },
-                    ),
+                          },
+                        ),
+                      ),
+                    ],
                   )),
             ]),
           );
@@ -1190,7 +1200,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                   Text(l.t('return_student'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 3),
                   Text('$className · ${l.t('return_student_hint')}',
-                      style: const TextStyle(fontSize: 13, color: C.text4, height: 1.35)),
+                      style: TextStyle(fontSize: 13, color: adaptiveText3(context), height: 1.35)),
                 ])),
               Divider(height: 1, color: C.border.withValues(alpha: 0.5)),
               Expanded(child: loading
@@ -1378,7 +1388,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                   ),
                 ]),
                 const SizedBox(height: 2),
-                Text(email, style: const TextStyle(fontSize: 13, color: C.text4), overflow: TextOverflow.ellipsis),
+                Text(email, style: TextStyle(fontSize: 13, color: adaptiveText3(ctx)), overflow: TextOverflow.ellipsis),
               ])),
               _RoleBadge(role: role),
             ]),
@@ -1583,7 +1593,7 @@ class _StatCard extends StatelessWidget {
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(value, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: adaptiveText1(context), height: 1, letterSpacing: -0.5)),
       const SizedBox(height: 3),
-      Text(label, style: const TextStyle(fontSize: 11, color: C.text4, fontWeight: FontWeight.w500)),
+      Text(label, style: TextStyle(fontSize: 11, color: adaptiveText3(context), fontWeight: FontWeight.w500)),
     ]),
   ));
 }

@@ -124,10 +124,23 @@ Color adaptivePrimaryLt(BuildContext context) {
   return Theme.of(context).colorScheme.primaryContainer;
 }
 
-/// Высота плавающего таб-бара main_shell — панели, приклеенные к низу вкладки
-/// (поле ввода чата, баннер блокировки), обязаны отступать на неё, иначе
-/// уезжают под навбар. Safe-area здесь недостаточно.
+/// Высота плавающего таб-бара main_shell (сама пилюля + отступ от базовой
+/// линии) — панели, приклеенные к низу вкладки (поле ввода чата, баннер
+/// блокировки), обязаны отступать хотя бы на неё, иначе уезжают под навбар.
+///
+/// Это НЕ полный клиренс на устройствах с Home Indicator — сама константа
+/// не знает про safe-area снизу (main_shell.dart позиционирует бар как
+/// `bottom: 16 + MediaQuery.of(context).padding.bottom`, вне обычного
+/// Scaffold/SafeArea). Для реального отступа над баром используй
+/// [bottomBarClearance], а не эту константу напрямую.
 const double kBottomBarHeight = 90;
+
+/// Реальный клиренс над плавающим таб-баром для конкретного устройства:
+/// [kBottomBarHeight] + safe-area инсет снизу (Home Indicator). На iPhone
+/// с ним голого [kBottomBarHeight] не хватает — контент упирался бы в бар
+/// или прятался под ним.
+double bottomBarClearance(BuildContext context) =>
+    kBottomBarHeight + MediaQuery.of(context).padding.bottom;
 
 /// Отмечает поддерево вкладки main_shell, поверх которой плавает навбар
 /// (он рисуется в отдельном верхнем слое Stack — см. main_shell.dart). Тосты
@@ -157,7 +170,7 @@ class FloatingNavBarScope extends InheritedWidget {
 /// каждый кадр вместе с реальной анимацией клавиатуры.
 double bottomBarInset(BuildContext context) =>
     (MediaQuery.of(context).viewInsets.bottom + 8)
-        .clamp(kBottomBarHeight, double.infinity);
+        .clamp(bottomBarClearance(context), double.infinity);
 
 Color adaptiveBorder(BuildContext context) {
   final isDark = Theme.of(context).brightness == Brightness.dark;

@@ -106,8 +106,30 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return Scaffold(
       body: SafeArea(
         child: _loading
-            ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary, strokeWidth: 2))
+            ? Center(child: CupertinoActivityIndicator(radius: 13, color: Theme.of(context).colorScheme.primary))
             : CustomScrollView(slivers: [
+                  CupertinoSliverNavigationBar(
+                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                    border: null,
+                    stretch: true,
+                    leading: Tappable(
+                      onTap: () => Navigator.pop(context),
+                      label: 'Назад',
+                      child: Container(
+                        width: 38, height: 38,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          shape: BoxShape.circle,
+                          boxShadow: softShadow(isDark),
+                        ),
+                        child: Icon(CupertinoIcons.chevron_left, size: 17, color: adaptiveText1(context)),
+                      ),
+                    ),
+                    largeTitle: Text(l.t('deadlines'), style: TextStyle(
+                      fontSize: 28, fontWeight: FontWeight.w700,
+                      color: adaptiveText1(context), letterSpacing: -0.4, height: 1.1,
+                    )),
+                  ),
                   CupertinoSliverRefreshControl(
                     onRefresh: () async {
                       setState(() => _loading = true);
@@ -115,41 +137,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     },
                   ),
                   SliverToBoxAdapter(child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 22, 12),
-                    child: Row(children: [
-                      Tappable(
-                        onTap: () => Navigator.pop(context),
-                        label: 'Назад',
-                        child: Container(
-                          width: 38, height: 38,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface,
-                            shape: BoxShape.circle,
-                            boxShadow: softShadow(isDark),
-                          ),
-                          child: Icon(CupertinoIcons.chevron_left, size: 17, color: adaptiveText1(context)),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(l.t('deadlines'), style: TextStyle(
-                          fontSize: 28, fontWeight: FontWeight.w700,
-                          color: adaptiveText1(context), letterSpacing: -0.4, height: 1.1,
-                        )),
-                        Text(
-                          _deadlineMap.isEmpty
-                              ? l.t('no_upcoming_deadlines')
-                              : '${l.t('upcoming_tasks')}: ${_deadlineMap.values.fold<int>(0, (n, list) => n + list.length)}',
-                          style: TextStyle(fontSize: 13, color: adaptiveText3(context)),
-                        ),
-                      ])),
-                    ]),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: Text(
+                      _deadlineMap.isEmpty
+                          ? l.t('no_upcoming_deadlines')
+                          : '${l.t('upcoming_tasks')}: ${_deadlineMap.values.fold<int>(0, (n, list) => n + list.length)}',
+                      style: TextStyle(fontSize: 13, color: adaptiveText3(context)),
+                    ),
                   )),
 
                   SliverToBoxAdapter(child: _buildCalendar(isDark, today)),
                   SliverToBoxAdapter(child: _build7DayScroll(today, isDark)),
                   SliverToBoxAdapter(child: _buildDayList(isDark, today)),
-                  const SliverToBoxAdapter(child: SizedBox(height: kBottomBarHeight)),
+                  SliverToBoxAdapter(child: SizedBox(height: bottomBarClearance(context))),
                 ]),
       ),
     );

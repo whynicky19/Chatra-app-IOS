@@ -164,6 +164,7 @@ class _LectureEditorScreenState extends State<LectureEditorScreen> {
           title: Text(l.t(_isEdit ? 'edit_title' : 'add_lecture')),
           leading: IconButton(
             icon: const Icon(CupertinoIcons.xmark),
+            tooltip: 'Закрыть',
             onPressed: () async {
               if (await _confirmDiscard() && context.mounted) Navigator.pop(context);
             },
@@ -215,8 +216,8 @@ class _LectureEditorScreenState extends State<LectureEditorScreen> {
                   child: Column(children: [
                     const Icon(CupertinoIcons.arrow_up_doc, size: 24, color: C.text3),
                     const SizedBox(height: 6),
-                    Text(l.t('click_or_choose'), style: const TextStyle(fontSize: 13, color: C.text4)),
-                    Text(l.t('file_types_hint'), style: const TextStyle(fontSize: 11, color: C.text4)),
+                    Text(l.t('click_or_choose'), style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
+                    Text(l.t('file_types_hint'), style: TextStyle(fontSize: 11, color: adaptiveText3(context))),
                   ]),
                 ),
               ),

@@ -32,7 +32,7 @@ void showToast(BuildContext context, String msg, {bool error = false}) {
     // маршрутах (логин, детали класса...) его нет, и такой отступ там просто
     // задирал бы тост слишком высоко.
     margin: EdgeInsets.fromLTRB(
-      20, 0, 20, FloatingNavBarScope.of(context) ? kBottomBarHeight + 8 : 14,
+      20, 0, 20, FloatingNavBarScope.of(context) ? bottomBarClearance(context) + 8 : 14,
     ),
     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.card)),

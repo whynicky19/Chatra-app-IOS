@@ -189,7 +189,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 20),
                   Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Text('${l.t('no_account')} ', style: const TextStyle(fontSize: 13, color: C.text4)),
+                    Text('${l.t('no_account')} ', style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
                     Tappable(
                       onTap: widget.onGoRegister,
                       child: Text(l.t('register_link'), style: TextStyle(

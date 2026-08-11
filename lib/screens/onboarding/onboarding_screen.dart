@@ -7,6 +7,7 @@ import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/errors.dart';
 import '../../widgets/ambient_glow.dart';
+import '../../widgets/app_button.dart';
 import '../../utils/haptics.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -101,7 +102,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 child: TextButton(
                   onPressed: _finish,
                   child: Text(l.t('onb_skip'),
-                      style: const TextStyle(fontSize: 15, color: C.text4)),
+                      style: TextStyle(fontSize: 15, color: adaptiveText3(context))),
                 ),
               ),
             ),
@@ -141,30 +142,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             const SizedBox(height: 28),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: GestureDetector(
-                onTap: () => _next(pages.length),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  constraints: const BoxConstraints(minHeight: 52),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: primary,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: primaryGlow(primary, opacity: 0.34),
-                  ),
-                  child: Align(
-                    heightFactor: 1,
-                    child: Text(
-                      isLast ? l.t('onb_start') : l.t('onb_next'),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white),
-                    ),
-                  ),
-                ),
+              child: AppButton.primary(
+                label: isLast ? l.t('onb_start') : l.t('onb_next'),
+                onPressed: () => _next(pages.length),
+                color: primary,
+                glow: true,
+                minHeight: 52,
               ),
             ),
           ]),
@@ -227,8 +210,8 @@ class _Page extends StatelessWidget {
               constraints: const BoxConstraints(maxWidth: 320),
               child: Text(body,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontSize: 15, height: 1.6, color: C.text4)),
+                  style: TextStyle(
+                      fontSize: 15, height: 1.6, color: adaptiveText3(context))),
             ),
             const SizedBox(height: 24),
           ],

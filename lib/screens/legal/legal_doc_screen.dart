@@ -39,6 +39,7 @@ class LegalDocScreen extends StatelessWidget {
             child: Row(children: [
               IconButton(
                 icon: Icon(CupertinoIcons.back, color: adaptiveText1(context)),
+                tooltip: 'Назад',
                 onPressed: () => Navigator.pop(context),
               ),
               Expanded(child: Text(l.t(titleKey),
@@ -59,7 +60,7 @@ class LegalDocScreen extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               Text('${l.t('pp_updated_label')}: $updated',
-                style: const TextStyle(fontSize: 13, color: C.text4, fontWeight: FontWeight.w600)),
+                style: TextStyle(fontSize: 13, color: adaptiveText3(context), fontWeight: FontWeight.w600)),
               const SizedBox(height: 12),
               Text(l.t(introKey),
                 style: TextStyle(fontSize: 15, height: 1.55, color: adaptiveText1(context))),

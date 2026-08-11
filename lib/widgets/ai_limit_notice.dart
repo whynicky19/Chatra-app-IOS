@@ -42,7 +42,7 @@ class AiLimitNotice extends StatelessWidget {
               color: adaptiveText1(context), height: 1.3)),
           const SizedBox(height: 2),
           Text(_subtitle(l),
-            style: const TextStyle(fontSize: 13, color: C.text4, height: 1.4)),
+            style: TextStyle(fontSize: 13, color: adaptiveText3(context), height: 1.4)),
         ])),
       ]),
     );

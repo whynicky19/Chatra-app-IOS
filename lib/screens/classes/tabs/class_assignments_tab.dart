@@ -27,7 +27,7 @@ class ClassAssignmentsTab extends StatefulWidget {
   final bool isLoading;
   final bool viewOnly;
   final int? cohortId;
-  final VoidCallback onRefresh;
+  final Future<void> Function() onRefresh;
   final void Function(dynamic a) onEditAssignment;
   final void Function(String url, String name) onOpenFile;
 
@@ -183,7 +183,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
   @override
   Widget build(BuildContext context) {
     final l = context.read<L10n>();
-    if (widget.isLoading) return Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary, strokeWidth: 2.5));
+    if (widget.isLoading) return Center(child: CupertinoActivityIndicator(radius: 13, color: Theme.of(context).colorScheme.primary));
     final surface = Theme.of(context).colorScheme.surface;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final avg = (widget.rating['avg_score'] ?? 0).round();
@@ -302,10 +302,15 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       behavior: HitTestBehavior.translucent,
-      child: ListView.builder(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 90),
-      itemCount: headers.length + widget.assignments.length,
-      itemBuilder: (ctx, index) {
+      child: CustomScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      slivers: [
+        CupertinoSliverRefreshControl(onRefresh: widget.onRefresh),
+        SliverPadding(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 90),
+        sliver: SliverList(delegate: SliverChildBuilderDelegate(
+          childCount: headers.length + widget.assignments.length,
+          (ctx, index) {
         if (index < headers.length) return headers[index];
         final i = index - headers.length;
         final a = widget.assignments[i];
@@ -395,7 +400,10 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             ),
           )),
         );
-      },
+          },
+        )),
+        ),
+      ],
     ));
   }
 

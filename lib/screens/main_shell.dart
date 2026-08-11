@@ -225,7 +225,12 @@ class _MainShellState extends State<MainShell>
         ]),
       ),
       Positioned(
-        left: 16, right: 16, bottom: 16,
+        // Снаружи нет Scaffold/SafeArea (см. комментарий выше про клавиатуру) —
+        // bottom:16 сам по себе отмерялся от истинного края экрана, без учёта
+        // Home Indicator: на iPhone с ним (safe-area ≈34pt) плавающий бар
+        // оказывался заметно ближе к краю, чем должен. Добавляем safe-area
+        // инсет вручную поверх базового отступа.
+        left: 16, right: 16, bottom: 16 + MediaQuery.of(context).padding.bottom,
         child: RepaintBoundary(
           child: FadeTransition(
             opacity: CurvedAnimation(

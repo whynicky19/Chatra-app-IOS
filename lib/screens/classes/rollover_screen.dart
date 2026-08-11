@@ -5,6 +5,8 @@ import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/cupertino_date_sheet.dart';
+import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
 import '../../utils/dates.dart';
 import '../../utils/haptics.dart';
@@ -144,20 +146,14 @@ class _RolloverScreenState extends State<RolloverScreen> {
 
   Future<void> _editDeadline(_RolledCohort rc, dynamic deadline) async {
     final current = parseServerDate((deadline['due_date'] ?? '').toString()) ?? DateTime.now();
-    final date = await showDatePicker(
-      context: context,
-      initialDate: current,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2100),
+    final newDt = await showCupertinoDateTimeSheet(
+      context,
+      initialDateTime: current,
+      minimumDate: DateTime(2020),
+      maximumDate: DateTime(2100),
+      title: 'Дедлайн',
     );
-    if (date == null || !mounted) return;
-    final time = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(current),
-    );
-    if (!mounted) return;
-    final newDt = DateTime(date.year, date.month, date.day,
-        time?.hour ?? current.hour, time?.minute ?? current.minute);
+    if (newDt == null || !mounted) return;
     try {
       final updated = await context.read<ApiService>()
           .updateDeadline((deadline['id'] as num).toInt(), dueDate: toServerDateString(newDt));
@@ -196,8 +192,8 @@ class _RolloverScreenState extends State<RolloverScreen> {
           _header(l),
           Expanded(
             child: _loading
-                ? Center(child: CircularProgressIndicator(
-                    color: Theme.of(context).colorScheme.primary, strokeWidth: 2.5))
+                ? Center(child: CupertinoActivityIndicator(
+                    radius: 13, color: Theme.of(context).colorScheme.primary))
                 : _step == 0
                     ? _previewStep(l)
                     : _deadlinesStep(l),
@@ -211,10 +207,11 @@ class _RolloverScreenState extends State<RolloverScreen> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
       child: Row(children: [
-        GestureDetector(
+        Tappable(
           onTap: () => _step == 1 && !_loading
               ? setState(() => _step = 0)
               : Navigator.pop(context),
+          label: _step == 1 && !_loading ? 'Назад к переносу классов' : 'Назад',
           child: Container(
             width: 40, height: 40,
             decoration: BoxDecoration(
@@ -271,13 +268,15 @@ class _RolloverScreenState extends State<RolloverScreen> {
             ),
             const SizedBox(height: 16),
             _label(l.t('semester_start_date')),
-            GestureDetector(
+            Tappable(
               onTap: () async {
-                final d = await showDatePicker(
-                  context: context,
-                  initialDate: _startDate ?? DateTime.now(),
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime(2100),
+                final d = await showCupertinoDateTimeSheet(
+                  context,
+                  initialDateTime: _startDate ?? DateTime.now(),
+                  minimumDate: DateTime(2020),
+                  maximumDate: DateTime(2100),
+                  mode: CupertinoDatePickerMode.date,
+                  title: l.t('semester_start_date'),
                 );
                 if (d != null) setState(() => _startDate = d);
               },
@@ -447,8 +446,8 @@ class _RolloverScreenState extends State<RolloverScreen> {
   Widget _label(String text) => Padding(
         padding: const EdgeInsets.only(bottom: 8, left: 2),
         child: Text(text.toUpperCase(),
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800,
-                color: C.text4, letterSpacing: 0.5)),
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800,
+                color: adaptiveText3(context), letterSpacing: 0.5)),
       );
 
   Widget _bottomBar({required Widget child}) => Container(

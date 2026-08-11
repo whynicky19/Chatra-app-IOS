@@ -446,7 +446,7 @@ class _AiConversationViewState extends State<AiConversationView> {
                 child: Text(
                   l.t('ai_disclaimer'),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 11.5, color: C.text4, height: 1.3),
+                  style: TextStyle(fontSize: 11.5, color: adaptiveText3(context), height: 1.3),
                 ),
               )
             : const SizedBox(width: double.infinity),
@@ -476,7 +476,7 @@ class _AiConversationViewState extends State<AiConversationView> {
             Text('Chatra AI',
                 style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: adaptiveText1(context), letterSpacing: -0.6)),
             const SizedBox(height: 10),
-            Text(subtitle, style: const TextStyle(fontSize: 15, color: C.text4, height: 1.4), textAlign: TextAlign.center),
+            Text(subtitle, style: TextStyle(fontSize: 15, color: adaptiveText3(context), height: 1.4), textAlign: TextAlign.center),
             const SizedBox(height: 30),
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 440),
@@ -513,7 +513,7 @@ class _AiConversationViewState extends State<AiConversationView> {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           decoration: BoxDecoration(
             color: isDark ? C.darkSurface : Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppRadii.card),
             border: Border.all(color: adaptiveBorder(context).withValues(alpha: 0.5), width: 0.5),
             boxShadow: softShadow(isDark),
           ),
@@ -623,7 +623,7 @@ class _AiConversationViewState extends State<AiConversationView> {
         else
           Padding(
             padding: const EdgeInsets.only(right: 3),
-            child: Text(timeStr, style: const TextStyle(fontSize: 10.5, color: C.text4)),
+            child: Text(timeStr, style: TextStyle(fontSize: 10.5, color: adaptiveText3(context))),
           ),
       ]),
     );
@@ -667,7 +667,7 @@ class _AiConversationViewState extends State<AiConversationView> {
             padding: const EdgeInsets.only(left: 7, top: 5),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               if ((m['time'] ?? '').isNotEmpty)
-                Text(m['time']!, style: const TextStyle(fontSize: 10.5, color: C.text4)),
+                Text(m['time']!, style: TextStyle(fontSize: 10.5, color: adaptiveText3(context))),
               if (isLast && !_loading) ...[
                 if ((m['time'] ?? '').isNotEmpty) const SizedBox(width: 10),
                 Tappable(
@@ -675,7 +675,7 @@ class _AiConversationViewState extends State<AiConversationView> {
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Icon(CupertinoIcons.arrow_2_squarepath, size: 10.5, color: C.text4.withValues(alpha: 0.8)),
                     const SizedBox(width: 3),
-                    Text(l.t('retry'), style: TextStyle(fontSize: 10.5, color: C.text4.withValues(alpha: 0.8))),
+                    Text(l.t('retry'), style: TextStyle(fontSize: 10.5, color: adaptiveText3(context))),
                   ]),
                 ),
               ],

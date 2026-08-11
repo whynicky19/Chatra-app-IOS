@@ -221,11 +221,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
       behavior: HitTestBehavior.translucent,
       child: Column(children: [
       Expanded(child: Stack(children: [
-        RefreshIndicator(
-          onRefresh: _refresh,
-          color: Theme.of(context).colorScheme.primary,
-          child: _msgs.isEmpty ? _emptyState(isDark) : _messageList(isDark),
-        ),
+        _msgs.isEmpty ? _emptyState(isDark) : _messageList(isDark),
         if (_msgs.isNotEmpty) Positioned(
           top: 10, right: 14,
           child: _headerButton(
@@ -345,7 +341,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
               const SizedBox(height: 6),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(16)),
+                decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(AppRadii.button)),
                 child: Text(shortName, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w700)),
               ),
               const SizedBox(height: 24),
@@ -384,7 +380,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
           decoration: BoxDecoration(
             color: isDark ? C.darkSurface : Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadii.button),
             border: Border.all(color: adaptiveBorder(context).withValues(alpha: 0.6), width: 0.5),
             boxShadow: softShadow(isDark),
           ),
@@ -396,24 +392,31 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
   }
 
   Widget _messageList(bool isDark) {
-    return ListView.builder(
+    return CustomScrollView(
       controller: _scrollCtrl,
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
-      itemCount: _msgs.length + (_loading ? 1 : 0),
-      itemBuilder: (ctx, i) {
-        if (i == _msgs.length) return _typingIndicator(isDark);
-        final m   = _msgs[i];
-        final isU = m['role'] == 'user';
-        return TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0.0, end: 1.0),
-          duration: const Duration(milliseconds: 280),
-          curve: Curves.easeOutCubic,
-          builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(
-            offset: Offset(isU ? 16*(1-t) : -16*(1-t), 6*(1-t)), child: child)),
-          child: RepaintBoundary(child: isU ? _userBubble(m['text'] ?? '') : _aiBubble(m['text'] ?? '', isDark)),
-        );
-      },
+      slivers: [
+        CupertinoSliverRefreshControl(onRefresh: _refresh),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+          sliver: SliverList(delegate: SliverChildBuilderDelegate(
+            childCount: _msgs.length + (_loading ? 1 : 0),
+            (ctx, i) {
+              if (i == _msgs.length) return _typingIndicator(isDark);
+              final m   = _msgs[i];
+              final isU = m['role'] == 'user';
+              return TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: 1.0),
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeOutCubic,
+                builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(
+                  offset: Offset(isU ? 16*(1-t) : -16*(1-t), 6*(1-t)), child: child)),
+                child: RepaintBoundary(child: isU ? _userBubble(m['text'] ?? '') : _aiBubble(m['text'] ?? '', isDark)),
+              );
+            },
+          )),
+        ),
+      ],
     );
   }
 

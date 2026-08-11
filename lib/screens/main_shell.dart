@@ -234,12 +234,14 @@ class _MainShellState extends State<MainShell>
       const Positioned(left: 0, right: 0, bottom: 0, child: _BottomContentScrim()),
       Positioned(
         // Снаружи нет Scaffold/SafeArea (см. комментарий выше про клавиатуру) —
-        // bottom:6 сам по себе отмерялся от истинного края экрана, без учёта
-        // Home Indicator: на iPhone с ним (safe-area ≈34pt) плавающий бар
-        // оказывался заметно ближе к краю, чем должен. Добавляем safe-area
-        // инсет вручную поверх базового отступа. Базовый отступ занижен с 16
-        // до 6 — ближе к низу, как у плавающих таб-баров в Telegram/iOS.
-        left: 16, right: 16, bottom: 6 + MediaQuery.of(context).padding.bottom,
+        // отступ снизу отмеряется от истинного края экрана вручную, поэтому
+        // safe-area (Home Indicator, ≈34pt на iPhone с ним) добавляется явно
+        // через MediaQuery, а не зашивается константой. Сверху — минимальный
+        // фиксированный зазор (4pt) чисто для воздуха между баром и самим
+        // Home Indicator, как у плавающих таб-баров в Telegram/нативных
+        // Apple-приложениях (там бар почти вплотную к нему, а не подвешен
+        // высоко над ним).
+        left: 16, right: 16, bottom: 4 + MediaQuery.of(context).padding.bottom,
         child: RepaintBoundary(
           child: FadeTransition(
             opacity: CurvedAnimation(

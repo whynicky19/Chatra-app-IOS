@@ -988,7 +988,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                           ? Text(l.t('no_students_class'), style: const TextStyle(fontSize: 13, color: C.text4))
                           : Text('${students.length} ${l.t('students_count')}',
                               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: adaptiveText1(context)))),
-                        Icon(CupertinoIcons.chevron_right, size: 13, color: C.text4),
+                        const Icon(CupertinoIcons.chevron_right, size: 13, color: C.text4),
                       ]),
                     ),
                   ])),
@@ -1040,7 +1040,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                   Text(className, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800), maxLines: 2, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 3),
                   Row(children: [
-                    Icon(CupertinoIcons.person_2, size: 13, color: C.text3),
+                    const Icon(CupertinoIcons.person_2, size: 13, color: C.text3),
                     const SizedBox(width: 4),
                     Text('$studentCount ${l.t('students_count')}',
                       style: const TextStyle(fontSize: 13, color: C.text3, fontWeight: FontWeight.w600)),
@@ -1208,7 +1208,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                 ])),
               Divider(height: 1, color: C.border.withValues(alpha: 0.5)),
               Expanded(child: loading
-                ? Center(child: CupertinoActivityIndicator(color: C.text3))
+                ? const Center(child: CupertinoActivityIndicator(color: C.text3))
                 : candidates.isEmpty
                   ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
                       Icon(CupertinoIcons.person_crop_circle_badge_checkmark, size: 48, color: C.text4.withValues(alpha: 0.6)),

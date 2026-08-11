@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 import 'services/api_service.dart';
 import 'services/crash_reporting.dart';
 import 'services/push_service.dart';
@@ -85,6 +86,16 @@ void main() => CrashReporting.runGuarded(_start);
 Future<void> _start() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
+
+  // Прогрев шейдеров плавающего навбара (main_shell.dart) заранее, параллельно
+  // с остальной инициализацией ниже. Без этого компиляция .frag-шейдеров
+  // случается при первом маунте LiquidGlassBottomNavBar — то есть прямо на
+  // экране MainShell, самом частом первом экране пользователя — и даёт либо
+  // джанк на первом кадре, либо на миг "замороженный" fallback вместо стекла.
+  // .ignore() — намеренно не блокирует старт: сплэш и auth/org/theme.init()
+  // ниже и так занимают время, обычно этого достаточно, чтобы шейдер успел
+  // скомпилироваться до того, как бар вообще станет виден.
+  LiquidGlassShaders.ensureLoaded().ignore();
 
   final isMobile = !kIsWeb &&
       (defaultTargetPlatform == TargetPlatform.android ||

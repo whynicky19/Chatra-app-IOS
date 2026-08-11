@@ -62,6 +62,10 @@ class FileCard extends StatelessWidget {
     final subtitle = sizeLabel != null && sizeLabel!.isNotEmpty
         ? '$typeLabel • $sizeLabel'
         : typeLabel;
+    // Без memCacheWidth/Height CachedNetworkImage декодирует превью в
+    // исходном разрешении файла ради плитки 44×44 — в списке вложений с
+    // несколькими фото это лишняя память и CPU на decode на каждую карточку.
+    final previewPx = (44 * MediaQuery.of(context).devicePixelRatio).round();
 
     return Tappable(
       onTap: onTap,
@@ -81,6 +85,7 @@ class FileCard extends StatelessWidget {
                     child: CachedNetworkImage(
                       imageUrl: previewUrl!,
                       cacheKey: fileCacheKey(previewUrl!),
+                      memCacheWidth: previewPx, memCacheHeight: previewPx,
                       width: 44,
                       height: 44,
                       fit: BoxFit.cover,

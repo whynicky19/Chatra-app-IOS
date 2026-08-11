@@ -736,6 +736,11 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
     final ext = name.contains('.') ? name.split('.').last.toLowerCase() : '';
     final isImage = _imageExts.contains(ext);
     final visual = fileTypeVisual(ext);
+    // Без memCacheWidth/Height CachedNetworkImage декодирует вложение в его
+    // родном разрешении (фото с телефона — это легко 3000×4000px) ради
+    // плитки ~100px в сетке до 3 в ряд — на экран ответа с несколькими
+    // фото-вложениями это заметные лишние мегабайты в памяти и время на decode.
+    final px = (width * MediaQuery.of(context).devicePixelRatio).round();
 
     return Tappable(
       onTap: () => widget.onOpenFile(url, name),
@@ -747,6 +752,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
               ? CachedNetworkImage(
                   imageUrl: url,
                   cacheKey: fileCacheKey(url),
+                  memCacheWidth: px, memCacheHeight: px,
                   width: width, height: width, fit: BoxFit.cover,
                   placeholder: (_, __) => Container(width: width, height: width, color: detailSurface(context)),
                   errorWidget: (_, __, ___) => Container(width: width, height: width, color: visual.color.withValues(alpha: 0.14),

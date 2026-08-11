@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_button.dart';
 import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
 
@@ -81,16 +82,17 @@ class SettingsSubScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(6, 6, 16, 4),
             child: Row(children: [
-              IconButton(
-                icon: Icon(CupertinoIcons.back, color: adaptiveText1(context)),
-                onPressed: () => Navigator.pop(context),
+              Tappable(
+                onTap: () => Navigator.pop(context),
+                label: 'Назад',
+                child: Icon(CupertinoIcons.back, color: adaptiveText1(context)),
               ),
+              const SizedBox(width: 4),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(title, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800,
-                  color: adaptiveText1(context), letterSpacing: -0.3)),
+                Text(title, style: Theme.of(context).textTheme.titleLarge!.copyWith(color: adaptiveText1(context))),
                 if (subtitle != null) ...[
                   const SizedBox(height: 1),
-                  Text(subtitle!, style: const TextStyle(fontSize: 13, color: C.text4)),
+                  Text(subtitle!, style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
                 ],
               ])),
             ]),
@@ -315,6 +317,7 @@ class SheetField extends StatelessWidget {
             child: Icon(CupertinoIcons.lock, size: 18, color: C.text4)),
           suffixIcon: IconButton(
             icon: Icon(obscure ? CupertinoIcons.eye : CupertinoIcons.eye_slash, color: C.text4, size: 18),
+            tooltip: obscure ? 'Показать пароль' : 'Скрыть пароль',
             onPressed: onToggle,
           ),
         ),
@@ -349,22 +352,12 @@ class SheetButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Tappable(
-      onTap: enabled ? onTap : null,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        constraints: const BoxConstraints(minHeight: 52),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: enabled ? color : adaptiveSurface2(context),
-          borderRadius: BorderRadius.circular(AppRadii.tile),
-        ),
-        child: Align(heightFactor: 1, child: busy
-          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
-          : Text(label, textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700,
-              color: enabled ? Colors.white : C.text4))),
-      ),
+    return AppButton.primary(
+      label: label,
+      color: color,
+      loading: busy,
+      onPressed: enabled ? onTap : null,
+      minHeight: 52,
     );
   }
 }

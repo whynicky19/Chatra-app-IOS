@@ -19,6 +19,7 @@ import '../../utils/image_cache.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/toast.dart';
+import '../../widgets/tappable.dart';
 import 'tabs/class_posts_tab.dart';
 import 'tabs/class_assignments_tab.dart';
 import 'tabs/class_ai_tab.dart';
@@ -204,14 +205,14 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           title: Text(l.t('opening_file')),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
             const SizedBox(height: 8),
-            Text(name, style: const TextStyle(fontSize: 13, color: C.text4), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis),
+            Text(name, style: TextStyle(fontSize: 13, color: adaptiveText3(context)), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis),
             const SizedBox(height: 12),
             ClipRRect(
               borderRadius: BorderRadius.circular(AppRadii.chip),
               child: LinearProgressIndicator(value: progress > 0 ? progress : null, color: Theme.of(context).colorScheme.primary, backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12), minHeight: 5),
             ),
             const SizedBox(height: 6),
-            Text(progress > 0 ? '${(progress * 100).toInt()}%' : l.t('downloading'), style: const TextStyle(fontSize: 13, color: C.text4)),
+            Text(progress > 0 ? '${(progress * 100).toInt()}%' : l.t('downloading'), style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
           ]),
           actions: [
             CupertinoDialogAction(
@@ -376,7 +377,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 return Padding(
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
                   child: Row(children: [
-                    Expanded(child: GestureDetector(
+                    Expanded(child: Tappable(
                       onTap: () => _createAssignment(),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 11),
@@ -389,7 +390,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                       ),
                     )),
                     const SizedBox(width: 10),
-                    Expanded(child: GestureDetector(
+                    Expanded(child: Tappable(
                       onTap: () => _showAddMenu(),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 11),
@@ -496,7 +497,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           const SizedBox(width: 8),
           Text('${l.t('select_cohort')}:',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
-                  color: isViewingPast ? primary : C.text4)),
+                  color: isViewingPast ? primary : adaptiveText3(context))),
           const SizedBox(width: 4),
           Expanded(
             child: DropdownButtonHideUnderline(
@@ -661,7 +662,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     const SizedBox(height: 20),
                     if (variants!.isEmpty)
                       Padding(padding: const EdgeInsets.symmetric(vertical: 24),
-                        child: Center(child: Text(l.t('assignment_variants_empty'), style: const TextStyle(color: C.text4))))
+                        child: Center(child: Text(l.t('assignment_variants_empty'), style: TextStyle(color: adaptiveText3(context)))))
                     else
                       ...variants!.map((v) {
                         final vid = (v['id'] as num?)?.toInt();
@@ -671,9 +672,9 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                               Text((v['title'] ?? '').toString(), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                               if ((v['content'] ?? '').toString().isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4),
-                                child: Text((v['content'] ?? '').toString(), style: const TextStyle(fontSize: 13, color: C.text4), maxLines: 3, overflow: TextOverflow.ellipsis)),
+                                child: Text((v['content'] ?? '').toString(), style: TextStyle(fontSize: 13, color: adaptiveText3(context)), maxLines: 3, overflow: TextOverflow.ellipsis)),
                             ])),
-                            GestureDetector(
+                            Tappable(
                               onTap: () async {
                                 if (vid == null) return;
                                 final ok = await showConfirmDialog(context,
@@ -690,6 +691,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                                   if (mounted && ctx.mounted) showToast(context, l.t('error'), error: true);
                                 }
                               },
+                              label: 'Удалить вариант',
                               child: const Padding(padding: EdgeInsets.all(4), child: Icon(CupertinoIcons.trash, size: 16, color: C.red)),
                             ),
                           ]));
@@ -747,13 +749,14 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           ]),
           const SizedBox(height: 24),
           _fieldLabel2(l.t('class_cover')),
-          GestureDetector(
+          Tappable(
             onTap: () async {
               final picker = ImagePicker();
               final img = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85, maxWidth: 1200);
               if (img == null) return;
               setS(() { newCoverFile = img; coverRemoved = false; });
             },
+            minSize: 0,
             child: Container(height: 150, decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3), width: 1.5)),
               clipBehavior: Clip.antiAlias,
               child: Stack(fit: StackFit.expand, children: [
@@ -778,7 +781,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           ),
           if (newCoverFile != null || (!coverRemoved && existingCover != null)) ...[
             const SizedBox(height: 8),
-            GestureDetector(onTap: () => setS(() { newCoverFile = null; coverRemoved = true; }),
+            Tappable(onTap: () => setS(() { newCoverFile = null; coverRemoved = true; }),
               child: Row(children: [const Icon(CupertinoIcons.xmark, size: 14, color: C.red), const SizedBox(width: 4), Text(l.t('remove_cover'), style: const TextStyle(fontSize: 13, color: C.red))])),
           ],
           const SizedBox(height: 20),
@@ -861,7 +864,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             _fieldLabel2(l.t('class_code')),
             const SizedBox(height: 8),
             Wrap(spacing: 8, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
-              GestureDetector(
+              Tappable(
                 onTap: () {
                   Clipboard.setData(ClipboardData(text: inviteCode));
                   showToast(context, '${l.t('code_copied')}: $inviteCode');
@@ -878,15 +881,15 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   ]),
                 ),
               ),
-              GestureDetector(
+              Tappable(
                 onTap: () async { Navigator.pop(ctx); await _regenerateCode(); },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadii.chip), border: Border.all(color: adaptiveBorder(context))),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(CupertinoIcons.refresh, size: 14, color: C.text4),
+                    Icon(CupertinoIcons.refresh, size: 14, color: adaptiveText3(context)),
                     const SizedBox(width: 6),
-                    Text(l.t('regenerate_code'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: C.text4)),
+                    Text(l.t('regenerate_code'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: adaptiveText3(context))),
                   ]),
                 ),
               ),
@@ -916,13 +919,13 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 title: Text(l.t('yearly_rotation'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                 subtitle: Padding(
                   padding: const EdgeInsets.only(top: 2),
-                  child: Text(l.t('yearly_rotation_sub'), style: const TextStyle(fontSize: 13, color: C.text4)),
+                  child: Text(l.t('yearly_rotation_sub'), style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
                 ),
               ),
             ),
             if (rotationYearly) ...[
               const SizedBox(height: 12),
-              GestureDetector(
+              Tappable(
                 onTap: () async {
                   Navigator.pop(ctx);
                   final changed = await guardedPush<bool>(context,

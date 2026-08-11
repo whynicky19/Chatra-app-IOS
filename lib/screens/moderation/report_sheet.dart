@@ -7,6 +7,8 @@ import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/errors.dart';
+import '../../widgets/app_button.dart';
+import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
 import '../settings/settings_shared.dart';
 
@@ -115,12 +117,12 @@ class _ReportSheetState extends State<_ReportSheet> {
       children: [
         Text(l.t('report_sub'),
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 13, color: C.text4, height: 1.4)),
+            style: TextStyle(fontSize: 13, color: adaptiveText3(context), height: 1.4)),
         const SizedBox(height: 20),
         Padding(
           padding: const EdgeInsets.only(bottom: 8, left: 2),
           child: Text(l.t('report_reason'),
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: C.text3)),
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: adaptiveText3(context))),
         ),
         for (final (value, key) in _reasons) ...[
           _ReasonRow(
@@ -141,27 +143,11 @@ class _ReportSheetState extends State<_ReportSheet> {
           ),
         ),
         const SizedBox(height: 20),
-        GestureDetector(
-          onTap: _busy ? null : _submit,
-          child: Container(
-            constraints: const BoxConstraints(minHeight: 52),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: C.red,
-              borderRadius: BorderRadius.circular(AppRadii.tile),
-            ),
-            child: Align(
-              heightFactor: 1,
-              child: _busy
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
-                  : Text(l.t('report_send'),
-                      style: const TextStyle(
-                          fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white)),
-            ),
-          ),
+        AppButton.destructive(
+          label: l.t('report_send'),
+          loading: _busy,
+          onPressed: _submit,
+          minHeight: 52,
         ),
       ],
     );
@@ -178,7 +164,7 @@ class _ReasonRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
-    return GestureDetector(
+    return Tappable(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(

@@ -13,6 +13,7 @@ import '../../../utils/ai_context.dart';
 import '../../../utils/ai_quota.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/ai_limit_notice.dart';
+import '../../../widgets/tappable.dart';
 import '../../../widgets/toast.dart';
 import '../../../utils/dates.dart';
 import 'ai_message_content.dart';
@@ -502,7 +503,7 @@ class _AiConversationViewState extends State<AiConversationView> {
         opacity: t.clamp(0.0, 1.0),
         child: Transform.translate(offset: Offset(0, 10 * (1 - t)), child: child),
       ),
-      child: GestureDetector(
+      child: Tappable(
         onTap: () {
           hapticSelection();
           _send(tip['prompt'] as String);
@@ -517,6 +518,8 @@ class _AiConversationViewState extends State<AiConversationView> {
             boxShadow: softShadow(isDark),
           ),
           child: Row(children: [
+            Icon(tip['icon'] as IconData, size: 16, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 8),
             Expanded(
               child: Text(tip['title'] as String,
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveText1(context), letterSpacing: -0.2)),
@@ -594,14 +597,20 @@ class _AiConversationViewState extends State<AiConversationView> {
                 BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.26), blurRadius: 18, offset: const Offset(0, 6)),
               ],
             ),
-            child: Text(text, style: const TextStyle(fontSize: 15.5, color: Colors.white, height: 1.55, letterSpacing: -0.1)),
+            child: Text(text,
+                style: TextStyle(
+                  fontSize: 15.5,
+                  color: Colors.white,
+                  height: 1.55,
+                  letterSpacing: -0.1,
+                  shadows: [Shadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: 2, offset: const Offset(0, 0.5))],
+                )),
           ),
         ),
         const SizedBox(height: 5),
         if (failed)
-          GestureDetector(
+          Tappable(
             onTap: () => _retryFailed(index),
-            behavior: HitTestBehavior.opaque,
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               const Icon(CupertinoIcons.exclamationmark_circle, size: 12, color: C.red),
               const SizedBox(width: 3),
@@ -629,7 +638,7 @@ class _AiConversationViewState extends State<AiConversationView> {
       child: Align(
         alignment: Alignment.centerLeft,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-          GestureDetector(
+          Tappable(
             onLongPress: () {
               hapticMedium();
               Clipboard.setData(ClipboardData(text: text));
@@ -661,9 +670,8 @@ class _AiConversationViewState extends State<AiConversationView> {
                 Text(m['time']!, style: const TextStyle(fontSize: 10.5, color: C.text4)),
               if (isLast && !_loading) ...[
                 if ((m['time'] ?? '').isNotEmpty) const SizedBox(width: 10),
-                GestureDetector(
+                Tappable(
                   onTap: _regenerateLast,
-                  behavior: HitTestBehavior.opaque,
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Icon(CupertinoIcons.arrow_2_squarepath, size: 10.5, color: C.text4.withValues(alpha: 0.8)),
                     const SizedBox(width: 3),
@@ -772,8 +780,9 @@ class _AiInputBar extends StatelessWidget {
             builder: (context, value, _) {
               final hasText = value.text.trim().isNotEmpty;
               final active = hasText && !loading && !exhausted;
-              return GestureDetector(
+              return Tappable(
                 onTap: loading ? onStop : (exhausted ? null : onSend),
+                label: loading ? 'Остановить генерацию' : 'Отправить сообщение',
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 220),
                   curve: Curves.easeOutCubic,

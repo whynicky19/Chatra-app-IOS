@@ -6,6 +6,7 @@ import '../../providers/l10n_provider.dart';
 import '../../providers/org_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_logo.dart';
+import '../../widgets/app_button.dart';
 import '../../widgets/tappable.dart';
 import 'verify_email_screen.dart';
 import 'forgot_password_screen.dart';
@@ -96,11 +97,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 _reveal(1, Column(children: [
                   Text(l.t('welcome'),
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -0.6, height: 1.15, color: adaptiveText1(context))),
+                    style: Theme.of(context).textTheme.headlineLarge!.copyWith(color: adaptiveText1(context))),
                   const SizedBox(height: 8),
                   Text(l.t('login_sub'),
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 15, color: C.text4, height: 1.4)),
+                    style: TextStyle(fontSize: 15, color: adaptiveText3(context), height: 1.4)),
                 ])),
                 const SizedBox(height: 32),
 
@@ -140,6 +141,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       suffixIcon: IconButton(
                         icon: Icon(_showPw ? CupertinoIcons.eye_slash : CupertinoIcons.eye,
                             color: C.text4, size: 18),
+                        tooltip: _showPw ? 'Скрыть пароль' : 'Показать пароль',
                         onPressed: () => setState(() => _showPw = !_showPw),
                       ),
                     ),
@@ -180,20 +182,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 24),
 
                 _reveal(3, Column(children: [
-                  Tappable(
-                    onTap: _busy ? null : _submit,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      constraints: const BoxConstraints(minHeight: 52),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: primary,
-                        borderRadius: BorderRadius.circular(AppRadii.tile),
-                      ),
-                      child: Align(heightFactor: 1, child: _busy
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
-                        : Text(l.t('login'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.1))),
-                    ),
+                  AppButton.primary(
+                    label: l.t('login'),
+                    onPressed: _busy ? null : _submit,
+                    loading: _busy,
                   ),
                   const SizedBox(height: 20),
                   Row(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -226,6 +218,7 @@ class _BackButton extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Tappable(
       onTap: onTap,
+      label: 'Назад',
       child: Container(
         width: 38, height: 38,
         decoration: BoxDecoration(

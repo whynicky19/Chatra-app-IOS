@@ -131,7 +131,12 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                   autofillHints: const [AutofillHints.oneTimeCode],
                   maxLength: 6,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: 10),
+                  // Тот же стиль OTP-поля, что и в forgot_password_screen.dart —
+                  // раньше здесь был крупнее (28/10 против 20/8), без причины
+                  // отличаясь для одной и той же по смыслу задачи "ввод
+                  // 6-значного кода"; более крупный трекинг+кегль сильнее
+                  // рисковал переполнением на узких экранах/увеличенном шрифте.
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: 8),
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   decoration: const InputDecoration(hintText: '••••••', counterText: ''),
                   onChanged: (_) { if (_error != null) setState(() => _error = null); },

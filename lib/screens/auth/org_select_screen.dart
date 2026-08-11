@@ -18,9 +18,6 @@ class OrgSelectScreen extends StatefulWidget {
 class _OrgSelectScreenState extends State<OrgSelectScreen> {
   OrgType? _picked;
 
-  static const _tealGrad  = [Color(0xFF006475), Color(0xFF009AAF)];
-  static const _amberGrad = [Color(0xFFB45309), Color(0xFFF59E0B)];
-
   Color get _accent => _picked == OrgType.school ? C.amber : C.teal;
 
   double get _logoT => _picked == OrgType.school ? 1.0 : 0.0;
@@ -76,8 +73,8 @@ class _OrgSelectScreenState extends State<OrgSelectScreen> {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Color.lerp(_tealGrad[0], _amberGrad[0], t)!,
-                          Color.lerp(_tealGrad[1], _amberGrad[1], t)!,
+                          Color.lerp(C.tealGradient[0], C.amberGradient[0], t)!,
+                          Color.lerp(C.tealGradient[1], C.amberGradient[1], t)!,
                         ],
                       ).createShader(bounds),
                       child: child,
@@ -105,7 +102,7 @@ class _OrgSelectScreenState extends State<OrgSelectScreen> {
                   const SizedBox(height: 10),
                   Text(l.t('org_subtitle'),
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 15, color: C.text4, height: 1.4)),
+                    style: TextStyle(fontSize: 15, color: adaptiveText3(context), height: 1.4)),
                 ])),
                 const SizedBox(height: 36),
 
@@ -114,7 +111,7 @@ class _OrgSelectScreenState extends State<OrgSelectScreen> {
                   subtitle: l.t('org_uni_sub'),
                   asset: 'assets/uni-logo.png',
                   accent: C.teal,
-                  gradient: _tealGrad,
+                  gradient: C.tealGradient,
                   selected: _picked == OrgType.university,
                   onTap: () => _pick(OrgType.university),
                 )),
@@ -124,7 +121,7 @@ class _OrgSelectScreenState extends State<OrgSelectScreen> {
                   subtitle: l.t('org_school_sub'),
                   icon: CupertinoIcons.book_fill,
                   accent: C.amber,
-                  gradient: _amberGrad,
+                  gradient: C.amberGradient,
                   selected: _picked == OrgType.school,
                   onTap: () => _pick(OrgType.school),
                 )),
@@ -182,7 +179,7 @@ class _GlassButton extends StatelessWidget {
         fontSize: 17,
         fontWeight: FontWeight.w700,
         style: LiquidGlassStyle(
-          shape: const LiquidGlassShape.roundedRectangle(cornerRadius: 16, borderWidth: 0),
+          shape: const LiquidGlassShape.roundedRectangle(cornerRadius: AppRadii.button, borderWidth: 0),
           appearance: LiquidGlassAppearance(
             color: active
                 ? accent.withValues(alpha: 0.88)

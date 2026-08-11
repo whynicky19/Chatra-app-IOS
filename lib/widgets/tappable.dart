@@ -2,9 +2,22 @@ import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatf
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+/// Минимальный размер интерактивной области по HIG (44×44pt).
+const double kMinTapTarget = 44.0;
+
 /// Тактильная кнопка-обёртка: даёт визуальный отклик на палец (лёгкое сжатие
 /// + затемнение) там, где раньше стоял голый `GestureDetector` без ripple —
 /// пользователь жал на карточку класса и не понимал, сработало ли нажатие.
+///
+/// Гарантирует минимум [kMinTapTarget] по каждой стороне зоны нажатия, даже
+/// если визуальный ребёнок меньше (иконка 18-34px) — лишняя площадь хит-теста
+/// невидима (не меняет вид ребёнка, не рисует фон/обводку), только расширяет
+/// `GestureDetector`. Это explicit HIG-требование: маленькие icon-only кнопки
+/// (34×34, 30×30 и мельче) физически неудобны для попадания пальцем. Там, где
+/// родитель задаёт свои жёсткие constraints (например, `SizedBox` с точным
+/// размером меньше 44), Flutter сам ужмёт запрошенный минимум до того, что
+/// реально доступно — `Tappable` не ломает вёрстку, а расширяется настолько,
+/// насколько ему позволяет контекст.
 ///
 /// `onTap == null` — виджет неактивен: не реагирует ни визуально, ни на
 /// касание (как задизейбленная кнопка).
@@ -18,6 +31,13 @@ import 'package:flutter/services.dart';
 /// iOS, поэтому там хаптика от Tappable подавляется совсем — вибрация
 /// остаётся только у нижней навигации (main_shell.dart, отдельный код, не
 /// через Tappable).
+///
+/// `label` — единственный источник accessibility-подписи: описывает ДЕЙСТВИЕ
+/// ("Открыть настройки"), а не иконку ("шестерёнка"). Обязателен для любой
+/// icon-only кнопки без видимого текста — иначе VoiceOver/TalkBack не может
+/// сообщить пользователю, что делает элемент. Для кнопок с собственным
+/// видимым текстом (внутри `child` уже есть `Text`) оставляй `label: null` —
+/// Flutter сам прочитает текст ребёнка, дублирующая подпись только мешает.
 class Tappable extends StatefulWidget {
   const Tappable({
     super.key,
@@ -28,6 +48,9 @@ class Tappable extends StatefulWidget {
     this.haptic = false,
     this.behavior,
     this.borderRadius,
+    this.label,
+    this.button = true,
+    this.minSize = kMinTapTarget,
   });
 
   final Widget child;
@@ -37,6 +60,20 @@ class Tappable extends StatefulWidget {
   final bool haptic;
   final HitTestBehavior? behavior;
   final BorderRadius? borderRadius;
+
+  /// Accessibility-подпись действия (VoiceOver/TalkBack). См. доку класса.
+  final String? label;
+
+  /// Помечает узел как `button` для скринридера. Выключи (`false`), если это
+  /// не кнопка, а, например, целая карточка-ссылка (роль `link` уместнее) —
+  /// в текущей кодовой базе такого различия ещё нет, поэтому по умолчанию true.
+  final bool button;
+
+  /// Минимальная сторона хит-зоны. По умолчанию — HIG-минимум (44). Не влияет
+  /// на визуальный размер [child]: лишняя площадь невидима и лишь расширяет
+  /// [GestureDetector]. Передай 0, чтобы отключить (для крупных элементов,
+  /// уже заведомо больше 44, это и так no-op).
+  final double minSize;
 
   @override
   State<Tappable> createState() => _TappableState();
@@ -53,7 +90,8 @@ class _TappableState extends State<Tappable> {
   @override
   Widget build(BuildContext context) {
     final active = widget.onTap != null || widget.onLongPress != null;
-    return GestureDetector(
+
+    Widget result = GestureDetector(
       behavior: widget.behavior ?? HitTestBehavior.opaque,
       onTapDown: active ? (_) => _setPressed(true) : null,
       onTapUp: active ? (_) => _setPressed(false) : null,
@@ -67,17 +105,34 @@ class _TappableState extends State<Tappable> {
             }
           : null,
       onLongPress: widget.onLongPress,
-      child: AnimatedScale(
-        scale: _pressed ? widget.scale : 1.0,
-        duration: const Duration(milliseconds: 100),
-        curve: Curves.easeOut,
-        child: AnimatedOpacity(
-          opacity: _pressed && active ? 0.75 : 1.0,
-          duration: const Duration(milliseconds: 100),
-          curve: Curves.easeOut,
-          child: widget.child,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minWidth: widget.minSize, minHeight: widget.minSize),
+        child: Center(
+          child: AnimatedScale(
+            scale: _pressed ? widget.scale : 1.0,
+            duration: const Duration(milliseconds: 100),
+            curve: Curves.easeOut,
+            child: AnimatedOpacity(
+              opacity: _pressed && active ? 0.75 : 1.0,
+              duration: const Duration(milliseconds: 100),
+              curve: Curves.easeOut,
+              child: widget.child,
+            ),
+          ),
         ),
       ),
     );
+
+    if (widget.label != null) {
+      result = Semantics(
+        label: widget.label,
+        button: widget.button,
+        enabled: active,
+        excludeSemantics: true,
+        child: result,
+      );
+    }
+
+    return result;
   }
 }

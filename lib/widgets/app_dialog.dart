@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import 'app_button.dart';
 
 Future<T?> showAppDialog<T>(
   BuildContext context, {
@@ -93,40 +94,20 @@ class AppDialogActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
-    final accent  = danger ? C.red : primary;
-    final enabled = onConfirm != null && !busy;
     return Row(children: [
-      Expanded(child: GestureDetector(
-        onTap: busy ? null : onCancel,
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 46),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: adaptiveSurface2(context),
-            borderRadius: BorderRadius.circular(AppRadii.tile),
-          ),
-          child: Align(heightFactor: 1, child: Text(cancelText, textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: adaptiveText1(context).withValues(alpha: 0.75)))),
-        ),
+      Expanded(child: AppButton.secondary(
+        label: cancelText,
+        onPressed: busy ? null : onCancel,
+        minHeight: 46,
       )),
       const SizedBox(width: 10),
-      Expanded(child: GestureDetector(
-        onTap: enabled ? onConfirm : null,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          constraints: const BoxConstraints(minHeight: 46),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: enabled || busy ? accent : accent.withValues(alpha: 0.35),
-            borderRadius: BorderRadius.circular(AppRadii.tile),
-            boxShadow: enabled ? primaryGlow(accent, opacity: 0.30) : null,
-          ),
-          child: Align(heightFactor: 1, child: busy
-            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
-            : Text(confirmText, textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white))),
-        ),
+      Expanded(child: AppButton(
+        label: confirmText,
+        variant: danger ? AppButtonVariant.destructive : AppButtonVariant.primary,
+        onPressed: onConfirm,
+        loading: busy,
+        glow: true,
+        minHeight: 46,
       )),
     ]);
   }

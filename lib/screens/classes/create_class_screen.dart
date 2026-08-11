@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_button.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
@@ -120,6 +121,7 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
                 child: Row(children: [
                   IconButton(
                     icon: const Icon(CupertinoIcons.xmark, size: 20),
+                    tooltip: 'Закрыть',
                     onPressed: () async {
                       if (await _confirmDiscard() && context.mounted) Navigator.pop(context);
                     },
@@ -213,24 +215,14 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
                     ]),
                     const SizedBox(height: 32),
 
-                    Tappable(
-                      onTap: _submitting ? null : _submit,
-                      child: AnimatedContainer(duration: const Duration(milliseconds: 200),
-                        constraints: const BoxConstraints(minHeight: 52),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: primary,
-                          borderRadius: BorderRadius.circular(AppRadii.tile),
-                          boxShadow: _submitting ? null : primaryGlow(primary, opacity: 0.34),
-                        ),
-                        child: Align(heightFactor: 1, child: _submitting
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
-                          : Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
-                              const Icon(CupertinoIcons.plus, size: 17, color: Colors.white),
-                              const SizedBox(width: 8),
-                              Text(l.t('create'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white)),
-                            ])),
-                      ),
+                    AppButton.primary(
+                      label: l.t('create'),
+                      icon: CupertinoIcons.plus,
+                      color: primary,
+                      loading: _submitting,
+                      onPressed: _submitting ? null : _submit,
+                      glow: true,
+                      minHeight: 52,
                     ),
                   ],
                 ),

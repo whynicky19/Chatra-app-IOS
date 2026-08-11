@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../models/ai_thread.dart';
 import '../../providers/ai_chats_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/tappable.dart';
 import 'widgets/ai_conversation_view.dart';
 import 'widgets/ai_history_drawer.dart';
 
@@ -137,8 +138,9 @@ class _HistoryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return GestureDetector(
+    return Tappable(
       onTap: onTap,
+      label: 'Открыть историю чатов',
       child: Container(
         width: 44,
         height: 44,

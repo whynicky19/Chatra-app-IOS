@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'detail_page_theme.dart';
 
 /// Круговой индикатор результата в духе Apple Fitness/Activity: анимированная
 /// заливка кольца при появлении, мягкое цветное свечение под кольцом вместо
@@ -78,9 +79,9 @@ class _ScoreRingState extends State<ScoreRing> with SingleTickerProviderStateMix
               child: Column(mainAxisSize: MainAxisSize.min, children: [
                 Text('${widget.score}',
                     style: TextStyle(fontSize: widget.size * 0.24, fontWeight: FontWeight.w800,
-                        color: isDark ? Colors.white : const Color(0xFF111111), height: 1, letterSpacing: -0.5)),
+                        color: detailText1(context), height: 1, letterSpacing: -0.5)),
                 Text('/ ${widget.maxScore}',
-                    style: TextStyle(fontSize: widget.size * 0.10, fontWeight: FontWeight.w600, color: const Color(0xFF8E8E93))),
+                    style: TextStyle(fontSize: widget.size * 0.10, fontWeight: FontWeight.w600, color: detailText2(context))),
               ]),
             ),
           ),

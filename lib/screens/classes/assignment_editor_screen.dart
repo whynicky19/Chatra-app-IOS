@@ -10,6 +10,7 @@ import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/dates.dart';
 import '../../utils/upload_limits.dart';
+import '../../widgets/app_button.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
@@ -435,16 +436,11 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
               ],
 
               const SizedBox(height: 28),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  icon: _submitting
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : Icon(_isEdit ? CupertinoIcons.checkmark : CupertinoIcons.plus, size: 16, color: Colors.white),
-                  label: Text(l.t(_isEdit ? 'save' : 'create_assignment')),
-                  style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-                  onPressed: _submitting ? null : _submit,
-                ),
+              AppButton.primary(
+                label: l.t(_isEdit ? 'save' : 'create_assignment'),
+                icon: _isEdit ? CupertinoIcons.checkmark : CupertinoIcons.plus,
+                loading: _submitting,
+                onPressed: _submitting ? null : _submit,
               ),
             ],
           ),
@@ -455,7 +451,7 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
 
   Widget _label(String s) => Padding(
         padding: const EdgeInsets.only(bottom: 8),
-        child: Text(s, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)),
+        child: Text(s, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: adaptiveText3(context), letterSpacing: 1)),
       );
 
   Widget _fileRow(String name, VoidCallback onRemove) => Container(
@@ -466,7 +462,7 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
           const Icon(CupertinoIcons.doc, size: 15, color: C.text3),
           const SizedBox(width: 8),
           Expanded(child: Text(name, style: const TextStyle(fontSize: 13, color: C.text3), overflow: TextOverflow.ellipsis)),
-          Tappable(onTap: onRemove, child: const Icon(CupertinoIcons.xmark, size: 15, color: C.red)),
+          Tappable(onTap: onRemove, label: 'Убрать файл', child: const Icon(CupertinoIcons.xmark, size: 15, color: C.red)),
         ]),
       );
 
@@ -485,7 +481,7 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
           onChanged: (v) { c.name = v; _markDirty(); },
         )),
         const SizedBox(width: 4),
-        Tappable(onTap: () => _removeCriterion(i), child: const Icon(CupertinoIcons.xmark, size: 16, color: C.red)),
+        Tappable(onTap: () => _removeCriterion(i), label: 'Удалить критерий', child: const Icon(CupertinoIcons.xmark, size: 16, color: C.red)),
       ]),
     );
   }

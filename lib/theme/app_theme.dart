@@ -40,12 +40,57 @@ class C {
   static const amberDk    = Color(0xFFD97706);
   static const amberLt    = Color(0xFFFEF3C7);
   static const darkAmberLt = Color(0xFF2A1F00);
+
+  // Более тёмная ступень teal/amber — только для двухцветных градиентов
+  // (логотип/карточка выбора организации на org_select_screen). Раньше жили
+  // как приватные `_tealGrad`/`_amberGrad` внутри самого экрана; вынесены
+  // сюда, т.к. это часть фирменной палитры, а не случайный локальный подбор.
+  static const tealDeep   = Color(0xFF006475);
+  static const amberDeep  = Color(0xFFB45309);
+  static const tealGradient  = [tealDeep, tealDk];
+  static const amberGradient = [amberDeep, amber];
+
+  // Роль/категория-акцент (учитель в admin_screen, тип уведомления
+  // "новое задание" в notifications_screen) — раньше был раскидан как
+  // повторяющийся hex-литерал #6366F1 в 4 местах без единого имени.
+  static const indigo = Color(0xFF6366F1);
+
+  // Третичный/приглушённый текст (см. adaptiveText3/adaptiveText4 ниже) —
+  // тёмные варианты для C.text3/C.text4. darkText4 сознательно совпадает по
+  // значению со светлым C.text4: на тёмной поверхности (darkSurface) этот же
+  // серый даёт контраст ≈5.1:1 (проходит WCAG AA), тогда как на белом —
+  // только ≈3.3:1 (не проходит). Раньше код использовал literal `C.text4`
+  // без адаптации к теме и "работал" в обеих темах случайно, по совпадению
+  // диапазона; здесь это же значение становится осознанным тёмным токеном.
+  static const darkText3 = Color(0xFFA0A0A5);
+  static const darkText4 = Color(0xFF8E8E93);
 }
 
+/// Единственный источник правды для скруглений во всём приложении.
+///
+/// Раньше радиусы приходили из трёх независимых мест: этих токенов,
+/// приватной константы `_r16` внутри самой темы (inputs/buttons/snackbar) и
+/// точечных hardcoded `BorderRadius.circular(N)` по экранам — то же самое
+/// "среднее" скругление кнопки/поля на разных экранах отличалось на 2-4px
+/// без причины. `_r16` удалена: `button`/`input` покрывают её роль.
 class AppRadii {
+  /// Крупные карточки (посты, задания, диалоги, обложки).
   static const double card = 20;
+  /// Компактные строки списков (файл, уведомление, действие в меню).
   static const double tile = 14;
+  /// Мелкие пилюли/бейджи/чипы.
   static const double chip = 10;
+  /// Кнопки и поля ввода — единый "control"-радиус (было: кнопки местами 14
+  /// через AppRadii.tile, местами 16 через _r16; поля ввода — всегда 16).
+  /// Сведены к одному значению, чтобы кнопка и поле формы рядом друг с
+  /// другом визуально совпадали.
+  static const double button = 16;
+  static const double input = button;
+  /// Верхние скруглённые углы bottom sheet — уже так было в settings_shared
+  /// (SheetScaffold) и report_sheet, здесь просто получает имя токена.
+  static const double sheet = 24;
+  /// Алиас card — центрированные диалоги (`AppDialogCard`, `showConfirmDialog`).
+  static const double dialog = card;
 }
 
 List<BoxShadow> cardShadow(bool isDark) => [
@@ -129,14 +174,34 @@ Color adaptiveText2(BuildContext context) {
   return isDark ? C.darkText2 : C.text2;
 }
 
-const _r16 = BorderRadius.all(Radius.circular(16));
+/// Третичный текст (метаданные, подписи полей) — C.text3 уже проходит
+/// WCAG AA на светлом фоне (≈5.2:1), в отличие от C.text4 (см. ниже).
+/// Предпочитай его вместо adaptiveText4 везде, где текст несёт смысл, а не
+/// чисто декоративен.
+Color adaptiveText3(BuildContext context) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  return isDark ? C.darkText3 : C.text3;
+}
+
+/// Самый приглушённый уровень текста. На светлом фоне C.text4 даёт лишь
+/// ≈3.3:1 контраста — ниже WCAG AA (4.5:1) для обычного текста. Используй
+/// ТОЛЬКО для действительно декоративных меток (таймстемпы-намёки, плейсхолдеры,
+/// иконки-заглушки), никогда для содержательного текста (email, даты,
+/// описания) — там нужен adaptiveText3/adaptiveText2.
+Color adaptiveText4(BuildContext context) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  return isDark ? C.darkText4 : C.text4;
+}
+
+const _rInput = BorderRadius.all(Radius.circular(AppRadii.input));
+const _rButton = BorderRadius.all(Radius.circular(AppRadii.button));
 
 InputDecorationTheme _input(Color fill, Color focus) => InputDecorationTheme(
   filled: true,
   fillColor: fill,
-  border: const OutlineInputBorder(borderRadius: _r16, borderSide: BorderSide.none),
-  enabledBorder: const OutlineInputBorder(borderRadius: _r16, borderSide: BorderSide.none),
-  focusedBorder: OutlineInputBorder(borderRadius: _r16, borderSide: BorderSide(color: focus, width: 1.8)),
+  border: const OutlineInputBorder(borderRadius: _rInput, borderSide: BorderSide.none),
+  enabledBorder: const OutlineInputBorder(borderRadius: _rInput, borderSide: BorderSide.none),
+  focusedBorder: OutlineInputBorder(borderRadius: _rInput, borderSide: BorderSide(color: focus, width: 1.8)),
   contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
   hintStyle: const TextStyle(color: C.text4, fontSize: 15, fontWeight: FontWeight.w400),
 );
@@ -147,7 +212,7 @@ ElevatedButtonThemeData _btnFor(Color primary) => ElevatedButtonThemeData(style:
   elevation: 0,
   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
   textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: 0.2),
-  shape: const RoundedRectangleBorder(borderRadius: _r16),
+  shape: const RoundedRectangleBorder(borderRadius: _rButton),
 ));
 
 const _pageTransitions = PageTransitionsTheme(builders: {
@@ -188,9 +253,9 @@ class AppTheme {
         backgroundColor: C.surface, foregroundColor: C.text1,
         elevation: 0, surfaceTintColor: Colors.transparent,
       ),
-      cardTheme: const CardThemeData(
+      cardTheme: CardThemeData(
         color: C.surface, elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: _r16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.card)),
       ),
       inputDecorationTheme: _input(C.surface2, primary),
       elevatedButtonTheme: _btnFor(primary),
@@ -199,12 +264,12 @@ class AppTheme {
         side: BorderSide(color: primary, width: 1.5),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-        shape: const RoundedRectangleBorder(borderRadius: _r16),
+        shape: const RoundedRectangleBorder(borderRadius: _rButton),
       )),
-      snackBarTheme: const SnackBarThemeData(
+      snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(16)),
+          borderRadius: BorderRadius.circular(AppRadii.card),
         ),
       ),
       dialogTheme: DialogThemeData(
@@ -242,9 +307,9 @@ class AppTheme {
         backgroundColor: C.darkSurface, foregroundColor: C.darkText1,
         elevation: 0, surfaceTintColor: Colors.transparent,
       ),
-      cardTheme: const CardThemeData(
+      cardTheme: CardThemeData(
         color: C.darkSurface, elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: _r16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.card)),
       ),
       inputDecorationTheme: _input(C.darkSurface2, primary),
       elevatedButtonTheme: _btnFor(primary),
@@ -253,12 +318,12 @@ class AppTheme {
         side: BorderSide(color: primary, width: 1.5),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-        shape: const RoundedRectangleBorder(borderRadius: _r16),
+        shape: const RoundedRectangleBorder(borderRadius: _rButton),
       )),
-      snackBarTheme: const SnackBarThemeData(
+      snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(16)),
+          borderRadius: BorderRadius.circular(AppRadii.card),
         ),
         backgroundColor: C.darkSurface2,
       ),

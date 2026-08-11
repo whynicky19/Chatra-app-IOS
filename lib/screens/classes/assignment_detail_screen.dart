@@ -9,6 +9,8 @@ import 'package:provider/provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_button.dart';
+import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
 import 'class_detail_utils.dart';
 import 'widgets/detail_page_theme.dart';
@@ -375,7 +377,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                         Expanded(child: Text(l.t('description'),
                             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: detailText1(context)))),
                         if (descText.isNotEmpty)
-                          GestureDetector(
+                          Tappable(
                             onTap: () => setState(() => _descHidden = !_descHidden),
                             child: Text(_descHidden ? l.t('show') : l.t('hide'),
                                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: accent)),
@@ -511,7 +513,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                     borderRadius: BorderRadius.circular(AppRadii.tile),
                     border: Border.all(color: _pickedFiles.isEmpty ? detailBorder(context) : accent.withValues(alpha: 0.4)),
                   ),
-                  child: GestureDetector(
+                  child: Tappable(
                     onTap: () async {
                       final picked = await pickUploadFiles(context);
                       if (picked != null) setState(() => _pickedFiles = picked);
@@ -572,15 +574,17 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
   // ── Плавающая верхняя панель: круглые кнопки "назад" / меню ──
   Widget _topBar(BuildContext context, bool isDark) {
     return Row(children: [
-      _circleButton(context, isDark, icon: CupertinoIcons.back, onTap: () => Navigator.pop(context)),
+      _circleButton(context, isDark, icon: CupertinoIcons.back, label: 'Назад', onTap: () => Navigator.pop(context)),
       const Spacer(),
-      if (widget.isTeacher) _circleButton(context, isDark, icon: CupertinoIcons.ellipsis, onTap: _openMenu),
+      if (widget.isTeacher) _circleButton(context, isDark, icon: CupertinoIcons.ellipsis, label: 'Действия с заданием', onTap: _openMenu),
     ]);
   }
 
-  Widget _circleButton(BuildContext context, bool isDark, {required IconData icon, required VoidCallback onTap}) {
-    return GestureDetector(
+  Widget _circleButton(BuildContext context, bool isDark, {required IconData icon, required String label, required VoidCallback onTap}) {
+    return Tappable(
       onTap: onTap,
+      label: label,
+      borderRadius: BorderRadius.circular(19),
       child: Container(
         width: 38, height: 38,
         decoration: BoxDecoration(
@@ -733,8 +737,9 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
     final isImage = _imageExts.contains(ext);
     final visual = fileTypeVisual(ext);
 
-    return GestureDetector(
+    return Tappable(
       onTap: () => widget.onOpenFile(url, name),
+      label: 'Открыть файл $name',
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(AppRadii.tile),
@@ -914,7 +919,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
     final maxScore = (a['max_score'] as num?) ?? 100;
     final accent = detailAccent(context);
     return _sectionCard(context, isDark, children: [
-      GestureDetector(
+      Tappable(
         onTap: () => setState(() => _rubricExpanded = !_rubricExpanded),
         child: Row(children: [
           Icon(CupertinoIcons.list_bullet, size: 16, color: accent),
@@ -990,9 +995,10 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                 ? SizedBox(key: const ValueKey('up'), width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: statusColor))
                 : done
                     ? Icon(CupertinoIcons.checkmark_circle_fill, key: const ValueKey('done'), size: 20, color: statusColor)
-                    : GestureDetector(
+                    : Tappable(
                         key: const ValueKey('rm'),
                         onTap: _busy ? null : () => setState(() => _pickedFiles.removeWhere((x) => x.name == f.name)),
+                        label: 'Убрать файл ${f.name}',
                         child: Icon(CupertinoIcons.xmark_circle_fill, size: 20, color: detailText2(context).withValues(alpha: 0.5)),
                       ),
           ),
@@ -1020,18 +1026,14 @@ class _BottomActionBar extends StatelessWidget {
       ),
       child: SafeArea(
         minimum: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-        child: SizedBox(
-          width: double.infinity,
-          height: 50,
-          child: CupertinoButton(
-            padding: EdgeInsets.zero,
-            borderRadius: BorderRadius.circular(AppRadii.tile),
-            color: secondary ? detailSurface(context) : accent,
-            onPressed: busy ? null : onTap,
-            child: busy
-                ? const SizedBox(width: 20, height: 20, child: CupertinoActivityIndicator(color: Colors.white))
-                : Text(label, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: secondary ? detailText1(context) : Colors.white)),
-          ),
+        child: AppButton(
+          label: label,
+          variant: secondary ? AppButtonVariant.secondary : AppButtonVariant.primary,
+          color: secondary ? null : accent,
+          background: secondary ? detailSurface(context) : null,
+          onPressed: onTap,
+          loading: busy,
+          minHeight: 50,
         ),
       ),
     );

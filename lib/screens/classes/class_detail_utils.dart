@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../utils/dates.dart';
+import '../../widgets/tappable.dart';
 
 /// grade.criteria_scores приходит с бэка JSON-строкой (Text-колонка в БД),
 /// а не готовым списком — элементы вида {name, score, max, comment}.
@@ -120,8 +121,9 @@ void showImageViewer(BuildContext ctx, String url, String name) {
             ),
           )),
           Positioned(top: MediaQuery.of(ctx).padding.top + 8, right: 16,
-            child: GestureDetector(
+            child: Tappable(
               onTap: () => Navigator.pop(ctx),
+              label: 'Закрыть просмотр изображения',
               child: Container(width: 36, height: 36,
                 decoration: const BoxDecoration(color: Colors.black45, shape: BoxShape.circle),
                 child: const Icon(CupertinoIcons.xmark, color: Colors.white, size: 18)),

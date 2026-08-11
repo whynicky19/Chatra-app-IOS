@@ -11,6 +11,7 @@ import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/image_cache.dart';
+import '../../widgets/app_button.dart';
 import '../../widgets/network_cover_image.dart';
 import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
@@ -140,7 +141,7 @@ class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
       padding: const EdgeInsets.fromLTRB(28, 24, 28, 28),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Align(alignment: Alignment.topRight,
-          child: Tappable(onTap: () => Navigator.pop(context),
+          child: Tappable(onTap: () => Navigator.pop(context), label: 'Закрыть',
             child: Container(width: 30, height: 30, decoration: BoxDecoration(color: adaptiveSurface2(context), shape: BoxShape.circle),
               child: const Icon(CupertinoIcons.xmark, size: 15, color: C.text4)))),
         const SizedBox(height: 2),
@@ -234,17 +235,16 @@ class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
 
         const SizedBox(height: 24),
         Row(children: [
-          Expanded(child: OutlinedButton(
+          Expanded(child: AppButton.secondary(
+            label: l.t('cancel'),
             onPressed: () => Navigator.pop(context),
-            style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-            child: Text(l.t('cancel')))),
+          )),
           const SizedBox(width: 12),
-          Expanded(child: ElevatedButton(
-            style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+          Expanded(child: AppButton.primary(
+            label: l.t('join_enter_class'),
+            loading: _busy,
             onPressed: _busy || _notFound ? null : _join,
-            child: _busy
-                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : Text(l.t('join_enter_class')))),
+          )),
         ]),
       ]),
     );

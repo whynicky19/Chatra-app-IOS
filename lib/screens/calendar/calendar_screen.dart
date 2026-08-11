@@ -9,6 +9,7 @@ import '../../theme/app_theme.dart';
 import '../classes/class_detail_screen.dart';
 import '../../utils/dates.dart';
 import '../../utils/nav_guard.dart';
+import '../../widgets/tappable.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -116,8 +117,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   SliverToBoxAdapter(child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 16, 22, 12),
                     child: Row(children: [
-                      GestureDetector(
+                      Tappable(
                         onTap: () => Navigator.pop(context),
+                        label: 'Назад',
                         child: Container(
                           width: 38, height: 38,
                           decoration: BoxDecoration(
@@ -138,7 +140,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           _deadlineMap.isEmpty
                               ? l.t('no_upcoming_deadlines')
                               : '${l.t('upcoming_tasks')}: ${_deadlineMap.values.fold<int>(0, (n, list) => n + list.length)}',
-                          style: const TextStyle(fontSize: 13, color: C.text4),
+                          style: TextStyle(fontSize: 13, color: adaptiveText3(context)),
                         ),
                       ])),
                     ]),
@@ -147,7 +149,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   SliverToBoxAdapter(child: _buildCalendar(isDark, today)),
                   SliverToBoxAdapter(child: _build7DayScroll(today, isDark)),
                   SliverToBoxAdapter(child: _buildDayList(isDark, today)),
-                  const SliverToBoxAdapter(child: SizedBox(height: 90)),
+                  const SliverToBoxAdapter(child: SizedBox(height: kBottomBarHeight)),
                 ]),
       ),
     );
@@ -171,18 +173,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
       child: Column(children: [
         Row(children: [
           _navBtn(CupertinoIcons.chevron_left, () => setState(() =>
-            _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month - 1))),
+            _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month - 1)), 'Предыдущий месяц'),
           Expanded(child: Text(
             '${l.t('months_full').split(',')[_focusedMonth.month - 1]} ${_focusedMonth.year}',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary),
           )),
           _navBtn(CupertinoIcons.chevron_right, () => setState(() =>
-            _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month + 1))),
+            _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month + 1)), 'Следующий месяц'),
         ]),
         const SizedBox(height: 12),
         Row(children: l.t('weekdays_short').split(',').map((d) => Expanded(
-          child: Center(child: Text(d, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4))),
+          child: Center(child: Text(d, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: adaptiveText3(context)))),
         )).toList()),
         const SizedBox(height: 8),
         GridView.count(
@@ -213,7 +215,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 }
               }
 
-              return GestureDetector(
+              return Tappable(
                 onTap: () => setState(() => _selectedDay = day),
                 child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                   AnimatedContainer(
@@ -264,12 +266,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
   Widget _legendDot(Color color, String label) => Row(mainAxisSize: MainAxisSize.min, children: [
     Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
     const SizedBox(width: 5),
-    Flexible(child: Text(label, style: const TextStyle(fontSize: 11, color: C.text4, fontWeight: FontWeight.w500),
+    Flexible(child: Text(label, style: TextStyle(fontSize: 11, color: adaptiveText3(context), fontWeight: FontWeight.w500),
       maxLines: 1, overflow: TextOverflow.ellipsis)),
   ]);
 
-  Widget _navBtn(IconData icon, VoidCallback onTap) => GestureDetector(
+  Widget _navBtn(IconData icon, VoidCallback onTap, String label) => Tappable(
     onTap: onTap,
+    label: label,
     child: Container(
       width: 32, height: 32,
       decoration: BoxDecoration(
@@ -300,7 +303,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             return s == 'submitted' || s == 'graded';
           });
 
-          return GestureDetector(
+          return Tappable(
             onTap: () => setState(() {
               _selectedDay = key;
               _focusedMonth = DateTime(key.year, key.month);
@@ -317,7 +320,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
               child: Column(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
                 Text(dayName, style: TextStyle(
                   fontSize: 11, fontWeight: FontWeight.w700,
-                  color: isSelected ? Colors.white70 : C.text4,
+                  color: isSelected ? Colors.white70 : adaptiveText3(context),
                 )),
                 const SizedBox(height: 2),
                 Text('${day.day}', style: TextStyle(
@@ -369,7 +372,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
           Icon(CupertinoIcons.calendar_badge_plus, size: 52, color: C.text4.withValues(alpha: 0.4)),
           const SizedBox(height: 12),
-          Text(l.t('no_deadlines'), style: const TextStyle(fontSize: 15, color: C.text4)),
+          Text(l.t('no_deadlines'), style: TextStyle(fontSize: 15, color: adaptiveText3(context))),
         ])),
       );
     }
@@ -380,8 +383,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 8, top: 4),
           child: Row(children: [
-            Text(dayLabel.toUpperCase(), style: const TextStyle(
-              fontSize: 11, fontWeight: FontWeight.w800, color: C.text4, letterSpacing: 1.0)),
+            Text(dayLabel.toUpperCase(), style: TextStyle(
+              fontSize: 11, fontWeight: FontWeight.w800, color: adaptiveText3(context), letterSpacing: 1.0)),
             const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
@@ -414,7 +417,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
           final accentColor = isSubmitted ? C.green : Theme.of(context).colorScheme.primary;
 
-          return GestureDetector(
+          return Tappable(
             onTap: classId != null ? () => guardedPush(context, MaterialPageRoute(
               builder: (_) => ClassDetailScreen(classId: classId, initialTab: 1),
             )) : null,
@@ -455,7 +458,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     if (classId != null && (classNames[classId] ?? '').isNotEmpty) ...[
                       const SizedBox(width: 8),
                       Flexible(child: Text(classNames[classId]!,
-                        style: const TextStyle(fontSize: 13, color: C.text4),
+                        style: TextStyle(fontSize: 13, color: adaptiveText3(context)),
                         maxLines: 1, overflow: TextOverflow.ellipsis)),
                     ],
                   ]),

@@ -1,10 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_button.dart';
 import '../../widgets/toast.dart';
 import '../../utils/dates.dart';
 import '../../utils/haptics.dart';
@@ -229,7 +229,7 @@ class _RolloverScreenState extends State<RolloverScreen> {
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700,
                     color: adaptiveText1(context), letterSpacing: -0.3)),
             Text(_step == 0 ? l.t('rollover_preview_sub') : l.t('review_deadlines_sub'),
-                style: const TextStyle(fontSize: 13, color: C.text4)),
+                style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
           ]),
         ),
       ]),
@@ -247,7 +247,7 @@ class _RolloverScreenState extends State<RolloverScreen> {
             const SizedBox(height: 14),
             Text(l.t('rollover_no_classes'),
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: C.text4)),
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveText3(context))),
           ]),
         ),
       );
@@ -298,13 +298,10 @@ class _RolloverScreenState extends State<RolloverScreen> {
         ),
       ),
       _bottomBar(
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 15)),
+        child: AppButton.primary(
+          label: '${l.t('rollover_confirm')} (${_checked.length})',
+          loading: _busy,
           onPressed: (_busy || _checked.isEmpty) ? null : () => _confirmRollover(l),
-          child: _busy
-              ? const SizedBox(width: 20, height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : Text('${l.t('rollover_confirm')} (${_checked.length})'),
         ),
       ),
     ]);
@@ -352,7 +349,7 @@ class _RolloverScreenState extends State<RolloverScreen> {
                 Text('${p['academic_year']}  ·  '
                     '${p['student_count']} ${l.t('students_count')}  ·  '
                     '${p['assignment_count']} ${l.t('assignments_count')}',
-                    style: const TextStyle(fontSize: 13, color: C.text4)),
+                    style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
               ]),
             ),
           ]),
@@ -379,7 +376,7 @@ class _RolloverScreenState extends State<RolloverScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                   child: Text(l.t('no_assignments'),
-                      style: const TextStyle(fontSize: 13, color: C.text4)),
+                      style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
                 )
               else
                 for (final d in rc.deadlines) _deadlineRow(l, rc, d),
@@ -388,13 +385,10 @@ class _RolloverScreenState extends State<RolloverScreen> {
         ),
       ),
       _bottomBar(
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 15)),
+        child: AppButton.primary(
+          label: l.t('publish_all'),
+          loading: _busy,
           onPressed: _busy ? null : () => _publishAll(l),
-          child: _busy
-              ? const SizedBox(width: 20, height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : Text(l.t('publish_all')),
         ),
       ),
     ]);
@@ -427,7 +421,7 @@ class _RolloverScreenState extends State<RolloverScreen> {
                   const Icon(CupertinoIcons.calendar, size: 12, color: C.text4),
                   const SizedBox(width: 5),
                   Text(due != null ? _fmtDateTime(due) : '—',
-                      style: const TextStyle(fontSize: 13, color: C.text4)),
+                      style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
                   if (!published) ...[
                     const SizedBox(width: 8),
                     Container(

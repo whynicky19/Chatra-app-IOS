@@ -7,6 +7,7 @@ import '../../../providers/l10n_provider.dart';
 import '../../../providers/ai_chats_provider.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/app_dialog.dart';
+import '../../../widgets/tappable.dart';
 import '../../../widgets/toast.dart';
 import '../../../utils/haptics.dart';
 
@@ -177,7 +178,7 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
           _buildSearch(surface, isDark, l),
           Expanded(
             child: provider.loading && all.isEmpty
-                ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary, strokeWidth: 2.5))
+                ? Center(child: CupertinoActivityIndicator(radius: 12, color: Theme.of(context).colorScheme.primary))
                 : all.isEmpty
                     ? _emptyState(l)
                     : filtered.isEmpty
@@ -197,8 +198,9 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
           child: Text(l.t('ai_chats_title'),
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.4)),
         ),
-        GestureDetector(
+        Tappable(
           onTap: widget.onCreate,
+          label: 'Новый чат',
           child: Container(
             width: 38,
             height: 38,
@@ -229,11 +231,12 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
             prefixIcon: const Icon(CupertinoIcons.search, size: 20, color: C.text4),
             suffixIcon: _query.isEmpty
                 ? null
-                : GestureDetector(
+                : Tappable(
                     onTap: () {
                       _searchCtrl.clear();
                       setState(() => _query = '');
                     },
+                    label: 'Очистить поиск',
                     child: const Icon(CupertinoIcons.clear_circled_solid, size: 18, color: C.text4)),
             border: InputBorder.none,
             enabledBorder: InputBorder.none,
@@ -295,7 +298,7 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
             background: Container(
               margin: const EdgeInsets.only(bottom: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFFEF4444),
+                color: C.red,
                 borderRadius: BorderRadius.circular(AppRadii.card),
               ),
               alignment: Alignment.centerRight,
@@ -312,7 +315,7 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
   Widget _threadRow(AiThread t, L10n l) {
     final primary = Theme.of(context).colorScheme.primary;
     final active = t.id == widget.activeThreadId;
-    return GestureDetector(
+    return Tappable(
       onTap: () {
         hapticSelection();
         widget.onSelect(t);
@@ -345,9 +348,9 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
             const SizedBox(height: 2),
             Text(_relTime(t.updatedAt, l), style: const TextStyle(fontSize: 11, color: C.text4)),
           ])),
-          GestureDetector(
+          Tappable(
             onTap: () => _showActions(t),
-            behavior: HitTestBehavior.opaque,
+            label: 'Действия с чатом',
             child: const Padding(
                 padding: EdgeInsets.only(left: 4), child: Icon(CupertinoIcons.ellipsis, size: 18, color: C.text4)),
           ),

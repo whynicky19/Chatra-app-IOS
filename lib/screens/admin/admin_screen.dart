@@ -10,7 +10,9 @@ import '../../utils/errors.dart';
 import '../../utils/image_cache.dart';
 import '../../utils/dates.dart';
 import '../../widgets/app_dialog.dart';
+import '../../widgets/cupertino_liquid_switch.dart';
 import '../../widgets/network_cover_image.dart';
+import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
 
 // Инициалы считаются на каждую строку списка (пользователи, классы,
@@ -200,11 +202,11 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                 Expanded(
                   child: Text('${l.t(targetKey)} #${r['target_id']}',
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 13, color: C.text4)),
+                      style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
                 ),
                 const SizedBox(width: 8),
                 Text(fmtDateTimeLocal((r['created_at'] ?? '').toString()),
-                    style: const TextStyle(fontSize: 11, color: C.text4)),
+                    style: TextStyle(fontSize: 11, color: adaptiveText3(context))),
               ]),
               if (className.isNotEmpty || targetTitle.isNotEmpty) ...[
                 const SizedBox(height: 6),
@@ -225,7 +227,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               if (reporter.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Text('${l.t('report')}: $reporter',
-                    style: const TextStyle(fontSize: 11, color: C.text4)),
+                    style: TextStyle(fontSize: 11, color: adaptiveText3(context))),
               ],
               const SizedBox(height: 12),
               Wrap(spacing: 8, runSpacing: 8, children: [
@@ -400,10 +402,10 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 14),
               child: Row(children: [
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(l.t('admin'), style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: adaptiveText1(context), letterSpacing: -0.5, height: 1.05)),
+                  Text(l.t('admin'), style: Theme.of(context).textTheme.headlineLarge!.copyWith(color: adaptiveText1(context))),
                   Text(l.t('admin_sub'), style: const TextStyle(fontSize: 13, color: C.text4)),
                 ])),
-                GestureDetector(
+                Tappable(
                   onTap: _showCreateDialog,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -526,7 +528,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
         ),
       ),
       Expanded(child: _loading
-        ? const Center(child: CircularProgressIndicator(color: C.text3, strokeWidth: 2.5))
+        ? const Center(child: CupertinoActivityIndicator(radius: 13, color: C.text3))
         : RefreshIndicator(
             color: primary,
             onRefresh: _load,
@@ -577,12 +579,13 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                           ),
                         ]),
                         const SizedBox(height: 2),
-                        Text(u['email'] ?? '', style: const TextStyle(fontSize: 13, color: C.text4), overflow: TextOverflow.ellipsis),
+                        Text(u['email'] ?? '', style: TextStyle(fontSize: 13, color: adaptiveText3(context)), overflow: TextOverflow.ellipsis),
                       ])),
                       const SizedBox(width: 8),
                       _RoleBadge(role: role),
-                      GestureDetector(
+                      Tappable(
                         onTap: () => _showUserActionsSheet(u),
+                        label: 'Действия с пользователем',
                         child: Container(
                           width: 34, height: 34,
                           margin: const EdgeInsets.only(left: 4),
@@ -605,7 +608,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     final isDark  = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
 
-    if (_aiLoading) return const Center(child: CircularProgressIndicator(color: C.text3, strokeWidth: 2.5));
+    if (_aiLoading) return const Center(child: CupertinoActivityIndicator(radius: 13, color: C.text3));
 
     final classes      = _allClassPosts;
     final classNames   = _classNameMapFrom(classes);
@@ -635,8 +638,9 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               const SizedBox(height: 2),
               Text(_fmtTokens(_totalTokens), style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: Colors.white, height: 1)),
             ])),
-            GestureDetector(
+            Tappable(
               onTap: _loadAi,
+              label: 'Обновить',
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(AppRadii.chip)),
@@ -699,7 +703,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(className, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700), overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 2),
-                    Text('$reqCount ${l.t('requests_count')}', style: const TextStyle(fontSize: 11, color: C.text4)),
+                    Text('$reqCount ${l.t('requests_count')}', style: TextStyle(fontSize: 11, color: adaptiveText3(context))),
                   ])),
                   Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                     Text(_fmtTokens(tokens), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: adaptiveText1(context))),
@@ -743,7 +747,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                     ClipRRect(borderRadius: BorderRadius.circular(AppRadii.chip),
                       child: LinearProgressIndicator(value: pct, backgroundColor: primary.withValues(alpha: 0.08), color: primary, minHeight: 5)),
                     const SizedBox(height: 3),
-                    Text('$count ${l.t('requests_label')}', style: const TextStyle(fontSize: 11, color: C.text4)),
+                    Text('$count ${l.t('requests_label')}', style: TextStyle(fontSize: 11, color: adaptiveText3(context))),
                   ])),
                   const SizedBox(width: 12),
                   Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
@@ -766,10 +770,10 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
                 child: Row(children: [
-                  const SizedBox(width: 22, child: Text('#', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4))),
-                  Expanded(flex: 3, child: Text(l.t('user_label'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 0.5))),
-                  Expanded(flex: 2, child: Text(l.t('class_col'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 0.5))),
-                  SizedBox(width: 74, child: Text(l.t('tokens_col'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 0.5), textAlign: TextAlign.right)),
+                  SizedBox(width: 22, child: Text('#', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: adaptiveText3(context)))),
+                  Expanded(flex: 3, child: Text(l.t('user_label'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: adaptiveText3(context), letterSpacing: 0.5))),
+                  Expanded(flex: 2, child: Text(l.t('class_col'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: adaptiveText3(context), letterSpacing: 0.5))),
+                  SizedBox(width: 74, child: Text(l.t('tokens_col'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: adaptiveText3(context), letterSpacing: 0.5), textAlign: TextAlign.right)),
                 ]),
               ),
               Divider(height: 1, color: C.border.withValues(alpha: 0.5)),
@@ -795,13 +799,13 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                   child: Row(children: [
-                    SizedBox(width: 22, child: Text('${i+1}', style: const TextStyle(fontSize: 11, color: C.text4))),
+                    SizedBox(width: 22, child: Text('${i+1}', style: TextStyle(fontSize: 11, color: adaptiveText3(context)))),
                     Expanded(flex: 3, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text(userName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis),
-                      Text(date, style: const TextStyle(fontSize: 11, color: C.text4)),
+                      Text(date, style: TextStyle(fontSize: 11, color: adaptiveText3(context))),
                     ])),
                     Expanded(flex: 2, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(className, style: const TextStyle(fontSize: 11, color: C.text4), overflow: TextOverflow.ellipsis),
+                      Text(className, style: TextStyle(fontSize: 11, color: adaptiveText3(context)), overflow: TextOverflow.ellipsis),
                       Container(
                         margin: const EdgeInsets.only(top: 2),
                         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
@@ -814,7 +818,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                     ])),
                     SizedBox(width: 74, child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                       Text('$totalTokens', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
-                      Text('$promptTokens+$completionTokens', style: const TextStyle(fontSize: 11, color: C.text4)),
+                      Text('$promptTokens+$completionTokens', style: TextStyle(fontSize: 11, color: adaptiveText3(context))),
                     ])),
                   ]),
                 );
@@ -822,14 +826,14 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               if (_aiLogs.length < _aiLogTotal)
                 Padding(
                   padding: const EdgeInsets.all(12),
-                  child: GestureDetector(
+                  child: Tappable(
                     onTap: _aiLogLoadingMore ? null : _loadMoreAiLogs,
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
                       child: Center(child: _aiLogLoadingMore
-                          ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: C.text3))
+                          ? const SizedBox(width: 16, height: 16, child: CupertinoActivityIndicator(radius: 8, color: C.text3))
                           : Text(l.t('show_more_full'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: adaptiveText2(context)))),
                     ),
                   ),
@@ -852,7 +856,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     final l       = context.read<L10n>();
     final isDark  = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
-    if (_classesLoading) return const Center(child: CircularProgressIndicator(color: C.text3, strokeWidth: 2.5));
+    if (_classesLoading) return const Center(child: CupertinoActivityIndicator(radius: 13, color: C.text3));
 
     final classes   = _allClassPosts;
     final userNames = _userNameMap;
@@ -890,7 +894,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             duration: Duration(milliseconds: 320 + i * 50),
             curve: Curves.easeOutCubic,
             builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 16*(1-t)), child: child)),
-            child: RepaintBoundary(child: GestureDetector(
+            child: RepaintBoundary(child: Tappable(
               onTap: () => _showStudentsSheet(classId, title, coverImg, i),
               child: Container(
                 margin: const EdgeInsets.only(bottom: 14),
@@ -919,7 +923,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                   Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(title, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: adaptiveText1(context)), maxLines: 2, overflow: TextOverflow.ellipsis),
                     if (description.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 3),
-                      child: Text(description, style: const TextStyle(fontSize: 13, color: C.text4), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      child: Text(description, style: TextStyle(fontSize: 13, color: adaptiveText3(context)), maxLines: 1, overflow: TextOverflow.ellipsis)),
                     const SizedBox(height: 10),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
@@ -944,7 +948,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                       child: Row(children: [
                         const Icon(CupertinoIcons.person, size: 13, color: C.text4),
                         const SizedBox(width: 4),
-                        Text(teacherName, style: const TextStyle(fontSize: 13, color: C.text4)),
+                        Text(teacherName, style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
                       ])),
                     const SizedBox(height: 10),
                     Container(
@@ -1030,11 +1034,12 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                     Text('$studentCount ${l.t('students_count')}',
                       style: const TextStyle(fontSize: 13, color: C.text3, fontWeight: FontWeight.w600)),
                     const SizedBox(width: 8),
-                    Text('${l.t('total_label').toLowerCase()} ${members.length}', style: const TextStyle(fontSize: 13, color: C.text4, fontWeight: FontWeight.w500)),
+                    Text('${l.t('total_label').toLowerCase()} ${members.length}', style: TextStyle(fontSize: 13, color: adaptiveText3(context), fontWeight: FontWeight.w500)),
                   ]),
                 ])),
-                GestureDetector(
+                Tappable(
                   onTap: () => _showRejoinableSheet(classId, className, doRefresh),
+                  label: 'Вернуть студента',
                   child: Container(
                     width: 36, height: 36,
                     margin: const EdgeInsets.only(right: 8),
@@ -1042,8 +1047,9 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                     child: Icon(CupertinoIcons.person_badge_plus, size: 18, color: primary),
                   ),
                 ),
-                GestureDetector(
+                Tappable(
                   onTap: doRefresh,
+                  label: 'Обновить',
                   child: Container(
                     width: 36, height: 36,
                     decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
@@ -1060,7 +1066,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                     const SizedBox(height: 14),
                     Text(l.t('no_students_class'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: C.text4)),
                     const SizedBox(height: 16),
-                    GestureDetector(
+                    Tappable(
                       onTap: doRefresh,
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
@@ -1092,7 +1098,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                             .split(_wsRe).take(2)
                             .map((w) => w.isEmpty ? '' : w[0].toUpperCase()).join();
                         final isTeacher  = role == 'teacher' || role == 'admin';
-                        final roleColor  = isTeacher ? const Color(0xFF6366F1) : C.text4;
+                        final roleColor  = isTeacher ? C.indigo : C.text4;
                         final roleLabel  = isTeacher ? l.t('role_teacher_short') : l.t('role_student_short');
                         return Container(
                           padding: const EdgeInsets.all(12),
@@ -1112,7 +1118,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                               Text(display, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                               const SizedBox(height: 2),
-                              Text(email, style: const TextStyle(fontSize: 13, color: C.text4)),
+                              Text(email, style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
                             ])),
                             Column(crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
                               Container(
@@ -1224,10 +1230,10 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                               Text(display, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
                               const SizedBox(height: 2),
-                              Text(email, style: const TextStyle(fontSize: 13, color: C.text4), maxLines: 1, overflow: TextOverflow.ellipsis),
+                              Text(email, style: TextStyle(fontSize: 13, color: adaptiveText3(context)), maxLines: 1, overflow: TextOverflow.ellipsis),
                             ])),
                             const SizedBox(width: 8),
-                            GestureDetector(
+                            Tappable(
                               onTap: busy ? null : () => add(u),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
@@ -1308,7 +1314,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
 
         Widget roleTile(String value, String label, Color color) {
           final selected = role == value;
-          return Expanded(child: GestureDetector(
+          return Expanded(child: Tappable(
             onTap: selected ? null : () async {
               final ok = await _action(u, value);
               if (ok && ctx.mounted) setS(() => u['role'] = value);
@@ -1327,7 +1333,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
         }
 
         Widget actionTile({required IconData icon, required Color color, required String title, String? subtitle, Widget? trailing, VoidCallback? onTap}) {
-          return GestureDetector(
+          return Tappable(
             onTap: onTap,
             child: Container(
               margin: const EdgeInsets.only(bottom: 8),
@@ -1383,7 +1389,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             Row(children: [
               roleTile('student', l.t('role_student_short'),  const Color(0xFF059669)),
               const SizedBox(width: 8),
-              roleTile('teacher', l.t('role_teacher_short'), const Color(0xFF6366F1)),
+              roleTile('teacher', l.t('role_teacher_short'), C.indigo),
               const SizedBox(width: 8),
               roleTile('admin',   l.t('role_admin_short'),   primary),
             ]),
@@ -1396,7 +1402,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               color: C.amber,
               title: l.t('ai_unlimited'),
               subtitle: aiUnlimited ? l.t('ai_unlimited_on_sub') : l.t('ai_unlimited_off_sub'),
-              trailing: IgnorePointer(child: Switch(value: aiUnlimited, onChanged: (_) {})),
+              trailing: IgnorePointer(child: CupertinoLiquidSwitch(value: aiUnlimited, onChanged: (_) {}, accent: C.amber)),
               onTap: () async {
                 final ok = await _action(u, 'toggle_ai_unlimited');
                 if (ok && ctx.mounted) setS(() => u['ai_unlimited'] = !aiUnlimited);
@@ -1474,7 +1480,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
 
       Widget roleChip(String value, String label, Color color) {
         final selected = role == value;
-        return Expanded(child: GestureDetector(
+        return Expanded(child: Tappable(
           onTap: busy ? null : () => setS(() => role = value),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
@@ -1517,8 +1523,9 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           decoration: InputDecoration(
             hintText: l.t('password'),
             prefixIcon: const Icon(CupertinoIcons.lock, size: 18, color: C.text4),
-            suffixIcon: GestureDetector(
+            suffixIcon: Tappable(
               onTap: () => setS(() => obscure = !obscure),
+              label: obscure ? 'Показать пароль' : 'Скрыть пароль',
               child: Icon(obscure ? CupertinoIcons.eye : CupertinoIcons.eye_slash, size: 18, color: C.text4),
             ),
           ),
@@ -1529,7 +1536,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
         Row(children: [
           roleChip('student', l.t('role_student_short'),  const Color(0xFF059669)),
           const SizedBox(width: 8),
-          roleChip('teacher', l.t('role_teacher_short'), const Color(0xFF6366F1)),
+          roleChip('teacher', l.t('role_teacher_short'), C.indigo),
           const SizedBox(width: 8),
           roleChip('admin',   l.t('role_admin_short'),   primary),
         ]),
@@ -1588,7 +1595,7 @@ class _RoleBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
-    final color = role == 'admin' ? primary : role == 'teacher' ? const Color(0xFF6366F1) : C.text4;
+    final color = role == 'admin' ? primary : role == 'teacher' ? C.indigo : C.text4;
     return Container(
       margin: const EdgeInsets.only(right: 4),
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
@@ -1615,7 +1622,7 @@ class _AiFilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
-    return GestureDetector(
+    return Tappable(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
@@ -1638,7 +1645,7 @@ class _ReportActionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return Tappable(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),

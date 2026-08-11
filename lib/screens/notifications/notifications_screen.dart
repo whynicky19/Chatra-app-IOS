@@ -13,6 +13,7 @@ import '../../utils/dates.dart';
 import '../../utils/haptics.dart';
 import '../../utils/nav_guard.dart';
 import '../../widgets/skeleton.dart';
+import '../../widgets/tappable.dart';
 
 enum _NType { newAssignment, deadline, grade }
 
@@ -273,14 +274,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(child: Column(children: [
         Padding(padding: const EdgeInsets.fromLTRB(20, 20, 20, 16), child: Row(children: [
-          GestureDetector(onTap: () => Navigator.pop(context),
+          Tappable(onTap: () => Navigator.pop(context),
+            label: 'Назад',
             child: Container(width: 40, height: 40, alignment: Alignment.center,
               decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile),
                 border: Border.all(color: adaptiveBorder(context))),
               child: Icon(CupertinoIcons.chevron_left, size: 20, color: adaptiveText1(context)))),
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(l.t('notifications'), style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: adaptiveText1(context), letterSpacing: -0.4, height: 1.05)),
+            Text(l.t('notifications'), style: Theme.of(context).textTheme.headlineLarge?.copyWith(color: adaptiveText1(context))),
             if (!_loading) ...[
               const SizedBox(height: 3),
               Row(children: [
@@ -291,13 +293,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   Icon(CupertinoIcons.checkmark_circle_fill, size: 13, color: C.green.withValues(alpha: 0.8)),
                 if (unread == 0) const SizedBox(width: 5),
                 Flexible(child: Text(unread > 0 ? '$unread ${l.t('notif_unread')}' : l.t('all_read'),
-                  overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, color: C.text4, fontWeight: FontWeight.w500))),
+                  overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, color: adaptiveText3(context), fontWeight: FontWeight.w500))),
               ]),
             ],
           ])),
           const SizedBox(width: 8),
           if (!_loading && unread > 0)
-            GestureDetector(
+            Tappable(
               onTap: _markAllRead,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -313,7 +315,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               ),
             )
           else
-            GestureDetector(onTap: _load,
+            Tappable(onTap: _load,
+              label: 'Обновить',
               child: Container(width: 40, height: 40, alignment: Alignment.center,
                 decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile),
                   border: Border.all(color: adaptiveBorder(context))),
@@ -345,8 +348,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     if (item is String) {
                       return Padding(
                         padding: EdgeInsets.only(left: 6, top: i == 0 ? 2 : 14, bottom: 8),
-                        child: Text(item.toUpperCase(), style: const TextStyle(
-                          fontSize: 11, fontWeight: FontWeight.w800, color: C.text4, letterSpacing: 1.0)),
+                        child: Text(item.toUpperCase(), style: TextStyle(
+                          fontSize: 11, fontWeight: FontWeight.w800, color: adaptiveText3(context), letterSpacing: 1.0)),
                       );
                     }
                     final n = item as _Notif;
@@ -369,7 +372,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         background: Container(
                           margin: const EdgeInsets.only(bottom: 10),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFEF4444),
+                            color: C.red,
                             borderRadius: BorderRadius.circular(AppRadii.card),
                           ),
                           alignment: Alignment.centerRight,
@@ -409,9 +412,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case _NType.grade:
         return {'icon': CupertinoIcons.rosette, 'color': Theme.of(context).colorScheme.primary, 'bg': Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)};
       case _NType.deadline:
-        return {'icon': CupertinoIcons.clock_fill, 'color': const Color(0xFFEF4444), 'bg': const Color(0xFFEF4444).withValues(alpha: 0.10)};
+        return {'icon': CupertinoIcons.clock_fill, 'color': C.red, 'bg': C.red.withValues(alpha: 0.10)};
       case _NType.newAssignment:
-        return {'icon': CupertinoIcons.doc_text_fill, 'color': const Color(0xFF6366F1), 'bg': const Color(0xFF6366F1).withValues(alpha: 0.08)};
+        return {'icon': CupertinoIcons.doc_text_fill, 'color': C.indigo, 'bg': C.indigo.withValues(alpha: 0.08)};
     }
   }
 
@@ -423,7 +426,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       const SizedBox(height: 20),
       Text(l.t('no_notif'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
       const SizedBox(height: 6),
-      Text(l.t('no_notif_sub'), style: const TextStyle(fontSize: 15, color: C.text4, height: 1.5), textAlign: TextAlign.center),
+      Text(l.t('no_notif_sub'), style: TextStyle(fontSize: 15, color: adaptiveText3(context), height: 1.5), textAlign: TextAlign.center),
     ]));
   }
 }
@@ -457,25 +460,17 @@ class _NotifCard extends StatefulWidget {
 }
 
 class _NotifCardState extends State<_NotifCard> {
-  bool _pressed = false;
-
   @override
   Widget build(BuildContext context) {
     final n = widget.notif;
     final c = widget.config['color'] as Color;
     final icon = widget.config['icon'] as IconData;
 
-    return GestureDetector(
+    return Tappable(
       behavior: HitTestBehavior.opaque,
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapCancel: () => setState(() => _pressed = false),
-      onTapUp: (_) => setState(() => _pressed = false),
+      scale: 0.98,
       onTap: widget.onTap,
-      child: AnimatedScale(
-        scale: _pressed ? 0.98 : 1.0,
-        duration: const Duration(milliseconds: 120),
-        curve: Curves.easeOut,
-        child: Container(
+      child: Container(
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
@@ -508,11 +503,11 @@ class _NotifCardState extends State<_NotifCard> {
                   color: adaptiveText1(context), height: 1.25))),
                 const SizedBox(width: 8),
                 Text(widget.timeAgo, style: TextStyle(
-                  fontSize: 11.5, color: C.text4.withValues(alpha: 0.8), fontWeight: FontWeight.w600)),
+                  fontSize: 11.5, color: adaptiveText3(context), fontWeight: FontWeight.w600)),
               ]),
               const SizedBox(height: 4),
               Text(n.body, maxLines: 2, overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 13, color: C.text4, height: 1.4)),
+                style: TextStyle(fontSize: 13, color: adaptiveText3(context), height: 1.4)),
             ])),
             if (widget.canNavigate) ...[
               const SizedBox(width: 4),
@@ -521,7 +516,6 @@ class _NotifCardState extends State<_NotifCard> {
             ],
           ]),
         ),
-      ),
     );
   }
 }

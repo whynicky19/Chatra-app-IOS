@@ -6,6 +6,7 @@ import '../../providers/l10n_provider.dart';
 import '../../providers/org_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_logo.dart';
+import '../../widgets/app_button.dart';
 import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
 import '../legal/privacy_policy_screen.dart';
@@ -138,6 +139,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       backgroundColor: isDark ? C.darkBg : C.bg,
       body: Stack(children: [
         SafeArea(child: Stack(children: [
+          Positioned(top: 8, left: 16, child: _BackButton(onTap: widget.onGoLogin)),
+
           Center(child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 56),
             child: ConstrainedBox(
@@ -149,11 +152,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 _reveal(1, Column(children: [
                   Text(l.t('register'),
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 31, fontWeight: FontWeight.w800, letterSpacing: -0.6, height: 1.15, color: adaptiveText1(context))),
+                    style: Theme.of(context).textTheme.headlineLarge!.copyWith(color: adaptiveText1(context))),
                   const SizedBox(height: 8),
                   Text(l.t('register_sub'),
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 15, color: C.text4, height: 1.4)),
+                    style: TextStyle(fontSize: 15, color: adaptiveText3(context), height: 1.4)),
                 ])),
                 const SizedBox(height: 28),
 
@@ -162,6 +165,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   TextField(
                     controller: _name,
                     autofillHints: const [AutofillHints.name],
+                    textCapitalization: TextCapitalization.words,
                     textInputAction: TextInputAction.next,
                     decoration: InputDecoration(
                       hintText: l.t('fio_placeholder'),
@@ -251,6 +255,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 _reveal(3, Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
                   Tappable(
                     onTap: () => setState(() => _agreedTerms = !_agreedTerms),
+                    minSize: 44,
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 160),
                       width: 24, height: 24,
@@ -294,23 +299,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 18),
 
                 _reveal(3, Column(children: [
-                  Tappable(
-                    onTap: canSubmit ? _submit : null,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeOut,
-                      constraints: const BoxConstraints(minHeight: 52),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: canSubmit || auth.isLoading ? primary : adaptiveSurface2(context),
-                        borderRadius: BorderRadius.circular(AppRadii.tile),
-                      ),
-                      child: Align(heightFactor: 1, child: auth.isLoading
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
-                        : Text(l.t('register_btn'), style: TextStyle(
-                            fontSize: 17, fontWeight: FontWeight.w700, letterSpacing: 0.1,
-                            color: canSubmit ? Colors.white : C.text4))),
-                    ),
+                  AppButton.primary(
+                    label: l.t('register_btn'),
+                    onPressed: canSubmit ? _submit : null,
+                    loading: auth.isLoading,
                   ),
                   const SizedBox(height: 20),
                   Row(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -332,4 +324,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget _fieldLabel(String s) => Padding(
     padding: const EdgeInsets.only(bottom: 7, left: 2),
     child: Text(s, style: Theme.of(context).textTheme.titleSmall!.copyWith(color: C.text3)));
+}
+
+class _BackButton extends StatelessWidget {
+  final VoidCallback? onTap;
+  const _BackButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Tappable(
+      onTap: onTap,
+      label: 'Назад',
+      child: Container(
+        width: 38, height: 38,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          shape: BoxShape.circle,
+          boxShadow: softShadow(isDark),
+        ),
+        child: Icon(CupertinoIcons.chevron_left, size: 18, color: adaptiveText1(context)),
+      ),
+    );
+  }
 }

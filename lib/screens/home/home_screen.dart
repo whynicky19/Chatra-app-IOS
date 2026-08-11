@@ -197,11 +197,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ))),
               const SizedBox(width: 8),
               if (!auth.isTeacher) ...[
-                _HeaderBtn(icon: CupertinoIcons.calendar, onTap: _openCalendar, isDark: isDark),
+                _HeaderBtn(icon: CupertinoIcons.calendar, onTap: _openCalendar, isDark: isDark, label: 'Открыть календарь'),
                 const SizedBox(width: 8),
               ],
               if (auth.isTeacher) ...[
                 Tappable(onTap: _showCreateClass,
+                  label: 'Создать класс',
                   child: Container(
                     width: 42, height: 42,
                     decoration: BoxDecoration(
@@ -218,6 +219,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     if (!context.mounted) return;
                     context.read<ClassesProvider>().loadNotifBadge();
                   },
+                  label: 'Открыть уведомления',
                   child: Stack(children: [
                     _HeaderBtn(icon: CupertinoIcons.bell, onTap: null, isDark: isDark),
                     Positioned(top: 7, right: 7, child: ValueListenableBuilder<int>(
@@ -236,6 +238,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 ),
                 const SizedBox(width: 8),
                 Tappable(onTap: _showJoinDialog,
+                  label: 'Вступить по коду',
                   child: Container(
                     width: 42, height: 42,
                     decoration: BoxDecoration(
@@ -250,7 +253,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
           if (provider.loading && provider.classes.isEmpty)
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 90),
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, kBottomBarHeight),
               sliver: SliverList(delegate: SliverChildBuilderDelegate(
                 (_, i) => TweenAnimationBuilder<double>(
                   tween: Tween(begin: 0.0, end: 1.0),
@@ -281,6 +284,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       style: TextStyle(fontSize: 13, color: primary, fontWeight: FontWeight.w500))),
                     Tappable(
                       onTap: _dismissDragHint,
+                      label: 'Скрыть подсказку',
                       child: Icon(CupertinoIcons.xmark, color: primary, size: 18),
                     ),
                   ]),
@@ -367,7 +371,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
           if (!auth.isTeacher && !provider.loading && provider.classes.isNotEmpty)
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 90),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, kBottomBarHeight),
               sliver: SliverToBoxAdapter(child: TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0.0, end: 1.0),
                 duration: const Duration(milliseconds: 500),
@@ -393,14 +397,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       const SizedBox(height: 12),
                       Text(l.t('add_subject'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
                       const SizedBox(height: 3),
-                      Text(l.t('enter_teacher_code'), style: const TextStyle(fontSize: 13, color: C.text4)),
+                      Text(l.t('enter_teacher_code'), style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
                     ]),
                   ),
                 ),
               )),
             )
           else if (!provider.loading)
-            const SliverToBoxAdapter(child: SizedBox(height: 90)),
+            const SliverToBoxAdapter(child: SizedBox(height: kBottomBarHeight)),
         ]),
       ),
     );
@@ -486,7 +490,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       const SizedBox(height: 6),
                       Text(l.t('confirm_delete_hint'),
                         textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 13, color: C.text4, height: 1.45)),
+                        style: TextStyle(fontSize: 13, color: adaptiveText3(c), height: 1.45)),
                       const SizedBox(height: 16),
                       TextField(
                         controller: nameCtrl,
@@ -630,7 +634,7 @@ class _ClassContextMenu extends StatelessWidget {
                   ]),
                 ),
                 const Spacer(),
-                _SmallAction(icon: CupertinoIcons.doc_on_doc, bg: primary.withValues(alpha: 0.1), iconColor: primary, onTap: onCopyCode),
+                _SmallAction(icon: CupertinoIcons.doc_on_doc, bg: primary.withValues(alpha: 0.1), iconColor: primary, onTap: onCopyCode, label: 'Скопировать код приглашения'),
               ]),
             ),
 
@@ -673,11 +677,13 @@ class _SmallAction extends StatelessWidget {
   final Color bg;
   final Color iconColor;
   final VoidCallback onTap;
-  const _SmallAction({required this.icon, required this.bg, required this.iconColor, required this.onTap});
+  final String? label;
+  const _SmallAction({required this.icon, required this.bg, required this.iconColor, required this.onTap, this.label});
 
   @override
   Widget build(BuildContext context) => Tappable(
     onTap: onTap,
+    label: label,
     child: Container(
       width: 34, height: 34,
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(AppRadii.chip)),
@@ -936,6 +942,7 @@ class _ClassCard extends StatelessWidget {
                 const Spacer(),
                 if (isTeacher) _ActionBtn(
                   icon: CupertinoIcons.trash, color: C.text4, isDark: isDark,
+                  label: 'Удалить класс',
                   onTap: () async {
                     final ok = await showConfirmDialog(context,
                       title: deleteLabel,
@@ -948,6 +955,7 @@ class _ClassCard extends StatelessWidget {
                 ),
                 if (!isTeacher) _ActionBtn(
                   icon: CupertinoIcons.arrow_right_square, color: C.text4, isDark: isDark,
+                  label: 'Покинуть класс',
                   onTap: () async {
                     final ok = await showConfirmDialog(context,
                       title: leaveLabel,
@@ -972,11 +980,13 @@ class _HeaderBtn extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onTap;
   final bool isDark;
-  const _HeaderBtn({required this.icon, required this.onTap, required this.isDark});
+  final String? label;
+  const _HeaderBtn({required this.icon, required this.onTap, required this.isDark, this.label});
 
   @override
   Widget build(BuildContext context) => Tappable(
     onTap: onTap,
+    label: label,
     child: Container(width: 42, height: 42,
       decoration: BoxDecoration(
         color: adaptiveSurface2(context),
@@ -997,7 +1007,7 @@ class _MetaChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const c = C.text4;
+    final c = adaptiveText3(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
@@ -1007,7 +1017,7 @@ class _MetaChip extends StatelessWidget {
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(icon, size: 12, color: c),
         const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c)),
+        Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c)),
       ]),
     );
   }
@@ -1018,11 +1028,13 @@ class _ActionBtn extends StatelessWidget {
   final Color color;
   final bool isDark;
   final VoidCallback onTap;
-  const _ActionBtn({required this.icon, required this.color, required this.isDark, required this.onTap});
+  final String? label;
+  const _ActionBtn({required this.icon, required this.color, required this.isDark, required this.onTap, this.label});
 
   @override
   Widget build(BuildContext context) => Tappable(
     onTap: onTap,
+    label: label,
     child: Container(width: 34, height: 34,
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
@@ -1053,7 +1065,7 @@ class _EmptyState extends StatelessWidget {
         Text(l.t('no_classes'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: adaptiveText1(context), letterSpacing: -0.4)),
         const SizedBox(height: 8),
         Text(isTeacher ? l.t('create_first_class') : l.t('enter_teacher_code'),
-          style: const TextStyle(fontSize: 15, color: C.text4), textAlign: TextAlign.center),
+          style: TextStyle(fontSize: 15, color: adaptiveText3(context)), textAlign: TextAlign.center),
         const SizedBox(height: 28),
         if (isTeacher) ...[
           SizedBox(width: double.infinity, child: ElevatedButton.icon(

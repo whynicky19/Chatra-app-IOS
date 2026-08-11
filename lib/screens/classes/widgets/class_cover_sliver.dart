@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/image_cache.dart';
 import '../../../widgets/network_cover_image.dart';
+import '../../../widgets/tappable.dart';
 
 class ClassCoverSliver extends StatelessWidget {
   final String title;
@@ -63,10 +64,10 @@ class ClassCoverSliver extends StatelessWidget {
       elevation: 0,
       scrolledUnderElevation: 0,
       forceMaterialTransparency: true,
-      leading: IconButton(
-        padding: EdgeInsets.zero,
-        icon: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(AppRadii.chip)), child: const Icon(CupertinoIcons.chevron_left, color: Colors.white, size: 20)),
-        onPressed: onBack,
+      leading: Tappable(
+        onTap: onBack,
+        label: 'Назад',
+        child: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(AppRadii.chip)), child: const Icon(CupertinoIcons.chevron_left, color: Colors.white, size: 20)),
       ),
       flexibleSpace: LayoutBuilder(builder: (context, constraints) {
         final topPad = MediaQuery.of(context).padding.top;
@@ -101,16 +102,16 @@ class ClassCoverSliver extends StatelessWidget {
           if (isTeacher && settle > 0)
             Positioned(top: topPad, right: 8, height: kToolbarHeight,
               child: Opacity(opacity: settle, child: IgnorePointer(ignoring: settle < 0.3, child: Row(children: [
-                IconButton(
-                  padding: EdgeInsets.zero,
-                  icon: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(AppRadii.chip)), child: const Icon(CupertinoIcons.gear_alt_fill, color: Colors.white70, size: 17)),
-                  onPressed: onSettings,
+                Tappable(
+                  onTap: onSettings,
+                  label: 'Настройки класса',
+                  child: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(AppRadii.chip)), child: const Icon(CupertinoIcons.gear_alt_fill, color: Colors.white70, size: 17)),
                 ),
                 const SizedBox(width: 6),
-                IconButton(
-                  padding: EdgeInsets.zero,
-                  icon: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(AppRadii.chip)), child: const Icon(CupertinoIcons.pencil, color: Colors.white70, size: 18)),
-                  onPressed: onEdit,
+                Tappable(
+                  onTap: onEdit,
+                  label: 'Редактировать класс',
+                  child: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(AppRadii.chip)), child: const Icon(CupertinoIcons.pencil, color: Colors.white70, size: 18)),
                 ),
                 const SizedBox(width: 8),
               ])))),
@@ -133,7 +134,7 @@ class ClassCoverSliver extends StatelessWidget {
             Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Colors.white, shadows: [Shadow(color: Colors.black54, blurRadius: 6)]), maxLines: 2, overflow: TextOverflow.ellipsis),
             if (desc.isNotEmpty) ...[
               const SizedBox(height: 4),
-              Text(desc, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+              Text(desc, style: const TextStyle(color: Colors.white70, fontSize: 13), maxLines: 2, overflow: TextOverflow.ellipsis),
             ],
           ]))),
         ]),

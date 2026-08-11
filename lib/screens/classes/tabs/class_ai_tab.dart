@@ -13,6 +13,7 @@ import '../../../utils/ai_quota.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/ai_limit_notice.dart';
 import '../../../widgets/app_dialog.dart';
+import '../../../widgets/tappable.dart';
 import '../../../widgets/toast.dart';
 import '../../ai/widgets/ai_message_content.dart';
 import '../../../utils/haptics.dart';
@@ -230,6 +231,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
           child: _headerButton(
             icon: CupertinoIcons.trash,
             color: Theme.of(context).colorScheme.primary,
+            label: 'Очистить историю чата',
             onTap: () { hapticLight(); _clearHistory(); },
           ),
         ),
@@ -275,8 +277,9 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
             builder: (context, value, _) {
               final has = value.text.trim().isNotEmpty;
               final active = has && !_loading && !blocked;
-              return GestureDetector(
+              return Tappable(
                 onTap: blocked ? null : _send,
+                label: 'Отправить сообщение',
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 220),
                   curve: Curves.easeOutCubic,
@@ -312,9 +315,10 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
     ]));
   }
 
-  Widget _headerButton({required IconData icon, required Color color, required VoidCallback onTap}) {
-    return GestureDetector(
+  Widget _headerButton({required IconData icon, required Color color, required VoidCallback onTap, required String label}) {
+    return Tappable(
       onTap: onTap,
+      label: label,
       child: Container(
         width: 38, height: 38,
         decoration: BoxDecoration(
@@ -370,7 +374,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
         opacity: t.clamp(0.0, 1.0),
         child: Transform.translate(offset: Offset(0, 10 * (1 - t)), child: child),
       ),
-      child: GestureDetector(
+      child: Tappable(
         onTap: () {
           hapticSelection();
           _send(context.read<L10n>().t(tipKey));
@@ -428,7 +432,8 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
             ),
             boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.28), blurRadius: 16, offset: const Offset(0, 5))],
           ),
-          child: Text(text, style: const TextStyle(fontSize: 15, color: Colors.white, height: 1.5)),
+          child: Text(text, style: const TextStyle(fontSize: 15, color: Colors.white, height: 1.5,
+            shadows: [Shadow(color: Color(0x40000000), blurRadius: 2, offset: Offset(0, 0.5))])),
         ),
       ),
     );
@@ -438,7 +443,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
     padding: const EdgeInsets.only(bottom: 14, right: 52),
     child: Align(
       alignment: Alignment.centerLeft,
-      child: GestureDetector(
+      child: Tappable(
         onLongPress: () {
           hapticMedium();
           Clipboard.setData(ClipboardData(text: text));

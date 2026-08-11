@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import '../../../theme/app_theme.dart';
+import '../../../widgets/tappable.dart';
 import '../class_detail_utils.dart' show fileCacheKey;
 import 'detail_page_theme.dart';
 
@@ -45,7 +46,7 @@ FileTypeVisual fileTypeVisual(String ext) {
 
 /// Карточка вложенного файла в духе Apple Files: своя независимая карточка,
 /// крупная иконка типа файла, имя, тип, шеврон открытия, лёгкая press-анимация.
-class FileCard extends StatefulWidget {
+class FileCard extends StatelessWidget {
   final String name;
   final String? sizeLabel;
   final String? previewUrl;
@@ -54,47 +55,32 @@ class FileCard extends StatefulWidget {
   const FileCard({super.key, required this.name, this.sizeLabel, this.previewUrl, required this.onTap});
 
   @override
-  State<FileCard> createState() => _FileCardState();
-}
-
-class _FileCardState extends State<FileCard> {
-  bool _pressed = false;
-
-  @override
   Widget build(BuildContext context) {
-    final ext = widget.name.contains('.') ? widget.name.split('.').last.toLowerCase() : '';
+    final ext = name.contains('.') ? name.split('.').last.toLowerCase() : '';
     final visual = fileTypeVisual(ext);
     final typeLabel = ext.isNotEmpty ? ext.toUpperCase() : '';
-    final subtitle = widget.sizeLabel != null && widget.sizeLabel!.isNotEmpty
-        ? '$typeLabel • ${widget.sizeLabel}'
+    final subtitle = sizeLabel != null && sizeLabel!.isNotEmpty
+        ? '$typeLabel • $sizeLabel'
         : typeLabel;
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapCancel: () => setState(() => _pressed = false),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTap: widget.onTap,
-      child: AnimatedScale(
-        scale: _pressed ? 0.98 : 1.0,
-        duration: const Duration(milliseconds: 120),
-        curve: Curves.easeOut,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
+    return Tappable(
+      onTap: onTap,
+      label: 'Открыть файл $name',
+      child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
-            color: _pressed ? detailSurface(context).withValues(alpha: 0.7) : detailSurface(context),
-            borderRadius: BorderRadius.circular(AppRadii.card),
+            color: detailSurface(context),
+            borderRadius: BorderRadius.circular(AppRadii.tile),
             border: Border.all(color: detailBorder(context)),
           ),
           child: Row(children: [
-            _imagePreviewExts.contains(ext) && widget.previewUrl != null
+            _imagePreviewExts.contains(ext) && previewUrl != null
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(AppRadii.tile),
                     child: CachedNetworkImage(
-                      imageUrl: widget.previewUrl!,
-                      cacheKey: fileCacheKey(widget.previewUrl!),
+                      imageUrl: previewUrl!,
+                      cacheKey: fileCacheKey(previewUrl!),
                       width: 44,
                       height: 44,
                       fit: BoxFit.cover,
@@ -124,7 +110,7 @@ class _FileCardState extends State<FileCard> {
             const SizedBox(width: 13),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(widget.name,
+                Text(name,
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: detailText1(context)),
                     maxLines: 1, overflow: TextOverflow.ellipsis),
                 if (subtitle.isNotEmpty) ...[
@@ -136,7 +122,6 @@ class _FileCardState extends State<FileCard> {
             const SizedBox(width: 8),
             Icon(CupertinoIcons.chevron_right, size: 17, color: detailText2(context)),
           ]),
-        ),
       ),
     );
   }

@@ -224,14 +224,22 @@ class _MainShellState extends State<MainShell>
           ),
         ]),
       ),
+      // Тень-градиент под низом контента — как естественная тень от
+      // плавающего таб-бара в Telegram/нативных iOS-приложениях: контент НЕ
+      // прячется под ним (сам бар прозрачный и стеклянный), но у истинного
+      // края экрана чуть темнее, чтобы переход под бар читался как физическая
+      // тень, а не обрывался плоско. IgnorePointer — чисто визуальный слой,
+      // тапы должны доходить до контента под ним. Выше содержимого шелла, но
+      // ниже самого бара (следующий Positioned) — именно в этом порядке.
+      const Positioned(left: 0, right: 0, bottom: 0, child: _BottomContentScrim()),
       Positioned(
         // Снаружи нет Scaffold/SafeArea (см. комментарий выше про клавиатуру) —
-        // bottom:10 сам по себе отмерялся от истинного края экрана, без учёта
+        // bottom:6 сам по себе отмерялся от истинного края экрана, без учёта
         // Home Indicator: на iPhone с ним (safe-area ≈34pt) плавающий бар
         // оказывался заметно ближе к краю, чем должен. Добавляем safe-area
         // инсет вручную поверх базового отступа. Базовый отступ занижен с 16
-        // до 10 — ближе к низу, как у плавающих таб-баров в Telegram/iOS.
-        left: 16, right: 16, bottom: 10 + MediaQuery.of(context).padding.bottom,
+        // до 6 — ближе к низу, как у плавающих таб-баров в Telegram/iOS.
+        left: 16, right: 16, bottom: 6 + MediaQuery.of(context).padding.bottom,
         child: RepaintBoundary(
           child: FadeTransition(
             opacity: CurvedAnimation(
@@ -312,6 +320,34 @@ class _MainShellState extends State<MainShell>
         ),
       ),
     ]);
+  }
+}
+
+/// См. комментарий в build() у Positioned, где используется. Чисто чёрный
+/// градиент (а не scaffoldBackgroundColor, как у AiScreen._StatusBarScrim) —
+/// под баром бывает любой контент (обложки классов, фото), и именно тень, а
+/// не подложка-в-цвет-фона, одинаково хорошо читается поверх всего.
+class _BottomContentScrim extends StatelessWidget {
+  const _BottomContentScrim();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return IgnorePointer(
+      child: Container(
+        height: bottomBarClearance(context) + 40,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.black.withValues(alpha: 0),
+              Colors.black.withValues(alpha: isDark ? 0.30 : 0.14),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

@@ -56,7 +56,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     final primary   = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
-      body: SafeArea(child: ListView(padding: const EdgeInsets.fromLTRB(16, 24, 16, 100), children: [
+      // bottom: false — тот же edge-to-edge под навбар, что и на остальных
+      // вкладках шелла (см. home_screen.dart). Было 100 фиксированных px,
+      // рассчитанных В ДОПОЛНЕНИЕ к safe-area инсету, который раньше сама
+      // добавляла SafeArea; теперь весь клиренс — в bottomBarClearance().
+      body: SafeArea(bottom: false, child: ListView(padding: EdgeInsets.fromLTRB(16, 24, 16, bottomBarClearance(context)), children: [
 
         _animated(Padding(padding: const EdgeInsets.fromLTRB(4, 0, 4, 28), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(l.t('settings'),

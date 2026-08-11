@@ -169,7 +169,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final primary = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
-      body: SafeArea(child: CustomScrollView(slivers: [
+      // bottom: false — список едет edge-to-edge под плавающий навбар (как в
+      // Telegram/нативных iOS-приложениях), а не упирается в safe-area снизу
+      // отдельным сплошным "коробом". Реальный клиренс над навбаром уже даёт
+      // bottomBarClearance() (см. концевой SliverToBoxAdapter ниже и
+      // SliverPadding у пустого/лоадинг состояний) — он и так учитывает
+      // safe-area, так что убирать его отсюда безопасно.
+      body: SafeArea(bottom: false, child: CustomScrollView(slivers: [
           CupertinoSliverRefreshControl(
             onRefresh: () {
               final p = context.read<ClassesProvider>();

@@ -156,7 +156,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     return CustomScrollView(slivers: [
       CupertinoSliverRefreshControl(onRefresh: _loadReports),
       SliverPadding(
-        padding: const EdgeInsets.fromLTRB(14, 8, 14, 100),
+        padding: EdgeInsets.fromLTRB(14, 8, 14, bottomBarClearance(context)),
         sliver: SliverList(delegate: SliverChildBuilderDelegate(
           childCount: _reports.length,
           (_, i) {
@@ -399,7 +399,11 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(child: NestedScrollView(
+      // bottom: false — та же логика edge-to-edge под навбар, что и на
+      // остальных вкладках шелла (см. home_screen.dart). Клиренс над баром
+      // держат SliverPadding/SizedBox с bottomBarClearance() в каждой вложенной
+      // вкладке (_reportsTab/users/AI/классы) вместо самой SafeArea.
+      body: SafeArea(bottom: false, child: NestedScrollView(
         headerSliverBuilder: (ctx, _) => [
           SliverToBoxAdapter(child: Column(children: [
             Padding(
@@ -535,7 +539,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
         : CustomScrollView(slivers: [
             CupertinoSliverRefreshControl(onRefresh: _load),
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 90),
+              padding: EdgeInsets.fromLTRB(16, 0, 16, bottomBarClearance(context)),
               sliver: SliverList(delegate: SliverChildBuilderDelegate(
                 childCount: filtered.length,
                 (ctx, i) {
@@ -624,7 +628,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     return CustomScrollView(slivers: [
       CupertinoSliverRefreshControl(onRefresh: _loadAi),
       SliverPadding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 90),
+        padding: EdgeInsets.fromLTRB(16, 8, 16, bottomBarClearance(context)),
         sliver: SliverList(delegate: SliverChildListDelegate([
 
         Container(
@@ -878,7 +882,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     return CustomScrollView(slivers: [
       CupertinoSliverRefreshControl(onRefresh: () async { await _load(); await _loadClasses(); }),
       SliverPadding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
+        padding: EdgeInsets.fromLTRB(16, 12, 16, bottomBarClearance(context)),
         sliver: SliverList(delegate: SliverChildBuilderDelegate(
           childCount: classes.length,
           (ctx, i) {

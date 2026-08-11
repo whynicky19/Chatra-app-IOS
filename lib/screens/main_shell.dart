@@ -236,12 +236,10 @@ class _MainShellState extends State<MainShell>
         // Снаружи нет Scaffold/SafeArea (см. комментарий выше про клавиатуру) —
         // отступ снизу отмеряется от истинного края экрана вручную, поэтому
         // safe-area (Home Indicator, ≈34pt на iPhone с ним) добавляется явно
-        // через MediaQuery, а не зашивается константой. Сверху — минимальный
-        // фиксированный зазор (4pt) чисто для воздуха между баром и самим
-        // Home Indicator, как у плавающих таб-баров в Telegram/нативных
-        // Apple-приложениях (там бар почти вплотную к нему, а не подвешен
-        // высоко над ним).
-        left: 16, right: 16, bottom: 4 + MediaQuery.of(context).padding.bottom,
+        // через MediaQuery, а не зашивается константой. Зазора сверху почти
+        // нет — бар стоит вплотную к safe-area, как нативный таб-бар в
+        // iOS-приложениях Apple (сам Home Indicator и есть нижняя граница).
+        left: 16, right: 16, bottom: MediaQuery.of(context).padding.bottom,
         child: RepaintBoundary(
           child: FadeTransition(
             opacity: CurvedAnimation(

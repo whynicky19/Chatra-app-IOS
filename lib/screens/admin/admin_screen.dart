@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show ImageFilter;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -12,13 +13,9 @@ import '../../utils/dates.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/cupertino_liquid_switch.dart';
 import '../../widgets/network_cover_image.dart';
+import '../../widgets/inset_group.dart';
 import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
-
-// Инициалы считаются на каждую строку списка (пользователи, классы,
-// AI-расход) — regex вынесен один раз, а не пересобирается на каждый item
-// при каждой перерисовке.
-final _wsRe = RegExp(r'\s+');
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -130,7 +127,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
 
   Widget _reportsTab() {
     final l = context.watch<L10n>();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (_reportsLoading && _reports.isEmpty) {
       return const Center(child: CupertinoActivityIndicator(radius: 13));
@@ -139,16 +135,19 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
       return CustomScrollView(slivers: [
         CupertinoSliverRefreshControl(onRefresh: _loadReports),
         SliverToBoxAdapter(
-          child: Column(children: [
-            const SizedBox(height: 90),
-            Icon(CupertinoIcons.checkmark_shield, size: 44, color: C.text4.withValues(alpha: 0.6)),
-            const SizedBox(height: 14),
-            Center(
-              child: Text(l.t('no_reports'),
-                  style: TextStyle(
-                      fontSize: 17, fontWeight: FontWeight.w700, color: adaptiveText1(context))),
-            ),
-          ]),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(28, 90, 28, 40),
+            child: Column(children: [
+              Container(width: 76, height: 76,
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(colors: [C.green.withValues(alpha: 0.16), C.green.withValues(alpha: 0.03)]),
+                  shape: BoxShape.circle),
+                child: const Icon(CupertinoIcons.checkmark_shield_fill, size: 32, color: C.green)),
+              const SizedBox(height: 18),
+              Text(l.t('no_reports'), textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, letterSpacing: -0.4, color: adaptiveText1(context))),
+            ]),
+          ),
         ),
       ]);
     }
@@ -181,72 +180,68 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           final targetTitle = (r['target_title'] ?? '').toString();
           final canDeleteContent = targetType == 'post' || targetType == 'assignment';
 
-          return Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(AppRadii.card),
-              boxShadow: cardShadow(isDark),
-            ),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: C.red.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(AppRadii.chip),
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: GroupRow.card(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  // Причина жалобы — капсула; справа время, как в списках Mail.
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: C.red.withValues(alpha: 0.13),
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: Text(l.t(reasonKey),
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, letterSpacing: -0.1, color: C.red)),
                   ),
-                  child: Text(l.t(reasonKey),
-                      style: const TextStyle(
-                          fontSize: 11, fontWeight: FontWeight.w700, color: C.red)),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text('${l.t(targetKey)} #${r['target_id']}',
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
-                ),
-                const SizedBox(width: 8),
-                Text(fmtDateTimeLocal((r['created_at'] ?? '').toString()),
-                    style: TextStyle(fontSize: 11, color: adaptiveText3(context))),
-              ]),
-              if (className.isNotEmpty || targetTitle.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Text(
-                  [
-                    if (className.isNotEmpty) '${l.t('report_class_prefix')}: $className',
-                    if (targetTitle.isNotEmpty) targetTitle,
-                  ].join(' · '),
-                  style: const TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.w600, color: C.text3),
-                ),
-              ],
-              if (comment.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                Text(comment,
-                    style: TextStyle(fontSize: 13, height: 1.4, color: adaptiveText1(context))),
-              ],
-              if (reporter.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text('${l.t('report')}: $reporter',
-                    style: TextStyle(fontSize: 11, color: adaptiveText3(context))),
-              ],
-              const SizedBox(height: 12),
-              Wrap(spacing: 8, runSpacing: 8, children: [
-                _ReportActionChip(
-                  label: l.t('report_resolve'),
-                  color: Theme.of(context).colorScheme.primary,
-                  onTap: () => _resolveReport(r),
-                ),
-                if (canDeleteContent)
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text('${l.t(targetKey)} #${r['target_id']}',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText4(context))),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(fmtDateTimeLocal((r['created_at'] ?? '').toString()),
+                      style: TextStyle(fontSize: 13, color: adaptiveText4(context))),
+                ]),
+                if (className.isNotEmpty || targetTitle.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    [
+                      if (className.isNotEmpty) '${l.t('report_class_prefix')}: $className',
+                      if (targetTitle.isNotEmpty) targetTitle,
+                    ].join('  ·  '),
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4, color: adaptiveText1(context)),
+                  ),
+                ],
+                if (comment.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(comment,
+                      style: TextStyle(fontSize: 15, height: 1.4, letterSpacing: -0.2, color: adaptiveText2(context))),
+                ],
+                if (reporter.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text('${l.t('report')}: $reporter',
+                      style: TextStyle(fontSize: 13, color: adaptiveText4(context))),
+                ],
+                const SizedBox(height: 14),
+                Wrap(spacing: 8, runSpacing: 8, children: [
                   _ReportActionChip(
-                    label: l.t('report_delete_content'),
-                    color: C.red,
-                    onTap: () => _deleteReportContent(r),
+                    label: l.t('report_resolve'),
+                    color: Theme.of(context).colorScheme.primary,
+                    onTap: () => _resolveReport(r),
                   ),
+                  if (canDeleteContent)
+                    _ReportActionChip(
+                      label: l.t('report_delete_content'),
+                      color: C.red,
+                      onTap: () => _deleteReportContent(r),
+                    ),
+                ]),
               ]),
-            ]),
+            ),
           );
           },
         )),
@@ -407,44 +402,43 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
         headerSliverBuilder: (ctx, _) => [
           SliverToBoxAdapter(child: Column(children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 14),
-              child: Row(children: [
+              padding: const EdgeInsets.fromLTRB(20, 16, 12, 14),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(l.t('admin'), style: Theme.of(context).textTheme.headlineLarge!.copyWith(color: adaptiveText1(context))),
-                  Text(l.t('admin_sub'), style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
+                  Text(l.t('admin'),
+                      style: TextStyle(fontSize: 34, fontWeight: FontWeight.w700, letterSpacing: -1, height: 1.1, color: adaptiveText1(context))),
+                  const SizedBox(height: 3),
+                  Text(l.t('admin_sub'),
+                      style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText3(context))),
                 ])),
+                // Добавление — акцентный глиф в баре, как «+» в системных
+                // приложениях: залитая пилюля со свечением спорила по весу с
+                // самим заголовком экрана.
                 Tappable(
                   onTap: _showCreateDialog,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(color: primary, borderRadius: BorderRadius.circular(AppRadii.tile), boxShadow: primaryGlow(primary, opacity: 0.28)),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      const Icon(CupertinoIcons.person_badge_plus, color: Colors.white, size: 16),
-                      const SizedBox(width: 6),
-                      Text(l.t('add'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
-                    ]),
-                  ),
+                  label: l.t('add'),
+                  child: SizedBox(width: 44, height: 44,
+                      child: Icon(CupertinoIcons.person_badge_plus, color: primary, size: 24)),
                 ),
               ]),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Row(children: [
-                _StatCard(value: '${_users.length}', label: l.t('total_label'),    isDark: isDark),
-                const SizedBox(width: 8),
-                _StatCard(value: '$teachers',        label: l.t('teachers_label'), isDark: isDark),
-                const SizedBox(width: 8),
-                _StatCard(value: '$students',        label: l.t('students_label'), isDark: isDark),
+              child: _SummaryBar(cells: [
+                ('${_users.length}', l.t('total_label')),
+                ('$teachers', l.t('teachers_label')),
+                ('$students', l.t('students_label')),
               ]),
             ),
           ])),
         ],
         body: Column(children: [
           Container(
-            height: 38,
-            margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            padding: const EdgeInsets.all(2.5),
-            decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
+            height: 40,
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+            padding: const EdgeInsets.all(3),
+            // Капсула, как нативный CupertinoSlidingSegmentedControl.
+            decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(100)),
             child: TabBar(
               controller: _tabCtrl,
               dividerColor: Colors.transparent,
@@ -452,16 +446,16 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               indicatorAnimation: TabIndicatorAnimation.elastic,
               indicator: BoxDecoration(
                 color: surface,
-                borderRadius: BorderRadius.circular(AppRadii.chip),
-                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.10), blurRadius: 4, offset: const Offset(0, 1))],
+                borderRadius: BorderRadius.circular(100),
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.08), blurRadius: 3, offset: const Offset(0, 1))],
               ),
               splashFactory: NoSplash.splashFactory,
               overlayColor: WidgetStateProperty.all(Colors.transparent),
               labelColor: adaptiveText1(context),
-              unselectedLabelColor: C.text4,
+              unselectedLabelColor: adaptiveText3(context),
               labelPadding: const EdgeInsets.symmetric(horizontal: 2),
-              labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: -0.1),
-              unselectedLabelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, letterSpacing: -0.1),
+              labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: -0.2),
+              unselectedLabelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, letterSpacing: -0.2),
               tabs: [
                 Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text(l.t('users')))),
                 const Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text('AI'))),
@@ -514,18 +508,18 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
 
   Widget _usersTab() {
     final l       = context.read<L10n>();
-    final isDark  = Theme.of(context).brightness == Brightness.dark;
     final filtered = _filtered;
     return Column(children: [
       Padding(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-        child: TextField(
-          decoration: InputDecoration(
-            hintText: l.t('search_users'),
-            prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
-              child: Icon(CupertinoIcons.search, size: 18, color: C.text4)),
-            contentPadding: const EdgeInsets.symmetric(vertical: 12),
-          ),
+        padding: const EdgeInsets.fromLTRB(16, 2, 16, 10),
+        // Нативное поле поиска iOS: приходит с кнопкой очистки и правильными
+        // метриками вместо обычного TextField с иконкой-префиксом.
+        child: CupertinoSearchTextField(
+          placeholder: l.t('search_users'),
+          backgroundColor: adaptiveSurface2(context),
+          style: TextStyle(fontSize: 16, letterSpacing: -0.3, color: adaptiveText1(context)),
+          placeholderStyle: TextStyle(fontSize: 16, letterSpacing: -0.3, color: adaptiveText4(context)),
+          itemColor: adaptiveText4(context),
           onChanged: (v) {
             _searchDebounce?.cancel();
             _searchDebounce = Timer(const Duration(milliseconds: 250), () {
@@ -548,59 +542,47 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                 final role = u['role'] ?? 'student';
                 final isBlocked = u['is_active'] == false;
 
-                return TweenAnimationBuilder<double>(
+                // Без «аватарки»-кружка с первой буквой: имя и почта и так
+                // идентифицируют человека, а буква в круге читалась как
+                // подмена фотографии. Строка — две строки текста, поэтому все
+                // карточки списка одной высоты.
+                return Entrance(
                   key: ValueKey(u['id']),
-                  tween: Tween(begin: 0.0, end: 1.0),
-                  duration: Duration(milliseconds: 300 + i * 40),
-                  curve: Curves.easeOutCubic,
-                  builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 12 * (1-t)), child: child)),
-                  child: RepaintBoundary(child: Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(AppRadii.tile),
-                      boxShadow: softShadow(isDark),
+                  index: i,
+                  child: RepaintBoundary(child: Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: GroupRow.card(
+                      onTap: () => _showUserActionsSheet(u),
+                      padding: const EdgeInsets.fromLTRB(16, 12, 4, 12),
+                      child: Row(children: [
+                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Row(children: [
+                            Flexible(child: Text(name,
+                                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4, color: adaptiveText1(context)),
+                                maxLines: 1, overflow: TextOverflow.ellipsis)),
+                            if (isBlocked) Container(
+                              margin: const EdgeInsets.only(left: 7),
+                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                              decoration: BoxDecoration(color: C.red.withValues(alpha: 0.13), borderRadius: BorderRadius.circular(100)),
+                              child: Text(l.t('blocked_short'),
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: C.red)),
+                            ),
+                          ]),
+                          const SizedBox(height: 2),
+                          Text(u['email'] ?? '',
+                              style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText4(context)),
+                              maxLines: 1, overflow: TextOverflow.ellipsis),
+                        ])),
+                        const SizedBox(width: 10),
+                        _RoleBadge(role: role),
+                        Tappable(
+                          onTap: () => _showUserActionsSheet(u),
+                          label: 'Действия с пользователем',
+                          child: SizedBox(width: 40, height: 46,
+                              child: Icon(CupertinoIcons.ellipsis_vertical, size: 18, color: adaptiveText4(context))),
+                        ),
+                      ]),
                     ),
-                    child: Row(children: [
-                      Container(
-                        width: 46, height: 46,
-                        decoration: BoxDecoration(
-                          color: adaptiveSurface2(context),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(child: Text(
-                          name.isNotEmpty ? name[0].toUpperCase() : '?',
-                          style: TextStyle(color: adaptiveText2(context), fontWeight: FontWeight.w900, fontSize: 17),
-                        )),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Row(children: [
-                          Expanded(child: Text(name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700), overflow: TextOverflow.ellipsis)),
-                          if (isBlocked) Container(
-                            margin: const EdgeInsets.only(left: 6),
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                            decoration: BoxDecoration(color: C.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppRadii.chip)),
-                            child: Text(l.t('blocked_short'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.red)),
-                          ),
-                        ]),
-                        const SizedBox(height: 2),
-                        Text(u['email'] ?? '', style: TextStyle(fontSize: 13, color: adaptiveText3(context)), overflow: TextOverflow.ellipsis),
-                      ])),
-                      const SizedBox(width: 8),
-                      _RoleBadge(role: role),
-                      Tappable(
-                        onTap: () => _showUserActionsSheet(u),
-                        label: 'Действия с пользователем',
-                        child: Container(
-                          width: 34, height: 34,
-                          margin: const EdgeInsets.only(left: 4),
-                          decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
-                          child: const Icon(CupertinoIcons.ellipsis, size: 17, color: C.text4),
-                        ),
-                      ),
-                    ]),
                   )),
                 );
                 },
@@ -614,7 +596,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
   Widget _aiTab() {
     final l       = context.read<L10n>();
     final surface = Theme.of(context).colorScheme.surface;
-    final isDark  = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
 
     if (_aiLoading) return const Center(child: CupertinoActivityIndicator(radius: 13, color: C.text3));
@@ -631,39 +612,38 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
         padding: EdgeInsets.fromLTRB(16, 8, 16, bottomBarClearance(context)),
         sliver: SliverList(delegate: SliverChildListDelegate([
 
+        // Итог по токенам: тот же градиент, но без цветного свечения под
+        // карточкой и с табличными цифрами — число обновляется, и «прыгающая»
+        // ширина разрядов бросалась в глаза.
         Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, primary], begin: Alignment.topLeft, end: Alignment.bottomRight),
             borderRadius: BorderRadius.circular(AppRadii.card),
-            boxShadow: primaryGlow(primary, opacity: 0.32),
           ),
           child: Row(children: [
-            Container(width: 48, height: 48,
-              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(AppRadii.tile)),
-              child: const Icon(CupertinoIcons.bolt_fill, color: Colors.white, size: 26)),
-            const SizedBox(width: 16),
+            Container(width: 46, height: 46,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(AppRadii.tile)),
+              child: const Icon(CupertinoIcons.bolt_fill, color: Colors.white, size: 24)),
+            const SizedBox(width: 14),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(l.t('total_tokens'), style: const TextStyle(fontSize: 13, color: Colors.white70, fontWeight: FontWeight.w600, letterSpacing: 0.3)),
-              const SizedBox(height: 2),
-              Text(_fmtTokens(_totalTokens), style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: Colors.white, height: 1)),
+              Text(l.t('total_tokens').toUpperCase(),
+                  style: const TextStyle(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.w600, letterSpacing: 0.7)),
+              const SizedBox(height: 4),
+              Text(_fmtTokens(_totalTokens),
+                  style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w700, color: Colors.white, height: 1,
+                      letterSpacing: -1, fontFeatures: [FontFeature.tabularFigures()])),
             ])),
             Tappable(
               onTap: _loadAi,
-              label: 'Обновить',
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(AppRadii.chip)),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(CupertinoIcons.arrow_counterclockwise, size: 14, color: Colors.white),
-                  const SizedBox(width: 4),
-                  Text(l.t('refresh'), style: const TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600)),
-                ]),
-              ),
+              label: l.t('refresh'),
+              child: SizedBox(width: 44, height: 44,
+                  child: Icon(CupertinoIcons.arrow_counterclockwise, size: 20, color: Colors.white.withValues(alpha: 0.9))),
             ),
           ]),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
 
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -701,25 +681,35 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               duration: Duration(milliseconds: 280 + i * 40),
               curve: Curves.easeOutCubic,
               builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 10 * (1-t)), child: child)),
-              child: RepaintBoundary(child: Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(AppRadii.tile), boxShadow: softShadow(isDark)),
-                child: Row(children: [
-                  Container(width: 44, height: 44,
-                    decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
-                    child: Icon(CupertinoIcons.book, size: 20, color: adaptiveText2(context))),
-                  const SizedBox(width: 12),
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(className, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700), overflow: TextOverflow.ellipsis),
-                    const SizedBox(height: 2),
-                    Text('$reqCount ${l.t('requests_count')}', style: TextStyle(fontSize: 11, color: adaptiveText3(context))),
-                  ])),
-                  Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                    Text(_fmtTokens(tokens), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: adaptiveText1(context))),
-                    Text(l.t('tokens'), style: TextStyle(fontSize: 11, color: adaptiveText3(context))),
+              child: RepaintBoundary(child: Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: GroupRow.card(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                  child: Row(children: [
+                    Container(width: 46, height: 46,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: primary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(AppRadii.tile)),
+                      child: Icon(CupertinoIcons.book_fill, size: 21, color: primary)),
+                    const SizedBox(width: 14),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(className,
+                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4, color: adaptiveText1(context)),
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 3),
+                      Text('$reqCount ${l.t('requests_count')}',
+                          style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText4(context))),
+                    ])),
+                    const SizedBox(width: 10),
+                    Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                      Text(_fmtTokens(tokens),
+                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, letterSpacing: -0.4, color: adaptiveText1(context),
+                              fontFeatures: const [FontFeature.tabularFigures()])),
+                      Text(l.t('tokens'), style: TextStyle(fontSize: 13, color: adaptiveText4(context))),
+                    ]),
                   ]),
-                ]),
+                ),
               )),
             );
           }),
@@ -735,36 +725,39 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             final name   = u['name'] as String;
             final tokens = u['tokens'] as int;
             final count  = u['count'] as int;
-            final initials = name.trim().isEmpty ? '?' : name.trim().split(_wsRe).take(2).map((w) => w.isEmpty ? '' : w[0].toUpperCase()).join();
             final pct = maxTokens > 0 ? (tokens / maxTokens).clamp(0.0, 1.0) : 0.0;
             return TweenAnimationBuilder<double>(
               tween: Tween(begin: 0.0, end: 1.0),
               duration: Duration(milliseconds: 300 + i * 40),
               curve: Curves.easeOutCubic,
               builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 10*(1-t)), child: child)),
-              child: RepaintBoundary(child: Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(AppRadii.tile), boxShadow: softShadow(isDark)),
-                child: Row(children: [
-                  Container(width: 44, height: 44,
-                    decoration: BoxDecoration(color: adaptiveSurface2(context), shape: BoxShape.circle),
-                    child: Center(child: Text(initials, style: TextStyle(color: adaptiveText2(context), fontWeight: FontWeight.w900, fontSize: 15)))),
-                  const SizedBox(width: 12),
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700), overflow: TextOverflow.ellipsis, maxLines: 1),
-                    const SizedBox(height: 6),
-                    ClipRRect(borderRadius: BorderRadius.circular(AppRadii.chip),
-                      child: LinearProgressIndicator(value: pct, backgroundColor: primary.withValues(alpha: 0.08), color: primary, minHeight: 5)),
+              child: RepaintBoundary(child: Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: GroupRow.card(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 13),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Row(children: [
+                      Expanded(child: Text(name,
+                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4, color: adaptiveText1(context)),
+                          maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      const SizedBox(width: 10),
+                      Text(_fmtTokens(tokens),
+                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, letterSpacing: -0.4, color: adaptiveText1(context),
+                              fontFeatures: const [FontFeature.tabularFigures()])),
+                    ]),
                     const SizedBox(height: 3),
-                    Text('$count ${l.t('requests_label')}', style: TextStyle(fontSize: 11, color: adaptiveText3(context))),
-                  ])),
-                  const SizedBox(width: 12),
-                  Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                    Text(_fmtTokens(tokens), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: adaptiveText1(context))),
-                    Text(l.t('tokens'), style: TextStyle(fontSize: 11, color: adaptiveText3(context))),
+                    Row(children: [
+                      Expanded(child: Text('$count ${l.t('requests_label')}',
+                          style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText4(context)))),
+                      Text(l.t('tokens'), style: TextStyle(fontSize: 13, color: adaptiveText4(context))),
+                    ]),
+                    const SizedBox(height: 10),
+                    // Доля этого пользователя от самого активного — полоса на
+                    // всю ширину карточки, а не зажатая между кружком и цифрой.
+                    ClipRRect(borderRadius: BorderRadius.circular(100),
+                      child: LinearProgressIndicator(value: pct, backgroundColor: primary.withValues(alpha: 0.10), color: primary, minHeight: 6)),
                   ]),
-                ]),
+                ),
               )),
             );
           }),
@@ -775,18 +768,23 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           _SectionLabel('${l.t('detail_log')} (${_aiLogs.length}/$_aiLogTotal)'),
           const SizedBox(height: 8),
           Container(
-            decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(AppRadii.tile), boxShadow: softShadow(isDark)),
+            decoration: BoxDecoration(
+              color: surface,
+              borderRadius: BorderRadius.circular(AppRadii.card),
+              border: Border.all(color: groupSeparator(context), width: hairline(context)),
+            ),
+            clipBehavior: Clip.antiAlias,
             child: Column(children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                 child: Row(children: [
-                  SizedBox(width: 22, child: Text('#', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: adaptiveText3(context)))),
-                  Expanded(flex: 3, child: Text(l.t('user_label'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: adaptiveText3(context), letterSpacing: 0.5))),
-                  Expanded(flex: 2, child: Text(l.t('class_col'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: adaptiveText3(context), letterSpacing: 0.5))),
-                  SizedBox(width: 74, child: Text(l.t('tokens_col'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: adaptiveText3(context), letterSpacing: 0.5), textAlign: TextAlign.right)),
+                  SizedBox(width: 24, child: Text('#', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: adaptiveText4(context)))),
+                  Expanded(flex: 3, child: Text(l.t('user_label').toUpperCase(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: adaptiveText4(context), letterSpacing: 0.6))),
+                  Expanded(flex: 2, child: Text(l.t('class_col').toUpperCase(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: adaptiveText4(context), letterSpacing: 0.6))),
+                  SizedBox(width: 74, child: Text(l.t('tokens_col').toUpperCase(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: adaptiveText4(context), letterSpacing: 0.6), textAlign: TextAlign.right)),
                 ]),
               ),
-              Divider(height: 1, color: C.border.withValues(alpha: 0.5)),
+              Container(height: hairline(context), color: groupSeparator(context)),
               ...List.generate(_aiLogs.length, (i) {
                 final entry     = _aiLogs[i];
                 final uid       = (entry['user_id'] as num?)?.toInt();
@@ -802,61 +800,85 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                   if (d == null) return '';
                   return '${d.day.toString().padLeft(2,'0')}.${d.month.toString().padLeft(2,'0')} ${d.hour.toString().padLeft(2,'0')}:${d.minute.toString().padLeft(2,'0')}';
                 })();
-                return Container(
-                  decoration: BoxDecoration(
-                    color: i.isOdd ? adaptiveSurface2(context).withValues(alpha: 0.4) : Colors.transparent,
-                    borderRadius: i == _aiLogs.length - 1 ? const BorderRadius.vertical(bottom: Radius.circular(16)) : null,
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                  child: Row(children: [
-                    SizedBox(width: 22, child: Text('${i+1}', style: TextStyle(fontSize: 11, color: adaptiveText3(context)))),
-                    Expanded(flex: 3, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(userName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis),
-                      Text(date, style: TextStyle(fontSize: 11, color: adaptiveText3(context))),
-                    ])),
-                    Expanded(flex: 2, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(className, style: TextStyle(fontSize: 11, color: adaptiveText3(context)), overflow: TextOverflow.ellipsis),
-                      Container(
-                        margin: const EdgeInsets.only(top: 2),
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                        decoration: BoxDecoration(
-                          color: isGrade ? primary.withValues(alpha: 0.1) : C.green.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(AppRadii.chip),
-                        ),
-                        child: Text(isGrade ? l.t('check_type') : l.t('chat_type'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: isGrade ? primary : C.green)),
-                      ),
-                    ])),
-                    SizedBox(width: 74, child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                      Text('$totalTokens', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: adaptiveText1(context))),
-                      Text('$promptTokens+$completionTokens', style: TextStyle(fontSize: 11, color: adaptiveText3(context))),
-                    ])),
-                  ]),
-                );
-              }),
-              if (_aiLogs.length < _aiLogTotal)
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Tappable(
-                    onTap: _aiLogLoadingMore ? null : _loadMoreAiLogs,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
-                      child: Center(child: _aiLogLoadingMore
-                          ? const SizedBox(width: 16, height: 16, child: CupertinoActivityIndicator(radius: 8, color: C.text3))
-                          : Text(l.t('show_more_full'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: adaptiveText2(context)))),
+                // Строки разделены волосяной линией, без «зебры»: чередование
+                // заливки — приём таблиц Material, в системных списках iOS
+                // строки разделяет линия по началу контента.
+                return Column(children: [
+                  if (i > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16),
+                      child: Container(height: hairline(context), color: groupSeparator(context)),
                     ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    child: Row(children: [
+                      SizedBox(width: 24, child: Text('${i+1}',
+                          style: TextStyle(fontSize: 13, color: adaptiveText4(context), fontFeatures: const [FontFeature.tabularFigures()]))),
+                      Expanded(flex: 3, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(userName,
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, letterSpacing: -0.2, color: adaptiveText1(context)),
+                            maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text(date, style: TextStyle(fontSize: 13, color: adaptiveText4(context))),
+                      ])),
+                      Expanded(flex: 2, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(className,
+                            style: TextStyle(fontSize: 13, color: adaptiveText4(context)),
+                            maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Container(
+                          margin: const EdgeInsets.only(top: 3),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: isGrade ? primary.withValues(alpha: 0.12) : C.green.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(100),
+                          ),
+                          child: Text(isGrade ? l.t('check_type') : l.t('chat_type'),
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isGrade ? primary : C.green)),
+                        ),
+                      ])),
+                      SizedBox(width: 74, child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                        Text('$totalTokens',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: adaptiveText1(context),
+                                fontFeatures: const [FontFeature.tabularFigures()])),
+                        Text('$promptTokens+$completionTokens',
+                            style: TextStyle(fontSize: 13, color: adaptiveText4(context),
+                                fontFeatures: const [FontFeature.tabularFigures()])),
+                      ])),
+                    ]),
                   ),
+                ]);
+              }),
+              if (_aiLogs.length < _aiLogTotal) ...[
+                Padding(
+                  padding: const EdgeInsets.only(left: 16),
+                  child: Container(height: hairline(context), color: groupSeparator(context)),
                 ),
+                // «Показать ещё» — акцентная текстовая строка в самом списке,
+                // как «Load More» в системных приложениях, а не серая кнопка.
+                GroupRow(
+                  pos: GroupPos.last,
+                  color: Colors.transparent,
+                  onTap: _aiLogLoadingMore ? null : _loadMoreAiLogs,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Center(child: _aiLogLoadingMore
+                      ? CupertinoActivityIndicator(radius: 9, color: adaptiveText4(context))
+                      : Text(l.t('show_more_full'),
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, letterSpacing: -0.3, color: primary))),
+                ),
+              ],
             ]),
           ),
         ],
 
         if (_aiSummary.isEmpty && _aiLogs.isEmpty)
-          Padding(padding: const EdgeInsets.all(48), child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(CupertinoIcons.bolt, size: 52, color: C.text4),
-            const SizedBox(height: 14),
-            Text(l.t('no_ai_data'), style: const TextStyle(color: C.text4, fontSize: 15, fontWeight: FontWeight.w600)),
+          Padding(padding: const EdgeInsets.fromLTRB(28, 48, 28, 48), child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(width: 76, height: 76,
+              decoration: BoxDecoration(
+                gradient: RadialGradient(colors: [primary.withValues(alpha: 0.16), primary.withValues(alpha: 0.03)]),
+                shape: BoxShape.circle),
+              child: Icon(CupertinoIcons.bolt_fill, size: 32, color: primary)),
+            const SizedBox(height: 18),
+            Text(l.t('no_ai_data'), textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, letterSpacing: -0.4, color: adaptiveText1(context))),
           ]))),
         ])),
       ),
@@ -865,18 +887,26 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
 
   Widget _classesTab() {
     final l       = context.read<L10n>();
-    final isDark  = Theme.of(context).brightness == Brightness.dark;
     if (_classesLoading) return const Center(child: CupertinoActivityIndicator(radius: 13, color: C.text3));
 
     final classes   = _allClassPosts;
     final userNames = _userNameMap;
 
     if (classes.isEmpty) {
-      return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-      const Icon(CupertinoIcons.book, size: 52, color: C.text4),
-      const SizedBox(height: 14),
-      Text(l.t('no_classes_admin'), style: const TextStyle(color: C.text4, fontSize: 15, fontWeight: FontWeight.w600)),
-    ]));
+      final primary = Theme.of(context).colorScheme.primary;
+      return Center(child: Padding(
+        padding: const EdgeInsets.fromLTRB(28, 0, 28, 60),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(width: 76, height: 76,
+            decoration: BoxDecoration(
+              gradient: RadialGradient(colors: [primary.withValues(alpha: 0.16), primary.withValues(alpha: 0.03)]),
+              shape: BoxShape.circle),
+            child: Icon(CupertinoIcons.book_fill, size: 32, color: primary)),
+          const SizedBox(height: 18),
+          Text(l.t('no_classes_admin'), textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, letterSpacing: -0.4, color: adaptiveText1(context))),
+        ]),
+      ));
     }
 
     return CustomScrollView(slivers: [
@@ -896,101 +926,73 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           final teacherName = (cls['teacher_name'] ?? '').toString();
           final members     = _membersForClass(classId);
           final students    = members.where((m) => (m['role'] ?? '') == 'student').toList();
-          final surface     = Theme.of(context).colorScheme.surface;
 
-          return TweenAnimationBuilder<double>(
+          // Без стопки кружков-«аватарок» студентов и без кружка автора: состав
+          // класса теперь читается словами (кто создал, сколько студентов), а
+          // открывается он по нажатию на всю карточку.
+          return Entrance(
             key: ValueKey(cls['id']),
-            tween: Tween(begin: 0.0, end: 1.0),
-            duration: Duration(milliseconds: 320 + i * 50),
-            curve: Curves.easeOutCubic,
-            builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 16*(1-t)), child: child)),
-            child: RepaintBoundary(child: Tappable(
-              onTap: () => _showStudentsSheet(classId, title, coverImg, i),
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 14),
-                decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(AppRadii.card), boxShadow: cardShadow(isDark)),
+            index: i,
+            child: RepaintBoundary(child: Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: GroupRow.card(
+                onTap: () => _showStudentsSheet(classId, title, coverImg, i),
+                padding: EdgeInsets.zero,
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                    child: SizedBox(height: 128, width: double.infinity,
-                      child: Stack(fit: StackFit.expand, children: [
-                        _classCover(coverImg, i),
-                        Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
-                          begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                          stops: const [0.5, 1.0], colors: [Colors.transparent, Colors.black.withValues(alpha: 0.42)],
-                        )))),
-                        Positioned(top: 10, right: 10, child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.52), borderRadius: BorderRadius.circular(AppRadii.card)),
-                          child: Row(mainAxisSize: MainAxisSize.min, children: [
-                            const Icon(CupertinoIcons.person_2, size: 13, color: Colors.white),
-                            const SizedBox(width: 4),
-                            Text('${members.length}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white)),
-                          ]),
-                        )),
-                      ])),
-                  ),
-                  Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(title, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: adaptiveText1(context)), maxLines: 2, overflow: TextOverflow.ellipsis),
-                    if (description.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 3),
-                      child: Text(description, style: TextStyle(fontSize: 13, color: adaptiveText3(context)), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-                      decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
-                      child: Row(children: [
-                        Container(width: 30, height: 30,
-                          decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, shape: BoxShape.circle),
-                          child: Center(child: Text(
-                            creatorName.trim().split(_wsRe).take(2).map((w) => w.isEmpty ? '' : w[0].toUpperCase()).join().isNotEmpty
-                                ? creatorName.trim().split(_wsRe).take(2).map((w) => w.isEmpty ? '' : w[0].toUpperCase()).join()
-                                : '?',
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: adaptiveText2(context)),
-                          ))),
-                        const SizedBox(width: 8),
-                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(l.t('created_by'), style: TextStyle(fontSize: 11, color: adaptiveText3(context), fontWeight: FontWeight.w500)),
-                          Text(creatorName, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: adaptiveText1(context)), overflow: TextOverflow.ellipsis),
-                        ])),
-                      ]),
-                    ),
-                    if (teacherName.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8),
-                      child: Row(children: [
-                        const Icon(CupertinoIcons.person, size: 13, color: C.text4),
-                        const SizedBox(width: 4),
-                        Text(teacherName, style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
-                      ])),
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: adaptiveSurface2(context),
-                        borderRadius: BorderRadius.circular(AppRadii.tile),
-                        border: Border.all(color: adaptiveBorder(context)),
-                      ),
-                      child: Row(children: [
-                        SizedBox(
-                          width: students.isEmpty ? 0 : (students.length == 1 ? 28 : students.length == 2 ? 46 : 64),
-                          height: 28,
-                          child: Stack(children: students.take(3).toList().asMap().entries.map((e) {
-                            final s = e.value;
-                            final nm = (s['full_name'] ?? s['email'] ?? '').toString();
-                            return Positioned(left: e.key * 18.0, child: Container(
-                              width: 28, height: 28,
-                              decoration: BoxDecoration(color: adaptiveText2(context), shape: BoxShape.circle,
-                                border: Border.all(color: adaptiveSurface2(context), width: 2)),
-                              child: Center(child: Text(nm.trim().isEmpty ? '?' : nm.trim()[0].toUpperCase(),
-                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white)))));
-                          }).toList()),
+                  SizedBox(height: 120, width: double.infinity,
+                    child: Stack(fit: StackFit.expand, children: [
+                      _classCover(coverImg, i),
+                      Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
+                        begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                        stops: const [0.45, 1.0], colors: [Colors.transparent, Colors.black.withValues(alpha: 0.45)],
+                      )))),
+                      Positioned(top: 10, right: 10, child: ClipRRect(
+                        borderRadius: BorderRadius.circular(100),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            color: Colors.black.withValues(alpha: 0.28),
+                            child: Row(mainAxisSize: MainAxisSize.min, children: [
+                              const Icon(CupertinoIcons.person_2_fill, size: 13, color: Colors.white),
+                              const SizedBox(width: 5),
+                              Text('${members.length}',
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white,
+                                      fontFeatures: [FontFeature.tabularFigures()])),
+                            ]),
+                          ),
                         ),
-                        SizedBox(width: students.isEmpty ? 0 : 10),
-                        Expanded(child: students.isEmpty
-                          ? Text(l.t('no_students_class'), style: const TextStyle(fontSize: 13, color: C.text4))
-                          : Text('${students.length} ${l.t('students_count')}',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: adaptiveText1(context)))),
-                        const Icon(CupertinoIcons.chevron_right, size: 13, color: C.text4),
-                      ]),
+                      )),
+                    ])),
+                  Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 15), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(title,
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: -0.5, height: 1.15, color: adaptiveText1(context)),
+                        maxLines: 2, overflow: TextOverflow.ellipsis),
+                    if (description.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4),
+                      child: Text(description,
+                          style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText3(context)),
+                          maxLines: 2, overflow: TextOverflow.ellipsis)),
+                    const SizedBox(height: 12),
+                    // Метаданные класса — сгруппированной секцией «метка → значение».
+                    InsetGroup(
+                      color: adaptiveSurface2(context),
+                      radius: AppRadii.tile,
+                      children: [
+                        _metaRow(l.t('created_by'), creatorName, pos: teacherName.isNotEmpty ? GroupPos.middle : GroupPos.last),
+                        if (teacherName.isNotEmpty)
+                          _metaRow(l.t('role_teacher'), teacherName, pos: GroupPos.last),
+                      ],
                     ),
+                    const SizedBox(height: 12),
+                    Row(children: [
+                      Icon(CupertinoIcons.person_2, size: 15, color: adaptiveText4(context)),
+                      const SizedBox(width: 6),
+                      Expanded(child: Text(students.isEmpty
+                            ? l.t('no_students_class')
+                            : '${students.length} ${l.t('students_count')}',
+                          style: TextStyle(fontSize: 15, letterSpacing: -0.2,
+                              color: students.isEmpty ? adaptiveText4(context) : adaptiveText2(context)))),
+                    ]),
                   ])),
                 ]),
               ),
@@ -1002,9 +1004,23 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     ]);
   }
 
+  /// Строка «метка — значение» внутри сгруппированной секции карточки класса.
+  Widget _metaRow(String label, String value, {required GroupPos pos}) => GroupRow(
+    pos: pos,
+    color: Colors.transparent,
+    separatorInset: 12,
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+    child: Row(children: [
+      Text(label, style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText4(context))),
+      const SizedBox(width: 12),
+      Expanded(child: Text(value, textAlign: TextAlign.right,
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, letterSpacing: -0.2, color: adaptiveText1(context)),
+          maxLines: 1, overflow: TextOverflow.ellipsis)),
+    ]),
+  );
+
   void _showStudentsSheet(int classId, String className, dynamic coverImg, int colorIdx) {
     final l       = context.read<L10n>();
-    final isDark  = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
 
     showModalBottomSheet(
@@ -1029,119 +1045,104 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           return DraggableScrollableSheet(
             expand: false, initialChildSize: 0.65, maxChildSize: 0.92,
             builder: (ctx, sc) => Column(children: [
-              Container(width: 36, height: 4, margin: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(AppRadii.chip))),
+              Container(width: 40, height: 5, margin: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(color: adaptiveText4(context).withValues(alpha: 0.35), borderRadius: BorderRadius.circular(100))),
 
-              Padding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 14), child: Row(children: [
+              Padding(padding: const EdgeInsets.fromLTRB(20, 0, 12, 14), child: Row(children: [
                 ClipRRect(borderRadius: BorderRadius.circular(AppRadii.tile),
                   child: SizedBox(width: 52, height: 52, child: _classCover(coverImg, colorIdx))),
-                const SizedBox(width: 12),
+                const SizedBox(width: 14),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(className, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800), maxLines: 2, overflow: TextOverflow.ellipsis),
+                  Text(className,
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: -0.5, height: 1.15, color: adaptiveText1(context)),
+                      maxLines: 2, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 3),
-                  Row(children: [
-                    const Icon(CupertinoIcons.person_2, size: 13, color: C.text3),
-                    const SizedBox(width: 4),
-                    Text('$studentCount ${l.t('students_count')}',
-                      style: const TextStyle(fontSize: 13, color: C.text3, fontWeight: FontWeight.w600)),
-                    const SizedBox(width: 8),
-                    Text('${l.t('total_label').toLowerCase()} ${members.length}', style: TextStyle(fontSize: 13, color: adaptiveText3(context), fontWeight: FontWeight.w500)),
-                  ]),
+                  Text('$studentCount ${l.t('students_count')}  ·  ${l.t('total_label').toLowerCase()} ${members.length}',
+                      style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText4(context)),
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
                 ])),
+                // Действия листа — акцентные глифы, как в баре системного
+                // приложения, вместо цветных плашек-квадратов.
                 Tappable(
                   onTap: () => _showRejoinableSheet(classId, className, doRefresh),
                   label: 'Вернуть студента',
-                  child: Container(
-                    width: 36, height: 36,
-                    margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(color: primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.chip)),
-                    child: Icon(CupertinoIcons.person_badge_plus, size: 18, color: primary),
-                  ),
+                  child: SizedBox(width: 44, height: 44,
+                      child: Icon(CupertinoIcons.person_badge_plus, size: 22, color: primary)),
                 ),
                 Tappable(
                   onTap: doRefresh,
                   label: 'Обновить',
-                  child: Container(
-                    width: 36, height: 36,
-                    decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
-                    child: Icon(CupertinoIcons.arrow_counterclockwise, size: 18, color: adaptiveText2(context)),
-                  ),
+                  child: SizedBox(width: 44, height: 44,
+                      child: Icon(CupertinoIcons.arrow_counterclockwise, size: 20, color: primary)),
                 ),
               ])),
 
-              Divider(height: 1, color: C.border.withValues(alpha: 0.5)),
+              Container(height: hairline(context), color: groupSeparator(context)),
 
               Expanded(child: members.isEmpty
-                ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(CupertinoIcons.person_2, size: 52, color: C.text4),
-                    const SizedBox(height: 14),
-                    Text(l.t('no_students_class'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: C.text4)),
-                    const SizedBox(height: 16),
-                    Tappable(
-                      onTap: doRefresh,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                        decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
-                        child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(CupertinoIcons.arrow_counterclockwise, size: 15, color: adaptiveText2(context)),
-                          const SizedBox(width: 6),
-                          Text(l.t('refresh_list'), style: TextStyle(fontSize: 13, color: adaptiveText2(context), fontWeight: FontWeight.w600)),
-                        ]),
+                ? Center(child: Padding(
+                    padding: const EdgeInsets.fromLTRB(40, 0, 40, 40),
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(CupertinoIcons.person_2, size: 34, color: adaptiveText4(context).withValues(alpha: 0.7)),
+                      const SizedBox(height: 14),
+                      Text(l.t('no_students_class'), textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4, color: adaptiveText1(context))),
+                      const SizedBox(height: 14),
+                      Tappable(
+                        onTap: doRefresh,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          child: Text(l.t('refresh_list'),
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, letterSpacing: -0.3, color: primary)),
+                        ),
                       ),
-                    ),
-                  ]))
+                    ]),
+                  ))
+                // Состав класса — сгруппированный список без «аватарок»:
+                // имя, почта и роль-пилюля справа.
                 : CustomScrollView(
                     controller: sc,
                     physics: const AlwaysScrollableScrollPhysics(),
                     slivers: [
                       CupertinoSliverRefreshControl(onRefresh: doRefresh),
                       SliverPadding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-                        sliver: SliverList.separated(
-                          itemCount: members.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 8),
-                          itemBuilder: (_, j) {
-                        final s        = members[j];
-                        final name     = (s['full_name'] ?? '').toString().trim();
-                        final email    = (s['email'] ?? '').toString();
-                        final role     = (s['role'] ?? '').toString();
-                        final display  = name.isNotEmpty ? name : email.split('@').first;
-                        final initials = display.trim().isEmpty ? '?' : display.trim()
-                            .split(_wsRe).take(2)
-                            .map((w) => w.isEmpty ? '' : w[0].toUpperCase()).join();
-                        final isTeacher  = role == 'teacher' || role == 'admin';
-                        final roleColor  = isTeacher ? C.indigo : C.text4;
-                        final roleLabel  = isTeacher ? l.t('role_teacher_short') : l.t('role_student_short');
-                        return Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface,
-                            borderRadius: BorderRadius.circular(AppRadii.tile),
-                            boxShadow: softShadow(isDark),
-                          ),
-                          child: Row(children: [
-                            Container(width: 44, height: 44,
-                              decoration: BoxDecoration(
-                                gradient: RadialGradient(colors: [roleColor.withValues(alpha: 0.24), roleColor.withValues(alpha: 0.07)]),
-                                shape: BoxShape.circle),
-                              child: Center(child: Text(initials,
-                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: roleColor)))),
-                            const SizedBox(width: 12),
-                            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              Text(display, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                              const SizedBox(height: 2),
-                              Text(email, style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
-                            ])),
-                            Column(crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(color: roleColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppRadii.chip)),
-                                child: Text(roleLabel, style: TextStyle(fontSize: 11, color: roleColor, fontWeight: FontWeight.w700))),
-                            ]),
-                          ]),
-                        );
-                          },
-                        ),
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
+                        sliver: SliverToBoxAdapter(child: InsetGroup(children: [
+                          for (var j = 0; j < members.length; j++) ...(() {
+                            final s        = members[j];
+                            final name     = (s['full_name'] ?? '').toString().trim();
+                            final email    = (s['email'] ?? '').toString();
+                            final role     = (s['role'] ?? '').toString();
+                            final display  = name.isNotEmpty ? name : email.split('@').first;
+                            final isTeacher  = role == 'teacher' || role == 'admin';
+                            final roleColor  = isTeacher ? C.indigo : adaptiveText4(context);
+                            final roleLabel  = isTeacher ? l.t('role_teacher_short') : l.t('role_student_short');
+                            return [GroupRow(
+                              pos: innerPos(j, members.length),
+                              color: Colors.transparent,
+                              separatorInset: 16,
+                              padding: const EdgeInsets.fromLTRB(16, 11, 16, 11),
+                              child: Row(children: [
+                                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                  Text(display,
+                                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.4, color: adaptiveText1(context)),
+                                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                                  const SizedBox(height: 1),
+                                  Text(email,
+                                      style: TextStyle(fontSize: 14, letterSpacing: -0.1, color: adaptiveText4(context)),
+                                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                                ])),
+                                const SizedBox(width: 10),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(color: roleColor.withValues(alpha: 0.13), borderRadius: BorderRadius.circular(100)),
+                                  child: Text(roleLabel,
+                                      style: TextStyle(fontSize: 13, color: roleColor, fontWeight: FontWeight.w600, letterSpacing: -0.1)),
+                                ),
+                              ]),
+                            )];
+                          })(),
+                        ])),
                       ),
                     ],
                   )),
@@ -1154,7 +1155,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
 
   void _showRejoinableSheet(int classId, String className, Future<void> Function() onChanged) {
     final l = context.read<L10n>();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
     final api = context.read<ApiService>();
 
@@ -1197,73 +1197,70 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           return DraggableScrollableSheet(
             expand: false, initialChildSize: 0.6, maxChildSize: 0.92,
             builder: (ctx, sc) => Column(children: [
-              Container(width: 36, height: 4, margin: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(AppRadii.chip))),
+              Container(width: 40, height: 5, margin: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(color: adaptiveText4(context).withValues(alpha: 0.35), borderRadius: BorderRadius.circular(100))),
               Padding(padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(l.t('return_student'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 3),
+                  Text(l.t('return_student'),
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.5, color: adaptiveText1(context))),
+                  const SizedBox(height: 4),
                   Text('$className · ${l.t('return_student_hint')}',
-                      style: TextStyle(fontSize: 13, color: adaptiveText3(context), height: 1.35)),
+                      style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText3(context), height: 1.35)),
                 ])),
-              Divider(height: 1, color: C.border.withValues(alpha: 0.5)),
+              Container(height: hairline(context), color: groupSeparator(context)),
               Expanded(child: loading
                 ? const Center(child: CupertinoActivityIndicator(color: C.text3))
                 : candidates.isEmpty
-                  ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                      Icon(CupertinoIcons.person_crop_circle_badge_checkmark, size: 48, color: C.text4.withValues(alpha: 0.6)),
-                      const SizedBox(height: 12),
-                      Padding(padding: const EdgeInsets.symmetric(horizontal: 40),
-                        child: Text(l.t('no_archived_students'), textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 15, color: C.text4, height: 1.4))),
-                    ]))
-                  : ListView.separated(
+                  ? Center(child: Padding(
+                      padding: const EdgeInsets.fromLTRB(40, 0, 40, 40),
+                      child: Column(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(CupertinoIcons.checkmark_circle, size: 34, color: adaptiveText4(context).withValues(alpha: 0.7)),
+                        const SizedBox(height: 14),
+                        Text(l.t('no_archived_students'), textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 16, letterSpacing: -0.2, color: adaptiveText3(context), height: 1.4)),
+                      ]),
+                    ))
+                  // Кандидаты — сгруппированным списком без «аватарок»;
+                  // «Вернуть» справа акцентным текстом, как действия в
+                  // системных списках.
+                  : ListView(
                       controller: sc,
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-                      itemCount: candidates.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (_, i) {
-                        final u = candidates[i] as Map<String, dynamic>;
-                        final display = (u['full_name'] ?? u['email'] ?? '').toString();
-                        final email = (u['email'] ?? '').toString();
-                        final initials = display.trim().isEmpty ? '?' : display.trim()[0].toUpperCase();
-                        final busy = adding.contains(u['id']);
-                        return Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface,
-                            borderRadius: BorderRadius.circular(AppRadii.tile),
-                            boxShadow: softShadow(isDark),
-                          ),
-                          child: Row(children: [
-                            Container(width: 44, height: 44,
-                              decoration: BoxDecoration(color: adaptiveSurface2(context), shape: BoxShape.circle),
-                              child: Center(child: Text(initials,
-                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: adaptiveText2(context))))),
-                            const SizedBox(width: 12),
-                            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              Text(display, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
-                              const SizedBox(height: 2),
-                              Text(email, style: TextStyle(fontSize: 13, color: adaptiveText3(context)), maxLines: 1, overflow: TextOverflow.ellipsis),
-                            ])),
-                            const SizedBox(width: 8),
-                            Tappable(
-                              onTap: busy ? null : () => add(u),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                                decoration: BoxDecoration(color: primary, borderRadius: BorderRadius.circular(AppRadii.chip)),
-                                child: busy
-                                  ? const SizedBox(width: 16, height: 16, child: CupertinoActivityIndicator(color: Colors.white))
-                                  : Row(mainAxisSize: MainAxisSize.min, children: [
-                                      const Icon(CupertinoIcons.add, size: 15, color: Colors.white),
-                                      const SizedBox(width: 4),
-                                      Text(l.t('return_add'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
-                                    ]),
-                              ),
-                            ),
-                          ]),
-                        );
-                      },
+                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
+                      children: [InsetGroup(children: [
+                        for (var i = 0; i < candidates.length; i++) ...(() {
+                          final u = candidates[i] as Map<String, dynamic>;
+                          final display = (u['full_name'] ?? u['email'] ?? '').toString();
+                          final email = (u['email'] ?? '').toString();
+                          final busy = adding.contains(u['id']);
+                          return [GroupRow(
+                            pos: innerPos(i, candidates.length),
+                            color: Colors.transparent,
+                            separatorInset: 16,
+                            padding: const EdgeInsets.fromLTRB(16, 10, 10, 10),
+                            onTap: busy ? null : () => add(u),
+                            child: Row(children: [
+                              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                Text(display,
+                                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.4, color: adaptiveText1(context)),
+                                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                                const SizedBox(height: 1),
+                                Text(email,
+                                    style: TextStyle(fontSize: 14, letterSpacing: -0.1, color: adaptiveText4(context)),
+                                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                              ])),
+                              const SizedBox(width: 10),
+                              busy
+                                ? Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    child: CupertinoActivityIndicator(radius: 9, color: adaptiveText4(context)))
+                                : Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                                    child: Text(l.t('return_add'),
+                                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, letterSpacing: -0.3, color: primary))),
+                            ]),
+                          )];
+                        })(),
+                      ])],
                     )),
             ]),
           );
@@ -1326,7 +1323,10 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
         final isBlocked   = u['is_active'] == false;
         final aiUnlimited = u['ai_unlimited'] == true;
 
-        Widget roleTile(String value, String label, Color color) {
+        // Роль — сегментированный переключатель в капсуле: выбор одного из
+        // трёх взаимоисключающих значений, ровно та роль, что у нативного
+        // segmented control (раньше это были три плитки с цветными рамками).
+        Widget roleSegment(String value, String label, Color color) {
           final selected = role == value;
           return Expanded(child: Tappable(
             onTap: selected ? null : () async {
@@ -1334,84 +1334,100 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               if (ok && ctx.mounted) setS(() => u['role'] = value);
             },
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              padding: const EdgeInsets.symmetric(vertical: 14),
+              duration: const Duration(milliseconds: 160),
+              curve: Curves.easeOut,
+              padding: const EdgeInsets.symmetric(vertical: 9),
               decoration: BoxDecoration(
-                color: selected ? color.withValues(alpha: 0.12) : adaptiveSurface2(ctx),
-                borderRadius: BorderRadius.circular(AppRadii.tile),
-                border: Border.all(color: selected ? color : Colors.transparent, width: 1.5),
+                color: selected ? Theme.of(ctx).colorScheme.surface : Colors.transparent,
+                borderRadius: BorderRadius.circular(100),
+                boxShadow: selected
+                    ? [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 3, offset: const Offset(0, 1))]
+                    : null,
               ),
-              child: Center(child: Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: selected ? color : C.text4))),
+              child: Center(child: Text(label,
+                  style: TextStyle(fontSize: 15, fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                      letterSpacing: -0.2, color: selected ? color : adaptiveText3(ctx)))),
             ),
           ));
         }
 
-        Widget actionTile({required IconData icon, required Color color, required String title, String? subtitle, Widget? trailing, VoidCallback? onTap}) {
-          return Tappable(
+        Widget actionRow({required IconData icon, required Color color, required String title, String? subtitle, Widget? trailing, VoidCallback? onTap, required GroupPos pos}) {
+          return GroupRow(
+            pos: pos,
+            color: Colors.transparent,
             onTap: onTap,
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(color: adaptiveSurface2(ctx).withValues(alpha: 0.6), borderRadius: BorderRadius.circular(AppRadii.tile)),
-              child: Row(children: [
-                Container(width: 36, height: 36,
-                  decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.chip)),
-                  child: Icon(icon, size: 18, color: color)),
-                const SizedBox(width: 12),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: adaptiveText1(ctx))),
-                  if (subtitle != null) Padding(padding: const EdgeInsets.only(top: 1),
-                    child: Text(subtitle, style: const TextStyle(fontSize: 11, color: C.text4))),
-                ])),
-                trailing ?? const Icon(CupertinoIcons.chevron_right, size: 14, color: C.text4),
-              ]),
-            ),
+            separatorInset: 62,
+            padding: const EdgeInsets.fromLTRB(16, 11, 16, 11),
+            child: Row(children: [
+              Container(width: 32, height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: color.withValues(alpha: 0.13), borderRadius: BorderRadius.circular(9)),
+                child: Icon(icon, size: 18, color: color)),
+              const SizedBox(width: 14),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(title,
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w400, letterSpacing: -0.4, color: color == C.red ? C.red : adaptiveText1(ctx))),
+                if (subtitle != null) Padding(padding: const EdgeInsets.only(top: 1),
+                  child: Text(subtitle, style: TextStyle(fontSize: 13, height: 1.3, color: adaptiveText4(ctx)))),
+              ])),
+              if (trailing != null) trailing else
+                Icon(CupertinoIcons.chevron_right, size: 14, color: adaptiveText4(ctx).withValues(alpha: 0.8)),
+            ]),
           );
         }
 
         return SafeArea(child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Center(child: Container(width: 36, height: 4, margin: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(color: adaptiveBorder(ctx), borderRadius: BorderRadius.circular(AppRadii.chip)))),
+            Center(child: Container(width: 40, height: 5, margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(color: adaptiveText4(ctx).withValues(alpha: 0.35), borderRadius: BorderRadius.circular(100)))),
 
-            Row(children: [
-              Container(width: 50, height: 50,
-                decoration: BoxDecoration(color: adaptiveSurface2(ctx), shape: BoxShape.circle),
-                child: Center(child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?',
-                  style: TextStyle(color: adaptiveText2(ctx), fontWeight: FontWeight.w900, fontSize: 20)))),
-              const SizedBox(width: 12),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
-                  Flexible(child: Text(name, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: adaptiveText1(ctx)), overflow: TextOverflow.ellipsis)),
-                  if (isBlocked) Container(
-                    margin: const EdgeInsets.only(left: 6),
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                    decoration: BoxDecoration(color: C.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppRadii.chip)),
-                    child: Text(l.t('blocked_short'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.red)),
-                  ),
-                ]),
-                const SizedBox(height: 2),
-                Text(email, style: TextStyle(fontSize: 13, color: adaptiveText3(ctx)), overflow: TextOverflow.ellipsis),
-              ])),
-              _RoleBadge(role: role),
-            ]),
-            const SizedBox(height: 18),
+            // Заголовок листа — имя и почта, без кружка с буквой.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 4, 0, 0),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(children: [
+                    Flexible(child: Text(name,
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.5, color: adaptiveText1(ctx)),
+                        maxLines: 1, overflow: TextOverflow.ellipsis)),
+                    if (isBlocked) Container(
+                      margin: const EdgeInsets.only(left: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                      decoration: BoxDecoration(color: C.red.withValues(alpha: 0.13), borderRadius: BorderRadius.circular(100)),
+                      child: Text(l.t('blocked_short'),
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: C.red)),
+                    ),
+                  ]),
+                  const SizedBox(height: 3),
+                  Text(email,
+                      style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText4(ctx)),
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                ])),
+                const SizedBox(width: 10),
+                _RoleBadge(role: role),
+              ]),
+            ),
+            const SizedBox(height: 22),
 
             _SectionLabel(l.t('role')),
             const SizedBox(height: 8),
-            Row(children: [
-              roleTile('student', l.t('role_student_short'),  const Color(0xFF059669)),
-              const SizedBox(width: 8),
-              roleTile('teacher', l.t('role_teacher_short'), C.indigo),
-              const SizedBox(width: 8),
-              roleTile('admin',   l.t('role_admin_short'),   primary),
-            ]),
-            const SizedBox(height: 18),
+            Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(color: adaptiveSurface2(ctx), borderRadius: BorderRadius.circular(100)),
+              child: Row(children: [
+                roleSegment('student', l.t('role_student_short'),  const Color(0xFF059669)),
+                roleSegment('teacher', l.t('role_teacher_short'), C.indigo),
+                roleSegment('admin',   l.t('role_admin_short'),   primary),
+              ]),
+            ),
+            const SizedBox(height: 22),
 
             _SectionLabel(l.t('actions_label')),
             const SizedBox(height: 8),
-            actionTile(
+            InsetGroup(children: [
+            actionRow(
+              pos: isSelf ? GroupPos.last : GroupPos.middle,
               icon: aiUnlimited ? CupertinoIcons.bolt_fill : CupertinoIcons.bolt,
               color: C.amber,
               title: l.t('ai_unlimited'),
@@ -1422,7 +1438,8 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                 if (ok && ctx.mounted) setS(() => u['ai_unlimited'] = !aiUnlimited);
               },
             ),
-            if (!isSelf) actionTile(
+            if (!isSelf) actionRow(
+              pos: GroupPos.middle,
               icon: isBlocked ? CupertinoIcons.lock_open : CupertinoIcons.nosign,
               color: isBlocked ? C.green : C.red,
               title: isBlocked ? l.t('unblock') : l.t('block'),
@@ -1441,7 +1458,8 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                 if (ok && ctx.mounted) setS(() => u['is_active'] = isBlocked);
               },
             ),
-            if (!isSelf) actionTile(
+            if (!isSelf) actionRow(
+              pos: GroupPos.last,
               icon: CupertinoIcons.trash,
               color: C.red,
               title: l.t('delete'),
@@ -1457,6 +1475,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                 if (ok && ctx.mounted) Navigator.pop(ctx);
               },
             ),
+            ]),
           ]),
         ));
       }),
@@ -1497,14 +1516,19 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
         return Expanded(child: Tappable(
           onTap: busy ? null : () => setS(() => role = value),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(vertical: 12),
+            duration: const Duration(milliseconds: 160),
+            curve: Curves.easeOut,
+            padding: const EdgeInsets.symmetric(vertical: 9),
             decoration: BoxDecoration(
-              color: selected ? color.withValues(alpha: 0.12) : adaptiveSurface2(ctx),
-              borderRadius: BorderRadius.circular(AppRadii.tile),
-              border: Border.all(color: selected ? color : Colors.transparent, width: 1.5),
+              color: selected ? Theme.of(ctx).colorScheme.surface : Colors.transparent,
+              borderRadius: BorderRadius.circular(100),
+              boxShadow: selected
+                  ? [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 3, offset: const Offset(0, 1))]
+                  : null,
             ),
-            child: Center(child: Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: selected ? color : C.text4))),
+            child: Center(child: Text(label,
+                style: TextStyle(fontSize: 14, fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                    letterSpacing: -0.2, color: selected ? color : adaptiveText3(ctx)))),
           ),
         ));
       }
@@ -1514,7 +1538,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
         const SizedBox(height: 14),
         Text(l.t('create_user'),
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: adaptiveText1(ctx), letterSpacing: -0.3)),
+          style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, color: adaptiveText1(ctx), letterSpacing: -0.4)),
         const SizedBox(height: 18),
         TextField(
           controller: emailCtrl,
@@ -1547,22 +1571,25 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           onSubmitted: (_) => submit(),
         ),
         const SizedBox(height: 14),
-        Row(children: [
-          roleChip('student', l.t('role_student_short'),  const Color(0xFF059669)),
-          const SizedBox(width: 8),
-          roleChip('teacher', l.t('role_teacher_short'), C.indigo),
-          const SizedBox(width: 8),
-          roleChip('admin',   l.t('role_admin_short'),   primary),
-        ]),
+        Container(
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(color: adaptiveSurface2(ctx), borderRadius: BorderRadius.circular(100)),
+          child: Row(children: [
+            roleChip('student', l.t('role_student_short'),  const Color(0xFF059669)),
+            roleChip('teacher', l.t('role_teacher_short'), C.indigo),
+            roleChip('admin',   l.t('role_admin_short'),   primary),
+          ]),
+        ),
         if (error != null) ...[
           const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-            decoration: BoxDecoration(color: C.red.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(AppRadii.chip)),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(color: C.red.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(AppRadii.tile)),
             child: Row(children: [
-              const Icon(CupertinoIcons.exclamationmark_circle, size: 15, color: C.red),
-              const SizedBox(width: 7),
-              Expanded(child: Text(error!, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: C.red))),
+              const Icon(CupertinoIcons.exclamationmark_circle_fill, size: 16, color: C.red),
+              const SizedBox(width: 8),
+              Expanded(child: Text(error!,
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, letterSpacing: -0.2, color: C.red))),
             ]),
           ),
         ],
@@ -1581,25 +1608,45 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
   }
 }
 
-class _StatCard extends StatelessWidget {
-  final String value, label;
-  final bool isDark;
-  const _StatCard({required this.value, required this.label, required this.isDark});
+/// Сводка одной карточкой с вертикальными волосяными разделителями — как итоги
+/// в Apple Health. Раньше это были три самостоятельные плитки с тенями: три
+/// «объекта» вместо одного факта о системе.
+class _SummaryBar extends StatelessWidget {
+  final List<(String value, String label)> cells;
+  const _SummaryBar({required this.cells});
 
   @override
-  Widget build(BuildContext context) => Expanded(child: Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surface,
-      borderRadius: BorderRadius.circular(AppRadii.card),
-      boxShadow: softShadow(isDark),
-    ),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(value, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: adaptiveText1(context), height: 1, letterSpacing: -0.5)),
-      const SizedBox(height: 3),
-      Text(label, style: TextStyle(fontSize: 11, color: adaptiveText3(context), fontWeight: FontWeight.w500)),
-    ]),
-  ));
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadii.card),
+        border: Border.all(color: groupSeparator(context), width: hairline(context)),
+      ),
+      child: IntrinsicHeight(child: Row(children: [
+        for (var i = 0; i < cells.length; i++) ...[
+          if (i > 0)
+            Container(
+              width: hairline(context),
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              color: groupSeparator(context),
+            ),
+          Expanded(child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+            child: Column(children: [
+              Text(cells[i].$1,
+                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, height: 1.05,
+                      letterSpacing: -0.8, color: adaptiveText1(context),
+                      fontFeatures: const [FontFeature.tabularFigures()])),
+              const SizedBox(height: 3),
+              Text(cells[i].$2, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 13, letterSpacing: -0.1, color: adaptiveText4(context))),
+            ]),
+          )),
+        ],
+      ])),
+    );
+  }
 }
 
 class _RoleBadge extends StatelessWidget {
@@ -1608,23 +1655,35 @@ class _RoleBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = context.watch<L10n>();
     final primary = Theme.of(context).colorScheme.primary;
-    final color = role == 'admin' ? primary : role == 'teacher' ? C.indigo : C.text4;
+    final color = role == 'admin' ? primary : role == 'teacher' ? C.indigo : adaptiveText4(context);
+    // Роль подписана на языке интерфейса: раньше в бейдже стоял сырой ключ с
+    // бэкенда («admin», «teacher») — единственное английское слово на экране.
+    final label = role == 'admin'
+        ? l.t('role_admin_short')
+        : role == 'teacher'
+            ? l.t('role_teacher_short')
+            : l.t('role_student_short');
     return Container(
-      margin: const EdgeInsets.only(right: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(AppRadii.card)),
-      child: Text(role, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: color)),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.13), borderRadius: BorderRadius.circular(100)),
+      child: Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, letterSpacing: -0.1, color: color)),
     );
   }
 }
 
+/// Подпись над сгруппированной секцией: мелкий кегль капсом с положительным
+/// трекингом — правило Apple для мелкого текста (крупный, наоборот, поджимают).
 class _SectionLabel extends StatelessWidget {
   final String text;
   const _SectionLabel(this.text);
   @override
-  Widget build(BuildContext context) => Text(text,
-    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: C.text4, letterSpacing: 1.0));
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(left: 6),
+    child: Text(text.toUpperCase(),
+      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.6, color: adaptiveText3(context))),
+  );
 }
 
 class _AiFilterChip extends StatelessWidget {
@@ -1638,14 +1697,20 @@ class _AiFilterChip extends StatelessWidget {
     final primary = Theme.of(context).colorScheme.primary;
     return Tappable(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? primary : adaptiveSurface2(context),
-          borderRadius: BorderRadius.circular(AppRadii.tile),
-          boxShadow: selected ? primaryGlow(primary, opacity: 0.28) : null,
+          // Капсула вместо скруглённого прямоугольника и без цветного свечения:
+          // фильтр — это переключатель, а не главная кнопка экрана.
+          color: selected ? primary : Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(100),
+          border: selected ? null : Border.all(color: groupSeparator(context), width: hairline(context)),
         ),
-        child: Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: selected ? Colors.white : C.text3)),
+        child: Text(label,
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, letterSpacing: -0.2,
+                color: selected ? Colors.white : adaptiveText2(context))),
       ),
     );
   }
@@ -1662,13 +1727,13 @@ class _ReportActionChip extends StatelessWidget {
     return Tappable(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(AppRadii.chip),
+          color: color.withValues(alpha: 0.13),
+          borderRadius: BorderRadius.circular(100),
         ),
         child: Text(label,
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: color)),
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: color)),
       ),
     );
   }

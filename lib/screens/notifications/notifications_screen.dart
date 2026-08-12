@@ -283,7 +283,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           body: _body(n, l),
                           isFresh: _fresh.contains(n.key),
                           config: cfg,
-                          canNavigate: canNavigate,
                           surface: surface,
                           timeAgo: _timeAgo(n, l),
                           onTap: () {
@@ -354,7 +353,6 @@ class _NotifCard extends StatelessWidget {
   final String body;
   final bool isFresh;
   final Map<String, dynamic> config;
-  final bool canNavigate;
   final Color surface;
   final String timeAgo;
   final VoidCallback onTap;
@@ -364,7 +362,6 @@ class _NotifCard extends StatelessWidget {
     required this.body,
     required this.isFresh,
     required this.config,
-    required this.canNavigate,
     required this.surface,
     required this.timeAgo,
     required this.onTap,
@@ -377,47 +374,44 @@ class _NotifCard extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
+      // Те же метрики, что у карточек лекции и задания: плитка 46, ровно две
+      // строки текста (заголовок 17 / текст 15), воздух 16 по вертикали. Раньше
+      // карточка была компактнее остальных списков приложения, а текст в две
+      // строки делал соседние карточки разной высоты. Шеврона «открыть» нет —
+      // нажимается вся карточка.
       child: GroupRow.card(
         onTap: onTap,
         color: surface,
-        padding: const EdgeInsets.fromLTRB(14, 13, 12, 13),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Container(width: 40, height: 40,
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+        child: Row(children: [
+          Container(width: 46, height: 46,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: c.withValues(alpha: isFresh ? 0.18 : 0.10),
-              borderRadius: BorderRadius.circular(AppRadii.chip),
+              borderRadius: BorderRadius.circular(AppRadii.tile),
             ),
-            child: Icon(icon, size: 19, color: c)),
-          const SizedBox(width: 12),
+            child: Icon(icon, size: 21, color: c)),
+          const SizedBox(width: 14),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              if (isFresh) ...[
-                Padding(padding: const EdgeInsets.only(top: 6),
-                  child: Container(width: 7, height: 7, decoration: BoxDecoration(color: c, shape: BoxShape.circle))),
-                const SizedBox(width: 7),
-              ],
-              Expanded(child: Text(title, style: TextStyle(
-                fontSize: 16, fontWeight: isFresh ? FontWeight.w600 : FontWeight.w500,
-                letterSpacing: -0.3, color: adaptiveText1(context), height: 1.25))),
+            Row(children: [
+              if (isFresh)
+                Container(width: 7, height: 7, margin: const EdgeInsets.only(right: 7),
+                    decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
+              Expanded(child: Text(title,
+                  style: TextStyle(
+                    fontSize: 17, fontWeight: isFresh ? FontWeight.w600 : FontWeight.w500,
+                    letterSpacing: -0.4, color: adaptiveText1(context), height: 1.2),
+                  maxLines: 1, overflow: TextOverflow.ellipsis)),
               if (timeAgo.isNotEmpty) ...[
-                const SizedBox(width: 8),
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text(timeAgo, style: TextStyle(
-                    fontSize: 13, color: adaptiveText4(context), fontWeight: FontWeight.w400)),
-                ),
+                const SizedBox(width: 10),
+                Text(timeAgo,
+                    style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText4(context))),
               ],
             ]),
-            const SizedBox(height: 3),
-            Text(body, maxLines: 2, overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 14, color: adaptiveText3(context), height: 1.35)),
+            const SizedBox(height: 4),
+            Text(body, maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText3(context))),
           ])),
-          if (canNavigate) ...[
-            const SizedBox(width: 6),
-            Padding(padding: const EdgeInsets.only(top: 12),
-              child: Icon(CupertinoIcons.chevron_right, size: 14, color: adaptiveText4(context).withValues(alpha: 0.7))),
-          ],
         ]),
       ),
     );

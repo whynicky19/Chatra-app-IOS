@@ -9,6 +9,7 @@ import 'package:chatra_app/screens/notifications/notifications_screen.dart';
 import 'package:chatra_app/services/api_service.dart';
 import 'package:chatra_app/theme/app_theme.dart';
 import 'package:chatra_app/utils/notif_feed.dart';
+import 'package:chatra_app/widgets/inset_group.dart';
 
 /// Регрессия на «бейдж показывает 1, а список уведомлений пуст».
 ///
@@ -291,6 +292,26 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(classes.notifBadge.value, 0);
       expect(fake.marked, isEmpty);
+    });
+
+    testWidgets('карточки уведомлений одной высоты при разной длине текста', (tester) async {
+      final now = DateTime.now();
+      final api = _FakeApi(
+        classes: [cls(1, 'Класс с очень длинным названием, которое не влезает в строку')],
+        assignments: [
+          assignment(10, 1, createdAt: now.subtract(const Duration(minutes: 30))),
+          assignment(11, 1, createdAt: now.subtract(const Duration(hours: 4))),
+        ],
+        subs: [gradedSub(100, 10, gradedAt: now.subtract(const Duration(hours: 1)))],
+      );
+      await pumpScreen(tester, api);
+
+      final heights = tester
+          .widgetList<GroupRow>(find.byType(GroupRow))
+          .map((w) => tester.getSize(find.byWidget(w)).height)
+          .toSet();
+      expect(heights, hasLength(1), reason: 'высота карточек уведомлений разошлась');
+      expect(heights.single, greaterThan(70));
     });
   });
 }

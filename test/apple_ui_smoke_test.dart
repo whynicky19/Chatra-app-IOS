@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -14,6 +15,7 @@ import 'package:chatra_app/screens/classes/widgets/file_card.dart';
 import 'package:chatra_app/screens/settings/security_settings_screen.dart';
 import 'package:chatra_app/screens/settings/settings_screen.dart';
 import 'package:chatra_app/theme/app_theme.dart';
+import 'package:chatra_app/widgets/inset_group.dart';
 
 /// Смоук-вёрстка перерисованных экранов: тест падает на любом RenderFlex
 /// overflow и любом исключении в build, поэтому сам факт прохождения —
@@ -195,5 +197,120 @@ void main() {
     ));
     await tester.pump(const Duration(milliseconds: 300));
     expect(tester.takeException(), isNull);
+  });
+
+  // ── Одинаковая высота карточек и отсутствие лишних значков ──────────
+  List<dynamic> mixedPosts() => [
+        // Короткое название без описания и вложений.
+        {
+          'id': 1,
+          'title': '[LECTURE][1] Введение',
+          'body': jsonEncode({'content': ''}),
+          'created_at': '2026-08-01T10:00:00',
+        },
+        // Длинное название и длинное описание + вложения.
+        {
+          'id': 2,
+          'title': '[LECTURE][2] Очень длинное название лекции, которое точно не влезает в одну строку экрана',
+          'body': jsonEncode({
+            'content': 'Очень длинное описание лекции. ' * 30,
+            'files': ['https://e.com/a.pdf#a.pdf', 'https://e.com/b.pdf#b.pdf'],
+          }),
+          'created_at': '2026-08-02T10:00:00',
+        },
+      ];
+
+  Set<double> cardHeights(WidgetTester tester) => tester
+      .widgetList<GroupRow>(find.byType(GroupRow))
+      .map((w) => tester.getSize(find.byWidget(w)).height)
+      .toSet();
+
+  testWidgets('карточки лекций одной высоты при разной длине текста', (tester) async {
+    await tester.pumpWidget(wrap(
+      ClassPostsTab(
+        posts: mixedPosts(),
+        isTeacher: true,
+        onShowPost: (_, __) {},
+        onEditPost: (_) {},
+        onDeletePost: (_) {},
+        onRefresh: () async {},
+      ),
+    ));
+    await tester.pump(const Duration(milliseconds: 600));
+
+    expect(cardHeights(tester), hasLength(1), reason: 'высота карточек разошлась');
+    // Шеврона «открыть» в списке быть не должно, троеточие — вертикальное.
+    expect(find.byIcon(CupertinoIcons.chevron_right), findsNothing);
+    expect(find.byIcon(CupertinoIcons.ellipsis_vertical), findsWidgets);
+  });
+
+  testWidgets('карточки заданий одной высоты при разном описании и статусах', (tester) async {
+    final items = [
+      {'id': 1, 'title': 'Короткое', 'max_score': 100},
+      {
+        'id': 2,
+        'title': 'Очень длинное название задания, которое точно не влезает в одну строку',
+        'description': 'Описание задания. ' * 40,
+        'max_score': 100,
+        'deadline': '2026-08-20T23:59:00',
+      },
+    ];
+    await tester.pumpWidget(wrap(
+      ClassAssignmentsTab(
+        assignments: items,
+        mySubs: const [
+          {'assignment_id': 2, 'status': 'graded', 'grade': {'score': 87, 'graded_by': 'ai'}},
+        ],
+        rating: const {},
+        isTeacher: true,
+        classId: 1,
+        isLoading: false,
+        onRefresh: () async {},
+        onEditAssignment: (_) {},
+        onOpenFile: (_, __) {},
+      ),
+    ));
+    await tester.pump(const Duration(milliseconds: 600));
+
+    expect(cardHeights(tester), hasLength(1), reason: 'высота карточек разошлась');
+    expect(find.byIcon(CupertinoIcons.chevron_right), findsNothing);
+    expect(find.byIcon(CupertinoIcons.ellipsis_vertical), findsWidgets);
+  });
+
+  testWidgets('карточка лекции и карточка задания одной высоты между собой', (tester) async {
+    await tester.pumpWidget(wrap(
+      ClassPostsTab(
+        posts: mixedPosts(),
+        isTeacher: true,
+        onShowPost: (_, __) {},
+        onEditPost: (_) {},
+        onDeletePost: (_) {},
+        onRefresh: () async {},
+      ),
+    ));
+    await tester.pump(const Duration(milliseconds: 600));
+    final lectureHeight = cardHeights(tester).single;
+
+    await tester.pumpWidget(wrap(
+      ClassAssignmentsTab(
+        assignments: const [
+          {'id': 1, 'title': 'Короткое', 'max_score': 100},
+          {'id': 2, 'title': 'Другое задание', 'max_score': 100, 'deadline': '2026-08-20T23:59:00'},
+        ],
+        mySubs: const [],
+        rating: const {},
+        isTeacher: true,
+        classId: 1,
+        isLoading: false,
+        onRefresh: () async {},
+        onEditAssignment: (_) {},
+        onOpenFile: (_, __) {},
+      ),
+    ));
+    await tester.pump(const Duration(milliseconds: 600));
+    final assignmentHeight = cardHeights(tester).single;
+
+    expect(assignmentHeight, lectureHeight,
+        reason: 'списки лекций и заданий должны иметь один ритм строк');
   });
 }

@@ -11,12 +11,9 @@ import '../../moderation/report_sheet.dart';
 import '../class_detail_utils.dart' show fmtDate, extractFileUrls;
 
 // Список лекций перерисовывается на каждое изменение _posts — regex внутри
-// clean()/preview() иначе компилировался бы заново на каждую карточку при
-// каждой перестройке (ListView.builder вызывает их для каждого видимого
-// элемента).
+// clean() иначе компилировался бы заново на каждую карточку при каждой
+// перестройке (ListView.builder вызывает её для каждого видимого элемента).
 final _lectureTitleRe = RegExp(r'^\[LECTURE\]\[\d+\]\s*');
-final _urlRe = RegExp(r'https?://\S+');
-final _wsRe = RegExp(r'\s+');
 
 class ClassPostsTab extends StatelessWidget {
   final List<dynamic> posts;
@@ -42,13 +39,6 @@ class ClassPostsTab extends StatelessWidget {
     final accentColor = Theme.of(context).colorScheme.primary;
 
     String clean(String t) => t.replaceFirst(_lectureTitleRe, '').trim();
-
-    String preview(dynamic p) {
-      try {
-        final b = jsonDecode(p['body']);
-        return (b['content'] ?? b['description'] ?? '').replaceAll(_urlRe, '').replaceAll(_wsRe, ' ').trim();
-      } catch (_) { return ''; }
-    }
 
     // Вложения лекции живут либо структурированным списком в body.files, либо
     // просто ссылками в тексте (старые записи) — считаем оба варианта, иначе
@@ -142,7 +132,6 @@ class ClassPostsTab extends StatelessWidget {
             childCount: displayPosts.length,
             (ctx, i) {
               final p = displayPosts[i];
-              final body = preview(p);
               final num = displayPosts.length - i;
               final files = fileCount(p);
 
@@ -154,11 +143,16 @@ class ClassPostsTab extends StatelessWidget {
                     // Отдельная карточка на лекцию: каждая лекция — свой
                     // «объект», а не атрибут одного списка, поэтому у неё
                     // собственные скругления, рамка и мягкая тень.
+                    // Строка ровно из двух строк текста — название и мета —
+                    // поэтому все карточки списка одной высоты независимо от
+                    // длины описания (превью описания переехало на страницу
+                    // лекции: в карточке оно давало и разнобой по высоте, и
+                    // четвёртый конкурирующий за внимание блок).
                     child: GroupRow.card(
                     onTap: () => onShowPost(p, num),
                     onLongPress: () => showActions(p),
-                    padding: const EdgeInsets.fromLTRB(14, 13, 8, 13),
-                    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    padding: const EdgeInsets.fromLTRB(14, 12, 4, 12),
+                    child: Row(children: [
                       // Номер лекции — не декор: именно им студент оперирует
                       // в чате с ИИ («объясни лекцию 3»).
                       Container(
@@ -171,40 +165,32 @@ class ClassPostsTab extends StatelessWidget {
                         child: Text('$num',
                             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: accentColor, letterSpacing: -0.2)),
                       ),
-                      const SizedBox(width: 14),
+                      const SizedBox(width: 13),
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text(clean(p['title'] ?? ''),
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, height: 1.25, letterSpacing: -0.3, color: adaptiveText1(context)),
-                          maxLines: 2, overflow: TextOverflow.ellipsis),
-                        if (body.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 3),
-                          child: Text(body,
-                            style: TextStyle(fontSize: 14, color: adaptiveText3(context), height: 1.35),
-                            maxLines: 2, overflow: TextOverflow.ellipsis)),
-                        const SizedBox(height: 6),
-                        Row(children: [
-                          Text(fmtDate(p['created_at'] ?? ''),
-                            style: TextStyle(fontSize: 13, color: adaptiveText4(context))),
-                          if (files > 0) ...[
-                            const SizedBox(width: 8),
-                            Icon(CupertinoIcons.paperclip, size: 11, color: adaptiveText4(context)),
-                            const SizedBox(width: 3),
-                            Text('$files', style: TextStyle(fontSize: 13, color: adaptiveText4(context))),
-                          ],
-                        ]),
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, height: 1.2, letterSpacing: -0.3, color: adaptiveText1(context)),
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                        const SizedBox(height: 3),
+                        // Дата и вложения — одной приглушённой строкой словами,
+                        // без иконок-календарика и скрепки: они добавляли шума
+                        // ровно там, где нужен спокойный второй план.
+                        Text(
+                          files > 0
+                              ? '${fmtDate(p['created_at'] ?? '')}  ·  $files ${files == 1 ? l.t('file') : l.t('files')}'
+                              : fmtDate(p['created_at'] ?? ''),
+                          style: TextStyle(fontSize: 14, letterSpacing: -0.1, color: adaptiveText4(context)),
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
                       ])),
-                      const SizedBox(width: 4),
                       // Меню доступно всем: учителю — правка/удаление, студенту —
                       // жалоба. Раньше оно было только у преподавателя, из-за чего
                       // пожаловаться на контент было невозможно в принципе.
+                      // Вертикальное троеточие — как в системных списках iOS;
+                      // шеврон «открыть» убран: нажимается вся карточка.
                       Tappable(
                         onTap: () => showActions(p),
                         label: 'Действия с лекцией',
-                        child: SizedBox(width: 32, height: 44,
-                          child: Icon(CupertinoIcons.ellipsis, size: 17, color: adaptiveText4(context))),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 10, right: 6),
-                        child: Icon(CupertinoIcons.chevron_right, size: 14, color: adaptiveText4(context).withValues(alpha: 0.7)),
+                        child: SizedBox(width: 40, height: 44,
+                          child: Icon(CupertinoIcons.ellipsis_vertical, size: 17, color: adaptiveText4(context))),
                       ),
                     ]),
                   ),

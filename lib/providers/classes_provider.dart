@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import '../utils/errors.dart';
-import '../utils/dates.dart';
+import '../utils/notif_feed.dart';
 import 'auth_provider.dart';
 
 class ClassesProvider extends ChangeNotifier {
@@ -198,46 +198,18 @@ class ClassesProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Число на колокольчике — это ровно `unreadCount` того же фида, который
+  /// покажет экран уведомлений (см. [loadNotifFeed]). Своей копии правил здесь
+  /// больше нет: из-за неё бейдж показывал непрочитанные, которых в списке не
+  /// было, а отметить прочитанным их было невозможно.
+  ///
+  /// Фид сам берёт членство в классах с сервера, поэтому этот метод больше не
+  /// зависит от того, успел ли до него отработать [loadJoined].
   Future<void> loadNotifBadge() async {
     if (_auth.isTeacher) return;
     try {
-      List<dynamic> subs = [];
-      List<dynamic> assignments = [];
-      List<dynamic> states = [];
-      await Future.wait([
-        () async { try { subs = await _api.getMySubmissions(); } catch (_) {} }(),
-        () async { try { assignments = await _api.getAssignments(); } catch (_) {} }(),
-        () async { try { states = await _api.getNotifStates(); } catch (_) {} }(),
-      ]);
-
-      final stateBy = {
-        for (final s in states)
-          (s['notif_key'] ?? '').toString(): {
-            'read': s['read'] == true, 'dismissed': s['dismissed'] == true,
-          }
-      };
-      bool unread(String key) {
-        final st = stateBy[key];
-        return st == null || (st['read'] != true && st['dismissed'] != true);
-      }
-
-      int count = subs.where((s) =>
-        s['status'] == 'graded' &&
-        s['grade'] != null &&
-        unread('grade:${(s['id'] as num?)?.toInt()}'),
-      ).length;
-
-      final now = DateTime.now();
-      for (final a in assignments) {
-        final aId  = (a['id'] as num?)?.toInt() ?? 0;
-        final cid  = (a['class_id'] as num?)?.toInt();
-        if (cid == null || !joinedClassIds.contains(cid)) continue;
-        if (!unread('assignment:$aId')) continue;
-        final createdAt = a['created_at'] != null ? parseServerDate(a['created_at']) : null;
-        if (createdAt != null && now.difference(createdAt).inDays <= 7) count++;
-      }
-
-      notifBadge.value = count;
+      final feed = await loadNotifFeed(_api);
+      notifBadge.value = feed.unreadCount;
     } catch (e) {
       // Бейдж — фоновая задача, пользователю о её сбое сообщать нечего.
       // Раньше errorMessage всплывал тостом поверх произвольного экрана.

@@ -71,24 +71,12 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
 
   String _fmtDate(String? d) => fmtDate(d);
 
-  static final _fileUrlRe = fileUrlRe;
-  static final _mdFileRe = mdFileRe;
-  static final _extraNewlinesRe = RegExp(r'\n{3,}');
-
   String _fileDisplayName(String url) {
     try {
       final uri = Uri.parse(url);
       if (uri.fragment.isNotEmpty) return Uri.decodeComponent(uri.fragment);
       return uri.pathSegments.lastWhere((s) => s.isNotEmpty, orElse: () => url);
     } catch (_) { return url; }
-  }
-
-  String _cleanContent(String content) {
-    return content
-        .replaceAll(_mdFileRe, '')
-        .replaceAll(_fileUrlRe, '')
-        .replaceAll(_extraNewlinesRe, '\n\n')
-        .trim();
   }
 
   Widget _statCell(String val, String label, Color color) => Expanded(child: Padding(
@@ -381,9 +369,6 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
         final isNeedsReview = status == 'needs_review';
         final deadline = a['deadline'];
         final isLate = deadline != null && parseServerDate(deadline)?.isBefore(DateTime.now()) == true && sub == null;
-        // Раньше считался дважды на карточку (в условии isNotEmpty и в самом
-        // Text) — оба реплейса на каждую видимую карточку при каждом скролле.
-        final desc = a['description'] != null ? _cleanContent(a['description'].toString()) : '';
 
         final showBadge = isGraded || isNeedsReview || isSubmitted || isLate;
         final Color statusColor = isGraded ? C.green : isNeedsReview ? C.amber : isSubmitted ? primary : C.red;
@@ -400,11 +385,14 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
           child: RepaintBoundary(child: Padding(
             padding: const EdgeInsets.only(bottom: 12),
             // Отдельная карточка на задание — см. class_posts_tab.
+            // Ровно две строки текста, как в карточке лекции: название и мета
+            // (срок · статус). Превью описания убрано — оно давало разную
+            // высоту карточкам и четвёртый блок, спорящий за внимание.
             child: GroupRow.card(
             onTap: () => _showAssignment(a, sub),
             onLongPress: widget.isTeacher ? () => _showAssignmentActions(a) : null,
-            padding: EdgeInsets.fromLTRB(14, 13, widget.isTeacher ? 6 : 12, 13),
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            padding: EdgeInsets.fromLTRB(14, 12, widget.isTeacher ? 4 : 14, 12),
+            child: Row(children: [
               Container(
                 width: 34, height: 34,
                 alignment: Alignment.center,
@@ -414,55 +402,44 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 ),
                 child: Icon(leadIcon, size: 17, color: leadColor),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 13),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(a['title'] ?? '',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, height: 1.25, letterSpacing: -0.3, color: adaptiveText1(context)),
-                    maxLines: 2, overflow: TextOverflow.ellipsis),
-                if (desc.isNotEmpty)
-                  Padding(padding: const EdgeInsets.only(top: 3),
-                    child: Text(desc,
-                        style: TextStyle(fontSize: 14, color: adaptiveText3(context), height: 1.35),
-                        maxLines: 2, overflow: TextOverflow.ellipsis)),
-                const SizedBox(height: 6),
-                // Метаданные одной строкой-«хлебной крошкой»: дата · статус —
-                // вместо отдельной цветной подложки-футера под карточкой.
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, height: 1.2, letterSpacing: -0.3, color: adaptiveText1(context)),
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 3),
+                // Срок и статус одной приглушённой строкой, без иконки-
+                // календарика: цвет несёт только статус, и то текстом.
                 Row(children: [
-                  if (deadline != null) ...[
-                    Icon(CupertinoIcons.calendar, size: 11, color: adaptiveText4(context)),
-                    const SizedBox(width: 4),
-                    Text(_fmtDate(deadline), style: TextStyle(fontSize: 13, color: adaptiveText4(context))),
-                  ],
+                  if (deadline != null)
+                    Text(_fmtDate(deadline),
+                        style: TextStyle(fontSize: 14, letterSpacing: -0.1, color: adaptiveText4(context))),
                   if (deadline != null && showBadge)
-                    Text('  ·  ', style: TextStyle(fontSize: 13, color: adaptiveText4(context))),
+                    Text('  ·  ', style: TextStyle(fontSize: 14, color: adaptiveText4(context))),
                   if (showBadge)
                     Flexible(child: Text(statusText,
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: statusColor, letterSpacing: -0.1),
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: statusColor, letterSpacing: -0.1),
                         maxLines: 1, overflow: TextOverflow.ellipsis)),
                 ]),
               ])),
-              const SizedBox(width: 8),
-              if (grade != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: RichText(text: TextSpan(children: [
-                    TextSpan(text: '${grade['score']}',
-                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: C.green, letterSpacing: -0.4, fontFeatures: [FontFeature.tabularFigures()])),
-                    TextSpan(text: '/${a['max_score']}',
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: adaptiveText4(context))),
-                  ])),
-                ),
+              if (grade != null) ...[
+                const SizedBox(width: 10),
+                RichText(text: TextSpan(children: [
+                  TextSpan(text: '${grade['score']}',
+                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: C.green, letterSpacing: -0.4, fontFeatures: [FontFeature.tabularFigures()])),
+                  TextSpan(text: '/${a['max_score']}',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: adaptiveText4(context))),
+                ])),
+              ],
+              // Вертикальное троеточие — как в системных списках iOS. Шеврона
+              // «открыть» нет: нажимается вся карточка, а стрелка была
+              // третьим значком в строке и только добавляла шума.
               if (widget.isTeacher)
                 Tappable(
                   onTap: () => _showAssignmentActions(a),
                   label: 'Действия с заданием',
-                  child: SizedBox(width: 34, height: 44,
-                    child: Icon(CupertinoIcons.ellipsis, size: 17, color: adaptiveText4(context))),
-                )
-              else
-                Padding(
-                  padding: const EdgeInsets.only(top: 10, left: 6),
-                  child: Icon(CupertinoIcons.chevron_right, size: 14, color: adaptiveText4(context).withValues(alpha: 0.7)),
+                  child: SizedBox(width: 40, height: 44,
+                    child: Icon(CupertinoIcons.ellipsis_vertical, size: 17, color: adaptiveText4(context))),
                 ),
             ]),
           ),

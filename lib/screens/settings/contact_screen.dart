@@ -115,7 +115,7 @@ class _ContactScreenState extends State<ContactScreen> with SingleTickerProvider
               Text(l.t('contact_developer'),
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineLarge!.copyWith(
-                  color: adaptiveText1(context), letterSpacing: -0.4)),
+                  color: adaptiveTextSoft(context), letterSpacing: -0.4)),
               const SizedBox(height: 6),
               Text(
                 l.t('contact_page_desc'),
@@ -137,7 +137,7 @@ class _ContactScreenState extends State<ContactScreen> with SingleTickerProvider
                 const SizedBox(width: 14),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('Telegram',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveText1(context))),
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveTextSoft(context))),
                   const SizedBox(height: 1),
                   Text(_telegramLabel, style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
                 ])),

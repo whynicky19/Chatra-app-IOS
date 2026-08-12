@@ -63,7 +63,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       body: SafeArea(bottom: false, child: ListView(padding: EdgeInsets.fromLTRB(16, 20, 16, bottomBarClearance(context)), children: [
 
         _animated(Padding(padding: const EdgeInsets.fromLTRB(4, 0, 4, 26), child: Text(l.t('settings'),
-            style: TextStyle(fontSize: 34, fontWeight: FontWeight.w700, letterSpacing: -1, height: 1.1, color: adaptiveText1(context)))), 0.0, 0.4),
+            style: TextStyle(fontSize: 34, fontWeight: FontWeight.w700, letterSpacing: -1, height: 1.1, color: adaptiveTextSoft(context)))), 0.0, 0.4),
 
         // ── Профиль: форма, а не список пунктов, поэтому остаётся карточкой ──
         _animated(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -332,10 +332,9 @@ class _LanguageOptionRow extends StatelessWidget {
     onTap: onTap,
     child: Row(children: [
       Expanded(child: Text(label,
-        // Выбор несёт цвет и галочка, а не вес: иначе невыбранные строки
-        // выглядели бы тоньше строк остальных списков.
-        style: TextStyle(fontSize: 17, letterSpacing: -0.4, fontWeight: FontWeight.w600,
-          color: selected ? primary : adaptiveText1(context)))),
+        // Выбор несёт цвет и галочка, а не вес.
+        style: TextStyle(fontSize: 17, letterSpacing: -0.4, fontWeight: FontWeight.w500,
+          color: selected ? primary : adaptiveTextSoft(context)))),
       if (selected) Icon(CupertinoIcons.checkmark_alt, size: 20, color: primary),
     ]),
   );

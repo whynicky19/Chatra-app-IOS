@@ -145,7 +145,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                 child: const Icon(CupertinoIcons.checkmark_shield_fill, size: 32, color: C.green)),
               const SizedBox(height: 18),
               Text(l.t('no_reports'), textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, letterSpacing: -0.4, color: adaptiveText1(context))),
+                  style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, letterSpacing: -0.4, color: adaptiveTextSoft(context))),
             ]),
           ),
         ),
@@ -213,7 +213,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                       if (className.isNotEmpty) '${l.t('report_class_prefix')}: $className',
                       if (targetTitle.isNotEmpty) targetTitle,
                     ].join('  ·  '),
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4, color: adaptiveText1(context)),
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.4, color: adaptiveTextSoft(context)),
                   ),
                 ],
                 if (comment.isNotEmpty) ...[
@@ -406,7 +406,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(l.t('admin'),
-                      style: TextStyle(fontSize: 34, fontWeight: FontWeight.w700, letterSpacing: -1, height: 1.1, color: adaptiveText1(context))),
+                      style: TextStyle(fontSize: 34, fontWeight: FontWeight.w700, letterSpacing: -1, height: 1.1, color: adaptiveTextSoft(context))),
                   const SizedBox(height: 3),
                   Text(l.t('admin_sub'),
                       style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText3(context))),
@@ -517,7 +517,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
         child: CupertinoSearchTextField(
           placeholder: l.t('search_users'),
           backgroundColor: adaptiveSurface2(context),
-          style: TextStyle(fontSize: 16, letterSpacing: -0.3, color: adaptiveText1(context)),
+          style: TextStyle(fontSize: 16, letterSpacing: -0.3, color: adaptiveTextSoft(context)),
           placeholderStyle: TextStyle(fontSize: 16, letterSpacing: -0.3, color: adaptiveText4(context)),
           itemColor: adaptiveText4(context),
           onChanged: (v) {
@@ -558,7 +558,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           Row(children: [
                             Flexible(child: Text(name,
-                                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4, color: adaptiveText1(context)),
+                                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.4, color: adaptiveTextSoft(context)),
                                 maxLines: 1, overflow: TextOverflow.ellipsis)),
                             if (isBlocked) Container(
                               margin: const EdgeInsets.only(left: 7),
@@ -695,7 +695,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                     const SizedBox(width: 14),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text(className,
-                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4, color: adaptiveText1(context)),
+                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.4, color: adaptiveTextSoft(context)),
                           maxLines: 1, overflow: TextOverflow.ellipsis),
                       const SizedBox(height: 3),
                       Text('$reqCount ${l.t('requests_count')}',
@@ -704,7 +704,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                     const SizedBox(width: 10),
                     Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                       Text(_fmtTokens(tokens),
-                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4, color: adaptiveText1(context),
+                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.4, color: adaptiveTextSoft(context),
                               fontFeatures: const [FontFeature.tabularFigures()])),
                       Text(l.t('tokens'), style: TextStyle(fontSize: 13, color: adaptiveText4(context))),
                     ]),
@@ -738,11 +738,11 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Row(children: [
                       Expanded(child: Text(name,
-                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4, color: adaptiveText1(context)),
+                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.4, color: adaptiveTextSoft(context)),
                           maxLines: 1, overflow: TextOverflow.ellipsis)),
                       const SizedBox(width: 10),
                       Text(_fmtTokens(tokens),
-                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4, color: adaptiveText1(context),
+                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.4, color: adaptiveTextSoft(context),
                               fontFeatures: const [FontFeature.tabularFigures()])),
                     ]),
                     const SizedBox(height: 3),
@@ -816,7 +816,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                           style: TextStyle(fontSize: 13, color: adaptiveText4(context), fontFeatures: const [FontFeature.tabularFigures()]))),
                       Expanded(flex: 3, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text(userName,
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, letterSpacing: -0.2, color: adaptiveText1(context)),
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, letterSpacing: -0.2, color: adaptiveTextSoft(context)),
                             maxLines: 1, overflow: TextOverflow.ellipsis),
                         Text(date, style: TextStyle(fontSize: 13, color: adaptiveText4(context))),
                       ])),
@@ -837,7 +837,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                       ])),
                       SizedBox(width: 74, child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                         Text('$totalTokens',
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: adaptiveText1(context),
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: adaptiveTextSoft(context),
                                 fontFeatures: const [FontFeature.tabularFigures()])),
                         Text('$promptTokens+$completionTokens',
                             style: TextStyle(fontSize: 13, color: adaptiveText4(context),
@@ -878,7 +878,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               child: Icon(CupertinoIcons.bolt_fill, size: 32, color: primary)),
             const SizedBox(height: 18),
             Text(l.t('no_ai_data'), textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, letterSpacing: -0.4, color: adaptiveText1(context))),
+                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, letterSpacing: -0.4, color: adaptiveTextSoft(context))),
           ]))),
         ])),
       ),
@@ -904,7 +904,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             child: Icon(CupertinoIcons.book_fill, size: 32, color: primary)),
           const SizedBox(height: 18),
           Text(l.t('no_classes_admin'), textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, letterSpacing: -0.4, color: adaptiveText1(context))),
+              style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, letterSpacing: -0.4, color: adaptiveTextSoft(context))),
         ]),
       ));
     }
@@ -966,7 +966,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                     ])),
                   Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 15), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(title,
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: -0.5, height: 1.15, color: adaptiveText1(context)),
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, letterSpacing: -0.5, height: 1.15, color: adaptiveTextSoft(context)),
                         maxLines: 2, overflow: TextOverflow.ellipsis),
                     if (description.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4),
                       child: Text(description,
@@ -1014,7 +1014,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
       Text(label, style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText4(context))),
       const SizedBox(width: 12),
       Expanded(child: Text(value, textAlign: TextAlign.right,
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, letterSpacing: -0.2, color: adaptiveText1(context)),
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, letterSpacing: -0.2, color: adaptiveTextSoft(context)),
           maxLines: 1, overflow: TextOverflow.ellipsis)),
     ]),
   );
@@ -1054,7 +1054,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                 const SizedBox(width: 14),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(className,
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: -0.5, height: 1.15, color: adaptiveText1(context)),
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, letterSpacing: -0.5, height: 1.15, color: adaptiveTextSoft(context)),
                       maxLines: 2, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 3),
                   Text('$studentCount ${l.t('students_count')}  ·  ${l.t('total_label').toLowerCase()} ${members.length}',
@@ -1086,7 +1086,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                       Icon(CupertinoIcons.person_2, size: 34, color: adaptiveText4(context).withValues(alpha: 0.7)),
                       const SizedBox(height: 14),
                       Text(l.t('no_students_class'), textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4, color: adaptiveText1(context))),
+                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.4, color: adaptiveTextSoft(context))),
                       const SizedBox(height: 14),
                       Tappable(
                         onTap: doRefresh,
@@ -1125,7 +1125,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                               child: Row(children: [
                                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                                   Text(display,
-                                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4, color: adaptiveText1(context)),
+                                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.4, color: adaptiveTextSoft(context)),
                                       maxLines: 1, overflow: TextOverflow.ellipsis),
                                   const SizedBox(height: 1),
                                   Text(email,
@@ -1202,7 +1202,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               Padding(padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(l.t('return_student'),
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.5, color: adaptiveText1(context))),
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, letterSpacing: -0.5, color: adaptiveTextSoft(context))),
                   const SizedBox(height: 4),
                   Text('$className · ${l.t('return_student_hint')}',
                       style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText3(context), height: 1.35)),
@@ -1241,7 +1241,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                             child: Row(children: [
                               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                                 Text(display,
-                                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4, color: adaptiveText1(context)),
+                                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.4, color: adaptiveTextSoft(context)),
                                     maxLines: 1, overflow: TextOverflow.ellipsis),
                                 const SizedBox(height: 1),
                                 Text(email,
@@ -1366,7 +1366,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               const SizedBox(width: 14),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(title,
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4, color: color == C.red ? C.red : adaptiveText1(ctx))),
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.4, color: color == C.red ? C.red : adaptiveTextSoft(ctx))),
                 if (subtitle != null) Padding(padding: const EdgeInsets.only(top: 1),
                   child: Text(subtitle, style: TextStyle(fontSize: 13, height: 1.3, color: adaptiveText4(ctx)))),
               ])),
@@ -1389,7 +1389,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Row(children: [
                     Flexible(child: Text(name,
-                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.5, color: adaptiveText1(ctx)),
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, letterSpacing: -0.5, color: adaptiveTextSoft(ctx)),
                         maxLines: 1, overflow: TextOverflow.ellipsis)),
                     if (isBlocked) Container(
                       margin: const EdgeInsets.only(left: 8),
@@ -1538,7 +1538,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
         const SizedBox(height: 14),
         Text(l.t('create_user'),
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, color: adaptiveText1(ctx), letterSpacing: -0.4)),
+          style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, color: adaptiveTextSoft(ctx), letterSpacing: -0.4)),
         const SizedBox(height: 18),
         TextField(
           controller: emailCtrl,
@@ -1636,7 +1636,7 @@ class _SummaryBar extends StatelessWidget {
             child: Column(children: [
               Text(cells[i].$1,
                   style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, height: 1.05,
-                      letterSpacing: -0.8, color: adaptiveText1(context),
+                      letterSpacing: -0.8, color: adaptiveTextSoft(context),
                       fontFeatures: const [FontFeature.tabularFigures()])),
               const SizedBox(height: 3),
               Text(cells[i].$2, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis,

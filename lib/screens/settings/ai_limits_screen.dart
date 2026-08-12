@@ -98,7 +98,7 @@ class _QuotaCard extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(child: Text(l.t('ai_limit_section'),
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveText1(context)))),
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveTextSoft(context)))),
           if (quota.unlimited)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
@@ -152,7 +152,7 @@ class _QuotaCard extends StatelessWidget {
             textBaseline: TextBaseline.alphabetic, children: [
             Text('${quota.used} / ${quota.limit}',
               style: Theme.of(context).textTheme.headlineLarge!.copyWith(
-                letterSpacing: -0.6, color: adaptiveText1(context))),
+                letterSpacing: -0.6, color: adaptiveTextSoft(context))),
             const SizedBox(width: 7),
             Text(l.t('ai_used_suffix'),
               style: TextStyle(fontSize: 13, color: adaptiveText3(context), fontWeight: FontWeight.w500)),

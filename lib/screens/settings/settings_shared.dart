@@ -84,11 +84,11 @@ class SettingsRow extends StatelessWidget {
         const SizedBox(width: 14),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(title,
-              // Вес заголовка строки — как во всех остальных списках
-              // приложения (см. шкалу весов в app_theme.dart): regular тут
-              // выглядел заметно тоньше соседних экранов.
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4,
-                  color: titleColor ?? adaptiveText1(context))),
+              // Плотный список: medium вместо semibold и мягкий цвет вместо
+              // почти чёрного (см. adaptiveTextSoft) — десяток строк подряд
+              // semibold-ом по #1C1C1E читался как «жирная чёрная простыня».
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.4,
+                  color: titleColor ?? adaptiveTextSoft(context))),
           if (sub != null) ...[
             const SizedBox(height: 1),
             Text(sub!, style: TextStyle(fontSize: 13, height: 1.3, color: adaptiveText3(context))),
@@ -146,7 +146,7 @@ class SettingsSubScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               SizedBox(width: double.infinity, child: Text(title,
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, letterSpacing: -0.9, height: 1.1, color: adaptiveText1(context)))),
+                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, letterSpacing: -0.9, height: 1.1, color: adaptiveTextSoft(context)))),
               if (subtitle != null) ...[
                 const SizedBox(height: 4),
                 Text(subtitle!,
@@ -340,7 +340,7 @@ class SheetScaffold extends StatelessWidget {
             const SizedBox(height: 14),
           ],
           Text(title, textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: adaptiveText1(context), letterSpacing: -0.3)),
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: adaptiveTextSoft(context), letterSpacing: -0.3)),
           const SizedBox(height: 22),
           ...children,
         ])),

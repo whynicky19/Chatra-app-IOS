@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui' show ImageFilter;
 import 'package:dio/dio.dart' show DioException;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ import '../../../utils/ai_quota.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/ai_limit_notice.dart';
 import '../../../widgets/app_dialog.dart';
+import '../../../widgets/inset_group.dart';
 import '../../../widgets/tappable.dart';
 import '../../../widgets/toast.dart';
 import '../../ai/widgets/ai_message_content.dart';
@@ -233,11 +235,15 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
         ),
       ])),
 
-      Container(
+      // Композер — матовое стекло поверх переписки (тот же материал, что у
+      // главного чата с ИИ): сообщения просвечивают сквозь него на скролле.
+      ClipRect(child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+        child: Container(
         padding: EdgeInsets.fromLTRB(14, 10, 14, MediaQuery.of(context).padding.bottom + 10),
         decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          border: Border(top: BorderSide(color: adaptiveBorder(context).withValues(alpha: 0.5), width: 0.5)),
+          color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.80),
+          border: Border(top: BorderSide(color: adaptiveBorder(context).withValues(alpha: 0.5), width: hairline(context))),
         ),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
         if (exhausted)
@@ -249,19 +255,20 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
             constraints: const BoxConstraints(minHeight: 46),
             decoration: BoxDecoration(
               color: surface,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: softShadow(isDark),
+              borderRadius: BorderRadius.circular(23),
+              border: Border.all(color: adaptiveBorder(context).withValues(alpha: 0.45), width: hairline(context)),
             ),
             child: TextField(
               controller: _ctrl,
               enabled: !blocked,
+              style: TextStyle(fontSize: 16.5, height: 1.3, letterSpacing: -0.3, color: adaptiveText1(context)),
               decoration: InputDecoration(
                 hintText: exhausted
                     ? context.read<L10n>().t('ai_limit_reached_title')
                     : context.read<L10n>().t('ask_about_course'),
-                hintStyle: const TextStyle(fontSize: 15, color: C.text4),
+                hintStyle: TextStyle(fontSize: 16.5, letterSpacing: -0.3, color: adaptiveText4(context)),
                 border: InputBorder.none, enabledBorder: InputBorder.none, focusedBorder: InputBorder.none,
-                filled: false, contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+                filled: false, contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
               ),
               onSubmitted: (_) => _send(),
               maxLines: 4, minLines: 1,
@@ -282,13 +289,13 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
                   width: 46, height: 46,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: active ? Theme.of(context).colorScheme.primary : surface,
-                    boxShadow: active
-                        ? primaryGlow(Theme.of(context).colorScheme.primary, opacity: 0.32)
-                        : softShadow(isDark),
+                    color: active ? Theme.of(context).colorScheme.primary : adaptiveSurface2(context),
+                    border: active
+                        ? null
+                        : Border.all(color: adaptiveBorder(context).withValues(alpha: 0.45), width: hairline(context)),
                   ),
                   child: _loading
-                      ? Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Theme.of(context).colorScheme.primary)))
+                      ? Center(child: CupertinoActivityIndicator(radius: 10, color: Theme.of(context).colorScheme.primary))
                       : AnimatedSwitcher(
                           duration: const Duration(milliseconds: 180),
                           switchInCurve: Curves.easeOutBack,
@@ -297,8 +304,8 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
                           child: Icon(
                             CupertinoIcons.arrow_up,
                             key: ValueKey(active),
-                            color: active ? Colors.white : C.text4,
-                            size: 21,
+                            color: active ? Colors.white : adaptiveText4(context),
+                            size: 20,
                           ),
                         ),
                 ),
@@ -307,7 +314,8 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
           ),
         ]),
         ]),
-      ),
+        ),
+      )),
     ]));
   }
 
@@ -316,11 +324,9 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
       onTap: onTap,
       label: label,
       child: Container(
-        width: 38, height: 38,
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(12),
-        ),
+        width: 40, height: 40,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(color: color.withValues(alpha: 0.10), shape: BoxShape.circle),
         child: Icon(icon, color: color, size: 18),
       ),
     );
@@ -337,22 +343,31 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
           child: ConstrainedBox(
             constraints: BoxConstraints(minHeight: constraints.maxHeight),
             child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Text(context.read<L10n>().t('course_chat'), style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.6, color: adaptiveText1(context))),
-              const SizedBox(height: 6),
+              Text(context.read<L10n>().t('course_chat'),
+                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.w700, letterSpacing: -0.9, height: 1.1, color: adaptiveText1(context))),
+              const SizedBox(height: 10),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(AppRadii.button)),
-                child: Text(shortName, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w700)),
+                decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(100)),
+                child: Text(shortName,
+                    style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600, letterSpacing: -0.1)),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 26),
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 440),
-                child: Column(children: [
-                  for (var i = 0; i < _tips.length; i++) ...[
-                    if (i > 0) const SizedBox(height: 10),
-                    _suggestionRow(_tips[i], isDark, i),
-                  ],
-                ]),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isDark ? C.darkSurface : Colors.white,
+                    borderRadius: BorderRadius.circular(AppRadii.card),
+                    border: Border.all(color: adaptiveBorder(context).withValues(alpha: 0.5), width: hairline(context)),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadii.card),
+                    child: Column(children: [
+                      for (var i = 0; i < _tips.length; i++) _suggestionRow(_tips[i], i, _tips.length),
+                    ]),
+                  ),
+                ),
               ),
             ]),
           ),
@@ -361,32 +376,26 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
     );
   }
 
-  Widget _suggestionRow(String tipKey, bool isDark, int index) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: Duration(milliseconds: 320 + index * 70),
-      curve: Curves.easeOutCubic,
-      builder: (_, t, child) => Opacity(
-        opacity: t.clamp(0.0, 1.0),
-        child: Transform.translate(offset: Offset(0, 10 * (1 - t)), child: child),
-      ),
-      child: Tappable(
+  Widget _suggestionRow(String tipKey, int index, int count) {
+    final text = context.read<L10n>().t(tipKey);
+    return Entrance(
+      index: index,
+      rise: 0,
+      child: GroupRow(
+        pos: index == count - 1 ? GroupPos.last : GroupPos.middle,
+        color: Colors.transparent,
+        separatorInset: 16,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         onTap: () {
           hapticSelection();
-          _send(context.read<L10n>().t(tipKey));
+          _send(text);
         },
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
-          decoration: BoxDecoration(
-            color: isDark ? C.darkSurface : Colors.white,
-            borderRadius: BorderRadius.circular(AppRadii.button),
-            border: Border.all(color: adaptiveBorder(context).withValues(alpha: 0.6), width: 0.5),
-            boxShadow: softShadow(isDark),
-          ),
-          child: Text(context.read<L10n>().t(tipKey),
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveText1(context), letterSpacing: -0.2)),
-        ),
+        child: Row(children: [
+          Expanded(child: Text(text,
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: adaptiveText1(context), letterSpacing: -0.3))),
+          const SizedBox(width: 10),
+          Icon(CupertinoIcons.arrow_up_left, size: 15, color: adaptiveText4(context).withValues(alpha: 0.7)),
+        ]),
       ),
     );
   }
@@ -425,18 +434,18 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
       padding: const EdgeInsets.only(bottom: 16, left: 48),
       child: Align(
         alignment: Alignment.centerRight,
+        // Плоская заливка акцентом: без градиента, свечения и тени под
+        // текстом — как пузырь iMessage.
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
           decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary], begin: Alignment.topLeft, end: Alignment.bottomRight),
+            color: Theme.of(context).colorScheme.primary,
             borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(22), topRight: Radius.circular(22),
-              bottomLeft: Radius.circular(22), bottomRight: Radius.circular(6),
+              topLeft: Radius.circular(20), topRight: Radius.circular(20),
+              bottomLeft: Radius.circular(20), bottomRight: Radius.circular(6),
             ),
-            boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.28), blurRadius: 16, offset: const Offset(0, 5))],
           ),
-          child: Text(text, style: const TextStyle(fontSize: 15, color: Colors.white, height: 1.5,
-            shadows: [Shadow(color: Color(0x40000000), blurRadius: 2, offset: Offset(0, 0.5))])),
+          child: Text(text, style: const TextStyle(fontSize: 16.5, color: Colors.white, height: 1.35, letterSpacing: -0.3)),
         ),
       ),
     );
@@ -455,14 +464,15 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: isDark ? C.darkSurface : Colors.white,
+            color: isDark ? C.darkSurface2 : Colors.white,
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(20), topRight: Radius.circular(20),
               bottomLeft: Radius.circular(6), bottomRight: Radius.circular(20),
             ),
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.05), blurRadius: 12, offset: const Offset(0, 3))],
+            border: Border.all(color: adaptiveBorder(context).withValues(alpha: isDark ? 0.35 : 0.45), width: hairline(context)),
           ),
-          child: AiMessageContent(text: text, style: const TextStyle(fontSize: 15, height: 1.6, letterSpacing: 0.1)),
+          child: AiMessageContent(text: text,
+              style: TextStyle(fontSize: 16.5, height: 1.45, letterSpacing: -0.2, color: adaptiveText1(context))),
         ),
       ),
     ),
@@ -473,14 +483,14 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
     child: Align(
       alignment: Alignment.centerLeft,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+        padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 15),
         decoration: BoxDecoration(
-          color: isDark ? C.darkSurface : Colors.white,
+          color: isDark ? C.darkSurface2 : Colors.white,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(20), topRight: Radius.circular(20),
             bottomLeft: Radius.circular(6), bottomRight: Radius.circular(20),
           ),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04), blurRadius: 10)],
+          border: Border.all(color: adaptiveBorder(context).withValues(alpha: isDark ? 0.35 : 0.45), width: hairline(context)),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: List.generate(3, (i) => _ClassAiDot(delay: i * 180))),
       ),
@@ -507,7 +517,7 @@ class _ClassAiDotState extends State<_ClassAiDot> with SingleTickerProviderState
   @override
   Widget build(BuildContext context) => AnimatedBuilder(animation: _a, builder: (_, __) => Container(
     width: 7, height: 7, margin: const EdgeInsets.symmetric(horizontal: 3),
-    decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3 + _a.value * 0.7), shape: BoxShape.circle),
+    decoration: BoxDecoration(color: adaptiveText4(context).withValues(alpha: 0.35 + _a.value * 0.55), shape: BoxShape.circle),
     transform: Matrix4.translationValues(0, -4 * _a.value, 0),
   ));
 }

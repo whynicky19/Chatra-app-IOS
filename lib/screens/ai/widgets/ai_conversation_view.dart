@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui' show ImageFilter;
 import 'package:dio/dio.dart' show CancelToken, DioException;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ import '../../../utils/ai_context.dart';
 import '../../../utils/ai_quota.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/ai_limit_notice.dart';
+import '../../../widgets/inset_group.dart';
 import '../../../widgets/tappable.dart';
 import '../../../widgets/toast.dart';
 import '../../../utils/dates.dart';
@@ -446,7 +448,7 @@ class _AiConversationViewState extends State<AiConversationView> {
                 child: Text(
                   l.t('ai_disclaimer'),
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 11.5, color: adaptiveText3(context), height: 1.3),
+                  style: TextStyle(fontSize: 12, color: adaptiveText4(context), height: 1.35, letterSpacing: -0.1),
                 ),
               )
             : const SizedBox(width: double.infinity),
@@ -456,6 +458,7 @@ class _AiConversationViewState extends State<AiConversationView> {
   }
 
   Widget _emptyState(L10n l) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final tips = _tips(l);
     final isKZ = l.lang == 'KZ';
     final isEN = l.lang == 'EN';
@@ -474,18 +477,29 @@ class _AiConversationViewState extends State<AiConversationView> {
           constraints: BoxConstraints(minHeight: constraints.maxHeight),
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
             Text('Chatra AI',
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: adaptiveText1(context), letterSpacing: -0.6)),
-            const SizedBox(height: 10),
-            Text(subtitle, style: TextStyle(fontSize: 15, color: adaptiveText3(context), height: 1.4), textAlign: TextAlign.center),
-            const SizedBox(height: 30),
+                style: TextStyle(fontSize: 30, fontWeight: FontWeight.w700, color: adaptiveText1(context), letterSpacing: -0.9, height: 1.1)),
+            const SizedBox(height: 8),
+            Text(subtitle,
+                style: TextStyle(fontSize: 16, color: adaptiveText3(context), height: 1.35, letterSpacing: -0.2),
+                textAlign: TextAlign.center),
+            const SizedBox(height: 28),
+            // Подсказки — одна сгруппированная секция, а не стопка отдельных
+            // карточек с зазорами: так они читаются как один список выбора.
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 440),
-              child: Column(children: [
-                for (var i = 0; i < tips.length; i++) ...[
-                  if (i > 0) const SizedBox(height: 10),
-                  _suggestionRow(tips[i], i),
-                ],
-              ]),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDark ? C.darkSurface : Colors.white,
+                  borderRadius: BorderRadius.circular(AppRadii.card),
+                  border: Border.all(color: adaptiveBorder(context).withValues(alpha: 0.5), width: hairline(context)),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadii.card),
+                  child: Column(children: [
+                    for (var i = 0; i < tips.length; i++) _suggestionRow(tips[i], i, tips.length),
+                  ]),
+                ),
+              ),
             ),
           ]),
         ),
@@ -493,41 +507,35 @@ class _AiConversationViewState extends State<AiConversationView> {
     });
   }
 
-  Widget _suggestionRow(Map<String, dynamic> tip, int index) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: Duration(milliseconds: 320 + index * 70),
-      curve: Curves.easeOutCubic,
-      builder: (_, t, child) => Opacity(
-        opacity: t.clamp(0.0, 1.0),
-        child: Transform.translate(offset: Offset(0, 10 * (1 - t)), child: child),
-      ),
-      child: Tappable(
+  Widget _suggestionRow(Map<String, dynamic> tip, int index, int count) {
+    final primary = Theme.of(context).colorScheme.primary;
+    return Entrance(
+      index: index,
+      rise: 0,
+      child: GroupRow(
+        pos: index == count - 1 ? GroupPos.last : GroupPos.middle,
+        color: Colors.transparent,
+        separatorInset: 56,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         onTap: () {
           hapticSelection();
           _send(tip['prompt'] as String);
         },
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          decoration: BoxDecoration(
-            color: isDark ? C.darkSurface : Colors.white,
-            borderRadius: BorderRadius.circular(AppRadii.card),
-            border: Border.all(color: adaptiveBorder(context).withValues(alpha: 0.5), width: 0.5),
-            boxShadow: softShadow(isDark),
+        child: Row(children: [
+          Container(
+            width: 28, height: 28,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(9)),
+            child: Icon(tip['icon'] as IconData, size: 15, color: primary),
           ),
-          child: Row(children: [
-            Icon(tip['icon'] as IconData, size: 16, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(tip['title'] as String,
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveText1(context), letterSpacing: -0.2)),
-            ),
-            const SizedBox(width: 12),
-            Icon(CupertinoIcons.arrow_up_left, size: 16, color: C.text4.withValues(alpha: 0.7)),
-          ]),
-        ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(tip['title'] as String,
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: adaptiveText1(context), letterSpacing: -0.3)),
+          ),
+          const SizedBox(width: 10),
+          Icon(CupertinoIcons.arrow_up_left, size: 15, color: adaptiveText4(context).withValues(alpha: 0.7)),
+        ]),
       ),
     );
   }
@@ -580,30 +588,26 @@ class _AiConversationViewState extends State<AiConversationView> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
         Opacity(
           opacity: failed ? 0.5 : 1,
+          // Плоская заливка акцентом без градиента, свечения и тени под
+          // текстом: пузырь iMessage — это ровный цвет, а тень/градиент/
+          // text-shadow заметно снижают читаемость белого текста.
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                  colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight),
+              color: Theme.of(context).colorScheme.primary,
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(24),
-                topRight: Radius.circular(24),
-                bottomLeft: Radius.circular(24),
-                bottomRight: Radius.circular(7),
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+                bottomLeft: Radius.circular(20),
+                bottomRight: Radius.circular(6),
               ),
-              boxShadow: [
-                BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.26), blurRadius: 18, offset: const Offset(0, 6)),
-              ],
             ),
             child: Text(text,
-                style: TextStyle(
-                  fontSize: 15.5,
+                style: const TextStyle(
+                  fontSize: 16.5,
                   color: Colors.white,
-                  height: 1.55,
-                  letterSpacing: -0.1,
-                  shadows: [Shadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: 2, offset: const Offset(0, 0.5))],
+                  height: 1.35,
+                  letterSpacing: -0.3,
                 )),
           ),
         ),
@@ -623,7 +627,7 @@ class _AiConversationViewState extends State<AiConversationView> {
         else
           Padding(
             padding: const EdgeInsets.only(right: 3),
-            child: Text(timeStr, style: TextStyle(fontSize: 10.5, color: adaptiveText3(context))),
+            child: Text(timeStr, style: TextStyle(fontSize: 11.5, color: adaptiveText4(context), letterSpacing: -0.1)),
           ),
       ]),
     );
@@ -645,21 +649,20 @@ class _AiConversationViewState extends State<AiConversationView> {
               showToast(context, l.t('copied'));
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 13),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: isDark ? C.darkSurface : Colors.white,
+                color: isDark ? C.darkSurface2 : Colors.white,
                 borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(22),
-                  topRight: Radius.circular(22),
-                  bottomLeft: Radius.circular(7),
-                  bottomRight: Radius.circular(22),
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                  bottomLeft: Radius.circular(6),
+                  bottomRight: Radius.circular(20),
                 ),
-                border: Border.all(color: adaptiveBorder(context).withValues(alpha: isDark ? 0.4 : 0.5), width: 0.5),
-                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.16 : 0.04), blurRadius: 14, offset: const Offset(0, 4))],
+                border: Border.all(color: adaptiveBorder(context).withValues(alpha: isDark ? 0.35 : 0.45), width: hairline(context)),
               ),
               child: AiMessageContent(
                 text: text,
-                style: TextStyle(fontSize: 15.5, height: 1.6, letterSpacing: 0.05, color: adaptiveText1(context)),
+                style: TextStyle(fontSize: 16.5, height: 1.45, letterSpacing: -0.2, color: adaptiveText1(context)),
               ),
             ),
           ),
@@ -667,7 +670,7 @@ class _AiConversationViewState extends State<AiConversationView> {
             padding: const EdgeInsets.only(left: 7, top: 5),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               if ((m['time'] ?? '').isNotEmpty)
-                Text(m['time']!, style: TextStyle(fontSize: 10.5, color: adaptiveText3(context))),
+                Text(m['time']!, style: TextStyle(fontSize: 11.5, color: adaptiveText4(context), letterSpacing: -0.1)),
               if (isLast && !_loading) ...[
                 if ((m['time'] ?? '').isNotEmpty) const SizedBox(width: 10),
                 Tappable(
@@ -675,7 +678,7 @@ class _AiConversationViewState extends State<AiConversationView> {
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Icon(CupertinoIcons.arrow_2_squarepath, size: 10.5, color: C.text4.withValues(alpha: 0.8)),
                     const SizedBox(width: 3),
-                    Text(l.t('retry'), style: TextStyle(fontSize: 10.5, color: adaptiveText3(context))),
+                    Text(l.t('retry'), style: TextStyle(fontSize: 11.5, color: adaptiveText4(context), letterSpacing: -0.1)),
                   ]),
                 ),
               ],
@@ -693,16 +696,16 @@ class _AiConversationViewState extends State<AiConversationView> {
       child: Align(
         alignment: Alignment.centerLeft,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 15),
           decoration: BoxDecoration(
-            color: isDark ? C.darkSurface : Colors.white,
+            color: isDark ? C.darkSurface2 : Colors.white,
             borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(22),
-              topRight: Radius.circular(22),
-              bottomLeft: Radius.circular(7),
-              bottomRight: Radius.circular(22),
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+              bottomLeft: Radius.circular(6),
+              bottomRight: Radius.circular(20),
             ),
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04), blurRadius: 10)],
+            border: Border.all(color: adaptiveBorder(context).withValues(alpha: isDark ? 0.35 : 0.45), width: hairline(context)),
           ),
           child: Row(mainAxisSize: MainAxisSize.min, children: List.generate(3, (i) => _Dot(delay: i * 180))),
         ),
@@ -722,7 +725,6 @@ class _AiInputBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = Theme.of(context).colorScheme.surface;
     final l = context.read<L10n>();
     final isKZ = l.lang == 'KZ';
@@ -736,11 +738,18 @@ class _AiInputBar extends StatelessWidget {
                 ? 'Ask Chatra AI...'
                 : 'Спросите Chatra AI...';
 
-    return Container(
+    // Композер — матовое стекло поверх переписки: сообщения просвечивают
+    // сквозь него на скролле, вместо непрозрачной полосы, отрезающей низ
+    // экрана. Блюр + полупрозрачная заливка, светлая линия сверху = свет,
+    // поймавший край материала.
+    return ClipRect(
+      child: BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+      child: Container(
       padding: EdgeInsets.fromLTRB(14, 10, 14, bottomBarInset(context)),
       decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        border: Border(top: BorderSide(color: adaptiveBorder(context).withValues(alpha: 0.5), width: 0.5)),
+        color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.80),
+        border: Border(top: BorderSide(color: adaptiveBorder(context).withValues(alpha: 0.5), width: hairline(context))),
       ),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         if (exhausted) AiLimitNotice(quota: quota!),
@@ -749,24 +758,24 @@ class _AiInputBar extends StatelessWidget {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeOutCubic,
-              constraints: const BoxConstraints(minHeight: 48),
+              constraints: const BoxConstraints(minHeight: 46),
               decoration: BoxDecoration(
                 color: surface,
-                borderRadius: BorderRadius.circular(26),
-                border: Border.all(color: adaptiveBorder(context).withValues(alpha: 0.4), width: 0.5),
-                boxShadow: softShadow(isDark),
+                borderRadius: BorderRadius.circular(23),
+                border: Border.all(color: adaptiveBorder(context).withValues(alpha: 0.45), width: hairline(context)),
               ),
               child: TextField(
                 controller: ctrl,
                 enabled: !exhausted,
+                style: TextStyle(fontSize: 16.5, height: 1.3, letterSpacing: -0.3, color: adaptiveText1(context)),
                 decoration: InputDecoration(
                   hintText: hint,
-                  hintStyle: const TextStyle(color: C.text4, fontSize: 15),
+                  hintStyle: TextStyle(color: adaptiveText4(context), fontSize: 16.5, letterSpacing: -0.3),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
                   filled: false,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                 ),
                 onSubmitted: (_) => onSend(),
                 maxLines: 4,
@@ -786,12 +795,16 @@ class _AiInputBar extends StatelessWidget {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 220),
                   curve: Curves.easeOutCubic,
-                  width: 48,
-                  height: 48,
+                  width: 46,
+                  height: 46,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: (active || loading) ? Theme.of(context).colorScheme.primary : surface,
-                    boxShadow: (active || loading) ? primaryGlow(Theme.of(context).colorScheme.primary, opacity: 0.32) : softShadow(isDark),
+                    // Плоский акцент вместо цветного свечения: в iOS активная
+                    // кнопка отправки — просто залитый круг.
+                    color: (active || loading) ? Theme.of(context).colorScheme.primary : adaptiveSurface2(context),
+                    border: (active || loading)
+                        ? null
+                        : Border.all(color: adaptiveBorder(context).withValues(alpha: 0.45), width: hairline(context)),
                   ),
                   // Пока идёт генерация — квадратик "стоп" вместо крутилки: и
                   // видно, что запрос ещё летит, и его можно отменить тапом.
@@ -806,8 +819,8 @@ class _AiInputBar extends StatelessWidget {
                           child: Icon(
                             CupertinoIcons.arrow_up,
                             key: ValueKey(active),
-                            color: active ? Colors.white : C.text4,
-                            size: 21,
+                            color: active ? Colors.white : adaptiveText4(context),
+                            size: 20,
                           ),
                         ),
                 ),
@@ -816,6 +829,8 @@ class _AiInputBar extends StatelessWidget {
           ),
         ]),
       ]),
+      ),
+      ),
     );
   }
 }
@@ -855,7 +870,7 @@ class _DotState extends State<_Dot> with SingleTickerProviderStateMixin {
           height: 7,
           margin: const EdgeInsets.symmetric(horizontal: 3),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3 + _anim.value * 0.7),
+            color: adaptiveText4(context).withValues(alpha: 0.35 + _anim.value * 0.55),
             shape: BoxShape.circle,
           ),
           transform: Matrix4.translationValues(0, -4 * _anim.value, 0),

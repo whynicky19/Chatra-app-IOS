@@ -8,6 +8,7 @@ import '../../../services/api_service.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/initials.dart';
 import '../../../widgets/app_dialog.dart';
+import '../../../widgets/inset_group.dart';
 import '../../../widgets/tappable.dart';
 import '../../../widgets/toast.dart';
 import '../class_detail_utils.dart';
@@ -90,32 +91,44 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
   }
 
   Widget _statBox(String val, String label, Color color) => Expanded(child: Container(
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.2))),
-    child: Column(children: [Text(val, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: color)), const SizedBox(height: 2), Text(label, style: const TextStyle(fontSize: 11, color: C.text4))])));
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surface,
+      borderRadius: BorderRadius.circular(AppRadii.card),
+      border: Border.all(color: groupSeparator(context), width: hairline(context)),
+    ),
+    child: Column(children: [
+      Text(val, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: -0.8, color: color, fontFeatures: const [FontFeature.tabularFigures()])),
+      const SizedBox(height: 3),
+      Text(label, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: 12, color: adaptiveText4(context), letterSpacing: -0.1)),
+    ])));
 
   // Та же карточка результата, что видит студент на AssignmentDetailScreen —
   // кольцо с баллом + критерии-полосы вместо старой плоской вёрстки, чтобы
   // учитель/админ видели идентичный дизайн после проверки работы.
   Widget _gradedScoreCard(BuildContext context, L10n l, dynamic grade, num score, String? feedback, List<dynamic> criteria, num maxScore) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = detailAccent(context);
     final gradedByTeacher = grade != null && grade['graded_by'] == 'teacher';
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: detailSurface(context), borderRadius: BorderRadius.circular(AppRadii.card), boxShadow: softShadow(isDark)),
+      decoration: BoxDecoration(
+        color: detailSurface(context),
+        borderRadius: BorderRadius.circular(AppRadii.card),
+        border: Border.all(color: detailBorder(context), width: hairline(context)),
+      ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Expanded(child: Text(l.t('preliminary_assessment'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: detailText1(context)))),
+          Expanded(child: Text(l.t('preliminary_assessment'), style: cardTitleStyle(context))),
           if (!gradedByTeacher)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-              decoration: BoxDecoration(color: accent.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.chip)),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(color: accent.withValues(alpha: 0.13), borderRadius: BorderRadius.circular(100)),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 Icon(CupertinoIcons.sparkles, size: 11, color: accent),
                 const SizedBox(width: 4),
-                Text(l.t('ai_check'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: accent)),
+                Text(l.t('ai_check'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: accent, letterSpacing: -0.1)),
               ]),
             ),
         ]),
@@ -124,13 +137,14 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
           ScoreRing(score: score, maxScore: maxScore, size: 108, accentColor: accent),
           if (feedback != null && feedback.isNotEmpty) ...[
             const SizedBox(width: 16),
-            Expanded(child: Text(feedback, style: TextStyle(fontSize: 14, height: 1.5, color: detailText2(context)))),
+            Expanded(child: Text(feedback,
+                style: TextStyle(fontSize: 15, height: 1.45, letterSpacing: -0.2, color: detailText2(context)))),
           ],
         ]),
         if (criteria.isNotEmpty) ...[
-          const SizedBox(height: 24),
-          Text(l.t('by_criteria'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: detailText1(context))),
-          const SizedBox(height: 12),
+          const SizedBox(height: 22),
+          Text(l.t('by_criteria').toUpperCase(), style: sectionCaptionStyle(context)),
+          const SizedBox(height: 14),
           for (var i = 0; i < criteria.length; i++) ...[
             _criteriaBar(context, criteria[i]),
             if (i != criteria.length - 1) const SizedBox(height: 16),
@@ -149,21 +163,25 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(c['name']?.toString() ?? '', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: detailText1(context))),
-          if (comment != null && comment.isNotEmpty) Text(comment, style: TextStyle(fontSize: 12, color: detailText2(context))),
+          Text(c['name']?.toString() ?? '',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: detailText1(context))),
+          if (comment != null && comment.isNotEmpty)
+            Text(comment, style: TextStyle(fontSize: 13, height: 1.3, color: detailText2(context))),
         ])),
         const SizedBox(width: 8),
         RichText(text: TextSpan(children: [
-          TextSpan(text: '$score', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: accent)),
-          TextSpan(text: ' / $max', style: TextStyle(fontSize: 12, color: detailText2(context))),
+          TextSpan(text: '$score',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: accent, letterSpacing: -0.3, fontFeatures: const [FontFeature.tabularFigures()])),
+          TextSpan(text: ' / $max',
+              style: TextStyle(fontSize: 13, color: detailText2(context), fontFeatures: const [FontFeature.tabularFigures()])),
         ])),
       ]),
-      const SizedBox(height: 8),
+      const SizedBox(height: 9),
       SizedBox(
         width: double.infinity,
-        height: 6,
+        height: 7,
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(100),
           child: Stack(children: [
             Positioned.fill(child: Container(color: detailBorder(context))),
             Positioned.fill(
@@ -195,31 +213,41 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
     }
     // Ленивый список: карточки заданий строятся по мере скролла, а не все сразу
     // (при 30–50 заданиях жадный ListView даёт заметный лаг на открытии вкладки).
+    // Тёмная ступень градиента берётся из палитры темы, а не хардкодом
+    // (#006475 — teal): в школьной теме (amber) синий градиент выпадал из
+    // всего остального оформления экрана.
+    final primary = Theme.of(context).colorScheme.primary;
+    final primaryDeep = primary == C.amber ? C.amberDeep : C.tealDeep;
+
     final headers = <Widget>[
       if (!widget.isTeacher && widget.rating.isNotEmpty) Padding(
-        padding: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.only(bottom: 18),
         child: IntrinsicHeight(child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Expanded(child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [const Color(0xFF006475), Theme.of(context).colorScheme.primary], begin: Alignment.topLeft, end: Alignment.bottomRight),
-              borderRadius: BorderRadius.circular(AppRadii.tile),
+              gradient: LinearGradient(colors: [primaryDeep, primary], begin: Alignment.topLeft, end: Alignment.bottomRight),
+              borderRadius: BorderRadius.circular(AppRadii.card),
             ),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(l.t('your_rating'), style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1)),
-              const SizedBox(height: 8),
+              Text(l.t('your_rating').toUpperCase(),
+                  style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.7)),
+              const SizedBox(height: 10),
+              // tabularFigures: цифры одинаковой ширины — иначе балл «дышит»
+              // по ширине при каждом обновлении рейтинга.
               RichText(text: TextSpan(children: [
-                TextSpan(text: '$avg', style: const TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w900, height: 1)),
-                const TextSpan(text: ' /100', style: TextStyle(color: Colors.white60, fontSize: 15, fontWeight: FontWeight.w600)),
+                TextSpan(text: '$avg', style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w700, height: 1, letterSpacing: -1.2, fontFeatures: [FontFeature.tabularFigures()])),
+                const TextSpan(text: ' /100', style: TextStyle(color: Colors.white60, fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: -0.2)),
               ])),
-              const SizedBox(height: 8),
-              ClipRRect(borderRadius: BorderRadius.circular(AppRadii.chip), child: LinearProgressIndicator(
-                value: avg / 100, backgroundColor: Colors.white24, color: Colors.white, minHeight: 4)),
-              const SizedBox(height: 4),
-              Text('${l.t('performance')}: $pct%', style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w500)),
+              const Spacer(),
+              const SizedBox(height: 10),
+              ClipRRect(borderRadius: BorderRadius.circular(3), child: LinearProgressIndicator(
+                value: avg / 100, backgroundColor: Colors.white24, color: Colors.white, minHeight: 5)),
+              const SizedBox(height: 7),
+              Text('${l.t('performance')}: $pct%', style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500, letterSpacing: -0.1)),
             ]),
           )),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(child: Builder(builder: (_) {
             final now = DateTime.now();
             final upcoming = widget.assignments.where((a) {
@@ -236,13 +264,16 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             if (upcoming.isEmpty) {
               return Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: adaptiveBorder(context))),
+              decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(AppRadii.card)),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(l.t('next_deadline'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
-                const SizedBox(height: 16),
-                const Center(child: Icon(CupertinoIcons.checkmark_circle, size: 32, color: C.green)),
+                Text(l.t('next_deadline').toUpperCase(),
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: adaptiveText4(context), letterSpacing: 0.7)),
+                const Spacer(),
+                const Center(child: Icon(CupertinoIcons.checkmark_circle_fill, size: 30, color: C.green)),
                 const SizedBox(height: 8),
-                Center(child: Text(l.t('all_submitted'), style: const TextStyle(fontSize: 13, color: C.green, fontWeight: FontWeight.w600))),
+                Center(child: Text(l.t('all_submitted'), textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 13, color: C.green, fontWeight: FontWeight.w600, letterSpacing: -0.1))),
+                const Spacer(),
               ]));
             }
             final next = upcoming.first;
@@ -259,26 +290,37 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 : '$hours ${l.t('hours_short')} ${diff.inMinutes % 60} ${l.t('minutes_short')}';
             return Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: adaptiveBorder(context))),
+              decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(AppRadii.card)),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(l.t('next_deadline'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 1)),
-                const SizedBox(height: 10),
+                Text(l.t('next_deadline').toUpperCase(),
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: adaptiveText4(context), letterSpacing: 0.7)),
+                const SizedBox(height: 12),
                 Row(children: [
                   Container(
-                    width: 48, height: 56,
+                    width: 46, height: 52,
                     decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
                     child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Text(months[dl.month - 1], style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, letterSpacing: 1)),
-                      Text('${dl.day}', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.primary, height: 1.1)),
+                      Text(months[dl.month - 1].toUpperCase(),
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: primary, letterSpacing: 0.5)),
+                      Text('${dl.day}',
+                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: primary, height: 1.1, letterSpacing: -0.6, fontFeatures: const [FontFeature.tabularFigures()])),
                     ]),
                   ),
                   const SizedBox(width: 10),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     // Две строки: названия вида «Лабораторная работа 5» в одну
                     // строку не помещаются и обрезаются до «Лаборатор…».
-                    Text(next['title'] ?? '', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, height: 1.25), maxLines: 2, overflow: TextOverflow.ellipsis),
-                    const SizedBox(height: 2),
-                    Text('${l.t('remaining')}: $remaining', style: TextStyle(fontSize: 11, color: days <= 1 ? C.red : Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w500)),
+                    Text(next['title'] ?? '',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, height: 1.25, letterSpacing: -0.2, color: adaptiveText1(context)),
+                        maxLines: 2, overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 3),
+                    Row(children: [
+                      Icon(CupertinoIcons.clock, size: 11, color: days <= 1 ? C.red : primary),
+                      const SizedBox(width: 3),
+                      Expanded(child: Text(remaining,
+                          style: TextStyle(fontSize: 13, color: days <= 1 ? C.red : primary, fontWeight: FontWeight.w600, letterSpacing: -0.1),
+                          maxLines: 1, overflow: TextOverflow.ellipsis)),
+                    ]),
                   ])),
                 ]),
               ]),
@@ -286,17 +328,24 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
           })),
         ])),
       ),
-      Text(l.t('assignments'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
-      const SizedBox(height: 12),
-      if (widget.assignments.isEmpty) Container(padding: const EdgeInsets.symmetric(vertical: 52), child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Container(width: 80, height: 80,
-          decoration: BoxDecoration(gradient: RadialGradient(colors: [Theme.of(context).colorScheme.primary.withValues(alpha: 0.16), Theme.of(context).colorScheme.primary.withValues(alpha: 0.04)]), shape: BoxShape.circle),
-          child: Icon(CupertinoIcons.doc_text, size: 36, color: Theme.of(context).colorScheme.primary)),
+      if (widget.assignments.isNotEmpty)
+        SectionTitle(
+          title: l.t('assignments'),
+          padding: const EdgeInsets.fromLTRB(2, 0, 2, 12),
+          trailing: Text('${widget.assignments.length}',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: adaptiveText4(context))),
+        ),
+      if (widget.assignments.isEmpty) Container(padding: const EdgeInsets.fromLTRB(28, 44, 28, 60), child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Container(width: 76, height: 76,
+          decoration: BoxDecoration(gradient: RadialGradient(colors: [primary.withValues(alpha: 0.16), primary.withValues(alpha: 0.03)]), shape: BoxShape.circle),
+          child: Icon(CupertinoIcons.doc_text, size: 32, color: primary)),
         const SizedBox(height: 18),
-        Text(l.t('no_assignments'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: adaptiveText1(context))),
+        Text(l.t('no_assignments'), textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, letterSpacing: -0.4, color: adaptiveText1(context))),
         const SizedBox(height: 6),
         Text(widget.isTeacher ? l.t('create_first_assignment') : l.t('no_assignments_yet'),
-          style: const TextStyle(fontSize: 13, color: C.text4)),
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 15, height: 1.4, color: adaptiveText3(context))),
       ]))),
     ];
     return GestureDetector(
@@ -307,7 +356,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
       slivers: [
         CupertinoSliverRefreshControl(onRefresh: widget.onRefresh),
         SliverPadding(
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 90),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
         sliver: SliverList(delegate: SliverChildBuilderDelegate(
           childCount: headers.length + widget.assignments.length,
           (ctx, index) {
@@ -327,77 +376,87 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
         final desc = a['description'] != null ? _cleanContent(a['description'].toString()) : '';
 
         final showBadge = isGraded || isNeedsReview || isSubmitted || isLate;
-        Color statusColor = isGraded ? C.green : isNeedsReview ? C.amber : isSubmitted ? Theme.of(context).colorScheme.primary : C.red;
-        String statusText = isGraded ? l.t('graded') : isNeedsReview ? l.t('needs_review') : isSubmitted ? l.t('submitted') : l.t('overdue');
-        IconData statusIcon = isGraded ? CupertinoIcons.checkmark_circle_fill : isNeedsReview ? CupertinoIcons.exclamationmark_triangle : isSubmitted ? CupertinoIcons.arrow_up_doc : CupertinoIcons.clock;
+        final Color statusColor = isGraded ? C.green : isNeedsReview ? C.amber : isSubmitted ? primary : C.red;
+        final String statusText = isGraded ? l.t('graded') : isNeedsReview ? l.t('needs_review') : isSubmitted ? l.t('submitted') : l.t('overdue');
+        final IconData statusIcon = isGraded ? CupertinoIcons.checkmark_circle_fill : isNeedsReview ? CupertinoIcons.exclamationmark_triangle : isSubmitted ? CupertinoIcons.arrow_up_doc : CupertinoIcons.clock;
+        // Строка без сдачи/оценки ведёт себя нейтрально: серый лист-иконка,
+        // без цветного акцента — цвет в списке означает «требует внимания».
+        final Color leadColor = showBadge ? statusColor : adaptiveText4(context);
+        final IconData leadIcon = showBadge ? statusIcon : CupertinoIcons.doc_text;
 
-        return TweenAnimationBuilder<double>(
+        return Entrance(
           key: ValueKey('asgn_${a['id']}'),
-          tween: Tween(begin: 0.0, end: 1.0),
-          duration: Duration(milliseconds: 220 + i.clamp(0, 5) * 50),
-          curve: Curves.easeOutCubic,
-          builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 18 * (1 - t)), child: child)),
-          child: RepaintBoundary(child: Tappable(
+          index: i,
+          // rise: 0 — см. комментарий в class_posts_tab: сдвиг отдельной
+          // строки визуально разрезал бы общую группу.
+          rise: 0,
+          child: RepaintBoundary(child: GroupRow(
+            pos: groupPos(i, widget.assignments.length),
             onTap: () => _showAssignment(a, sub),
-            scale: 0.98,
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                color: surface,
-                borderRadius: BorderRadius.circular(AppRadii.card),
-                boxShadow: cardShadow(isDark),
-              ),
-              child: Column(children: [
-                Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Expanded(child: Text(a['title'] ?? '', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800), maxLines: 2, overflow: TextOverflow.ellipsis)),
-                    if (widget.isTeacher) Tappable(
-                      onTap: () => _showAssignmentActions(a),
-                      child: Container(width: 30, height: 30, alignment: Alignment.center, margin: const EdgeInsets.only(left: 2),
-                        child: const Icon(CupertinoIcons.ellipsis, size: 18, color: C.text4)),
-                    ),
-                  ]),
-                  if (desc.isNotEmpty)
-                    Padding(padding: const EdgeInsets.only(top: 4),
-                      child: Text(desc, style: const TextStyle(fontSize: 13, color: C.text4, height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis)),
-                  const SizedBox(height: 10),
-                  Wrap(spacing: 12, children: [
-                    if (deadline != null) Row(mainAxisSize: MainAxisSize.min, children: [
-                      const Icon(CupertinoIcons.calendar, size: 12, color: C.text4), const SizedBox(width: 4),
-                      Text(_fmtDate(deadline), style: const TextStyle(fontSize: 13, color: C.text4, fontWeight: FontWeight.w500)),
-                    ]),
-                    if (grade != null) Row(mainAxisSize: MainAxisSize.min, children: [
-                      const Icon(CupertinoIcons.checkmark_circle_fill, size: 12, color: C.green), const SizedBox(width: 3),
-                      Text('${grade['score']}/${a['max_score']}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: C.green)),
-                    ]),
-                  ]),
-                ])),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                  decoration: BoxDecoration(
-                    color: adaptiveSurface2(context).withValues(alpha: 0.45),
-                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(18)),
-                  ),
-                  child: Row(children: [
-                    if (showBadge) Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(AppRadii.chip)),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(statusIcon, size: 12, color: statusColor),
-                        const SizedBox(width: 4),
-                        Text(statusText, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: statusColor)),
-                      ]),
-                    ),
-                    const Spacer(),
-                    Row(children: [
-                      Text(l.t('open'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
-                      const SizedBox(width: 3),
-                      Icon(CupertinoIcons.chevron_right, size: 13, color: Theme.of(context).colorScheme.primary),
-                    ]),
-                  ]),
+            onLongPress: widget.isTeacher ? () => _showAssignmentActions(a) : null,
+            separatorInset: 62,
+            padding: EdgeInsets.fromLTRB(14, 13, widget.isTeacher ? 6 : 12, 13),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Container(
+                width: 34, height: 34,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: leadColor.withValues(alpha: isDark ? 0.18 : 0.12),
+                  borderRadius: BorderRadius.circular(AppRadii.chip),
                 ),
-              ]),
-            ),
+                child: Icon(leadIcon, size: 17, color: leadColor),
+              ),
+              const SizedBox(width: 14),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(a['title'] ?? '',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, height: 1.25, letterSpacing: -0.3, color: adaptiveText1(context)),
+                    maxLines: 2, overflow: TextOverflow.ellipsis),
+                if (desc.isNotEmpty)
+                  Padding(padding: const EdgeInsets.only(top: 3),
+                    child: Text(desc,
+                        style: TextStyle(fontSize: 14, color: adaptiveText3(context), height: 1.35),
+                        maxLines: 2, overflow: TextOverflow.ellipsis)),
+                const SizedBox(height: 6),
+                // Метаданные одной строкой-«хлебной крошкой»: дата · статус —
+                // вместо отдельной цветной подложки-футера под карточкой.
+                Row(children: [
+                  if (deadline != null) ...[
+                    Icon(CupertinoIcons.calendar, size: 11, color: adaptiveText4(context)),
+                    const SizedBox(width: 4),
+                    Text(_fmtDate(deadline), style: TextStyle(fontSize: 13, color: adaptiveText4(context))),
+                  ],
+                  if (deadline != null && showBadge)
+                    Text('  ·  ', style: TextStyle(fontSize: 13, color: adaptiveText4(context))),
+                  if (showBadge)
+                    Flexible(child: Text(statusText,
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: statusColor, letterSpacing: -0.1),
+                        maxLines: 1, overflow: TextOverflow.ellipsis)),
+                ]),
+              ])),
+              const SizedBox(width: 8),
+              if (grade != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: RichText(text: TextSpan(children: [
+                    TextSpan(text: '${grade['score']}',
+                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: C.green, letterSpacing: -0.4, fontFeatures: [FontFeature.tabularFigures()])),
+                    TextSpan(text: '/${a['max_score']}',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: adaptiveText4(context))),
+                  ])),
+                ),
+              if (widget.isTeacher)
+                Tappable(
+                  onTap: () => _showAssignmentActions(a),
+                  label: 'Действия с заданием',
+                  child: SizedBox(width: 34, height: 44,
+                    child: Icon(CupertinoIcons.ellipsis, size: 17, color: adaptiveText4(context))),
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.only(top: 10, left: 6),
+                  child: Icon(CupertinoIcons.chevron_right, size: 14, color: adaptiveText4(context).withValues(alpha: 0.7)),
+                ),
+            ]),
           )),
         );
           },
@@ -763,23 +822,37 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 final score = s['grade']?['score'];
                 final isGraded = s['status'] == 'graded';
                 final isNeedsReview = s['status'] == 'needs_review';
-                return Tappable(onTap: () => setS(() => selectedSub = s),
-                  child: Container(margin: const EdgeInsets.only(bottom: 8), padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(AppRadii.tile)),
-                    child: Row(children: [
-                      CircleAvatar(radius: 20, backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15), child: Text(initials, style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w800, fontSize: 13))),
-                      const SizedBox(width: 12),
-                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                        const SizedBox(height: 2),
-                        Text(s['submitted_at'] != null ? _fmtDate(s['submitted_at']) : '', style: const TextStyle(fontSize: 11, color: C.text4)),
-                      ])),
-                      Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                        if (score != null) Text('$score/100', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary))
-                        else const Text('—', style: TextStyle(fontSize: 17, color: C.text4)),
-                        Text(isGraded ? l.t('graded_one') : isNeedsReview ? l.t('needs_review') : l.t('pending_one'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: isGraded ? Theme.of(context).colorScheme.primary : isNeedsReview ? C.amber : C.yellow)),
-                      ]),
-                    ])));
+                final primaryColor = Theme.of(context).colorScheme.primary;
+                return GroupRow(
+                  pos: groupPos(index - gradeHeaders.length, filtered.length),
+                  onTap: () => setS(() => selectedSub = s),
+                  separatorInset: 64,
+                  padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+                  child: Row(children: [
+                    CircleAvatar(radius: 19, backgroundColor: primaryColor.withValues(alpha: 0.15),
+                        child: Text(initials, style: TextStyle(color: primaryColor, fontWeight: FontWeight.w700, fontSize: 14, letterSpacing: -0.2))),
+                    const SizedBox(width: 12),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(name,
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: -0.3, color: adaptiveText1(context)),
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 2),
+                      Text(s['submitted_at'] != null ? _fmtDate(s['submitted_at']) : '',
+                          style: TextStyle(fontSize: 13, color: adaptiveText4(context))),
+                    ])),
+                    const SizedBox(width: 8),
+                    Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                      if (score != null)
+                        Text('$score/100',
+                            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, letterSpacing: -0.4, color: primaryColor, fontFeatures: const [FontFeature.tabularFigures()]))
+                      else
+                        Text('—', style: TextStyle(fontSize: 17, color: adaptiveText4(context))),
+                      Text(isGraded ? l.t('graded_one') : isNeedsReview ? l.t('needs_review') : l.t('pending_one'),
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: -0.1,
+                              color: isGraded ? primaryColor : isNeedsReview ? C.amber : C.amberDk)),
+                    ]),
+                  ]),
+                );
               },
             );
           }));

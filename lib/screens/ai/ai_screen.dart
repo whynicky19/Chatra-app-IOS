@@ -1,3 +1,4 @@
+import 'dart:ui' show ImageFilter;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -141,15 +142,28 @@ class _HistoryButton extends StatelessWidget {
     return Tappable(
       onTap: onTap,
       label: 'Открыть историю чатов',
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: isDark ? C.darkSurface2.withValues(alpha: 0.85) : Colors.white.withValues(alpha: 0.9),
-          boxShadow: cardShadow(isDark),
+      // Кнопка плавает над перепиской, поэтому она из того же материала, что
+      // и композер снизу: блюр + полупрозрачная заливка + светлый край,
+      // вместо непрозрачного круга с тенью.
+      child: ClipOval(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          child: Container(
+            width: 44,
+            height: 44,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isDark ? C.darkSurface2.withValues(alpha: 0.7) : Colors.white.withValues(alpha: 0.72),
+              border: Border.all(
+                color: isDark ? Colors.white.withValues(alpha: 0.14) : Colors.white.withValues(alpha: 0.6),
+                width: 0.5,
+              ),
+              boxShadow: softShadow(isDark),
+            ),
+            child: Icon(CupertinoIcons.sidebar_left, size: 20, color: adaptiveText1(context)),
+          ),
         ),
-        child: Icon(CupertinoIcons.sidebar_left, size: 20, color: adaptiveText1(context)),
       ),
     );
   }

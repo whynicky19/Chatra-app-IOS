@@ -173,6 +173,30 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     if (mounted) setState(() => _loadingAsg = false);
   }
 
+  /// Быстрое добавление (учитель): акцентная «мягкая» кнопка в духе iOS —
+  /// заливка цветом темы с малой альфой и цветной глиф/подпись, вместо
+  /// нейтрально-серой плашки, которая читалась как выключенная.
+  Widget _quickAddButton({required IconData icon, required String label, required VoidCallback onTap}) {
+    final primary = Theme.of(context).colorScheme.primary;
+    return Tappable(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 11),
+        decoration: BoxDecoration(
+          color: primary.withValues(alpha: 0.11),
+          borderRadius: BorderRadius.circular(AppRadii.button),
+        ),
+        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(CupertinoIcons.plus, size: 12, color: primary),
+          const SizedBox(width: 5),
+          Icon(icon, size: 15, color: primary),
+          const SizedBox(width: 6),
+          Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: primary)),
+        ]),
+      ),
+    );
+  }
+
   Widget _tabItem(String label) {
     return Tab(
       height: 32,
@@ -338,15 +362,22 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           Container(
             decoration: BoxDecoration(
               color: surfaceColor,
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.05), blurRadius: 8, offset: const Offset(0, 2))],
+              // Вместо падающей тени — волосяная линия по границе с контентом
+              // (scroll edge в iOS): тень под панелью выглядела как отдельный
+              // «слой Material», наезжающий на список.
+              border: Border(bottom: BorderSide(
+                color: isDark ? Colors.white.withValues(alpha: 0.10) : Colors.black.withValues(alpha: 0.07),
+                width: 1 / MediaQuery.of(context).devicePixelRatio,
+              )),
             ),
             child: Column(children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
                 child: Container(
-                  height: 38,
-                  padding: const EdgeInsets.all(2.5),
-                  decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
+                  height: 40,
+                  padding: const EdgeInsets.all(3),
+                  // Капсула, как нативный CupertinoSlidingSegmentedControl.
+                  decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(100)),
                   child: TabBar(
                     controller: _tabCtrl,
                     dividerColor: Colors.transparent,
@@ -354,16 +385,16 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     indicatorAnimation: TabIndicatorAnimation.elastic,
                     indicator: BoxDecoration(
                       color: surfaceColor,
-                      borderRadius: BorderRadius.circular(AppRadii.chip),
-                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.10), blurRadius: 4, offset: const Offset(0, 1))],
+                      borderRadius: BorderRadius.circular(100),
+                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.08), blurRadius: 3, offset: const Offset(0, 1))],
                     ),
                     splashFactory: NoSplash.splashFactory,
                     overlayColor: WidgetStateProperty.all(Colors.transparent),
                     labelColor: adaptiveText1(context),
                     unselectedLabelColor: adaptiveText3(context),
                     labelPadding: const EdgeInsets.symmetric(horizontal: 2),
-                    labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: -0.1),
-                    unselectedLabelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, letterSpacing: -0.1),
+                    labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: -0.2),
+                    unselectedLabelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, letterSpacing: -0.2),
                     tabs: [
                       _tabItem(l.t('lectures')),
                       _tabItem(l.t('assignments')),
@@ -377,30 +408,16 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 return Padding(
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
                   child: Row(children: [
-                    Expanded(child: Tappable(
+                    Expanded(child: _quickAddButton(
+                      icon: CupertinoIcons.doc_text,
+                      label: l.t('assignment'),
                       onTap: () => _createAssignment(),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 11),
-                        decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
-                        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                          Icon(CupertinoIcons.doc, size: 15, color: adaptiveText1(context)),
-                          const SizedBox(width: 6),
-                          Text(l.t('assignment'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: adaptiveText1(context))),
-                        ]),
-                      ),
                     )),
                     const SizedBox(width: 10),
-                    Expanded(child: Tappable(
+                    Expanded(child: _quickAddButton(
+                      icon: CupertinoIcons.book,
+                      label: l.t('lecture'),
                       onTap: () => _showAddMenu(),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 11),
-                        decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
-                        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                          Icon(CupertinoIcons.book, size: 15, color: adaptiveText1(context)),
-                          const SizedBox(width: 6),
-                          Text(l.t('lecture'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: adaptiveText1(context))),
-                        ]),
-                      ),
                     )),
                   ]),
                 );

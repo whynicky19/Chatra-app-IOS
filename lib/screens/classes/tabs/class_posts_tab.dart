@@ -5,9 +5,10 @@ import 'package:provider/provider.dart';
 import '../../../providers/l10n_provider.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/app_dialog.dart';
+import '../../../widgets/inset_group.dart';
 import '../../../widgets/tappable.dart';
 import '../../moderation/report_sheet.dart';
-import '../class_detail_utils.dart' show fmtDate;
+import '../class_detail_utils.dart' show fmtDate, extractFileUrls;
 
 // Список лекций перерисовывается на каждое изменение _posts — regex внутри
 // clean()/preview() иначе компилировался бы заново на каждую карточку при
@@ -38,8 +39,6 @@ class ClassPostsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = context.read<L10n>();
-    final surface = Theme.of(context).colorScheme.surface;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final accentColor = Theme.of(context).colorScheme.primary;
 
     String clean(String t) => t.replaceFirst(_lectureTitleRe, '').trim();
@@ -49,6 +48,17 @@ class ClassPostsTab extends StatelessWidget {
         final b = jsonDecode(p['body']);
         return (b['content'] ?? b['description'] ?? '').replaceAll(_urlRe, '').replaceAll(_wsRe, ' ').trim();
       } catch (_) { return ''; }
+    }
+
+    // Вложения лекции живут либо структурированным списком в body.files, либо
+    // просто ссылками в тексте (старые записи) — считаем оба варианта, иначе
+    // у половины лекций счётчик файлов молча показывал бы ноль.
+    int fileCount(dynamic p) {
+      try {
+        final b = jsonDecode(p['body']);
+        if (b['files'] is List) return (b['files'] as List).length;
+      } catch (_) {}
+      return extractFileUrls((p['body'] ?? '').toString()).length;
     }
 
     int? postId(dynamic p) => (p['id'] as num?)?.toInt();
@@ -89,17 +99,20 @@ class ClassPostsTab extends StatelessWidget {
         CupertinoSliverRefreshControl(onRefresh: onRefresh),
         SliverFillRemaining(
           hasScrollBody: false,
-          child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Container(width: 80, height: 80,
-              decoration: BoxDecoration(gradient: RadialGradient(colors: [accentColor.withValues(alpha: 0.18), accentColor.withValues(alpha: 0.04)]), shape: BoxShape.circle),
-              child: Icon(CupertinoIcons.book, size: 36, color: accentColor)),
+          child: Center(child: Padding(
+            padding: const EdgeInsets.fromLTRB(40, 0, 40, 60),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(width: 76, height: 76,
+              decoration: BoxDecoration(gradient: RadialGradient(colors: [accentColor.withValues(alpha: 0.16), accentColor.withValues(alpha: 0.03)]), shape: BoxShape.circle),
+              child: Icon(CupertinoIcons.book, size: 32, color: accentColor)),
             const SizedBox(height: 18),
-            Text(l.t('no_lectures'),
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: adaptiveText1(context))),
+            Text(l.t('no_lectures'), textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, letterSpacing: -0.4, color: adaptiveText1(context))),
             const SizedBox(height: 6),
             Text(isTeacher ? l.t('add_first_lecture') : l.t('lectures_appear_here'),
-              style: const TextStyle(fontSize: 13, color: C.text4)),
-          ])),
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 15, height: 1.4, color: adaptiveText3(context))),
+          ]))),
         ),
       ],
     ));
@@ -118,66 +131,92 @@ class ClassPostsTab extends StatelessWidget {
       slivers: [
         CupertinoSliverRefreshControl(onRefresh: onRefresh),
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(14, 14, 14, 90),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
+          sliver: SliverToBoxAdapter(
+            child: SectionTitle(
+              title: l.t('lectures'),
+              padding: EdgeInsets.zero,
+              trailing: Text('${displayPosts.length}',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: adaptiveText4(context))),
+            ),
+          ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 90),
           sliver: SliverList(delegate: SliverChildBuilderDelegate(
             childCount: displayPosts.length,
             (ctx, i) {
-      final p = displayPosts[i];
-      final body = preview(p);
-      final num = displayPosts.length - i;
+              final p = displayPosts[i];
+              final body = preview(p);
+              final num = displayPosts.length - i;
+              final files = fileCount(p);
 
-      return TweenAnimationBuilder<double>(
-        tween: Tween(begin: 0.0, end: 1.0),
-        duration: Duration(milliseconds: 260 + i * 55),
-        curve: Curves.easeOutCubic,
-        builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 18 * (1 - t)), child: child)),
-        child: RepaintBoundary(child: Tappable(
-          onTap: () => onShowPost(p, num),
-          scale: 0.98,
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(AppRadii.card), boxShadow: cardShadow(isDark)),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Padding(padding: const EdgeInsets.fromLTRB(16, 16, 8, 14), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(clean(p['title'] ?? ''),
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, height: 1.25, color: adaptiveText1(context)),
-                    maxLines: 2, overflow: TextOverflow.ellipsis),
-                  if (body.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 5),
-                    child: Text(body, style: const TextStyle(fontSize: 13, color: C.text4, height: 1.45), maxLines: 2, overflow: TextOverflow.ellipsis)),
-                ])),
-                // Меню доступно всем: учителю — правка/удаление, студенту —
-                // жалоба. Раньше оно было только у преподавателя, из-за чего
-                // пожаловаться на контент было невозможно в принципе.
-                Tappable(
-                  onTap: () => showActions(p),
-                  child: Container(width: 34, height: 34, alignment: Alignment.center,
-                    child: const Icon(CupertinoIcons.ellipsis, size: 18, color: C.text4)),
+              return Entrance(
+                index: i,
+                // rise: 0 — строки лежат в одной сплошной группе; вертикальный
+                // сдвиг соседних строк на разных фазах анимации рвал бы её на
+                // куски, поэтому появление здесь — чистое проявление.
+                rise: 0,
+                child: RepaintBoundary(
+                  child: GroupRow(
+                    pos: groupPos(i, displayPosts.length),
+                    onTap: () => onShowPost(p, num),
+                    onLongPress: () => showActions(p),
+                    separatorInset: 62,
+                    padding: const EdgeInsets.fromLTRB(14, 13, 8, 13),
+                    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      // Номер лекции — не декор: именно им студент оперирует
+                      // в чате с ИИ («объясни лекцию 3»).
+                      Container(
+                        width: 34, height: 34,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: accentColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(AppRadii.chip),
+                        ),
+                        child: Text('$num',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: accentColor, letterSpacing: -0.2)),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(clean(p['title'] ?? ''),
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, height: 1.25, letterSpacing: -0.3, color: adaptiveText1(context)),
+                          maxLines: 2, overflow: TextOverflow.ellipsis),
+                        if (body.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 3),
+                          child: Text(body,
+                            style: TextStyle(fontSize: 14, color: adaptiveText3(context), height: 1.35),
+                            maxLines: 2, overflow: TextOverflow.ellipsis)),
+                        const SizedBox(height: 6),
+                        Row(children: [
+                          Text(fmtDate(p['created_at'] ?? ''),
+                            style: TextStyle(fontSize: 13, color: adaptiveText4(context))),
+                          if (files > 0) ...[
+                            const SizedBox(width: 8),
+                            Icon(CupertinoIcons.paperclip, size: 11, color: adaptiveText4(context)),
+                            const SizedBox(width: 3),
+                            Text('$files', style: TextStyle(fontSize: 13, color: adaptiveText4(context))),
+                          ],
+                        ]),
+                      ])),
+                      const SizedBox(width: 4),
+                      // Меню доступно всем: учителю — правка/удаление, студенту —
+                      // жалоба. Раньше оно было только у преподавателя, из-за чего
+                      // пожаловаться на контент было невозможно в принципе.
+                      Tappable(
+                        onTap: () => showActions(p),
+                        label: 'Действия с лекцией',
+                        child: SizedBox(width: 32, height: 44,
+                          child: Icon(CupertinoIcons.ellipsis, size: 17, color: adaptiveText4(context))),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 10, right: 6),
+                        child: Icon(CupertinoIcons.chevron_right, size: 14, color: adaptiveText4(context).withValues(alpha: 0.7)),
+                      ),
+                    ]),
+                  ),
                 ),
-              ])),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                decoration: BoxDecoration(
-                  color: adaptiveSurface2(context).withValues(alpha: 0.55),
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-                ),
-                child: Row(children: [
-                  const Icon(CupertinoIcons.clock, size: 12, color: C.text4),
-                  const SizedBox(width: 4),
-                  Text(fmtDate(p['created_at'] ?? ''), style: const TextStyle(fontSize: 13, color: C.text4)),
-                  const Spacer(),
-                  Row(mainAxisSize: MainAxisSize.min, children: [
-                    Text(l.t('open'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: accentColor)),
-                    const SizedBox(width: 3),
-                    Icon(CupertinoIcons.chevron_right, size: 12, color: accentColor),
-                  ]),
-                ]),
-              ),
-            ]),
-          ),
-        )),
-      );
-    },
+              );
+            },
           )),
         ),
       ]),

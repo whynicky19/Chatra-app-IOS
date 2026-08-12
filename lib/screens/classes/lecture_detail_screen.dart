@@ -40,11 +40,13 @@ class LectureDetailScreen extends StatelessWidget {
         textTheme: CupertinoTextThemeData(
           primaryColor: accent,
           navLargeTitleTextStyle: TextStyle(
-            fontSize: 34, fontWeight: FontWeight.w800, letterSpacing: -0.5,
+            // Крупный кегль — отрицательный трекинг и плотный интерлиньяж:
+            // заголовок из двух строк иначе «разъезжается».
+            fontSize: 34, fontWeight: FontWeight.w700, letterSpacing: -0.8, height: 1.1,
             color: detailText1(context),
           ),
           navTitleTextStyle: TextStyle(
-            fontSize: 17, fontWeight: FontWeight.w700, color: detailText1(context),
+            fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: detailText1(context),
           ),
         ),
       ),
@@ -61,41 +63,38 @@ class LectureDetailScreen extends StatelessWidget {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 6, 20, 48),
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 56),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   _MetaRow(dateLabel: dateLabel, fileCount: files.length, l: l),
-                  const SizedBox(height: 28),
-                  if (content.isNotEmpty || files.isNotEmpty)
-                    sectionCard(context, isDark, children: [
-                      if (content.isNotEmpty)
-                        Text(
-                          content,
-                          textAlign: TextAlign.left,
-                          style: TextStyle(fontSize: 17, height: 1.65, letterSpacing: 0.1, color: detailText1(context)),
-                        ),
-                      if (files.isNotEmpty) ...[
-                        if (content.isNotEmpty) const SizedBox(height: 20),
-                        Text(l.t('attached_files_edit'),
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: detailText1(context))),
-                        const SizedBox(height: 12),
-                        for (final f in files) ...[
-                          FileCard(
-                            name: _fileDisplayName(f),
-                            onTap: () => onOpenFile(context, f, _fileDisplayName(f)),
-                          ),
-                          const SizedBox(height: 10),
-                        ],
+                  if (content.isNotEmpty) ...[
+                    const SizedBox(height: 22),
+                    // Тело лекции — обычный текст на фоне страницы, как в Apple
+                    // Notes: раньше он лежал в серой карточке, которая на
+                    // длинном конспекте читалась как бесконечная плашка.
+                    Text(content, textAlign: TextAlign.left, style: detailBodyStyle(context)),
+                  ],
+                  if (files.isNotEmpty) ...[
+                    SizedBox(height: content.isNotEmpty ? 30 : 24),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 8),
+                      child: Text(l.t('attached_files_edit').toUpperCase(), style: sectionCaptionStyle(context)),
+                    ),
+                    FileList(
+                      files: [
+                        for (final f in files) FileEntry(name: _fileDisplayName(f), url: f, previewUrl: f),
                       ],
-                    ]),
+                      onOpen: (f) => onOpenFile(context, f.url, f.name),
+                    ),
+                  ],
                   if (content.isEmpty && files.isEmpty)
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 48),
+                      padding: const EdgeInsets.symmetric(vertical: 56),
                       child: Center(
                         child: Column(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(CupertinoIcons.book, size: 34, color: detailText2(context)),
+                          Icon(CupertinoIcons.book, size: 32, color: detailText2(context).withValues(alpha: 0.6)),
                           const SizedBox(height: 14),
                           Text(l.t('content_empty'),
-                              style: TextStyle(fontSize: 15, color: detailText2(context), fontWeight: FontWeight.w500)),
+                              style: TextStyle(fontSize: 16, color: detailText2(context), fontWeight: FontWeight.w500, letterSpacing: -0.2)),
                         ]),
                       ),
                     ),
@@ -118,16 +117,18 @@ class _MetaRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text2 = detailText2(context);
+    final style = TextStyle(fontSize: 15, color: text2, fontWeight: FontWeight.w500, letterSpacing: -0.2);
     return Row(children: [
       Icon(CupertinoIcons.calendar, size: 14, color: text2),
       const SizedBox(width: 5),
-      Text(dateLabel, style: TextStyle(fontSize: 15, color: text2, fontWeight: FontWeight.w500)),
+      Text(dateLabel, style: style),
       if (fileCount > 0) ...[
-        const SizedBox(width: 10),
-        Container(width: 3, height: 3, decoration: BoxDecoration(color: text2, shape: BoxShape.circle)),
-        const SizedBox(width: 10),
-        Text('$fileCount ${fileCount == 1 ? l.t('file') : l.t('files')}',
-            style: TextStyle(fontSize: 15, color: text2, fontWeight: FontWeight.w500)),
+        const SizedBox(width: 9),
+        Container(width: 3, height: 3, decoration: BoxDecoration(color: text2.withValues(alpha: 0.7), shape: BoxShape.circle)),
+        const SizedBox(width: 9),
+        Icon(CupertinoIcons.paperclip, size: 13, color: text2),
+        const SizedBox(width: 4),
+        Text('$fileCount ${fileCount == 1 ? l.t('file') : l.t('files')}', style: style),
       ],
     ]);
   }

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ui' show ImageFilter;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart' show DioException;
 import 'package:file_picker/file_picker.dart';
@@ -336,10 +337,15 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
       ),
       child: Scaffold(
         backgroundColor: bg,
+        // extendBody: контент проезжает ПОД нижней панелью действий — только
+        // тогда её матовое стекло имеет смысл (иначе размывать нечего).
+        extendBody: true,
         body: SafeArea(
+          bottom: false,
           child: ListView(
             physics: const BouncingScrollPhysics(),
-            padding: EdgeInsets.fromLTRB(20, 8, 20, showSubmitBar || showRetractBar || showViewWorksBar ? 24 : 24),
+            padding: EdgeInsets.fromLTRB(20, 8, 20,
+                showSubmitBar || showRetractBar || showViewWorksBar ? 104 : 24 + MediaQuery.of(context).padding.bottom),
             children: [
               _topBar(context, isDark),
               const SizedBox(height: 16),
@@ -372,45 +378,51 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
 
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 16),
-                    child: sectionCard(context, isDark, children: [
-                      Row(children: [
-                        Expanded(child: Text(l.t('description'),
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: detailText1(context)))),
-                        if (descText.isNotEmpty)
-                          Tappable(
-                            onTap: () => setState(() => _descHidden = !_descHidden),
-                            child: Text(_descHidden ? l.t('show') : l.t('hide'),
-                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: accent)),
-                          ),
-                      ]),
-                      if (descText.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        AnimatedSize(
-                          duration: const Duration(milliseconds: 220),
-                          curve: Curves.easeInOut,
-                          alignment: Alignment.topCenter,
-                          child: _descHidden
-                              ? const SizedBox.shrink()
-                              : Text(descText,
-                                  style: TextStyle(fontSize: 15, height: 1.55, color: detailText2(context))),
-                        ),
-                      ],
-                      if (isLoading) ...[
-                        const SizedBox(height: 12),
-                        Row(children: [
-                          SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: accent)),
-                          const SizedBox(width: 10),
-                          Text(l.t('loading_files'), style: TextStyle(fontSize: 13, color: detailText2(context))),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      if (descText.isNotEmpty || isLoading)
+                        sectionCard(context, isDark, children: [
+                          Row(children: [
+                            Expanded(child: Text(l.t('description'), style: cardTitleStyle(context))),
+                            if (descText.isNotEmpty)
+                              Tappable(
+                                onTap: () => setState(() => _descHidden = !_descHidden),
+                                child: Text(_descHidden ? l.t('show') : l.t('hide'),
+                                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: accent)),
+                              ),
+                          ]),
+                          if (descText.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            AnimatedSize(
+                              duration: const Duration(milliseconds: 220),
+                              curve: Curves.easeInOut,
+                              alignment: Alignment.topCenter,
+                              child: _descHidden
+                                  ? const SizedBox.shrink()
+                                  : Text(descText,
+                                      style: TextStyle(fontSize: 16, height: 1.55, letterSpacing: -0.2, color: detailText2(context))),
+                            ),
+                          ],
+                          if (isLoading) ...[
+                            SizedBox(height: descText.isNotEmpty ? 14 : 12),
+                            Row(children: [
+                              SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: accent)),
+                              const SizedBox(width: 10),
+                              Text(l.t('loading_files'), style: TextStyle(fontSize: 14, color: detailText2(context))),
+                            ]),
+                          ],
                         ]),
-                      ] else if (allFiles.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        Text(l.t('task_files'),
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: detailText2(context))),
-                        const SizedBox(height: 8),
-                        for (final f in allFiles) ...[
-                          FileCard(name: fileDisplayName(f), previewUrl: f, onTap: () => widget.onOpenFile(f, fileDisplayName(f))),
-                          const SizedBox(height: 8),
-                        ],
+                      // Файлы — отдельной сгруппированной секцией под описанием,
+                      // а не вложенной стопкой карточек внутри карточки.
+                      if (!isLoading && allFiles.isNotEmpty) ...[
+                        SizedBox(height: descText.isNotEmpty ? 20 : 0),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4, bottom: 8),
+                          child: Text(l.t('task_files').toUpperCase(), style: sectionCaptionStyle(context)),
+                        ),
+                        FileList(
+                          files: [for (final f in allFiles) FileEntry(name: fileDisplayName(f), url: f, previewUrl: f)],
+                          onOpen: (f) => widget.onOpenFile(f.url, f.name),
+                        ),
                       ],
                     ]),
                   );
@@ -424,15 +436,20 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                 return [
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16),
-                    child: sectionCard(context, isDark, children: [
-                      Text(l.t('reference_files'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: detailText1(context))),
-                      const SizedBox(height: 4),
-                      Text(l.t('reference_files_hint'), style: TextStyle(fontSize: 12, color: detailText2(context))),
-                      const SizedBox(height: 12),
-                      for (final f in refFiles) ...[
-                        FileCard(name: fileDisplayName(f), previewUrl: f, onTap: () => widget.onOpenFile(f, fileDisplayName(f))),
-                        const SizedBox(height: 8),
-                      ],
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4, bottom: 3),
+                        child: Text(l.t('reference_files').toUpperCase(), style: sectionCaptionStyle(context)),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4, bottom: 8),
+                        child: Text(l.t('reference_files_hint'),
+                            style: TextStyle(fontSize: 13, height: 1.35, color: detailText2(context))),
+                      ),
+                      FileList(
+                        files: [for (final f in refFiles) FileEntry(name: fileDisplayName(f), url: f, previewUrl: f)],
+                        onOpen: (f) => widget.onOpenFile(f.url, f.name),
+                      ),
                     ]),
                   ),
                 ];
@@ -443,10 +460,11 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 16),
                   child: sectionCard(context, isDark, children: [
-                    Text(l.t('your_answer'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: detailText1(context))),
+                    Text(l.t('your_answer'), style: cardTitleStyle(context)),
                     if (sub['text_content'] != null && sub['text_content'].toString().isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Text(sub['text_content'], style: TextStyle(fontSize: 15, height: 1.55, color: detailText2(context))),
+                      const SizedBox(height: 10),
+                      Text(sub['text_content'],
+                          style: TextStyle(fontSize: 16, height: 1.55, letterSpacing: -0.2, color: detailText2(context))),
                     ],
                     ...(() {
                       final urls = _parseFileUrls(sub['file_urls']);
@@ -485,38 +503,48 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
               if (!widget.isTeacher && widget.viewOnly && sub == null)
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  decoration: BoxDecoration(color: detailSurface(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                  decoration: BoxDecoration(color: detailSurface(context), borderRadius: BorderRadius.circular(AppRadii.card)),
                   child: Row(children: [
-                    Icon(CupertinoIcons.lock, size: 15, color: detailText2(context)),
-                    const SizedBox(width: 8),
-                    Expanded(child: Text(l.t('archive_readonly'), style: TextStyle(fontSize: 13, color: detailText2(context), fontWeight: FontWeight.w500))),
+                    Icon(CupertinoIcons.lock_fill, size: 15, color: detailText2(context)),
+                    const SizedBox(width: 9),
+                    Expanded(child: Text(l.t('archive_readonly'),
+                        style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: detailText2(context), fontWeight: FontWeight.w500))),
                   ]),
                 ),
 
               if (showSubmitBar) ...[
-                Text(l.t('submit_work'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: detailText1(context))),
-                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, bottom: 10),
+                  child: Text(l.t('submit_work').toUpperCase(), style: sectionCaptionStyle(context)),
+                ),
                 Container(
-                  decoration: BoxDecoration(color: detailSurface(context), borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: detailBorder(context))),
+                  decoration: BoxDecoration(
+                    color: detailSurface(context),
+                    borderRadius: BorderRadius.circular(AppRadii.card),
+                    border: Border.all(color: detailBorder(context), width: 1 / MediaQuery.of(context).devicePixelRatio),
+                  ),
                   child: CupertinoTextField(
                     controller: _tc,
                     maxLines: 4,
                     placeholder: l.t('work_text_hint'),
-                    placeholderStyle: TextStyle(color: detailText2(context), fontSize: 15),
-                    style: TextStyle(fontSize: 15, color: detailText1(context)),
-                    padding: const EdgeInsets.all(14),
+                    placeholderStyle: TextStyle(color: detailText2(context), fontSize: 16, letterSpacing: -0.2),
+                    style: TextStyle(fontSize: 16, height: 1.45, letterSpacing: -0.2, color: detailText1(context)),
+                    padding: const EdgeInsets.all(15),
                     decoration: const BoxDecoration(),
                   ),
                 ),
                 const SizedBox(height: 12),
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.all(14),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
                   decoration: BoxDecoration(
                     color: detailSurface(context),
-                    borderRadius: BorderRadius.circular(AppRadii.tile),
-                    border: Border.all(color: _pickedFiles.isEmpty ? detailBorder(context) : accent.withValues(alpha: 0.4)),
+                    borderRadius: BorderRadius.circular(AppRadii.card),
+                    border: Border.all(
+                      color: _pickedFiles.isEmpty ? detailBorder(context) : accent.withValues(alpha: 0.45),
+                      width: _pickedFiles.isEmpty ? 1 / MediaQuery.of(context).devicePixelRatio : 1,
+                    ),
                   ),
                   child: Tappable(
                     onTap: () async {
@@ -531,10 +559,10 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                         child: Text(
                           _pickedFiles.isEmpty ? l.t('attach_file') : '${l.t('files_selected')}: ${_pickedFiles.length}',
                           key: ValueKey(_pickedFiles.length),
-                          style: TextStyle(fontSize: 15, color: _pickedFiles.isEmpty ? detailText2(context) : accent, fontWeight: _pickedFiles.isEmpty ? FontWeight.normal : FontWeight.w600),
+                          style: TextStyle(fontSize: 16, letterSpacing: -0.2, color: _pickedFiles.isEmpty ? detailText2(context) : accent, fontWeight: _pickedFiles.isEmpty ? FontWeight.w500 : FontWeight.w600),
                         ),
                       )),
-                      Icon(CupertinoIcons.chevron_right, color: detailText2(context), size: 17),
+                      Icon(CupertinoIcons.chevron_right, color: detailText2(context).withValues(alpha: 0.8), size: 15),
                     ]),
                   ),
                 ),
@@ -589,15 +617,19 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
     return Tappable(
       onTap: onTap,
       label: label,
-      borderRadius: BorderRadius.circular(19),
+      borderRadius: BorderRadius.circular(20),
       child: Container(
-        width: 38, height: 38,
+        // 40pt — размер круглой кнопки навигации в iOS 26 (Photos/Maps):
+        // заметно крупнее прежних 38 и попадает в HIG-минимум вместе с
+        // невидимым запасом Tappable.
+        width: 40, height: 40,
+        alignment: Alignment.center,
         decoration: BoxDecoration(
           color: detailSurface(context),
           shape: BoxShape.circle,
-          boxShadow: softShadow(isDark),
+          border: Border.all(color: detailBorder(context), width: 1 / MediaQuery.of(context).devicePixelRatio),
         ),
-        child: Icon(icon, size: 18, color: detailText1(context)),
+        child: Icon(icon, size: 19, color: detailText1(context)),
       ),
     );
   }
@@ -608,12 +640,16 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
       Expanded(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            Icon(CupertinoIcons.doc_text, size: 13, color: accent),
-            const SizedBox(width: 6),
-            Text(l.t('task_badge'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: accent, letterSpacing: 0.2)),
+            Icon(CupertinoIcons.doc_text_fill, size: 12, color: accent),
+            const SizedBox(width: 5),
+            Text(l.t('task_badge').toUpperCase(),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: accent, letterSpacing: 0.6)),
           ]),
-          const SizedBox(height: 8),
-          Text(a['title'] ?? '', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: detailText1(context), letterSpacing: -0.3, height: 1.15)),
+          const SizedBox(height: 7),
+          // 28pt/w700 с трекингом -0.7 — шкала largeTitle iOS: раньше вес w800
+          // при -0.3 читался «жирнее и шире», чем нативные заголовки рядом.
+          Text(a['title'] ?? '',
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: detailText1(context), letterSpacing: -0.7, height: 1.12)),
         ]),
       ),
       if (grade != null) ...[
@@ -628,12 +664,14 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: detailSurface(context),
-        borderRadius: BorderRadius.circular(AppRadii.tile),
-        boxShadow: softShadow(Theme.of(context).brightness == Brightness.dark),
+        borderRadius: BorderRadius.circular(AppRadii.card),
+        border: Border.all(color: detailBorder(context), width: 1 / MediaQuery.of(context).devicePixelRatio),
       ),
       child: Column(children: [
-        Text('${grade['score']}', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: detailAccent(context), height: 1)),
-        Text('/ ${a['max_score']}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: detailText2(context))),
+        Text('${grade['score']}',
+            style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: detailAccent(context), height: 1, letterSpacing: -0.8, fontFeatures: const [FontFeature.tabularFigures()])),
+        Text('/ ${a['max_score']}',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: detailText2(context), fontFeatures: const [FontFeature.tabularFigures()])),
       ]),
     );
   }
@@ -652,12 +690,14 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
 
   Widget _chip(String text, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.chip)),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+      // Капсула (радиус = половина высоты), а не скругление chip: пилюли
+      // статуса в iOS всегда полностью круглые по торцам.
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.13), borderRadius: BorderRadius.circular(100)),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(icon, size: 12, color: color),
         const SizedBox(width: 5),
-        Text(text, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: color)),
+        Text(text, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: color, letterSpacing: -0.1)),
       ]),
     );
   }
@@ -685,8 +725,9 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
       Icon(icon, size: 15, color: detailText2(context)),
       const SizedBox(width: 6),
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label, style: TextStyle(fontSize: 11, color: detailText2(context))),
-        Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: valueColor ?? detailText1(context))),
+        Text(label, style: TextStyle(fontSize: 12, letterSpacing: 0.1, color: detailText2(context))),
+        Text(value,
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: valueColor ?? detailText1(context))),
       ]),
     ]);
   }
@@ -695,14 +736,15 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(AppRadii.card)),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(AppRadii.card)),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         if (showSpinner)
-          SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: color))
+          SizedBox(width: 18, height: 18, child: CupertinoActivityIndicator(radius: 9, color: color))
         else
           Icon(icon, size: 18, color: color),
         const SizedBox(width: 12),
-        Expanded(child: Text(text, style: TextStyle(fontSize: 14, height: 1.45, fontWeight: FontWeight.w600, color: color))),
+        Expanded(child: Text(text,
+            style: TextStyle(fontSize: 15, height: 1.4, letterSpacing: -0.2, fontWeight: FontWeight.w600, color: color))),
       ]),
     );
   }
@@ -755,7 +797,8 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                 ),
         ),
         const SizedBox(height: 6),
-        Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: detailText1(context))),
+        Text(name, maxLines: 1, overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, letterSpacing: -0.2, color: detailText1(context))),
       ]),
     );
   }
@@ -768,15 +811,15 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
 
     return sectionCard(context, isDark, children: [
       Row(children: [
-        Expanded(child: Text(l.t('preliminary_assessment'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: detailText1(context)))),
+        Expanded(child: Text(l.t('preliminary_assessment'), style: cardTitleStyle(context))),
         if (gradedByAi)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-            decoration: BoxDecoration(color: accent.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.chip)),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(color: accent.withValues(alpha: 0.13), borderRadius: BorderRadius.circular(100)),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Icon(CupertinoIcons.sparkles, size: 11, color: accent),
               const SizedBox(width: 4),
-              Text(l.t('ai_check'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: accent)),
+              Text(l.t('ai_check'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: accent, letterSpacing: -0.1)),
             ]),
           ),
       ]),
@@ -788,13 +831,14 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
         // преподавателя" — дублировать его тут не нужно.
         if (gradedByAi && feedback.isNotEmpty) ...[
           const SizedBox(width: 16),
-          Expanded(child: Text(feedback, style: TextStyle(fontSize: 14, height: 1.5, color: detailText2(context)))),
+          Expanded(child: Text(feedback,
+              style: TextStyle(fontSize: 15, height: 1.45, letterSpacing: -0.2, color: detailText2(context)))),
         ],
       ]),
       if (criteriaScores.isNotEmpty) ...[
-        const SizedBox(height: 24),
-        Text(l.t('by_criteria'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: detailText1(context))),
-        const SizedBox(height: 12),
+        const SizedBox(height: 22),
+        Text(l.t('by_criteria').toUpperCase(), style: sectionCaptionStyle(context)),
+        const SizedBox(height: 14),
         for (var i = 0; i < criteriaScores.length; i++) ...[
           _criteriaRow(context, criteriaScores[i], _rubricDescriptionFor((criteriaScores[i]['name'] ?? '').toString(), rubric)),
           if (i != criteriaScores.length - 1) const SizedBox(height: 16),
@@ -812,21 +856,26 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(c['name']?.toString() ?? '', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: detailText1(context))),
-          if (description != null) Text(description, style: TextStyle(fontSize: 12, color: detailText2(context))),
+          Text(c['name']?.toString() ?? '',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: detailText1(context))),
+          if (description != null)
+            Text(description, style: TextStyle(fontSize: 13, height: 1.3, color: detailText2(context))),
         ])),
         const SizedBox(width: 8),
         RichText(text: TextSpan(children: [
-          TextSpan(text: '$score', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: accent)),
-          TextSpan(text: ' / $max', style: TextStyle(fontSize: 12, color: detailText2(context))),
+          TextSpan(text: '$score',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: accent, letterSpacing: -0.3, fontFeatures: const [FontFeature.tabularFigures()])),
+          TextSpan(text: ' / $max',
+              style: TextStyle(fontSize: 13, color: detailText2(context), fontFeatures: const [FontFeature.tabularFigures()])),
         ])),
       ]),
-      const SizedBox(height: 8),
+      const SizedBox(height: 9),
       SizedBox(
         width: double.infinity,
-        height: 6,
+        height: 7,
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(4),
+          // Полная капсула: полоса прогресса в iOS скруглена по высоте.
+          borderRadius: BorderRadius.circular(100),
           child: Stack(children: [
             Positioned.fill(child: Container(color: detailBorder(context))),
             Positioned.fill(
@@ -878,18 +927,19 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
   Widget _bulletCard(BuildContext context, {required String title, required List<String> items, required IconData icon, required Color color}) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: color.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.10 : 0.07), borderRadius: BorderRadius.circular(AppRadii.card)),
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(color: color.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.12 : 0.08), borderRadius: BorderRadius.circular(AppRadii.card)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(title, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: color, letterSpacing: 0.1)),
-        const SizedBox(height: 8),
+        Text(title.toUpperCase(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color, letterSpacing: 0.6)),
+        const SizedBox(height: 10),
         for (final item in items) ...[
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Icon(icon, size: 13, color: color),
-              const SizedBox(width: 6),
-              Expanded(child: Text(item, style: TextStyle(fontSize: 12.5, height: 1.4, color: detailText1(context)))),
+              Padding(padding: const EdgeInsets.only(top: 2), child: Icon(icon, size: 13, color: color)),
+              const SizedBox(width: 7),
+              Expanded(child: Text(item,
+                  style: TextStyle(fontSize: 13.5, height: 1.4, letterSpacing: -0.1, color: detailText1(context)))),
             ]),
           ),
         ],
@@ -902,10 +952,11 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
       Row(children: [
         Icon(CupertinoIcons.person_crop_circle_fill, size: 16, color: detailText2(context)),
         const SizedBox(width: 7),
-        Text(l.t('teacher_comment'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: detailText2(context), letterSpacing: 0.1)),
+        Text(l.t('teacher_comment').toUpperCase(), style: sectionCaptionStyle(context)),
       ]),
-      const SizedBox(height: 8),
-      Text(feedback, style: TextStyle(fontSize: 15, height: 1.6, color: detailText1(context))),
+      const SizedBox(height: 10),
+      Text(feedback,
+          style: TextStyle(fontSize: 16, height: 1.55, letterSpacing: -0.2, color: detailText1(context))),
     ]);
   }
 
@@ -918,13 +969,15 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
       Tappable(
         onTap: () => setState(() => _rubricExpanded = !_rubricExpanded),
         child: Row(children: [
-          Icon(CupertinoIcons.list_bullet, size: 16, color: accent),
-          const SizedBox(width: 8),
-          Expanded(child: Text(l.t('criteria'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: detailText1(context)))),
-          Text('(${rubric.length})', style: TextStyle(fontSize: 13, color: detailText2(context))),
-          const SizedBox(width: 6),
-          AnimatedRotation(turns: _rubricExpanded ? 0.5 : 0.0, duration: const Duration(milliseconds: 200),
-              child: Icon(CupertinoIcons.chevron_down, size: 16, color: accent)),
+          Icon(CupertinoIcons.list_bullet, size: 17, color: accent),
+          const SizedBox(width: 9),
+          Expanded(child: Text(l.t('criteria'), style: cardTitleStyle(context))),
+          Text('${rubric.length}',
+              style: TextStyle(fontSize: 15, color: detailText2(context), fontFeatures: const [FontFeature.tabularFigures()])),
+          const SizedBox(width: 7),
+          AnimatedRotation(turns: _rubricExpanded ? 0.5 : 0.0, duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              child: Icon(CupertinoIcons.chevron_down, size: 15, color: accent)),
         ]),
       ),
       AnimatedSize(
@@ -937,14 +990,17 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                   for (var i = 0; i < rubric.length; i++) ...[
                     Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(rubric[i]['name'] ?? '', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: detailText1(context))),
+                        Text(rubric[i]['name'] ?? '',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: detailText1(context))),
                         if ((rubric[i]['description'] ?? '').toString().isNotEmpty)
-                          Text(rubric[i]['description'], style: TextStyle(fontSize: 12, color: detailText2(context))),
+                          Text(rubric[i]['description'],
+                              style: TextStyle(fontSize: 13, height: 1.3, color: detailText2(context))),
                       ])),
                       const SizedBox(width: 8),
-                      Text('${rubric[i]['weight'] ?? 0} / $maxScore', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: accent)),
+                      Text('${rubric[i]['weight'] ?? 0} / $maxScore',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: accent, letterSpacing: -0.2, fontFeatures: const [FontFeature.tabularFigures()])),
                     ]),
-                    if (i != rubric.length - 1) const SizedBox(height: 12),
+                    if (i != rubric.length - 1) const SizedBox(height: 14),
                   ],
                 ]),
               )
@@ -970,19 +1026,24 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: done ? C.green.withValues(alpha: isDark ? 0.10 : 0.07) : detailSurface(context),
-          borderRadius: BorderRadius.circular(AppRadii.tile),
-          border: Border.all(color: done ? C.green.withValues(alpha: 0.3) : detailBorder(context)),
+          color: done ? C.green.withValues(alpha: isDark ? 0.12 : 0.08) : detailSurface(context),
+          borderRadius: BorderRadius.circular(AppRadii.card),
+          border: Border.all(
+            color: done ? C.green.withValues(alpha: 0.3) : detailBorder(context),
+            width: done ? 1 : 1 / MediaQuery.of(context).devicePixelRatio,
+          ),
         ),
         child: Row(children: [
-          Container(width: 34, height: 34, alignment: Alignment.center,
-            decoration: BoxDecoration(color: visual.color.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(9)),
-            child: Icon(visual.icon, size: 16, color: visual.color)),
-          const SizedBox(width: 10),
+          Container(width: 36, height: 36, alignment: Alignment.center,
+            decoration: BoxDecoration(color: visual.color.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(AppRadii.chip)),
+            child: Icon(visual.icon, size: 17, color: visual.color)),
+          const SizedBox(width: 11),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(f.name, style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: detailText1(context)), maxLines: 1, overflow: TextOverflow.ellipsis),
-            const SizedBox(height: 2),
-            Text(_fmtBytes(f.size), style: TextStyle(fontSize: 12, color: detailText2(context))),
+            Text(f.name,
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: detailText1(context)),
+                maxLines: 1, overflow: TextOverflow.ellipsis),
+            const SizedBox(height: 1),
+            Text(_fmtBytes(f.size), style: TextStyle(fontSize: 13, color: detailText2(context))),
           ])),
           const SizedBox(width: 8),
           AnimatedSwitcher(
@@ -1015,10 +1076,16 @@ class _BottomActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bg = detailBg(context);
-    return Container(
+    // Полупрозрачная панель поверх контента вместо непрозрачной полосы:
+    // содержимое видно сквозь стекло, и панель читается как плавающий слой
+    // хрома, а не как отрезанный кусок экрана.
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+        child: Container(
       decoration: BoxDecoration(
-        color: bg,
-        border: Border(top: BorderSide(color: detailBorder(context))),
+        color: bg.withValues(alpha: 0.82),
+        border: Border(top: BorderSide(color: detailBorder(context), width: 1 / MediaQuery.of(context).devicePixelRatio)),
       ),
       child: SafeArea(
         minimum: const EdgeInsets.fromLTRB(20, 12, 20, 12),
@@ -1030,6 +1097,8 @@ class _BottomActionBar extends StatelessWidget {
           onPressed: onTap,
           loading: busy,
           minHeight: 50,
+        ),
+      ),
         ),
       ),
     );

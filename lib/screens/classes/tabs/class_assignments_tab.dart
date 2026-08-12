@@ -374,10 +374,13 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
         final Color statusColor = isGraded ? C.green : isNeedsReview ? C.amber : isSubmitted ? primary : C.red;
         final String statusText = isGraded ? l.t('graded') : isNeedsReview ? l.t('needs_review') : isSubmitted ? l.t('submitted') : l.t('overdue');
         final IconData statusIcon = isGraded ? CupertinoIcons.checkmark_circle_fill : isNeedsReview ? CupertinoIcons.exclamationmark_triangle : isSubmitted ? CupertinoIcons.arrow_up_doc : CupertinoIcons.clock;
-        // Строка без сдачи/оценки ведёт себя нейтрально: серый лист-иконка,
-        // без цветного акцента — цвет в списке означает «требует внимания».
-        final Color leadColor = showBadge ? statusColor : adaptiveText4(context);
-        final IconData leadIcon = showBadge ? statusIcon : CupertinoIcons.doc_text;
+        // Значок показывает состояние САМОЙ РАБОТЫ (проверена / сдана / нужна
+        // ручная проверка). Просроченный дедлайн его не красит: работа ещё не
+        // сдана, состояние прежнее, а красная плитка в списке читалась как
+        // ошибка. Сам факт просрочки остаётся в мете красным текстом.
+        final hasSubmissionStatus = isGraded || isNeedsReview || isSubmitted;
+        final Color leadColor = hasSubmissionStatus ? statusColor : adaptiveText4(context);
+        final IconData leadIcon = hasSubmissionStatus ? statusIcon : CupertinoIcons.doc_text;
 
         return Entrance(
           key: ValueKey('asgn_${a['id']}'),
@@ -391,34 +394,43 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             child: GroupRow.card(
             onTap: () => _showAssignment(a, sub),
             onLongPress: widget.isTeacher ? () => _showAssignmentActions(a) : null,
-            padding: EdgeInsets.fromLTRB(14, 12, widget.isTeacher ? 4 : 14, 12),
+            // Те же метрики, что у карточки лекции (см. class_posts_tab):
+            // плитка 46, body 17 / subheadline 15, воздух 16 по вертикали.
+            padding: EdgeInsets.fromLTRB(16, 16, widget.isTeacher ? 6 : 16, 16),
             child: Row(children: [
               Container(
-                width: 34, height: 34,
+                width: 46, height: 46,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: leadColor.withValues(alpha: isDark ? 0.18 : 0.12),
-                  borderRadius: BorderRadius.circular(AppRadii.chip),
+                  borderRadius: BorderRadius.circular(AppRadii.tile),
                 ),
-                child: Icon(leadIcon, size: 17, color: leadColor),
+                child: Icon(leadIcon, size: 21, color: leadColor),
               ),
-              const SizedBox(width: 13),
+              const SizedBox(width: 14),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(a['title'] ?? '',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, height: 1.2, letterSpacing: -0.3, color: adaptiveText1(context)),
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, height: 1.25, letterSpacing: -0.4, color: adaptiveText1(context)),
                     maxLines: 1, overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 3),
+                const SizedBox(height: 4),
                 // Срок и статус одной приглушённой строкой, без иконки-
                 // календарика: цвет несёт только статус, и то текстом.
                 Row(children: [
+                  // Строка меты никогда не бывает пустой: у задания без срока и
+                  // без статуса показываем максимальный балл. Пустой Row имел
+                  // нулевую высоту, и такая карточка оказывалась на пиксель
+                  // ниже соседних — ровно тот разнобой, который мы убираем.
+                  if (deadline == null && !showBadge)
+                    Text('${a['max_score'] ?? 100} ${l.t('pts')}',
+                        style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText4(context))),
                   if (deadline != null)
                     Text(_fmtDate(deadline),
-                        style: TextStyle(fontSize: 14, letterSpacing: -0.1, color: adaptiveText4(context))),
+                        style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText4(context))),
                   if (deadline != null && showBadge)
-                    Text('  ·  ', style: TextStyle(fontSize: 14, color: adaptiveText4(context))),
+                    Text('  ·  ', style: TextStyle(fontSize: 15, color: adaptiveText4(context))),
                   if (showBadge)
                     Flexible(child: Text(statusText,
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: statusColor, letterSpacing: -0.1),
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: statusColor, letterSpacing: -0.2),
                         maxLines: 1, overflow: TextOverflow.ellipsis)),
                 ]),
               ])),
@@ -426,9 +438,9 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 const SizedBox(width: 10),
                 RichText(text: TextSpan(children: [
                   TextSpan(text: '${grade['score']}',
-                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: C.green, letterSpacing: -0.4, fontFeatures: [FontFeature.tabularFigures()])),
+                      style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w700, color: C.green, letterSpacing: -0.5, fontFeatures: [FontFeature.tabularFigures()])),
                   TextSpan(text: '/${a['max_score']}',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: adaptiveText4(context))),
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: adaptiveText4(context))),
                 ])),
               ],
               // Вертикальное троеточие — как в системных списках iOS. Шеврона
@@ -438,8 +450,8 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 Tappable(
                   onTap: () => _showAssignmentActions(a),
                   label: 'Действия с заданием',
-                  child: SizedBox(width: 40, height: 44,
-                    child: Icon(CupertinoIcons.ellipsis_vertical, size: 17, color: adaptiveText4(context))),
+                  child: SizedBox(width: 40, height: 46,
+                    child: Icon(CupertinoIcons.ellipsis_vertical, size: 18, color: adaptiveText4(context))),
                 ),
             ]),
           ),

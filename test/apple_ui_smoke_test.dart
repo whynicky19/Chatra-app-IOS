@@ -220,6 +220,8 @@ void main() {
         },
       ];
 
+  /// Высоты всех карточек списка: множество из одного элемента = все карточки
+  /// одной высоты.
   Set<double> cardHeights(WidgetTester tester) => tester
       .widgetList<GroupRow>(find.byType(GroupRow))
       .map((w) => tester.getSize(find.byWidget(w)).height)
@@ -312,5 +314,50 @@ void main() {
 
     expect(assignmentHeight, lectureHeight,
         reason: 'списки лекций и заданий должны иметь один ритм строк');
+  });
+
+  testWidgets('просроченное задание не красит значок в красный', (tester) async {
+    await tester.pumpWidget(wrap(
+      ClassAssignmentsTab(
+        assignments: const [
+          // Срок прошёл, работа не сдана.
+          {'id': 1, 'title': 'Просроченное', 'max_score': 100, 'deadline': '2020-01-01T23:59:00'},
+        ],
+        mySubs: const [],
+        rating: const {},
+        isTeacher: false,
+        classId: 1,
+        isLoading: false,
+        onRefresh: () async {},
+        onEditAssignment: (_) {},
+        onOpenFile: (_, __) {},
+      ),
+    ));
+    await tester.pump(const Duration(milliseconds: 600));
+
+    // Значок остаётся нейтральным листом, а не красными часами.
+    expect(find.byIcon(CupertinoIcons.doc_text), findsOneWidget);
+    expect(find.byIcon(CupertinoIcons.clock), findsNothing);
+    final icon = tester.widget<Icon>(find.byIcon(CupertinoIcons.doc_text));
+    expect(icon.color, isNot(C.red));
+  });
+
+  testWidgets('в списке лекций нумерация заменена значком', (tester) async {
+    await tester.pumpWidget(wrap(
+      ClassPostsTab(
+        posts: mixedPosts(),
+        isTeacher: false,
+        onShowPost: (_, __) {},
+        onEditPost: (_) {},
+        onDeletePost: (_) {},
+        onRefresh: () async {},
+      ),
+    ));
+    await tester.pump(const Duration(milliseconds: 600));
+
+    expect(find.byIcon(CupertinoIcons.book_fill), findsNWidgets(2));
+    // Номеров («1», «2») в карточках больше нет.
+    expect(find.text('1'), findsNothing);
+    expect(find.text('2'), findsNothing);
   });
 }

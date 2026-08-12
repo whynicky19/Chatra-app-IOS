@@ -151,26 +151,30 @@ class ClassPostsTab extends StatelessWidget {
                     child: GroupRow.card(
                     onTap: () => onShowPost(p, num),
                     onLongPress: () => showActions(p),
-                    padding: const EdgeInsets.fromLTRB(14, 12, 4, 12),
+                    // Крупная строка (~80pt): плитка 46 + два уровня текста в
+                    // размерах iOS (body 17 / subheadline 15) и воздух по 16 по
+                    // вертикали. Компактные 12/34/16 читались как «тонкая
+                    // полоска», особенно рядом с обложкой класса сверху.
+                    padding: const EdgeInsets.fromLTRB(16, 16, 6, 16),
                     child: Row(children: [
-                      // Номер лекции — не декор: именно им студент оперирует
-                      // в чате с ИИ («объясни лекцию 3»).
+                      // Значок-предмет вместо номера: номер лекции всё равно
+                      // нужен только для перехода (onShowPost) и для чата с ИИ,
+                      // а в строке он выглядел как порядковый счётчик.
                       Container(
-                        width: 34, height: 34,
+                        width: 46, height: 46,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
                           color: accentColor.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(AppRadii.chip),
+                          borderRadius: BorderRadius.circular(AppRadii.tile),
                         ),
-                        child: Text('$num',
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: accentColor, letterSpacing: -0.2)),
+                        child: Icon(CupertinoIcons.book_fill, size: 21, color: accentColor),
                       ),
-                      const SizedBox(width: 13),
+                      const SizedBox(width: 14),
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text(clean(p['title'] ?? ''),
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, height: 1.2, letterSpacing: -0.3, color: adaptiveText1(context)),
+                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, height: 1.25, letterSpacing: -0.4, color: adaptiveText1(context)),
                           maxLines: 1, overflow: TextOverflow.ellipsis),
-                        const SizedBox(height: 3),
+                        const SizedBox(height: 4),
                         // Дата и вложения — одной приглушённой строкой словами,
                         // без иконок-календарика и скрепки: они добавляли шума
                         // ровно там, где нужен спокойный второй план.
@@ -178,7 +182,7 @@ class ClassPostsTab extends StatelessWidget {
                           files > 0
                               ? '${fmtDate(p['created_at'] ?? '')}  ·  $files ${files == 1 ? l.t('file') : l.t('files')}'
                               : fmtDate(p['created_at'] ?? ''),
-                          style: TextStyle(fontSize: 14, letterSpacing: -0.1, color: adaptiveText4(context)),
+                          style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText4(context)),
                           maxLines: 1, overflow: TextOverflow.ellipsis),
                       ])),
                       // Меню доступно всем: учителю — правка/удаление, студенту —
@@ -189,8 +193,8 @@ class ClassPostsTab extends StatelessWidget {
                       Tappable(
                         onTap: () => showActions(p),
                         label: 'Действия с лекцией',
-                        child: SizedBox(width: 40, height: 44,
-                          child: Icon(CupertinoIcons.ellipsis_vertical, size: 17, color: adaptiveText4(context))),
+                        child: SizedBox(width: 40, height: 46,
+                          child: Icon(CupertinoIcons.ellipsis_vertical, size: 18, color: adaptiveText4(context))),
                       ),
                     ]),
                   ),

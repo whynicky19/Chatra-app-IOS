@@ -57,7 +57,7 @@ Widget sectionCard(BuildContext context, bool isDark, {required List<Widget> chi
 /// 13/w600) в трёх местах одного экрана.
 TextStyle cardTitleStyle(BuildContext context) => TextStyle(
   fontSize: 17,
-  fontWeight: FontWeight.w700,
+  fontWeight: FontWeight.w600,
   letterSpacing: -0.3,
   color: detailText1(context),
 );

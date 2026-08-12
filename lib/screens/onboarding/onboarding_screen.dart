@@ -193,7 +193,7 @@ class _Page extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                     fontSize: 13,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                     letterSpacing: 1.6,
                     color: primary)),
             const SizedBox(height: 10),
@@ -201,7 +201,7 @@ class _Page extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                     fontSize: 28,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     height: 1.15,
                     letterSpacing: -0.8,
                     color: adaptiveText1(context))),
@@ -360,7 +360,7 @@ class _AiMock extends StatelessWidget {
                 Text('Chatra AI',
                     style: TextStyle(
                         fontSize: 11,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                         color: primary)),
               ]),
               const SizedBox(height: 10),
@@ -418,7 +418,7 @@ class _CheckMock extends StatelessWidget {
               const Icon(CupertinoIcons.sparkles, size: 11, color: Colors.white),
               const SizedBox(width: 4),
               const Text('Chatra AI',
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white)),
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white)),
             ]),
           ),
         ]),

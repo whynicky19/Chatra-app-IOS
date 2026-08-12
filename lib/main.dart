@@ -62,7 +62,7 @@ class _MisconfiguredApp extends StatelessWidget {
                   Text(
                     'Сборка без адреса сервера',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
                   ),
                   SizedBox(height: 8),
                   Text(
@@ -365,7 +365,7 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
                               ),
                               alignment: Alignment.center,
                               child: Text('C',
-                                style: TextStyle(fontSize: 34, fontWeight: FontWeight.w800, color: wordColor)),
+                                style: TextStyle(fontSize: 34, fontWeight: FontWeight.w700, color: wordColor)),
                             );
                             if (isSchool) {
                               return Image.asset('assets/logo-icon.png', width: 96, height: 96,
@@ -389,7 +389,7 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
                       child: Column(children: [
                         Text('Chatra',
                             style: TextStyle(
-                              fontSize: 34, fontWeight: FontWeight.w800,
+                              fontSize: 34, fontWeight: FontWeight.w700,
                               color: wordColor, letterSpacing: -0.5,
                             )),
                         const SizedBox(height: 5),

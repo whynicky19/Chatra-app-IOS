@@ -525,7 +525,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 value: _selectedCohortId ?? activeId ?? (_cohorts.first['id'] as num).toInt(),
                 icon: Icon(CupertinoIcons.chevron_down, size: 14,
                     color: isViewingPast ? primary : C.text4),
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
                     color: adaptiveText1(context)),
                 items: [
                   for (final c in _cohorts)
@@ -604,7 +604,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     if (changed == true) _loadAssignments();
   }
 
-  Widget _fieldLabel2(String s) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(s, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)));
+  Widget _fieldLabel2(String s) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(s, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: C.text3, letterSpacing: 1)));
 
   void _editAssignment(dynamic a) async {
     final changed = await guardedPush<bool>(context, MaterialPageRoute(
@@ -644,7 +644,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             Container(width: 40, height: 4, margin: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(AppRadii.chip))),
             Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: Row(children: [
-              Expanded(child: Text(l.t('assignment_variants'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800))),
+              Expanded(child: Text(l.t('assignment_variants'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600))),
               IconButton(icon: const Icon(CupertinoIcons.xmark), tooltip: 'Закрыть', onPressed: () => Navigator.pop(ctx)),
             ])),
             Expanded(child: variants == null
@@ -688,7 +688,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                           decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
                           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              Text((v['title'] ?? '').toString(), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                              Text((v['title'] ?? '').toString(), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                               if ((v['content'] ?? '').toString().isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4),
                                 child: Text((v['content'] ?? '').toString(), style: TextStyle(fontSize: 13, color: adaptiveText3(context)), maxLines: 3, overflow: TextOverflow.ellipsis)),
                             ])),
@@ -762,7 +762,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: Icon(CupertinoIcons.pencil, color: Theme.of(context).colorScheme.primary, size: 22)),
             const SizedBox(width: 12),
-            Expanded(child: Text(l.t('edit_class'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800))),
+            Expanded(child: Text(l.t('edit_class'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600))),
             IconButton(icon: const Icon(CupertinoIcons.xmark), tooltip: 'Закрыть', onPressed: () => Navigator.pop(ctx)),
           ]),
           const SizedBox(height: 24),
@@ -874,7 +874,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             Container(width: 44, height: 44, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(AppRadii.tile)),
               child: Icon(CupertinoIcons.gear_alt_fill, color: Theme.of(context).colorScheme.primary, size: 20)),
             const SizedBox(width: 12),
-            Expanded(child: Text(l.t('class_settings'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800))),
+            Expanded(child: Text(l.t('class_settings'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600))),
             IconButton(icon: const Icon(CupertinoIcons.xmark), tooltip: 'Закрыть', onPressed: () => Navigator.pop(ctx)),
           ]),
           const SizedBox(height: 20),
@@ -895,7 +895,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Icon(codeCopied ? CupertinoIcons.checkmark_alt : CupertinoIcons.doc_on_doc, size: 14, color: Theme.of(context).colorScheme.primary),
                     const SizedBox(width: 6),
-                    Text(codeCopied ? l.t('code_copied') : inviteCode, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary, letterSpacing: codeCopied ? 0 : 2)),
+                    Text(codeCopied ? l.t('code_copied') : inviteCode, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary, letterSpacing: codeCopied ? 0 : 2)),
                   ]),
                 ),
               ),
@@ -907,7 +907,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Icon(CupertinoIcons.refresh, size: 14, color: adaptiveText3(context)),
                     const SizedBox(width: 6),
-                    Text(l.t('regenerate_code'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: adaptiveText3(context))),
+                    Text(l.t('regenerate_code'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: adaptiveText3(context))),
                   ]),
                 ),
               ),
@@ -934,7 +934,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                   }
                   if (ctx.mounted) setS(() => savingRotation = false);
                 },
-                title: Text(l.t('yearly_rotation'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                title: Text(l.t('yearly_rotation'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                 subtitle: Padding(
                   padding: const EdgeInsets.only(top: 2),
                   child: Text(l.t('yearly_rotation_sub'), style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
@@ -961,7 +961,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                     Icon(CupertinoIcons.calendar_badge_plus, size: 19, color: Theme.of(context).colorScheme.primary),
                     const SizedBox(width: 10),
                     Expanded(child: Text(l.t('new_academic_year'),
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700,
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600,
                             color: Theme.of(context).colorScheme.primary))),
                     Icon(CupertinoIcons.chevron_right, size: 15, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6)),
                   ]),

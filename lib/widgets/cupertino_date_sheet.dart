@@ -102,7 +102,7 @@ class _CupertinoDateTimeSheetState extends State<_CupertinoDateTimeSheet> {
                     flex: 2,
                     child: Text(widget.title!,
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: adaptiveText1(context))),
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveText1(context))),
                   ),
                 Expanded(
                   child: AppButton.text(

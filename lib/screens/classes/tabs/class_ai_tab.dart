@@ -392,7 +392,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
         },
         child: Row(children: [
           Expanded(child: Text(text,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: adaptiveText1(context), letterSpacing: -0.3))),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: adaptiveText1(context), letterSpacing: -0.3))),
           const SizedBox(width: 10),
           Icon(CupertinoIcons.arrow_up_left, size: 15, color: adaptiveText4(context).withValues(alpha: 0.7)),
         ]),

@@ -177,14 +177,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
           Expanded(child: Text(
             '${l.t('months_full').split(',')[_focusedMonth.month - 1]} ${_focusedMonth.year}',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary),
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary),
           )),
           _navBtn(CupertinoIcons.chevron_right, () => setState(() =>
             _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month + 1)), 'Следующий месяц'),
         ]),
         const SizedBox(height: 12),
         Row(children: l.t('weekdays_short').split(',').map((d) => Expanded(
-          child: Center(child: Text(d, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: adaptiveText3(context)))),
+          child: Center(child: Text(d, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: adaptiveText3(context)))),
         )).toList()),
         const SizedBox(height: 8),
         GridView.count(
@@ -231,7 +231,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       boxShadow: isSelected ? primaryGlow(Theme.of(context).colorScheme.primary, opacity: 0.28) : null,
                     ),
                     child: Center(child: Text('${i + 1}', style: TextStyle(
-                      fontSize: 13, fontWeight: isSelected || isToday ? FontWeight.w800 : FontWeight.w600,
+                      fontSize: 13, fontWeight: isSelected || isToday ? FontWeight.w600 : FontWeight.w600,
                       color: isSelected ? Colors.white
                           : (isToday ? Theme.of(context).colorScheme.primary : adaptiveText1(context)),
                     ))),
@@ -319,12 +319,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
               ),
               child: Column(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
                 Text(dayName, style: TextStyle(
-                  fontSize: 11, fontWeight: FontWeight.w700,
+                  fontSize: 11, fontWeight: FontWeight.w600,
                   color: isSelected ? Colors.white70 : adaptiveText3(context),
                 )),
                 const SizedBox(height: 2),
                 Text('${day.day}', style: TextStyle(
-                  fontSize: 15, fontWeight: FontWeight.w800,
+                  fontSize: 15, fontWeight: FontWeight.w600,
                   color: isSelected ? Colors.white : Theme.of(context).colorScheme.primary,
                 )),
                 if (count > 0) ...[
@@ -338,7 +338,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       borderRadius: BorderRadius.circular(AppRadii.chip),
                     ),
                     child: Text('$count', style: TextStyle(
-                      fontSize: 11, fontWeight: FontWeight.w800,
+                      fontSize: 11, fontWeight: FontWeight.w600,
                       color: isSelected ? Colors.white : (allDone ? C.green : Theme.of(context).colorScheme.primary),
                     )),
                   ),
@@ -384,7 +384,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           padding: const EdgeInsets.only(left: 4, bottom: 8, top: 4),
           child: Row(children: [
             Text(dayLabel.toUpperCase(), style: TextStyle(
-              fontSize: 11, fontWeight: FontWeight.w800, color: adaptiveText3(context), letterSpacing: 1.0)),
+              fontSize: 11, fontWeight: FontWeight.w600, color: adaptiveText3(context), letterSpacing: 1.0)),
             const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
@@ -392,7 +392,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(AppRadii.chip)),
               child: Text('${items.length}', style: TextStyle(
-                fontSize: 11, fontWeight: FontWeight.w800,
+                fontSize: 11, fontWeight: FontWeight.w600,
                 color: Theme.of(context).colorScheme.primary)),
             ),
           ]),
@@ -442,7 +442,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 const SizedBox(width: 12),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(a['title'] ?? '', style: TextStyle(
-                    fontSize: 15, fontWeight: FontWeight.w700,
+                    fontSize: 15, fontWeight: FontWeight.w600,
                     color: adaptiveText1(context),
                   ), maxLines: 2, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 3),

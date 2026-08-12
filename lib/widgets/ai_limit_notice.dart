@@ -38,7 +38,7 @@ class AiLimitNotice extends StatelessWidget {
         const SizedBox(width: 11),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(l.t('ai_limit_reached_title'),
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
               color: adaptiveText1(context), height: 1.3)),
           const SizedBox(height: 2),
           Text(_subtitle(l),

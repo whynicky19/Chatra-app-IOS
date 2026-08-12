@@ -129,7 +129,7 @@ Future<bool?> showConfirmDialog(
       const SizedBox(height: 14),
       Text(title,
         textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: adaptiveText1(ctx), letterSpacing: -0.3)),
+        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: adaptiveText1(ctx), letterSpacing: -0.3)),
       if (message != null && message.isNotEmpty) ...[
         const SizedBox(height: 6),
         Text(message,
@@ -199,7 +199,7 @@ Future<void> showAppActionSheet(
               boxShadow: cardShadow(isDark),
             ),
             child: Text(cancelText, textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Theme.of(ctx).colorScheme.primary)),
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Theme.of(ctx).colorScheme.primary)),
           ),
         ),
       ]),
@@ -250,7 +250,7 @@ Future<String?> showInputDialog(
       const SizedBox(height: 14),
       Text(title,
         textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: adaptiveText1(ctx), letterSpacing: -0.3)),
+        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: adaptiveText1(ctx), letterSpacing: -0.3)),
       if (message != null && message.isNotEmpty) ...[
         const SizedBox(height: 6),
         Text(message, textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: adaptiveText3(ctx), height: 1.45)),

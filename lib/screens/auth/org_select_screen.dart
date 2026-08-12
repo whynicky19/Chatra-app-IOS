@@ -91,11 +91,11 @@ class _OrgSelectScreenState extends State<OrgSelectScreen> {
                 _reveal(2, Column(children: [
                   Text(l.t('welcome'),
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 34, fontWeight: FontWeight.w800, letterSpacing: -0.6, height: 1.12, color: adaptiveText1(context))),
+                    style: TextStyle(fontSize: 34, fontWeight: FontWeight.w700, letterSpacing: -0.6, height: 1.12, color: adaptiveText1(context))),
                   AnimatedDefaultTextStyle(
                     duration: const Duration(milliseconds: 450),
                     curve: Curves.easeOutCubic,
-                    style: TextStyle(fontSize: 34, fontWeight: FontWeight.w800, letterSpacing: -0.6, height: 1.12,
+                    style: TextStyle(fontSize: 34, fontWeight: FontWeight.w700, letterSpacing: -0.6, height: 1.12,
                       color: hasPick ? _accent : adaptiveText1(context)),
                     child: Text(l.t('org_brand_line'), textAlign: TextAlign.center),
                   ),
@@ -173,7 +173,7 @@ class _GlassButton extends StatelessWidget {
         height: 54,
         foregroundColor: active ? Colors.white : adaptiveText3(context),
         fontSize: 17,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w600,
         style: LiquidGlassStyle(
           shape: const LiquidGlassShape.roundedRectangle(cornerRadius: AppRadii.button, borderWidth: 0),
           appearance: LiquidGlassAppearance(
@@ -256,7 +256,7 @@ class _OrgCardState extends State<_OrgCard> {
             const SizedBox(width: 14),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(widget.title,
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: adaptiveText1(context))),
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: adaptiveText1(context))),
               const SizedBox(height: 2),
               Text(widget.subtitle, style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
             ])),

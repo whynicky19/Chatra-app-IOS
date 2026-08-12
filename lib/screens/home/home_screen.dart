@@ -242,7 +242,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               ),
                               child: Text(
                                 count > 99 ? '99+' : '$count',
-                                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700, height: 1.15),
+                                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600, height: 1.15),
                               ),
                             )
                           : const SizedBox.shrink(),
@@ -469,7 +469,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       const SizedBox(height: 14),
                       Text(l.t('delete_class'),
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: adaptiveText1(c), letterSpacing: -0.3)),
+                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: adaptiveText1(c), letterSpacing: -0.3)),
                       const SizedBox(height: 6),
                       Text(l.t('confirm_delete_hint'),
                         textAlign: TextAlign.center,
@@ -593,7 +593,7 @@ class _ClassContextMenu extends StatelessWidget {
                   colors: [Colors.transparent, Colors.black.withValues(alpha: 0.55)],
                 )))),
                 Positioned(bottom: 10, left: 12,
-                  child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                  child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis)),
                 if (teacherName.isNotEmpty)
                   Positioned(bottom: 10, right: 12,
                     child: Text(teacherName, style: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis)),
@@ -613,7 +613,7 @@ class _ClassContextMenu extends StatelessWidget {
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Icon(CupertinoIcons.tag, size: 12, color: primary),
                     const SizedBox(width: 4),
-                    Text(code, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: primary, letterSpacing: 2)),
+                    Text(code, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: primary, letterSpacing: 2)),
                   ]),
                 ),
                 const Spacer(),
@@ -761,7 +761,7 @@ class _ArchiveEntry extends StatelessWidget {
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(l.t('archive'),
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800,
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600,
                         color: adaptiveText1(context), letterSpacing: -0.3)),
                 const SizedBox(height: 1),
                 Text(l.t('archive_entry_sub'),
@@ -778,7 +778,7 @@ class _ArchiveEntry extends StatelessWidget {
                 borderRadius: BorderRadius.circular(100),
               ),
               child: Text('$count',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800,
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
                       color: adaptiveText1(context).withValues(alpha: 0.6))),
             ),
             const SizedBox(width: 6),
@@ -891,7 +891,7 @@ class _ClassCard extends StatelessWidget {
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
                           const Icon(CupertinoIcons.doc_on_doc, size: 11, color: Colors.white60),
                           const SizedBox(width: 4),
-                          Text(cls['invite_code'] as String, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 2)),
+                          Text(cls['invite_code'] as String, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600, letterSpacing: 2)),
                         ]),
                       ))),
                   if (isPinned)
@@ -906,7 +906,7 @@ class _ClassCard extends StatelessWidget {
               ),
             ),
             Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(cls['title'] ?? '', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: adaptiveText1(context), height: 1.2), maxLines: 2, overflow: TextOverflow.ellipsis),
+              Text(cls['title'] ?? '', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: adaptiveText1(context), height: 1.2), maxLines: 2, overflow: TextOverflow.ellipsis),
               const SizedBox(height: 8),
               Wrap(spacing: 6, runSpacing: 6, children: [
                 if (teacherName.isNotEmpty) _MetaChip(label: teacherName, icon: CupertinoIcons.person, isDark: isDark),
@@ -917,7 +917,7 @@ class _ClassCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                   decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Text(openLabel, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: adaptiveText1(context))),
+                    Text(openLabel, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: adaptiveText1(context))),
                     const SizedBox(width: 4),
                     Icon(CupertinoIcons.arrow_right, size: 14, color: adaptiveText1(context)),
                   ]),
@@ -1045,7 +1045,7 @@ class _EmptyState extends StatelessWidget {
           ),
           child: Icon(CupertinoIcons.book, color: Theme.of(context).colorScheme.primary, size: 40)),
         const SizedBox(height: 22),
-        Text(l.t('no_classes'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: adaptiveText1(context), letterSpacing: -0.4)),
+        Text(l.t('no_classes'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: adaptiveText1(context), letterSpacing: -0.4)),
         const SizedBox(height: 8),
         Text(isTeacher ? l.t('create_first_class') : l.t('enter_teacher_code'),
           style: TextStyle(fontSize: 15, color: adaptiveText3(context)), textAlign: TextAlign.center),

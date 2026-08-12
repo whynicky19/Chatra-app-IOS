@@ -342,7 +342,7 @@ class _RolloverScreenState extends State<RolloverScreen> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text((p['class_name'] ?? '').toString(),
                     maxLines: 1, overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700,
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600,
                         color: adaptiveText1(context))),
                 const SizedBox(height: 3),
                 Text('${p['academic_year']}  ·  '
@@ -368,7 +368,7 @@ class _RolloverScreenState extends State<RolloverScreen> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(4, 8, 4, 6),
                   child: Text(rc.className,
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800,
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600,
                           color: adaptiveText1(context))),
                 ),
               if (rc.deadlines.isEmpty)
@@ -413,7 +413,7 @@ class _RolloverScreenState extends State<RolloverScreen> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text((d['assignment_title'] ?? '#${d['assignment_id']}').toString(),
                     maxLines: 1, overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700,
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600,
                         color: adaptiveText1(context))),
                 const SizedBox(height: 3),
                 Row(children: [
@@ -429,7 +429,7 @@ class _RolloverScreenState extends State<RolloverScreen> {
                           color: primary.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(AppRadii.chip)),
                       child: Text(l.t('draft'),
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
                               color: primary)),
                     ),
                   ],
@@ -446,7 +446,7 @@ class _RolloverScreenState extends State<RolloverScreen> {
   Widget _label(String text) => Padding(
         padding: const EdgeInsets.only(bottom: 8, left: 2),
         child: Text(text.toUpperCase(),
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800,
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
                 color: adaptiveText3(context), letterSpacing: 0.5)),
       );
 

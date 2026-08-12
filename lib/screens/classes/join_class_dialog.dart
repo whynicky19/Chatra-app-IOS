@@ -158,7 +158,7 @@ class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
           child: Icon(CupertinoIcons.lock_fill, color: adaptiveText1(context), size: 26)),
         const SizedBox(height: 16),
         Text(l.t('join_class_title'), textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800, letterSpacing: -0.3, color: adaptiveText1(context))),
+          style: TextStyle(fontSize: 21, fontWeight: FontWeight.w700, letterSpacing: -0.3, color: adaptiveText1(context))),
         const SizedBox(height: 8),
         Text(l.t('join_class_hint'), textAlign: TextAlign.center,
           style: TextStyle(fontSize: 13, color: adaptiveText3(context), height: 1.5)),
@@ -181,7 +181,7 @@ class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
               controller: _controllers[i], focusNode: _focusNodes[i],
               textAlign: TextAlign.center, maxLength: i == 0 ? 6 : 1,
               textCapitalization: TextCapitalization.characters,
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: adaptiveText1(context)),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: adaptiveText1(context)),
               decoration: InputDecoration(
                 counterText: '',
                 filled: true, fillColor: adaptiveSurface2(context),
@@ -234,7 +234,7 @@ class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
                 Row(children: [
                   const Icon(CupertinoIcons.checkmark_circle_fill, size: 15, color: C.green),
                   const SizedBox(width: 6),
-                  Expanded(child: Text(_foundClass!['title'] ?? '', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                  Expanded(child: Text(_foundClass!['title'] ?? '', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis)),
                 ]),
                 if ((_foundClass!['teacher_name'] ?? '').toString().isNotEmpty) Padding(padding: const EdgeInsets.only(top: 3, left: 21),
                   child: Text(_foundClass!['teacher_name'], style: TextStyle(fontSize: 13, color: adaptiveText3(context), fontWeight: FontWeight.w600))),

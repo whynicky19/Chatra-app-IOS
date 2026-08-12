@@ -203,7 +203,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Tappable(
                       onTap: widget.onGoRegister,
                       child: Text(l.t('register_link'), style: TextStyle(
-                          fontSize: 13, color: primary, fontWeight: FontWeight.w700))),
+                          fontSize: 13, color: primary, fontWeight: FontWeight.w600))),
                   ]),
                 ])),
               ])),

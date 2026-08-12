@@ -78,7 +78,7 @@ class _ScoreRingState extends State<ScoreRing> with SingleTickerProviderStateMix
             child: Center(
               child: Column(mainAxisSize: MainAxisSize.min, children: [
                 Text('${widget.score}',
-                    style: TextStyle(fontSize: widget.size * 0.24, fontWeight: FontWeight.w800,
+                    style: TextStyle(fontSize: widget.size * 0.24, fontWeight: FontWeight.w700,
                         color: detailText1(context), height: 1, letterSpacing: -0.5)),
                 Text('/ ${widget.maxScore}',
                     style: TextStyle(fontSize: widget.size * 0.10, fontWeight: FontWeight.w600, color: detailText2(context))),

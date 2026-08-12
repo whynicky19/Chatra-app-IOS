@@ -332,8 +332,9 @@ class _LanguageOptionRow extends StatelessWidget {
     onTap: onTap,
     child: Row(children: [
       Expanded(child: Text(label,
-        style: TextStyle(fontSize: 17, letterSpacing: -0.4,
-          fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+        // Выбор несёт цвет и галочка, а не вес: иначе невыбранные строки
+        // выглядели бы тоньше строк остальных списков.
+        style: TextStyle(fontSize: 17, letterSpacing: -0.4, fontWeight: FontWeight.w600,
           color: selected ? primary : adaptiveText1(context)))),
       if (selected) Icon(CupertinoIcons.checkmark_alt, size: 20, color: primary),
     ]),

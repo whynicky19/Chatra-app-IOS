@@ -114,7 +114,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                 ]))),
                 const SizedBox(height: 20),
                 Text(l.t('verify_email'), textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -0.6, height: 1.15, color: adaptiveText1(context))),
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: -0.6, height: 1.15, color: adaptiveText1(context))),
                 const SizedBox(height: 8),
                 Text(l.t('verify_email_sub'), textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 15, color: adaptiveText3(context), height: 1.4)),
@@ -136,7 +136,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                   // отличаясь для одной и той же по смыслу задачи "ввод
                   // 6-значного кода"; более крупный трекинг+кегль сильнее
                   // рисковал переполнением на узких экранах/увеличенном шрифте.
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: 8),
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: 8),
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   decoration: const InputDecoration(hintText: '••••••', counterText: ''),
                   onChanged: (_) { if (_error != null) setState(() => _error = null); },
@@ -163,14 +163,14 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                       boxShadow: _busy ? null : primaryGlow(primary, opacity: 0.34)),
                     child: Align(heightFactor: 1, child: _busy
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
-                      : Text(l.t('verify_btn'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white)))),
+                      : Text(l.t('verify_btn'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Colors.white)))),
                 ),
                 const SizedBox(height: 18),
                 Center(child: Tappable(
                   onTap: _cooldown > 0 ? null : () => _resend(),
                   child: Text(
                     _cooldown > 0 ? '${l.t('resend_in')} $_cooldown${l.lang == 'EN' ? 's' : 'с'}' : l.t('resend_code'),
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700,
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600,
                       color: _cooldown > 0 ? adaptiveText3(context) : primary)),
                 )),
               ]),

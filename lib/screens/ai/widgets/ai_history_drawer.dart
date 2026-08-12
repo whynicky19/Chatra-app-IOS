@@ -196,7 +196,7 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
       child: Row(children: [
         Expanded(
           child: Text(l.t('ai_chats_title'),
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.4)),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: -0.4)),
         ),
         Tappable(
           onTap: widget.onCreate,
@@ -266,7 +266,7 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
           return Padding(
             padding: EdgeInsets.only(left: 8, top: i == 0 ? 2 : 14, bottom: 8),
             child: Text(item.toUpperCase(),
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: adaptiveText3(context), letterSpacing: 1.0)),
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: adaptiveText3(context), letterSpacing: 1.0)),
           );
         }
         final t = item as AiThread;
@@ -376,7 +376,7 @@ class _AiHistoryDrawerState extends State<AiHistoryDrawer> {
                   child: Icon(CupertinoIcons.sparkles, size: 30, color: adaptiveText1(context).withValues(alpha: 0.4))),
               const SizedBox(height: 14),
               Text(l.t('no_chats'),
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: adaptiveText1(context).withValues(alpha: 0.8))),
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: adaptiveText1(context).withValues(alpha: 0.8))),
               const SizedBox(height: 6),
               SizedBox(
                   width: 240,

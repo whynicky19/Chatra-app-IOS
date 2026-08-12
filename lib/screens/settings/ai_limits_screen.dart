@@ -106,7 +106,7 @@ class _QuotaCard extends StatelessWidget {
                 color: primary.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(AppRadii.card)),
               child: Text(l.t('ai_unlimited_badge'),
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: primary)),
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: primary)),
             ),
         ]),
 

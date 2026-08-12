@@ -24,7 +24,7 @@ class TermsScreen extends StatelessWidget {
                 onPressed: () => Navigator.pop(context),
               ),
               Expanded(child: Text(l.t('terms_title'),
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800,
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600,
                   color: adaptiveText1(context), letterSpacing: -0.3))),
             ]),
           ),

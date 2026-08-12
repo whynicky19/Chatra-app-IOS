@@ -224,7 +224,7 @@ ElevatedButtonThemeData _btnFor(Color primary) => ElevatedButtonThemeData(style:
   foregroundColor: Colors.white,
   elevation: 0,
   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-  textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: 0.2),
+  textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: 0.2),
   shape: const RoundedRectangleBorder(borderRadius: _rButton),
 ));
 
@@ -233,6 +233,28 @@ const _pageTransitions = PageTransitionsTheme(builders: {
   TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
 });
 
+/// ЕДИНАЯ ШКАЛА ВЕСОВ ШРИФТА. Всего четыре ступени, выше w700 не поднимаемся.
+///
+/// Раньше веса расходились по экранам: заголовки строк встречались и w400
+/// (настройки — визуально заметно тоньше всего остального), и w500, и w600, а
+/// «жирные» подписи доходили до w800/w900. Системный шрифт (SF Pro на iOS,
+/// Roboto на Android) на таких весах даёт разную оптическую плотность, и
+/// одинаковые по смыслу строки на разных экранах читались по-разному.
+///
+///  * [FontWeight.w400] — длинный текст: тело лекции, описание задания,
+///    сообщения ИИ, плейсхолдеры полей. Только он.
+///  * [FontWeight.w500] — второстепенное: даты, статусы, значения, мета-строки,
+///    невыбранные подписи сегмент-контролов и плоские акцентные действия
+///    («Показать ещё», «Вернуть», «Обновить») — они не заголовки.
+///  * [FontWeight.w600] — ВСЕ заголовки строк и карточек, названия, подписи-капс
+///    над секциями, текст кнопок. Это «нормальный» вес интерфейса.
+///  * [FontWeight.w700] — только КРУПНЫЙ кегль: заголовки экранов и больших
+///    секций (19pt и выше) и большие числа (баллы, токены, счётчики). На 17pt и
+///    мельче bold не используется: раньше именно там веса и разъезжались —
+///    на одних экранах 15pt-подписи были bold, на других medium.
+///
+/// Проверяется тестом test/font_weight_test.dart: он падает, если в lib/
+/// появится вес тяжелее w700.
 const _textTheme = TextTheme(
   displayLarge:   TextStyle(fontSize: 34, fontWeight: FontWeight.w700, letterSpacing: -0.4, height: 1.1),
   headlineLarge:  TextStyle(fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: -0.3, height: 1.15),

@@ -170,7 +170,7 @@ class AppButton extends StatelessWidget {
                   label,
                   textAlign: TextAlign.center,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: fg, letterSpacing: 0.1),
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: fg, letterSpacing: 0.1),
                 ),
               ),
             ],

@@ -318,7 +318,7 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
               const SizedBox(height: 20),
               if (_existingFiles.isNotEmpty) ...[
                 Row(children: [
-                  Text(l.t('current_files'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)),
+                  Text(l.t('current_files'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: C.text3, letterSpacing: 1)),
                   const Spacer(),
                   Text(l.t('tap_x_remove'), style: TextStyle(fontSize: 11, color: adaptiveText3(context))),
                 ]),
@@ -331,7 +331,7 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
                 const SizedBox(height: 12),
               ],
               Row(children: [
-                Text(l.t('add_files_label'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)),
+                Text(l.t('add_files_label'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: C.text3, letterSpacing: 1)),
                 const Spacer(),
                 Tappable(
                   onTap: _pickAttached,
@@ -371,12 +371,12 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
                       const SizedBox(width: 10),
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Row(children: [
-                          Text(l.t('reference_solutions'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                          Text(l.t('reference_solutions'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                           const Spacer(),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppRadii.chip)),
-                            child: Text(l.t('graded_by_ai'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
+                            child: Text(l.t('graded_by_ai'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
                           ),
                         ]),
                         Text(l.t('reference_sub'), style: TextStyle(fontSize: 11, color: adaptiveText3(context))),
@@ -407,7 +407,7 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
 
               const SizedBox(height: 20),
               Row(children: [
-                Text(l.t('grading_criteria'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text3, letterSpacing: 1)),
+                Text(l.t('grading_criteria'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: C.text3, letterSpacing: 1)),
                 const Spacer(),
                 Tappable(
                   onTap: _addCriterion,
@@ -428,7 +428,7 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
                     child: Row(children: [
                       Icon(CupertinoIcons.square_stack, size: 18, color: adaptiveText1(context)),
                       const SizedBox(width: 10),
-                      Expanded(child: Text(l.t('assignment_variants'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700))),
+                      Expanded(child: Text(l.t('assignment_variants'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
                       const Icon(CupertinoIcons.chevron_right, size: 16, color: C.text4),
                     ]),
                   ),
@@ -451,7 +451,7 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
 
   Widget _label(String s) => Padding(
         padding: const EdgeInsets.only(bottom: 8),
-        child: Text(s, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: adaptiveText3(context), letterSpacing: 1)),
+        child: Text(s, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: adaptiveText3(context), letterSpacing: 1)),
       );
 
   Widget _fileRow(String name, VoidCallback onRemove) => Container(

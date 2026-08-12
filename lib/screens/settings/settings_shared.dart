@@ -84,7 +84,10 @@ class SettingsRow extends StatelessWidget {
         const SizedBox(width: 14),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(title,
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w400, letterSpacing: -0.4,
+              // Вес заголовка строки — как во всех остальных списках
+              // приложения (см. шкалу весов в app_theme.dart): regular тут
+              // выглядел заметно тоньше соседних экранов.
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4,
                   color: titleColor ?? adaptiveText1(context))),
           if (sub != null) ...[
             const SizedBox(height: 1),
@@ -337,7 +340,7 @@ class SheetScaffold extends StatelessWidget {
             const SizedBox(height: 14),
           ],
           Text(title, textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: adaptiveText1(context), letterSpacing: -0.3)),
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: adaptiveText1(context), letterSpacing: -0.3)),
           const SizedBox(height: 22),
           ...children,
         ])),

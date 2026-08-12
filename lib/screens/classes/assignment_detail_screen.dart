@@ -871,7 +871,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
         const SizedBox(width: 8),
         RichText(text: TextSpan(children: [
           TextSpan(text: '$score',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: accent, letterSpacing: -0.3, fontFeatures: const [FontFeature.tabularFigures()])),
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: accent, letterSpacing: -0.3, fontFeatures: const [FontFeature.tabularFigures()])),
           TextSpan(text: ' / $max',
               style: TextStyle(fontSize: 13, color: detailText2(context), fontFeatures: const [FontFeature.tabularFigures()])),
         ])),
@@ -1015,7 +1015,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                       ])),
                       const SizedBox(width: 8),
                       Text('${rubric[i]['weight'] ?? 0} / $maxScore',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: accent, letterSpacing: -0.2, fontFeatures: const [FontFeature.tabularFigures()])),
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: accent, letterSpacing: -0.2, fontFeatures: const [FontFeature.tabularFigures()])),
                     ]),
                     if (i != rubric.length - 1) const SizedBox(height: 14),
                   ],

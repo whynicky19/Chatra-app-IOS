@@ -65,7 +65,7 @@ class AboutSettingsScreen extends StatelessWidget {
               const SizedBox(width: 14),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(l.t('contact_developer'),
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w400, letterSpacing: -0.4, color: adaptiveText1(context))),
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4, color: adaptiveText1(context))),
                 const SizedBox(height: 1),
                 Text(l.t('contact_developer_sub'),
                   style: TextStyle(fontSize: 13, height: 1.3, color: adaptiveText3(context))),

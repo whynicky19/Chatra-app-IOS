@@ -127,7 +127,7 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
                     },
                   ),
                   Expanded(child: Text(l.t('create_class_title'), textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: adaptiveText1(context)))),
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: adaptiveText1(context)))),
                   const SizedBox(width: 40),
                 ]),
               ),
@@ -236,6 +236,6 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
 
   Widget _label(String s) => Padding(
         padding: const EdgeInsets.only(bottom: 8, left: 2),
-        child: Text(s, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: C.text3)),
+        child: Text(s, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: C.text3)),
       );
 }

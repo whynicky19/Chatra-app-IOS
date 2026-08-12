@@ -174,7 +174,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
         const SizedBox(width: 8),
         RichText(text: TextSpan(children: [
           TextSpan(text: '$score',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: accent, letterSpacing: -0.3, fontFeatures: const [FontFeature.tabularFigures()])),
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: accent, letterSpacing: -0.3, fontFeatures: const [FontFeature.tabularFigures()])),
           TextSpan(text: ' / $max',
               style: TextStyle(fontSize: 13, color: detailText2(context), fontFeatures: const [FontFeature.tabularFigures()])),
         ])),
@@ -304,7 +304,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     decoration: BoxDecoration(color: adaptivePrimaryLt(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
                     child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                       Text(months[dl.month - 1].toUpperCase(),
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: primary, letterSpacing: 0.5)),
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: primary, letterSpacing: 0.5)),
                       Text('${dl.day}',
                           style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: primary, height: 1.1, letterSpacing: -0.6, fontFeatures: const [FontFeature.tabularFigures()])),
                     ]),
@@ -576,7 +576,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 const SizedBox(height: 18),
                 Row(children: [
                   CircleAvatar(radius: 24, backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
-                      child: Text(initials, style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w700, fontSize: 16, letterSpacing: -0.3))),
+                      child: Text(initials, style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600, fontSize: 16, letterSpacing: -0.3))),
                   const SizedBox(width: 13),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(name,
@@ -675,7 +675,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                                         style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: adaptiveText1(context)))),
                                     const SizedBox(width: 8),
                                     Text('${criteria[i]['score'] ?? 0} / ${criteria[i]['max'] ?? criteria[i]['max_score'] ?? criteria[i]['weight'] ?? 0}',
-                                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: -0.3,
+                                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: -0.3,
                                             color: Theme.of(ctx).colorScheme.primary, fontFeatures: const [FontFeature.tabularFigures()])),
                                   ]),
                                   if ((criteria[i]['comment'] ?? criteria[i]['feedback']) != null)
@@ -718,13 +718,13 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                       },
                       child: grading
                         ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : Text(l.t('confirm_suggested'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700), textAlign: TextAlign.center),
+                        : Text(l.t('confirm_suggested'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
                     )),
                     const SizedBox(width: 10),
                     Expanded(child: OutlinedButton(
                       onPressed: () => _showManualGradeDialog(ctx, selectedSub, assignmentMaxScore, (updated) => setS(() => selectedSub = updated)),
                       style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-                      child: Text(l.t('change_score'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700), textAlign: TextAlign.center),
+                      child: Text(l.t('change_score'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
                     )),
                   ]),
                 ] else if (score != null) ...[
@@ -754,12 +754,12 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                       ? Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                           const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
                           const SizedBox(width: 12),
-                          Text(l.t(_checkSteps[checkStepIdx]), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                          Text(l.t(_checkSteps[checkStepIdx]), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                         ])
                       : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                           const Icon(CupertinoIcons.bolt_fill, size: 18, color: Colors.white),
                           const SizedBox(width: 8),
-                          Text(l.t('recheck_ai'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                          Text(l.t('recheck_ai'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                         ]),
                   )),
                   const SizedBox(height: 10),
@@ -793,12 +793,12 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                       ? Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                           const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
                           const SizedBox(width: 12),
-                          Text(l.t(_checkSteps[checkStepIdx]), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                          Text(l.t(_checkSteps[checkStepIdx]), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                         ])
                       : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                           const Icon(CupertinoIcons.bolt_fill, size: 18, color: Colors.white),
                           const SizedBox(width: 8),
-                          Text(l.t('grade_ai'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                          Text(l.t('grade_ai'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                         ]),
                   )),
                   const SizedBox(height: 10),
@@ -868,11 +868,11 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                       if (gradingAll) ...[
                         SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.primary)),
                         const SizedBox(width: 12),
-                        Text('${l.t('grade_progress')} $gradingDone / $gradingTotal...', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
+                        Text('${l.t('grade_progress')} $gradingDone / $gradingTotal...', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
                       ] else ...[
                         const Icon(CupertinoIcons.bolt_fill, size: 18, color: Colors.white),
                         const SizedBox(width: 8),
-                        Text('${l.t('grade_all_ai')} ($pending)', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                        Text('${l.t('grade_all_ai')} ($pending)', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                       ],
                     ]),
                   )),
@@ -910,7 +910,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                   padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
                   child: Row(children: [
                     CircleAvatar(radius: 19, backgroundColor: primaryColor.withValues(alpha: 0.15),
-                        child: Text(initials, style: TextStyle(color: primaryColor, fontWeight: FontWeight.w700, fontSize: 14, letterSpacing: -0.2))),
+                        child: Text(initials, style: TextStyle(color: primaryColor, fontWeight: FontWeight.w600, fontSize: 14, letterSpacing: -0.2))),
                     const SizedBox(width: 12),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text(name,
@@ -924,7 +924,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                       if (score != null)
                         Text('$score/100',
-                            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, letterSpacing: -0.4, color: primaryColor, fontFeatures: const [FontFeature.tabularFigures()]))
+                            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4, color: primaryColor, fontFeatures: const [FontFeature.tabularFigures()]))
                       else
                         Text('—', style: TextStyle(fontSize: 17, color: adaptiveText4(context))),
                       Text(isGraded ? l.t('graded_one') : isNeedsReview ? l.t('needs_review') : l.t('pending_one'),
@@ -998,7 +998,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     child: Icon(CupertinoIcons.pencil, size: 18, color: Theme.of(c).colorScheme.primary),
                   ),
                   const SizedBox(width: 12),
-                  Expanded(child: Text(l.t('grade_manual_title'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: adaptiveText1(c)))),
+                  Expanded(child: Text(l.t('grade_manual_title'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: adaptiveText1(c)))),
                   Tappable(
                     onTap: () => Navigator.pop(c),
                     child: Container(width: 30, height: 30,
@@ -1011,7 +1011,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(color: adaptiveSurface2(c), borderRadius: BorderRadius.circular(AppRadii.tile)),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(l.t('grade_score_hint'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 0.4)),
+                    Text(l.t('grade_score_hint'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: C.text4, letterSpacing: 0.4)),
                     const SizedBox(height: 8),
                     Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
                       SizedBox(
@@ -1023,7 +1023,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                           placeholder: '0',
                           decoration: null,
                           padding: EdgeInsets.zero,
-                          style: TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: Theme.of(c).colorScheme.primary, height: 1),
+                          style: TextStyle(fontSize: 34, fontWeight: FontWeight.w700, color: Theme.of(c).colorScheme.primary, height: 1),
                           onChanged: (_) => setD(() {}),
                         ),
                       ),
@@ -1032,13 +1032,13 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                       if (pct != null) Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(color: Theme.of(c).colorScheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppRadii.chip)),
-                        child: Text('$pct%', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Theme.of(c).colorScheme.primary)),
+                        child: Text('$pct%', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(c).colorScheme.primary)),
                       ),
                     ]),
                   ]),
                 ),
                 const SizedBox(height: 14),
-                Text(l.t('grade_feedback_hint'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.text4, letterSpacing: 0.4)),
+                Text(l.t('grade_feedback_hint'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: C.text4, letterSpacing: 0.4)),
                 const SizedBox(height: 8),
                 Container(
                   decoration: BoxDecoration(color: adaptiveSurface2(c), borderRadius: BorderRadius.circular(AppRadii.tile)),

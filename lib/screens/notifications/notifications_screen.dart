@@ -398,8 +398,11 @@ class _NotifCard extends StatelessWidget {
                 Container(width: 7, height: 7, margin: const EdgeInsets.only(right: 7),
                     decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
               Expanded(child: Text(title,
+                  // Вес заголовка одинаков для новых и прочитанных: «новизну»
+                  // и так несут точка слева и насыщенность значка, а разный вес
+                  // делал список визуально рваным.
                   style: TextStyle(
-                    fontSize: 17, fontWeight: isFresh ? FontWeight.w600 : FontWeight.w500,
+                    fontSize: 17, fontWeight: FontWeight.w600,
                     letterSpacing: -0.4, color: adaptiveText1(context), height: 1.2),
                   maxLines: 1, overflow: TextOverflow.ellipsis)),
               if (timeAgo.isNotEmpty) ...[

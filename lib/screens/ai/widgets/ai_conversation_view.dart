@@ -531,7 +531,7 @@ class _AiConversationViewState extends State<AiConversationView> {
           const SizedBox(width: 12),
           Expanded(
             child: Text(tip['title'] as String,
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: adaptiveText1(context), letterSpacing: -0.3)),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: adaptiveText1(context), letterSpacing: -0.3)),
           ),
           const SizedBox(width: 10),
           Icon(CupertinoIcons.arrow_up_left, size: 15, color: adaptiveText4(context).withValues(alpha: 0.7)),
@@ -621,7 +621,7 @@ class _AiConversationViewState extends State<AiConversationView> {
               Text(l.t('not_sent'), style: const TextStyle(fontSize: 10.5, color: C.red)),
               const SizedBox(width: 6),
               Text('· ${l.t('retry')}',
-                  style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
+                  style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
             ]),
           )
         else

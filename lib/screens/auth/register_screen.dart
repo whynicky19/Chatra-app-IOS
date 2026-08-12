@@ -239,7 +239,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         Text(
                           sc <= 40 ? l.t('password_weak') : sc <= 60 ? l.t('password_medium') : l.t('password_strong'),
                           style: TextStyle(
-                            fontSize: 11, fontWeight: FontWeight.w700,
+                            fontSize: 11, fontWeight: FontWeight.w600,
                             color: sc <= 40 ? C.red : sc <= 60 ? C.yellow : C.green,
                           ),
                         ),
@@ -308,7 +308,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           MaterialPageRoute(builder: (_) => const TermsOfServiceScreen())),
                         minSize: 0,
                         child: Text(l.t('terms_view'),
-                          style: TextStyle(fontSize: 13, color: primary, fontWeight: FontWeight.w700)),
+                          style: TextStyle(fontSize: 13, color: primary, fontWeight: FontWeight.w600)),
                       ),
                       const Text('·', style: TextStyle(fontSize: 13, color: C.text4)),
                       Tappable(
@@ -316,7 +316,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
                         minSize: 0,
                         child: Text(l.t('pp_title'),
-                          style: TextStyle(fontSize: 13, color: primary, fontWeight: FontWeight.w700)),
+                          style: TextStyle(fontSize: 13, color: primary, fontWeight: FontWeight.w600)),
                       ),
                     ],
                   )),
@@ -335,7 +335,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     Tappable(
                       onTap: widget.onGoLogin,
                       child: Text(l.t('login_link'), style: TextStyle(
-                          fontSize: 13, color: primary, fontWeight: FontWeight.w700))),
+                          fontSize: 13, color: primary, fontWeight: FontWeight.w600))),
                   ]),
                 ])),
               ]),

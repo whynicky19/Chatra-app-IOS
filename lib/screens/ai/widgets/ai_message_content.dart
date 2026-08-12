@@ -7,6 +7,17 @@ import '../../../widgets/tappable.dart';
 import '../../../widgets/toast.dart';
 import '../../../utils/haptics.dart';
 
+/// Моноширинный шрифт для кода в ответах ИИ.
+///
+/// `monospace` — это алиас платформы Android/Linux; на iOS и macOS семейства с
+/// таким именем нет, оно не резолвится, и код рисовался обычным пропорциональным
+/// системным шрифтом: отступы, выравнивание и ASCII-таблицы внутри код-блока
+/// разъезжались. Фолбэк перечисляет моно-шрифты, которые есть в системе Apple
+/// (Menlo — с macOS/iOS, Courier New — как последний рубеж), поэтому теперь код
+/// моноширинный на всех платформах.
+const String kCodeFontFamily = 'monospace';
+const List<String> kCodeFontFallback = ['Menlo', 'Courier New', 'Courier'];
+
 /// Рендерит текст сообщения ассистента: формулы LaTeX, markdown-списки и
 /// таблицы. Документ разбирается построчно на параграфы/списки/таблицы;
 /// внутри параграфов блочные ($$...$$, \[...\]) и инлайн ($...$, \(...\))
@@ -177,7 +188,8 @@ class AiMessageContent extends StatelessWidget {
   // Тёмный фон код-блока — как на сайте (`.code-bl`: #0a0a16 / #99e6f0).
   Widget _buildCodeBlock(String code, TextStyle style) {
     final codeStyle = TextStyle(
-      fontFamily: 'monospace',
+      fontFamily: kCodeFontFamily,
+      fontFamilyFallback: kCodeFontFallback,
       fontSize: (style.fontSize ?? 15) - 1,
       height: 1.5,
       color: const Color(0xFF99E6F0),
@@ -228,7 +240,11 @@ class AiMessageContent extends StatelessWidget {
           color: (style.color ?? const Color(0xFF000000)).withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(4),
         ),
-        child: Text(code, style: style.copyWith(fontFamily: 'monospace', fontSize: (style.fontSize ?? 15) - 1)),
+        child: Text(code, style: style.copyWith(
+          fontFamily: kCodeFontFamily,
+          fontFamilyFallback: kCodeFontFallback,
+          fontSize: (style.fontSize ?? 15) - 1,
+        )),
       );
 
   List<Widget> _inlineWidgets(String text, TextStyle style) {

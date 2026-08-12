@@ -131,7 +131,7 @@ class _EmptyArchive extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(l.t('archive_empty'),
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700,
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600,
                     color: adaptiveText1(context).withValues(alpha: 0.8))),
             const SizedBox(height: 6),
             SizedBox(
@@ -238,7 +238,7 @@ class _ArchiveCard extends StatelessWidget {
                               color: adaptiveText1(context).withValues(alpha: 0.55)),
                           const SizedBox(width: 4),
                           Text(l.t('archived_badge').toUpperCase(),
-                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800,
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
                                   letterSpacing: 0.4,
                                   color: adaptiveText1(context).withValues(alpha: 0.55))),
                         ]),
@@ -246,7 +246,7 @@ class _ArchiveCard extends StatelessWidget {
                     ]),
                     const SizedBox(height: 8),
                     Text(title, maxLines: 1, overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800,
+                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600,
                             color: adaptiveText1(context), letterSpacing: -0.3)),
                     if (teacher.isNotEmpty) ...[
                       const SizedBox(height: 2),

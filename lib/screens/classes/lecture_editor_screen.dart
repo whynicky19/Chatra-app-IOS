@@ -237,7 +237,7 @@ class _LectureEditorScreenState extends State<LectureEditorScreen> {
 
   Widget _label(String s) => Padding(
         padding: const EdgeInsets.only(bottom: 8),
-        child: Text(s, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: adaptiveText3(context), letterSpacing: 1)),
+        child: Text(s, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: adaptiveText3(context), letterSpacing: 1)),
       );
 
   Widget _fileRow(String name, VoidCallback onRemove) => Container(

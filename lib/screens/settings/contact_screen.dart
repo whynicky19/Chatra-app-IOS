@@ -154,7 +154,7 @@ class _ContactScreenState extends State<ContactScreen> with SingleTickerProvider
                     boxShadow: primaryGlow(_telegramBlue, opacity: 0.30),
                   ),
                   child: Center(child: Text(l.t('write_telegram'),
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white))),
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white))),
                 ),
               ),
             ]),

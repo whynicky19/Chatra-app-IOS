@@ -104,7 +104,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ]))),
                 const SizedBox(height: 20),
                 Text(_codeSent ? l.t('reset_title') : l.t('forgot_title'), textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -0.6, height: 1.15, color: adaptiveText1(context))),
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: -0.6, height: 1.15, color: adaptiveText1(context))),
                 const SizedBox(height: 8),
                 Text(_codeSent ? l.t('reset_sub') : l.t('forgot_sub'), textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 15, color: adaptiveText3(context), height: 1.4)),
@@ -131,7 +131,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     autofillHints: const [AutofillHints.oneTimeCode],
                     maxLength: 6,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: 8),
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: 8),
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: const InputDecoration(hintText: '••••••', counterText: ''),
                     onChanged: (_) => setState(() { if (_error != null) _error = null; }),
@@ -181,14 +181,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     child: Align(heightFactor: 1, child: _busy
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
                       : Text(_codeSent ? l.t('reset_btn') : l.t('send_code'),
-                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700,
+                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600,
                             color: (_codeSent ? canReset : _emailValid) ? Colors.white : adaptiveText3(context))))),
                 ),
                 if (_codeSent) ...[
                   const SizedBox(height: 16),
                   Center(child: Tappable(
                     onTap: _busy ? null : _sendCode,
-                    child: Text(l.t('resend_code'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: primary)))),
+                    child: Text(l.t('resend_code'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: primary)))),
                 ],
               ]),
             ),

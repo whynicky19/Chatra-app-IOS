@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/classes_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
@@ -36,6 +37,7 @@ class NotificationsScreen extends StatefulWidget {
 class _NotificationsScreenState extends State<NotificationsScreen> {
   bool _loading = true;
   List<_Notif> _notifs = [];
+  late final ClassesProvider _classesProvider = context.read<ClassesProvider>();
 
   @override void initState() { super.initState(); _load(); }
 
@@ -50,6 +52,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     final api = context.read<ApiService>();
     final uid = context.read<AuthProvider>().userId ?? 0;
+    final l = context.read<L10n>();
     final prefs = await SharedPreferences.getInstance();
 
     final joinedIds = (prefs.getStringList('joined_classes_$uid') ?? []).map(int.parse).toSet();
@@ -68,8 +71,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       () async { try { posts = await api.getPosts(); } catch (_) {} }(),
       () async { try { states = await api.getNotifStates(); } catch (_) {} }(),
     ]);
-    if (!mounted) return;
 
+    // Не выходим по !mounted здесь: пользователь мог уже нажать «назад» —
+    // но отметка прочитанным (ниже) и синхронизация бейджа всё равно должны
+    // отработать, иначе счётчик на главном экране зависает на старом значении.
     _states = {
       for (final s in states)
         (s['notif_key'] ?? '').toString(): {
@@ -85,7 +90,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         final b = jsonDecode(p['body']);
         if (b['type'] == 'class') {
           final cid = (p['id'] as num).toInt();
-          classNames[cid] = p['title']?.toString() ?? context.read<L10n>().t('class_label');
+          classNames[cid] = p['title']?.toString() ?? l.t('class_label');
           existingClassIds.add(cid);
         }
       } catch (_) {}
@@ -96,8 +101,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     allAssignments = allAssignments.where(
       (a) => existingClassIds.contains((a['class_id'] as num?)?.toInt()),
     ).toList();
-
-    final l = context.read<L10n>();
 
     for (final sub in mySubs) {
       if (sub['status'] != 'graded' || sub['grade'] == null) continue;
@@ -188,6 +191,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       }
       try { await api.markAllNotifsRead(toMark); } catch (_) {}
     }
+    // Бейдж на главном экране синхронизируем сразу из локально посчитанного
+    // состояния, а не повторным запросом к серверу после закрытия экрана —
+    // тот запрос мог обогнать markAllNotifsRead и вернуть старое "непрочитано".
+    _syncBadge(notifs);
+  }
+
+  void _syncBadge(List<_Notif> notifs) {
+    _classesProvider.notifBadge.value =
+        notifs.where((n) => n.type != _NType.deadline && !_isRead(n.key)).length;
   }
 
   void _markRead(String nKey) {
@@ -199,6 +211,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               date: n.date, isRead: true, classId: n.classId)
           : n).toList();
     });
+    _syncBadge(_notifs);
     try { context.read<ApiService>().setNotifState(nKey, read: true); } catch (_) {}
   }
 
@@ -215,6 +228,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           : _Notif(key: n.key, type: n.type, title: n.title, body: n.body,
               date: n.date, isRead: true, classId: n.classId)).toList();
     });
+    _syncBadge(_notifs);
     try { await context.read<ApiService>().markAllNotifsRead(toMark); } catch (_) {}
   }
 
@@ -223,6 +237,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       _notifs.removeWhere((n) => n.key == nKey);
       _states[nKey] = {'read': _isRead(nKey), 'dismissed': true};
     });
+    _syncBadge(_notifs);
     try { await context.read<ApiService>().setNotifState(nKey, dismissed: true); } catch (_) {}
   }
 

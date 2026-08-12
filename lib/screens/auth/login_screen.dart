@@ -84,8 +84,10 @@ class _LoginScreenState extends State<LoginScreen> {
       backgroundColor: isDark ? C.darkBg : C.bg,
       body: Stack(children: [
         SafeArea(child: Stack(children: [
-          Positioned(top: 8, left: 16, child: _BackButton(onTap: () => context.read<OrgProvider>().clear())),
-
+          // Кнопка идёт ПОСЛЕ скролла — см. пояснение в register_screen.dart:
+          // SingleChildScrollView растягивает невидимую зону жестов на весь
+          // экран, и при обратном (Positioned первым) порядке перехватывал
+          // тап по кнопке раньше, чем он до неё доходил.
           Center(child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 56),
             child: ConstrainedBox(
@@ -207,6 +209,8 @@ class _LoginScreenState extends State<LoginScreen> {
               ])),
             ),
           )),
+
+          Positioned(top: 8, left: 16, child: _BackButton(onTap: () => context.read<OrgProvider>().clear())),
         ])),
       ]),
     );

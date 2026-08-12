@@ -219,22 +219,30 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   )),
               ] else ...[
                 Tappable(
-                  onTap: () async {
-                    await guardedPush(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()));
-                    if (!context.mounted) return;
-                    context.read<ClassesProvider>().loadNotifBadge();
-                  },
+                  // Бейдж обновляется изнутри NotificationsScreen (сразу при
+                  // прочтении/дисмиссе), поэтому повторный fetch после
+                  // возврата не нужен — наоборот, он может обогнать серверную
+                  // запись о прочтении и откатить счётчик обратно на старое
+                  // значение.
+                  onTap: () => guardedPush(context, MaterialPageRoute(builder: (_) => const NotificationsScreen())),
                   label: 'Открыть уведомления',
-                  child: Stack(children: [
+                  child: Stack(clipBehavior: Clip.none, children: [
                     _HeaderBtn(icon: CupertinoIcons.bell, onTap: null, isDark: isDark),
-                    Positioned(top: 7, right: 7, child: ValueListenableBuilder<int>(
+                    Positioned(top: -4, right: -4, child: ValueListenableBuilder<int>(
                       valueListenable: context.read<ClassesProvider>().notifBadge,
                       builder: (context, count, _) => count > 0
                           ? Container(
-                              width: 9, height: 9,
+                              constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              alignment: Alignment.center,
                               decoration: BoxDecoration(
-                                color: C.red, shape: BoxShape.circle,
+                                color: C.red,
+                                borderRadius: BorderRadius.circular(9),
                                 border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 1.5),
+                              ),
+                              child: Text(
+                                count > 99 ? '99+' : '$count',
+                                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700, height: 1.15),
                               ),
                             )
                           : const SizedBox.shrink(),

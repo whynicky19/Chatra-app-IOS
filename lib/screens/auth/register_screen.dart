@@ -139,8 +139,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
       backgroundColor: isDark ? C.darkBg : C.bg,
       body: Stack(children: [
         SafeArea(child: Stack(children: [
-          Positioned(top: 8, left: 16, child: _BackButton(onTap: widget.onGoLogin)),
-
+          // Кнопка идёт ПОСЛЕ скролла в списке детей Stack: Flutter
+          // хит-тестит детей в обратном порядке отрисовки (последний — как
+          // самый верхний), а SingleChildScrollView растягивает свою
+          // (невидимую) зону жестов на весь доступный экран, включая пустой
+          // угол над логотипом — если бы кнопка шла первой, скролл ловил бы
+          // тап раньше, чем он доходил до неё.
           Center(child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 56),
             child: ConstrainedBox(
@@ -337,6 +341,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ]),
             ),
           )),
+
+          Positioned(top: 8, left: 16, child: _BackButton(onTap: widget.onGoLogin)),
         ])),
       ]),
     );

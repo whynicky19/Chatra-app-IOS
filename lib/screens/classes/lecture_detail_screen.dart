@@ -56,7 +56,10 @@ class LectureDetailScreen extends StatelessWidget {
           physics: const BouncingScrollPhysics(),
           slivers: [
             CupertinoSliverNavigationBar(
-              backgroundColor: bg,
+              // Полупрозрачный фон бара — CupertinoNavigationBar сам включает
+              // под ним блюр, когда цвет не непрозрачный: свёрнутый заголовок
+              // «плывёт» над текстом лекции, как в нативных приложениях.
+              backgroundColor: bg.withValues(alpha: 0.82),
               border: null,
               stretch: true,
               largeTitle: Text(title, maxLines: 2, overflow: TextOverflow.ellipsis),
@@ -67,16 +70,20 @@ class LectureDetailScreen extends StatelessWidget {
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   _MetaRow(dateLabel: dateLabel, fileCount: files.length, l: l),
                   if (content.isNotEmpty) ...[
-                    const SizedBox(height: 22),
+                    const SizedBox(height: 26),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 2, bottom: 8),
+                      child: Text(l.t('description').toUpperCase(), style: sectionCaptionStyle(context)),
+                    ),
                     // Тело лекции — обычный текст на фоне страницы, как в Apple
                     // Notes: раньше он лежал в серой карточке, которая на
                     // длинном конспекте читалась как бесконечная плашка.
                     Text(content, textAlign: TextAlign.left, style: detailBodyStyle(context)),
                   ],
                   if (files.isNotEmpty) ...[
-                    SizedBox(height: content.isNotEmpty ? 30 : 24),
+                    SizedBox(height: content.isNotEmpty ? 30 : 26),
                     Padding(
-                      padding: const EdgeInsets.only(left: 4, bottom: 8),
+                      padding: const EdgeInsets.only(left: 2, bottom: 8),
                       child: Text(l.t('attached_files_edit').toUpperCase(), style: sectionCaptionStyle(context)),
                     ),
                     FileList(
@@ -116,21 +123,32 @@ class _MetaRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text2 = detailText2(context);
-    final style = TextStyle(fontSize: 15, color: text2, fontWeight: FontWeight.w500, letterSpacing: -0.2);
-    return Row(children: [
-      Icon(CupertinoIcons.calendar, size: 14, color: text2),
-      const SizedBox(width: 5),
-      Text(dateLabel, style: style),
-      if (fileCount > 0) ...[
-        const SizedBox(width: 9),
-        Container(width: 3, height: 3, decoration: BoxDecoration(color: text2.withValues(alpha: 0.7), shape: BoxShape.circle)),
-        const SizedBox(width: 9),
-        Icon(CupertinoIcons.paperclip, size: 13, color: text2),
-        const SizedBox(width: 4),
-        Text('$fileCount ${fileCount == 1 ? l.t('file') : l.t('files')}', style: style),
-      ],
+    // Метаданные — капсулы-чипы на заливке, а не серая строка иконок с точкой:
+    // так дата и число вложений читаются как два отдельных факта о лекции и не
+    // соревнуются по весу с текстом ниже.
+    return Wrap(spacing: 8, runSpacing: 8, children: [
+      _chip(context, CupertinoIcons.calendar, dateLabel),
+      if (fileCount > 0)
+        _chip(context, CupertinoIcons.paperclip,
+            '$fileCount ${fileCount == 1 ? l.t('file') : l.t('files')}'),
     ]);
+  }
+
+  Widget _chip(BuildContext context, IconData icon, String text) {
+    final text2 = detailText2(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+      decoration: BoxDecoration(
+        color: detailSurface(context),
+        borderRadius: BorderRadius.circular(100),
+        border: Border.all(color: detailBorder(context), width: 1 / MediaQuery.of(context).devicePixelRatio),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 13, color: text2),
+        const SizedBox(width: 5),
+        Text(text, style: TextStyle(fontSize: 14, color: text2, fontWeight: FontWeight.w500, letterSpacing: -0.2)),
+      ]),
+    );
   }
 }
 

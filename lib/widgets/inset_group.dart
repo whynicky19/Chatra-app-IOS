@@ -51,8 +51,46 @@ Color groupPressFill(BuildContext context) {
 /// Толщина линии в физический пиксель — как настоящие разделители iOS.
 double hairline(BuildContext context) => 1 / MediaQuery.of(context).devicePixelRatio;
 
+/// Контейнер сгруппированной секции: заливка, скругление, волосяная рамка.
+/// Строки внутри — [GroupRow] с `color: Colors.transparent` (заливку и
+/// скругление даёт контейнер, строке остаются разделитель и подсветка).
+///
+/// Годится только для коротких секций (файлы, настройки, подсказки): все
+/// строки строятся сразу. Длинные списки собирай из [GroupRow] с [groupPos]
+/// прямо в sliver, чтобы сохранить ленивость.
+class InsetGroup extends StatelessWidget {
+  const InsetGroup({super.key, required this.children, this.color, this.radius = AppRadii.card});
+
+  final List<Widget> children;
+  final Color? color;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    if (children.isEmpty) return const SizedBox.shrink();
+    final r = BorderRadius.circular(radius);
+    return Container(
+      decoration: BoxDecoration(
+        color: color ?? Theme.of(context).colorScheme.surface,
+        borderRadius: r,
+        border: Border.all(color: groupSeparator(context), width: hairline(context)),
+      ),
+      child: ClipRRect(borderRadius: r, child: Column(children: children)),
+    );
+  }
+}
+
+/// Позиция строки внутри [InsetGroup] (последняя — без разделителя).
+GroupPos innerPos(int index, int count) => index == count - 1 ? GroupPos.last : GroupPos.middle;
+
 /// Строка сгруппированного списка: заливка группы, скругление по [pos],
 /// разделитель снизу (кроме последней) и мгновенная подсветка по нажатию.
+///
+/// Конструктор [GroupRow.card] — та же строка, но самостоятельной карточкой:
+/// полное скругление, волосяная рамка и мягкая тень. Список карточек с
+/// зазорами и список-группа — два разных ритма: карточки подходят там, где
+/// каждый элемент это отдельный «объект» (лекция, задание), группа — там, где
+/// элементы читаются как настройки/атрибуты одного объекта.
 class GroupRow extends StatefulWidget {
   const GroupRow({
     super.key,
@@ -65,10 +103,27 @@ class GroupRow extends StatefulWidget {
     this.separatorInset = 14,
     this.color,
     this.radius = AppRadii.card,
-  });
+  })  : border = false,
+        shadow = false;
+
+  const GroupRow.card({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.onLongPress,
+    this.label,
+    this.padding = const EdgeInsets.fromLTRB(14, 12, 12, 12),
+    this.color,
+    this.radius = AppRadii.card,
+  })  : pos = GroupPos.only,
+        separatorInset = 0,
+        border = true,
+        shadow = true;
 
   final Widget child;
   final GroupPos pos;
+  final bool border;
+  final bool shadow;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
 
@@ -100,10 +155,16 @@ class _GroupRowState extends State<GroupRow> {
     final radius = groupRadius(widget.pos, radius: widget.radius);
     final showSeparator = widget.pos == GroupPos.first || widget.pos == GroupPos.middle;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     Widget result = DecoratedBox(
       decoration: BoxDecoration(
         color: widget.color ?? Theme.of(context).colorScheme.surface,
         borderRadius: radius,
+        border: widget.border
+            ? Border.all(color: groupSeparator(context), width: hairline(context))
+            : null,
+        boxShadow: widget.shadow ? softShadow(isDark) : null,
       ),
       child: ClipRRect(
         borderRadius: radius,

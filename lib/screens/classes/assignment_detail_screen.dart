@@ -841,7 +841,14 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
         const SizedBox(height: 14),
         for (var i = 0; i < criteriaScores.length; i++) ...[
           _criteriaRow(context, criteriaScores[i], _rubricDescriptionFor((criteriaScores[i]['name'] ?? '').toString(), rubric)),
-          if (i != criteriaScores.length - 1) const SizedBox(height: 16),
+          // Разделитель, а не просто отбивка: критериев обычно 4-6, и без
+          // линии длинные комментарии одного критерия склеивались с именем
+          // следующего в единый абзац.
+          if (i != criteriaScores.length - 1) ...[
+            const SizedBox(height: 14),
+            Container(height: 1 / MediaQuery.of(context).devicePixelRatio, color: detailBorder(context)),
+            const SizedBox(height: 14),
+          ],
         ],
       ],
     ]);
@@ -901,15 +908,19 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
     final (strengths, weaknesses) = _splitStrengthsWeaknesses(criteriaScores);
     if (strengths.isEmpty && weaknesses.isEmpty) return const [];
 
+    // Две полноширинные секции друг под другом, а не колонки в один ряд:
+    // в две колонки на телефоне помещалось ~18 символов в строку, из-за чего
+    // формулировки ИИ рвались по слогам и приходилось мельчить кегль.
     return [
-      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        if (strengths.isNotEmpty)
-          Expanded(child: _entranceCard(_bulletCard(context, title: l.t('strengths'), items: strengths, icon: CupertinoIcons.checkmark_circle_fill, color: C.green), 0)),
-        if (strengths.isNotEmpty && weaknesses.isNotEmpty) const SizedBox(width: 12),
-        if (weaknesses.isNotEmpty)
-          Expanded(child: _entranceCard(_bulletCard(context, title: l.t('areas_improve'), items: weaknesses, icon: CupertinoIcons.exclamationmark_triangle_fill, color: C.amber), 1)),
-      ]),
-      const SizedBox(height: 16),
+      if (strengths.isNotEmpty) ...[
+        _entranceCard(_bulletCard(context, title: l.t('strengths'), items: strengths, icon: CupertinoIcons.checkmark_circle_fill, color: C.green), 0),
+        const SizedBox(height: 12),
+      ],
+      if (weaknesses.isNotEmpty) ...[
+        _entranceCard(_bulletCard(context, title: l.t('areas_improve'), items: weaknesses, icon: CupertinoIcons.exclamationmark_triangle_fill, color: C.amber), 1),
+        const SizedBox(height: 12),
+      ],
+      const SizedBox(height: 4),
     ];
   }
 
@@ -927,19 +938,25 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
   Widget _bulletCard(BuildContext context, {required String title, required List<String> items, required IconData icon, required Color color}) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
       decoration: BoxDecoration(color: color.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.12 : 0.08), borderRadius: BorderRadius.circular(AppRadii.card)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(title.toUpperCase(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color, letterSpacing: 0.6)),
+        Row(children: [
+          Icon(icon, size: 15, color: color),
+          const SizedBox(width: 7),
+          Text(title.toUpperCase(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color, letterSpacing: 0.6)),
+        ]),
         const SizedBox(height: 10),
         for (final item in items) ...[
           Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.only(bottom: 10),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Padding(padding: const EdgeInsets.only(top: 2), child: Icon(icon, size: 13, color: color)),
-              const SizedBox(width: 7),
+              // Маркер-точка цвета секции вместо повтора того же значка на
+              // каждом пункте: значок уже стоит в заголовке секции.
+              Container(width: 5, height: 5, margin: const EdgeInsets.only(top: 8, right: 10),
+                  decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
               Expanded(child: Text(item,
-                  style: TextStyle(fontSize: 13.5, height: 1.4, letterSpacing: -0.1, color: detailText1(context)))),
+                  style: TextStyle(fontSize: 15, height: 1.4, letterSpacing: -0.2, color: detailText1(context)))),
             ]),
           ),
         ],

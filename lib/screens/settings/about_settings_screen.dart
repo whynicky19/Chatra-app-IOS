@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/errors.dart';
+import '../../widgets/inset_group.dart';
 import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
 import '../../widgets/telegram_logo.dart';
@@ -22,56 +23,58 @@ class AboutSettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.watch<L10n>();
     final primary = Theme.of(context).colorScheme.primary;
-    final surface = Theme.of(context).colorScheme.surface;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SettingsSubScreen(
       title: l.t('about_section'),
       subtitle: l.t('about_section_sub'),
       footer: const _VersionLabel(),
       children: [
-        SettingsActionCard(
-          icon: CupertinoIcons.doc_plaintext,
-          iconBg: primary,
-          title: l.t('tos_title'),
-          sub: l.t('tos_view'),
-          onTap: () => guardedPush(context,
-            MaterialPageRoute(builder: (_) => const TermsOfServiceScreen())),
-        ),
-        const SizedBox(height: 16),
-        SettingsActionCard(
-          icon: CupertinoIcons.lock_shield,
-          iconBg: primary,
-          title: l.t('pp_title'),
-          sub: l.t('pp_view'),
-          onTap: () => guardedPush(context,
-            MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
-        ),
-        const SizedBox(height: 16),
-        Tappable(
-          onTap: () => guardedPush(context,
-            MaterialPageRoute(builder: (_) => const ContactScreen())),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: surface,
-              borderRadius: BorderRadius.circular(AppRadii.card),
-              boxShadow: cardShadow(isDark),
-            ),
+        SettingsGroup(children: [
+          SettingsRow(
+            pos: GroupPos.middle,
+            icon: CupertinoIcons.doc_plaintext,
+            iconBg: primary,
+            title: l.t('tos_title'),
+            sub: l.t('tos_view'),
+            onTap: () => guardedPush(context,
+              MaterialPageRoute(builder: (_) => const TermsOfServiceScreen())),
+          ),
+          SettingsRow(
+            pos: GroupPos.last,
+            icon: CupertinoIcons.lock_shield,
+            iconBg: primary,
+            title: l.t('pp_title'),
+            sub: l.t('pp_view'),
+            onTap: () => guardedPush(context,
+              MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
+          ),
+        ]),
+        const SizedBox(height: 26),
+        // Телеграм-логотип рисуется своим виджетом (фирменный цвет и глиф),
+        // поэтому эта строка не через SettingsRow, но метрики те же.
+        InsetGroup(children: [
+          GroupRow(
+            pos: GroupPos.last,
+            color: Colors.transparent,
+            separatorInset: 60,
+            padding: const EdgeInsets.fromLTRB(16, 11, 16, 11),
+            onTap: () => guardedPush(context,
+              MaterialPageRoute(builder: (_) => const ContactScreen())),
             child: Row(children: [
-              const TelegramLogo(size: 32),
+              const TelegramLogo(size: 30),
               const SizedBox(width: 14),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(l.t('contact_developer'),
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveText1(context))),
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w400, letterSpacing: -0.4, color: adaptiveText1(context))),
                 const SizedBox(height: 1),
                 Text(l.t('contact_developer_sub'),
-                  style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
+                  style: TextStyle(fontSize: 13, height: 1.3, color: adaptiveText3(context))),
               ])),
-              const Icon(CupertinoIcons.chevron_right, size: 14, color: C.text4),
+              const SizedBox(width: 6),
+              Icon(CupertinoIcons.chevron_right, size: 14, color: adaptiveText4(context).withValues(alpha: 0.8)),
             ]),
           ),
-        ),
+        ]),
       ],
     );
   }

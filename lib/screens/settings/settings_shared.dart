@@ -5,56 +5,103 @@ import '../../providers/auth_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/inset_group.dart';
 import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
 
-class SettingsActionCard extends StatelessWidget {
-  final IconData icon;
-  final Color iconBg;
-  final String title;
-  final String sub;
-  final Color? titleColor;
-  final VoidCallback onTap;
+/// Секция настроек: капсовая подпись + сгруппированный список строк — ровно
+/// та структура, что во всех системных Settings. Раньше каждый пункт был
+/// самостоятельной карточкой с тенью и отступом 16px: экран читался как лента
+/// не связанных между собой плашек, хотя пункты одной секции — это атрибуты
+/// одного и того же (профиль, предпочтения, разделы).
+class SettingsGroup extends StatelessWidget {
+  const SettingsGroup({super.key, required this.children, this.caption});
 
-  const SettingsActionCard({
+  final String? caption;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      if (caption != null)
+        Padding(
+          padding: const EdgeInsets.only(left: 6, bottom: 8),
+          child: Text(caption!.toUpperCase(),
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.6, color: adaptiveText3(context))),
+        ),
+      InsetGroup(children: children),
+    ]);
+  }
+}
+
+/// Строка внутри [SettingsGroup]: цветная плитка-значок, заголовок 17pt,
+/// необязательное пояснение и справа либо значение (язык), либо переключатель,
+/// либо шеврон.
+class SettingsRow extends StatelessWidget {
+  const SettingsRow({
     super.key,
     required this.icon,
     required this.iconBg,
     required this.title,
-    required this.sub,
-    required this.onTap,
+    required this.pos,
+    this.sub,
     this.titleColor,
+    this.value,
+    this.trailing,
+    this.onTap,
   });
+
+  final IconData icon;
+  final Color iconBg;
+  final String title;
+  final String? sub;
+  final Color? titleColor;
+
+  /// Текущее значение справа от заголовка (как «Русский» у языка в iOS).
+  final String? value;
+
+  /// Свой управляющий элемент справа (переключатель). Отменяет шеврон.
+  final Widget? trailing;
+  final GroupPos pos;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final surface = Theme.of(context).colorScheme.surface;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Tappable(
+    return GroupRow(
+      pos: pos,
+      color: Colors.transparent,
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: surface,
-          borderRadius: BorderRadius.circular(AppRadii.card),
-          boxShadow: cardShadow(isDark),
+      // Разделитель начинается там, где начинается текст: 16 + 30 + 14.
+      separatorInset: 60,
+      padding: const EdgeInsets.fromLTRB(16, 11, 16, 11),
+      child: Row(children: [
+        Container(
+          width: 30, height: 30,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(8)),
+          child: Icon(icon, size: 17, color: Colors.white),
         ),
-        child: Row(children: [
-          Container(
-            width: 32, height: 32,
-            decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(AppRadii.chip)),
-            child: Icon(icon, size: 17, color: Colors.white),
-          ),
-          const SizedBox(width: 14),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium!.copyWith(
-              color: titleColor ?? adaptiveText1(context))),
+        const SizedBox(width: 14),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title,
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w400, letterSpacing: -0.4,
+                  color: titleColor ?? adaptiveText1(context))),
+          if (sub != null) ...[
             const SizedBox(height: 1),
-            Text(sub, style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
-          ])),
-          const Icon(CupertinoIcons.chevron_right, size: 14, color: C.text4),
-        ]),
-      ),
+            Text(sub!, style: TextStyle(fontSize: 13, height: 1.3, color: adaptiveText3(context))),
+          ],
+        ])),
+        if (trailing != null)
+          trailing!
+        else ...[
+          if (value != null) ...[
+            const SizedBox(width: 8),
+            Text(value!, style: TextStyle(fontSize: 17, letterSpacing: -0.4, color: adaptiveText3(context))),
+          ],
+          const SizedBox(width: 6),
+          Icon(CupertinoIcons.chevron_right, size: 14, color: adaptiveText4(context).withValues(alpha: 0.8)),
+        ],
+      ]),
     );
   }
 }
@@ -78,27 +125,34 @@ class SettingsSubScreen extends StatelessWidget {
     return Scaffold(
       body: SafeArea(
         bottom: false,
+        // Структура нативного экрана: сначала бар с кнопкой «назад» одним
+        // акцентным глифом, под ним — крупный заголовок отдельной строкой.
         child: Column(children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(6, 6, 16, 4),
+            padding: const EdgeInsets.fromLTRB(8, 2, 16, 0),
             child: Row(children: [
               Tappable(
                 onTap: () => Navigator.pop(context),
                 label: 'Назад',
-                child: Icon(CupertinoIcons.back, color: adaptiveText1(context)),
+                child: SizedBox(width: 44, height: 44,
+                    child: Icon(CupertinoIcons.back, size: 26, color: Theme.of(context).colorScheme.primary)),
               ),
-              const SizedBox(width: 4),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(title, style: Theme.of(context).textTheme.titleLarge!.copyWith(color: adaptiveText1(context))),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 1),
-                  Text(subtitle!, style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
-                ],
-              ])),
+            ]),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              SizedBox(width: double.infinity, child: Text(title,
+                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, letterSpacing: -0.9, height: 1.1, color: adaptiveText1(context)))),
+              if (subtitle != null) ...[
+                const SizedBox(height: 4),
+                Text(subtitle!,
+                    style: TextStyle(fontSize: 15, letterSpacing: -0.2, height: 1.35, color: adaptiveText3(context))),
+              ],
             ]),
           ),
           Expanded(child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
             children: children,
           )),
           if (footer != null) Padding(

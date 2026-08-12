@@ -133,12 +133,7 @@ class ClassPostsTab extends StatelessWidget {
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
           sliver: SliverToBoxAdapter(
-            child: SectionTitle(
-              title: l.t('lectures'),
-              padding: EdgeInsets.zero,
-              trailing: Text('${displayPosts.length}',
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: adaptiveText4(context))),
-            ),
+            child: SectionTitle(title: l.t('lectures'), padding: EdgeInsets.zero),
           ),
         ),
         SliverPadding(
@@ -153,16 +148,15 @@ class ClassPostsTab extends StatelessWidget {
 
               return Entrance(
                 index: i,
-                // rise: 0 — строки лежат в одной сплошной группе; вертикальный
-                // сдвиг соседних строк на разных фазах анимации рвал бы её на
-                // куски, поэтому появление здесь — чистое проявление.
-                rise: 0,
                 child: RepaintBoundary(
-                  child: GroupRow(
-                    pos: groupPos(i, displayPosts.length),
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    // Отдельная карточка на лекцию: каждая лекция — свой
+                    // «объект», а не атрибут одного списка, поэтому у неё
+                    // собственные скругления, рамка и мягкая тень.
+                    child: GroupRow.card(
                     onTap: () => onShowPost(p, num),
                     onLongPress: () => showActions(p),
-                    separatorInset: 62,
                     padding: const EdgeInsets.fromLTRB(14, 13, 8, 13),
                     child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       // Номер лекции — не декор: именно им студент оперирует
@@ -213,6 +207,7 @@ class ClassPostsTab extends StatelessWidget {
                         child: Icon(CupertinoIcons.chevron_right, size: 14, color: adaptiveText4(context).withValues(alpha: 0.7)),
                       ),
                     ]),
+                  ),
                   ),
                 ),
               );

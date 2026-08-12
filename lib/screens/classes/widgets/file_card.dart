@@ -72,31 +72,22 @@ class FileList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (files.isEmpty) return const SizedBox.shrink();
-    final radius = BorderRadius.circular(AppRadii.card);
-    return Container(
-      decoration: BoxDecoration(
-        color: detailSurface(context),
-        borderRadius: radius,
-        border: Border.all(color: detailBorder(context), width: hairline(context)),
-      ),
-      child: ClipRRect(
-        borderRadius: radius,
-        child: Column(children: [
-          for (var i = 0; i < files.length; i++)
-            GroupRow(
-              // Скругление даёт внешний контейнер, строке остаются только
-              // разделитель и подсветка нажатия.
-              pos: i == files.length - 1 ? GroupPos.last : GroupPos.middle,
-              color: Colors.transparent,
-              separatorInset: 64,
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-              label: 'Открыть файл ${files[i].name}',
-              onTap: () => onOpen(files[i]),
-              child: _FileRowContent(file: files[i]),
-            ),
-        ]),
-      ),
+    return InsetGroup(
+      color: detailSurface(context),
+      children: [
+        for (var i = 0; i < files.length; i++)
+          GroupRow(
+            // Скругление даёт контейнер группы, строке остаются только
+            // разделитель и подсветка нажатия.
+            pos: innerPos(i, files.length),
+            color: Colors.transparent,
+            separatorInset: 64,
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+            label: 'Открыть файл ${files[i].name}',
+            onTap: () => onOpen(files[i]),
+            child: _FileRowContent(file: files[i]),
+          ),
+      ],
     );
   }
 }

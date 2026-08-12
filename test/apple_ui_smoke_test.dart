@@ -2,17 +2,25 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:chatra_app/providers/auth_provider.dart';
 import 'package:chatra_app/providers/l10n_provider.dart';
+import 'package:chatra_app/providers/theme_provider.dart';
+import 'package:chatra_app/services/api_service.dart';
 import 'package:chatra_app/screens/classes/lecture_detail_screen.dart';
 import 'package:chatra_app/screens/classes/tabs/class_assignments_tab.dart';
 import 'package:chatra_app/screens/classes/tabs/class_posts_tab.dart';
 import 'package:chatra_app/screens/classes/widgets/file_card.dart';
+import 'package:chatra_app/screens/settings/security_settings_screen.dart';
+import 'package:chatra_app/screens/settings/settings_screen.dart';
 import 'package:chatra_app/theme/app_theme.dart';
 
 /// Смоук-вёрстка перерисованных экранов: тест падает на любом RenderFlex
 /// overflow и любом исключении в build, поэтому сам факт прохождения —
 /// проверка того, что новые сгруппированные списки и страницы собираются.
 void main() {
+  setUp(() => SharedPreferences.setMockInitialValues({}));
+
   Widget wrap(Widget child, {bool dark = false}) => ChangeNotifierProvider(
         create: (_) => L10n(),
         child: MaterialApp(
@@ -20,6 +28,39 @@ void main() {
           home: Scaffold(body: child),
         ),
       );
+
+  /// Экран настроек тянет профиль и тему из провайдеров, поэтому ему нужен
+  /// более полный граф (ApiService создаётся, но по сети не ходит: экран
+  /// обращается к нему только по нажатию «Сохранить»).
+  Widget wrapSettings({bool dark = false}) {
+    final api = ApiService(baseUrl: 'http://localhost:8000/api');
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => L10n()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        Provider<ApiService>.value(value: api),
+        ChangeNotifierProvider(create: (_) => AuthProvider(api)),
+      ],
+      child: MaterialApp(
+        theme: dark ? AppTheme.dark : AppTheme.light,
+        home: const SettingsScreen(),
+      ),
+    );
+  }
+
+  testWidgets('подэкран настроек (шапка + группы) строится', (tester) async {
+    await tester.pumpWidget(wrap(const SecuritySettingsScreen()));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('экран настроек (группы, переключатель, разделы) строится', (tester) async {
+    for (final dark in [false, true]) {
+      await tester.pumpWidget(wrapSettings(dark: dark));
+      await tester.pump(const Duration(milliseconds: 900));
+      expect(tester.takeException(), isNull);
+    }
+  });
 
   List<dynamic> posts(int n) => [
         for (var i = 1; i <= n; i++)

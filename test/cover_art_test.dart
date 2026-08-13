@@ -21,8 +21,8 @@ void main() {
     test('разбирает ответ бэкенда', () {
       final o = CoverOptions.fromJson({
         'colors': [
-          {'id': 'blue', 'hex': '#0A84FF', 'base': '#1C5FC4'},
-          {'id': 'teal', 'hex': '#00B1C9', 'base': '#0891A6'},
+          {'id': 'blue', 'hex': '#0A84FF', 'base': '#E3EDFF', 'ink': '#1D4ED8'},
+          {'id': 'teal', 'hex': '#00B1C9', 'base': '#D6F1F7', 'ink': '#0E7490'},
         ],
         'icons': [
           {'id': 'sigma', 'subject': 'Mathematics'},
@@ -35,6 +35,8 @@ void main() {
 
       expect(o.colors.map((c) => c.id), ['blue', 'teal']);
       expect(o.colors.first.hex, const Color(0xFF0A84FF));
+      expect(o.colors.first.base, const Color(0xFFE3EDFF));
+      expect(o.colors.first.ink, const Color(0xFF1D4ED8));
       expect(o.icons.map((i) => i.id), ['sigma', 'atom']);
       expect(o.defaultColor, 'teal');
       expect(o.aiAvailable, isFalse);
@@ -49,11 +51,12 @@ void main() {
       expect(o.icons, isNotEmpty);
     });
 
-    test('битый hex не роняет разбор', () {
+    test('битый или неполный цвет не роняет разбор', () {
       final o = CoverOptions.fromJson({
         'colors': [
-          {'id': 'broken', 'hex': 'not-a-colour', 'base': '#000000'},
-          {'id': 'blue', 'hex': '#0A84FF', 'base': '#1C5FC4'},
+          {'id': 'broken', 'hex': 'not-a-colour', 'base': '#000000', 'ink': '#000000'},
+          {'id': 'no-ink', 'hex': '#0A84FF', 'base': '#E3EDFF'},
+          {'id': 'blue', 'hex': '#0A84FF', 'base': '#E3EDFF', 'ink': '#1D4ED8'},
         ],
         'icons': [
           {'id': 'book', 'subject': 'Literature'},
@@ -134,15 +137,22 @@ void main() {
   });
 
   group('SubjectIconOverlay', () {
-    testWidgets('рисует иконку предмета вместе с тенью', (tester) async {
+    testWidgets('рисует иконку в тон обложки, а не белой', (tester) async {
+      CoverOptionsCache.reset(kFallbackCoverOptions);
+      addTearDown(CoverOptionsCache.reset);
+
       await tester.pumpWidget(const MaterialApp(
-        home: Scaffold(body: SubjectIconOverlay(icon: 'sigma', size: 40)),
+        home: Scaffold(body: SubjectIconOverlay(icon: 'sigma', color: 'teal', size: 40)),
       ));
       await tester.pump();
-      // Два слоя: размытая тёмная подложка + белый глиф поверх. Тень нужна,
-      // потому что модель не всегда оставляет центр кадра идеально пустым.
-      expect(find.byType(SvgPicture), findsNWidgets(2));
-      expect(find.byType(ImageFiltered), findsOneWidget);
+
+      // Один слой, без теневой подложки: фон — светлая пастель, контраст даёт
+      // сам цвет глифа. Белая иконка на такой обложке просто пропала бы.
+      expect(find.byType(SvgPicture), findsOneWidget);
+
+      final ink = kFallbackCoverOptions.colorFor('teal').ink;
+      expect(ink, isNot(Colors.white));
+      expect(coverIconSvg('sigma', color: ink), contains('stroke="#0e7490"'));
     });
 
     testWidgets('легаси-обложку без иконки не перекрывает', (tester) async {

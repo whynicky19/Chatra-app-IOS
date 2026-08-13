@@ -23,10 +23,14 @@ class CoverColorOption {
   /// Акцент бренда: свотч в пикере и цвет выделения.
   final Color hex;
 
-  /// Заливка фона обложки — из неё строится превью до генерации.
+  /// Светлая пастельная заливка фона — из неё строится превью до генерации.
   final Color base;
 
-  const CoverColorOption(this.id, this.hex, this.base);
+  /// Цвет предметной иконки поверх обложки: в тон, а не белый — белая иконка
+  /// на светлой пастели просто пропадает.
+  final Color ink;
+
+  const CoverColorOption(this.id, this.hex, this.base, this.ink);
 }
 
 class CoverIconOption {
@@ -56,8 +60,9 @@ class CoverOptions {
       final m = Map<String, dynamic>.from(raw as Map);
       final hex = parseHex(m['hex'] as String?);
       final base = parseHex(m['base'] as String?);
-      if (hex == null || base == null) continue;
-      colors.add(CoverColorOption(m['id'] as String, hex, base));
+      final ink = parseHex(m['ink'] as String?);
+      if (hex == null || base == null || ink == null) continue;
+      colors.add(CoverColorOption(m['id'] as String, hex, base, ink));
     }
     final icons = [
       for (final raw in (json['icons'] as List? ?? const []))
@@ -96,14 +101,14 @@ Color? parseHex(String? value) {
 /// Значения совпадают с PALETTE в services/cover_art.py.
 const kFallbackCoverOptions = CoverOptions(
   colors: [
-    CoverColorOption('blue', Color(0xFF0A84FF), Color(0xFF1C5FC4)),
-    CoverColorOption('purple', Color(0xFF8B5CF6), Color(0xFF6D45CE)),
-    CoverColorOption('green', Color(0xFF22C55E), Color(0xFF1E9B54)),
-    CoverColorOption('orange', Color(0xFFF97316), Color(0xFFD2600F)),
-    CoverColorOption('red', Color(0xFFEF4444), Color(0xFFC93A3A)),
-    CoverColorOption('pink', Color(0xFFEC4899), Color(0xFFC43B80)),
-    CoverColorOption('teal', Color(0xFF00B1C9), Color(0xFF0891A6)),
-    CoverColorOption('indigo', Color(0xFF6366F1), Color(0xFF4B4ECC)),
+    CoverColorOption('blue', Color(0xFF0A84FF), Color(0xFFE3EDFF), Color(0xFF1D4ED8)),
+    CoverColorOption('purple', Color(0xFF8B5CF6), Color(0xFFEDE9FE), Color(0xFF7C3AED)),
+    CoverColorOption('green', Color(0xFF22C55E), Color(0xFFDEF7E9), Color(0xFF047857)),
+    CoverColorOption('orange', Color(0xFFF97316), Color(0xFFFFEBD9), Color(0xFFC2410C)),
+    CoverColorOption('red', Color(0xFFEF4444), Color(0xFFFEE4E2), Color(0xFFB91C1C)),
+    CoverColorOption('pink', Color(0xFFEC4899), Color(0xFFFCE7F3), Color(0xFFBE185D)),
+    CoverColorOption('teal', Color(0xFF00B1C9), Color(0xFFD6F1F7), Color(0xFF0E7490)),
+    CoverColorOption('indigo', Color(0xFF6366F1), Color(0xFFE6E7FD), Color(0xFF4F46E5)),
   ],
   icons: [
     CoverIconOption('sigma', 'Mathematics'),
@@ -194,10 +199,8 @@ String coverIconSvg(String? icon, {Color color = Colors.white, double strokeWidt
       'stroke-linejoin="round"><path d="$path"/></svg>';
 }
 
-/// Подложка превью — ровная заливка того же тона, что и фон обложки
-/// (render_background() на бэкенде): выбор цвета не должен обманывать
-/// ожидания. Именно заливка, а не градиент — обложка теперь плоский
-/// графический баннер.
+/// Подложка превью — та же светлая пастель, что и фон обложки
+/// (render_background() на бэкенде): выбор цвета не должен обманывать ожидания.
 Color coverPreviewBackground(CoverColorOption color) => color.base;
 
 /// Локализованные подписи иконок — предмет, для которого иконка предлагается.

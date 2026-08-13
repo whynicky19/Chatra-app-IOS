@@ -14,6 +14,9 @@ class ClassCoverSliver extends StatelessWidget {
   /// Слаг предметной иконки; null — легаси-обложка, оверлей не рисуем.
   final String? coverIcon;
 
+  /// Слаг цвета обложки — из него берётся тон иконки.
+  final String? coverColor;
+
   final bool isTeacher;
   final bool isArchived;
   final String archivedLabel;
@@ -27,6 +30,7 @@ class ClassCoverSliver extends StatelessWidget {
     required this.desc,
     required this.coverImg,
     this.coverIcon,
+    this.coverColor,
     required this.isTeacher,
     required this.isArchived,
     required this.archivedLabel,
@@ -90,11 +94,14 @@ class ClassCoverSliver extends StatelessWidget {
             begin: Alignment.topLeft, end: Alignment.bottomRight,
           ))),
           cover,
-          SubjectIconOverlay(icon: coverIcon, size: 52),
+          SubjectIconOverlay(icon: coverIcon, color: coverColor, size: 74),
+          // Затемняем только низ, где лежат название и описание. Раньше сверху
+          // тоже стояла плёнка ради контраста кнопок — но у них свои тёмные
+          // кружки, а светлую пастельную обложку эта плёнка гасила в серое.
           Container(decoration: const BoxDecoration(gradient: LinearGradient(
             begin: Alignment.topCenter, end: Alignment.bottomCenter,
-            stops: [0.0, 0.4, 1.0],
-            colors: [Colors.black38, Colors.transparent, Colors.black54],
+            stops: [0.45, 1.0],
+            colors: [Colors.transparent, Colors.black54],
           ))),
           if (collapsedTitleOpacity > 0)
             Positioned(top: topPad, left: 56, right: 56, height: kToolbarHeight,

@@ -937,12 +937,15 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             child: RepaintBoundary(child: Padding(
               padding: const EdgeInsets.only(bottom: 14),
               child: GroupRow.card(
-                onTap: () => _showStudentsSheet(classId, title, coverImg, i, cls['cover_icon'] as String?),
+                onTap: () => _showStudentsSheet(classId, title, coverImg, i,
+                    cls['cover_icon'] as String?, cls['cover_color'] as String?),
                 padding: EdgeInsets.zero,
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   SizedBox(height: 120, width: double.infinity,
                     child: Stack(fit: StackFit.expand, children: [
-                      _classCover(coverImg, i, icon: cls['cover_icon'] as String?),
+                      _classCover(coverImg, i,
+                          icon: cls['cover_icon'] as String?,
+                          color: cls['cover_color'] as String?, iconSize: 50),
                       Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                         begin: Alignment.topCenter, end: Alignment.bottomCenter,
                         stops: const [0.45, 1.0], colors: [Colors.transparent, Colors.black.withValues(alpha: 0.45)],
@@ -1020,7 +1023,8 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     ]),
   );
 
-  void _showStudentsSheet(int classId, String className, dynamic coverImg, int colorIdx, String? coverIcon) {
+  void _showStudentsSheet(int classId, String className, dynamic coverImg, int colorIdx,
+      String? coverIcon, String? coverColor) {
     final l       = context.read<L10n>();
     final primary = Theme.of(context).colorScheme.primary;
 
@@ -1052,7 +1056,8 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
               Padding(padding: const EdgeInsets.fromLTRB(20, 0, 12, 14), child: Row(children: [
                 ClipRRect(borderRadius: BorderRadius.circular(AppRadii.tile),
                   child: SizedBox(width: 52, height: 52,
-                    child: _classCover(coverImg, colorIdx, icon: coverIcon, iconSize: 22))),
+                    child: _classCover(coverImg, colorIdx,
+                        icon: coverIcon, color: coverColor, iconSize: 24))),
                 const SizedBox(width: 14),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(className,
@@ -1271,7 +1276,8 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _classCover(dynamic coverImg, int index, {String? icon, double iconSize = 40}) {
+  Widget _classCover(dynamic coverImg, int index,
+      {String? icon, String? color, double iconSize = 40}) {
     const grads = [[Color(0xFF006475), Color(0xFF009AAF)], [Color(0xFF7C2D12), Color(0xFFD97706)],
                    [Color(0xFF581C87), Color(0xFF9333EA)], [Color(0xFF134E4A), Color(0xFF0D9488)],
                    [Color(0xFF9D174D), Color(0xFFDB2777)]];
@@ -1280,7 +1286,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
       return Stack(fit: StackFit.expand, children: [
         Container(decoration: BoxDecoration(gradient: LinearGradient(
           colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight))),
-        SubjectIconOverlay(icon: icon, size: iconSize),
+        SubjectIconOverlay(icon: icon, color: color, size: iconSize),
       ]);
     }
     final Widget background;
@@ -1295,7 +1301,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     }
     return Stack(fit: StackFit.expand, children: [
       background,
-      SubjectIconOverlay(icon: icon, size: iconSize),
+      SubjectIconOverlay(icon: icon, color: color, size: iconSize),
     ]);
   }
 

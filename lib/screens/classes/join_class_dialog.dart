@@ -231,7 +231,8 @@ class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
                           ? NetworkCoverImage(url: context.read<ApiService>().fixUrl(coverImg.toString()), memCacheWidth: 480,
                               errorBuilder: (_) => Container(color: adaptiveSurface2(context)))
                           : Container(color: adaptiveSurface2(context)),
-                  SubjectIconOverlay(icon: _foundClass!['cover_icon'] as String?, size: 30),
+                  SubjectIconOverlay(icon: _foundClass!['cover_icon'] as String?,
+                      color: _foundClass!['cover_color'] as String?, size: 34),
                 ]));
               }),
               Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

@@ -12,8 +12,6 @@
 /// записей это может быть base64-картинка или градиент-заглушка).
 library;
 
-import 'dart:ui' show ImageFilter;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -25,42 +23,37 @@ import 'network_cover_image.dart';
 class SubjectIconOverlay extends StatelessWidget {
   final String? icon;
 
+  /// Слаг цвета обложки — из него берётся тон иконки.
+  final String? color;
+
   /// Размер в логических пикселях: один на контекст, одинаковый для всех
   /// предметов внутри него.
   final double size;
 
-  const SubjectIconOverlay({super.key, required this.icon, this.size = 44});
+  const SubjectIconOverlay({
+    super.key,
+    required this.icon,
+    this.color,
+    this.size = 44,
+  });
 
   @override
   Widget build(BuildContext context) {
     if (icon == null || icon!.isEmpty) return const SizedBox.shrink();
 
-    // Толщина линии масштабируется вместе с иконкой, поэтому визуальный вес
-    // штриха одинаков и на мелкой плашке, и на крупной шапке.
-    final svg = coverIconSvg(icon, strokeWidth: (40 / size).clamp(1.1, 1.8));
+    // Иконка красится в тон обложки (ink), а не в белый: фон теперь светлая
+    // пастель, и белый глиф на ней просто пропадал бы. Контраст даёт сам цвет,
+    // поэтому тень под глифом не нужна — на светлом фоне она только грязнит.
+    final ink = CoverOptionsCache.current.colorFor(color).ink;
 
     return IgnorePointer(
       child: Center(
-        child: SizedBox(
+        child: SvgPicture.string(
+          // Толщина линии масштабируется вместе с иконкой, поэтому визуальный
+          // вес штриха одинаков и на мелкой плашке, и на крупной шапке.
+          coverIconSvg(icon, color: ink, strokeWidth: (40 / size).clamp(1.1, 1.8)),
           width: size,
           height: size,
-          child: Stack(children: [
-            // Мягкая тень под глифом. Промпт требует оставлять центр кадра
-            // пустым, но модель соблюдает это не в 100% случаев — иногда через
-            // центр проходит светлая линия или дуга. Тень делает белую иконку
-            // читаемой на любом фоне, не полагаясь на послушность модели.
-            ImageFiltered(
-              imageFilter: ImageFilter.blur(sigmaX: size * 0.055, sigmaY: size * 0.055),
-              child: SvgPicture.string(
-                coverIconSvg(icon,
-                    color: Colors.black, strokeWidth: (40 / size).clamp(1.1, 1.8)),
-                width: size,
-                height: size,
-                colorFilter: const ColorFilter.mode(Colors.black54, BlendMode.srcIn),
-              ),
-            ),
-            SvgPicture.string(svg, width: size, height: size),
-          ]),
         ),
       ),
     );
@@ -101,7 +94,7 @@ class SubjectCover extends StatelessWidget {
           placeholderBuilder: (_) => const SizedBox.shrink(),
           errorBuilder: (_) => const SizedBox.shrink(),
         ),
-      SubjectIconOverlay(icon: icon, size: iconSize),
+      SubjectIconOverlay(icon: icon, color: color, size: iconSize),
     ]);
   }
 }

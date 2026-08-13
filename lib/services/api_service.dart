@@ -441,25 +441,60 @@ class ApiService {
     return _asMap(response.data);
   }
 
+  /// Обложка не загружается, а собирается сервером по паре «цвет + иконка»:
+  /// предмет создаётся сразу с готовой обложкой-фолбэком, AI-версию клиент
+  /// запрашивает следующим шагом через [generateClassCover].
   Future<Map<String, dynamic>> createClass(String name,
-      {String? description, String? teacher, String? period, String? coverImage}) async {
+      {String? description,
+      String? teacher,
+      String? period,
+      String? coverColor,
+      String? coverIcon}) async {
     final response = await _dio.post('/classes/', data: {
       'name': name,
       if (description != null) 'description': description,
       if (teacher != null) 'teacher': teacher,
       if (period != null) 'period': period,
-      if (coverImage != null) 'cover_image': coverImage,
+      if (coverColor != null) 'cover_color': coverColor,
+      if (coverIcon != null) 'cover_icon': coverIcon,
     });
     return _asMap(response.data);
   }
 
+  /// Смена цвета/иконки без генерации перерисовывает обложку локальным
+  /// фолбэком на бэкенде — мгновенно и бесплатно.
   Future<Map<String, dynamic>> updateClass(int classId,
-      {String? name, String? description, String? teacher, String? coverImage}) async {
+      {String? name,
+      String? description,
+      String? teacher,
+      String? coverColor,
+      String? coverIcon}) async {
     final response = await _dio.put('/classes/$classId', data: {
       if (name != null) 'name': name,
       if (description != null) 'description': description,
       if (teacher != null) 'teacher': teacher,
-      if (coverImage != null) 'cover_image': coverImage,
+      if (coverColor != null) 'cover_color': coverColor,
+      if (coverIcon != null) 'cover_icon': coverIcon,
+    });
+    return _asMap(response.data);
+  }
+
+  /// Палитра и набор предметных иконок для пикеров оформления. Отдаётся
+  /// бэкендом, чтобы набор в приложении, на сайте и в рендере обложки был один.
+  Future<Map<String, dynamic>> getCoverOptions() async {
+    final response = await _dio.get('/classes/cover/options');
+    return _asMap(response.data);
+  }
+
+  /// Генерация обложки — только владелец класса. Один и тот же вызов
+  /// обслуживает первую генерацию, «Перегенерировать» и переход старого
+  /// предмета с загруженной картинки на новую систему. Вызывать строго по
+  /// явному действию пользователя: каждый вызов стоит денег.
+  Future<Map<String, dynamic>> generateClassCover(int classId,
+      {String? color, String? icon}) async {
+    final response = await _dio.post('/classes/$classId/cover/generate', data: {
+      if (color != null) 'color': color,
+      if (icon != null) 'icon': icon,
     });
     return _asMap(response.data);
   }

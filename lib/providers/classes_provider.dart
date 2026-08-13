@@ -168,10 +168,15 @@ class ClassesProvider extends ChangeNotifier {
   }
 
   Future<void> createClass(String name,
-      {String? description, String? teacher, String? period, String? coverImage}) async {
+      {String? description,
+      String? teacher,
+      String? period,
+      String? coverColor,
+      String? coverIcon}) async {
     try {
       await _api.createClass(name,
-          description: description, teacher: teacher, period: period, coverImage: coverImage);
+          description: description, teacher: teacher, period: period,
+          coverColor: coverColor, coverIcon: coverIcon);
     } catch (e) {
       logError('ClassesProvider.createClass', e);
       errorMessage = 'err_create_class';

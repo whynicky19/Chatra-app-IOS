@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:dio/dio.dart' show Options, CancelToken, DioException;
@@ -15,7 +14,8 @@ import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_dialog.dart';
-import '../../utils/image_cache.dart';
+import '../../widgets/cover_appearance.dart';
+import '../../utils/cover_art.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/toast.dart';
@@ -749,9 +749,17 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     final l = context.read<L10n>();
     final meta = _meta;
     final tc = TextEditingController(text: _title), dc = TextEditingController(text: meta['description'] ?? ''), tn = TextEditingController(text: meta['teacher'] ?? '');
-    final String? existingCover = meta['cover_image'];
-    XFile? newCoverFile;
-    bool coverRemoved = false;
+    // Обложка больше не загружается: преподаватель выбирает цвет и предметную
+    // иконку, а картинку рисует бэкенд (POST /classes/{id}/cover/generate).
+    // У предмета, созданного до перехода на новую систему, цвета и иконки нет
+    // — подставляем значения по умолчанию, а его собственная картинка остаётся
+    // на месте, пока преподаватель сам не нажмёт «Сгенерировать».
+    String coverImage = (meta['cover_image'] as String?) ?? '';
+    String coverColor = (meta['cover_color'] as String?) ?? kFallbackCoverOptions.defaultColor;
+    String coverIcon = (meta['cover_icon'] as String?) ?? kFallbackCoverOptions.defaultIcon;
+    String? coverSource = meta['cover_source'] as String?;
+    bool generatingCover = false;
+    String? coverError;
     bool saving = false;
 
     showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Theme.of(context).colorScheme.surface,
@@ -766,42 +774,43 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             IconButton(icon: const Icon(CupertinoIcons.xmark), tooltip: 'Закрыть', onPressed: () => Navigator.pop(ctx)),
           ]),
           const SizedBox(height: 24),
-          _fieldLabel2(l.t('class_cover')),
-          Tappable(
-            onTap: () async {
-              final picker = ImagePicker();
-              final img = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85, maxWidth: 1200);
-              if (img == null) return;
-              setS(() { newCoverFile = img; coverRemoved = false; });
+          CoverAppearance(
+            color: coverColor,
+            icon: coverIcon,
+            coverUrl: coverImage.isEmpty ? null : coverImage,
+            coverSource: coverSource,
+            classId: widget.classId,
+            generating: generatingCover,
+            error: coverError,
+            onColorChanged: (v) => setS(() => coverColor = v),
+            onIconChanged: (v) => setS(() => coverIcon = v),
+            onGenerate: () async {
+              if (generatingCover) return;   // защита от двойного нажатия
+              setS(() { generatingCover = true; coverError = null; });
+              try {
+                final res = await context.read<ApiService>().generateClassCover(
+                  widget.classId, color: coverColor, icon: coverIcon);
+                if (!ctx.mounted) return;
+                // Обложку на сервере уже заменили — сбрасываем кэш картинки,
+                // иначе на экране класса осталась бы прежняя из памяти/диска.
+                _evictCoverCache();
+                setS(() {
+                  coverImage = (res['cover_image'] as String?) ?? coverImage;
+                  coverSource = res['cover_source'] as String?;
+                });
+                if (mounted) _applyClassUpdate({..._meta, ...res});
+              } catch (e) {
+                if (!ctx.mounted) return;
+                final detail = (e is DioException && e.response?.data is Map)
+                    ? e.response?.data['detail'] : null;
+                setS(() => coverError = detail == 'too_many_cover_generations'
+                    ? l.t('cover_rate_limited')
+                    : l.t('cover_generate_failed'));
+              } finally {
+                if (ctx.mounted) setS(() => generatingCover = false);
+              }
             },
-            minSize: 0,
-            child: Container(height: 150, decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3), width: 1.5)),
-              clipBehavior: Clip.antiAlias,
-              child: Stack(fit: StackFit.expand, children: [
-                if (newCoverFile != null)
-                  Image.file(File(newCoverFile!.path), fit: BoxFit.cover)
-                else if (!coverRemoved && existingCover != null && existingCover.startsWith('data:'))
-                  Builder(builder: (_) {
-                    final bytes = decodeBase64Image(existingCover);
-                    return bytes != null ? Image.memory(bytes, fit: BoxFit.cover, gaplessPlayback: true) : Container(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1));
-                  })
-                else if (!coverRemoved && existingCover != null)
-                  CachedNetworkImage(imageUrl: context.read<ApiService>().fixUrl(existingCover), fit: BoxFit.cover, memCacheWidth: 800, fadeInDuration: Duration.zero, fadeOutDuration: Duration.zero, placeholder: (_, __) => const SizedBox.shrink(), errorWidget: (_, __, ___) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [const Color(0xFF006475), Theme.of(context).colorScheme.primary]))))
-                else
-                  Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [const Color(0xFF006475), Theme.of(context).colorScheme.primary], begin: Alignment.topLeft, end: Alignment.bottomRight))),
-                Container(color: Colors.black.withValues(alpha: 0.3),
-                  child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    const Icon(CupertinoIcons.photo, color: Colors.white, size: 32),
-                    const SizedBox(height: 6),
-                    Text((newCoverFile != null || (!coverRemoved && existingCover != null)) ? l.t('click_to_replace') : l.t('choose_cover'), style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
-                  ])),
-              ])),
           ),
-          if (newCoverFile != null || (!coverRemoved && existingCover != null)) ...[
-            const SizedBox(height: 8),
-            Tappable(onTap: () => setS(() { newCoverFile = null; coverRemoved = true; }),
-              child: Row(children: [const Icon(CupertinoIcons.xmark, size: 14, color: C.red), const SizedBox(width: 4), Text(l.t('remove_cover'), style: const TextStyle(fontSize: 13, color: C.red))])),
-          ],
           const SizedBox(height: 20),
           _fieldLabel2('${l.t('class_name')} *'),
           TextField(controller: tc, decoration: InputDecoration(hintText: l.t('class_name_simple_hint'))),
@@ -817,27 +826,23 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             const SizedBox(width: 12),
             Expanded(child: ElevatedButton(
               style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-              onPressed: saving ? null : () async {
+              onPressed: (saving || generatingCover) ? null : () async {
                 setS(() => saving = true);
                 try {
                   final api = context.read<ApiService>();
-                  final coverChanged = newCoverFile != null || coverRemoved;
-                  String? coverImage;
-                  if (newCoverFile != null) {
-                    final res = await api.uploadFile(newCoverFile!.path, newCoverFile!.name);
-                    coverImage = (res['url'] ?? res['file_url'] ?? res['path'])?.toString();
-                  } else if (coverRemoved) {
-                    coverImage = '';
-                  } else if (existingCover != null) {
-                    coverImage = existingCover;
-                  }
+                  // Картинку меняет только генерация; здесь передаём лишь цвет
+                  // с иконкой — если их поменяли без генерации, бэкенд
+                  // перерисует обложку локальным фолбэком, мгновенно и бесплатно.
+                  final appearanceChanged = coverColor != meta['cover_color']
+                      || coverIcon != meta['cover_icon'];
                   final updated = await api.updateClass(widget.classId,
                       name: tc.text.trim(),
                       description: dc.text.trim(),
                       teacher: tn.text.trim(),
-                      coverImage: coverImage);
+                      coverColor: coverColor,
+                      coverIcon: coverIcon);
                   if (!mounted || !ctx.mounted) return;
-                  if (coverChanged) _evictCoverCache();
+                  if (appearanceChanged) _evictCoverCache();
                   if (!mounted || !ctx.mounted) return;
                   Navigator.pop(ctx);
                   _applyClassUpdate(updated);

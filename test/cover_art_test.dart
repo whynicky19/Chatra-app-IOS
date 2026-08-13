@@ -3,7 +3,9 @@ import 'package:chatra_app/services/api_service.dart';
 import 'package:chatra_app/theme/app_theme.dart';
 import 'package:chatra_app/utils/cover_art.dart';
 import 'package:chatra_app/widgets/cover_appearance.dart';
+import 'package:chatra_app/widgets/subject_cover.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
@@ -19,8 +21,8 @@ void main() {
     test('разбирает ответ бэкенда', () {
       final o = CoverOptions.fromJson({
         'colors': [
-          {'id': 'blue', 'hex': '#0A84FF', 'deep': '#0A2A5E'},
-          {'id': 'teal', 'hex': '#00B1C9', 'deep': '#00303A'},
+          {'id': 'blue', 'hex': '#0A84FF', 'base': '#1C5FC4'},
+          {'id': 'teal', 'hex': '#00B1C9', 'base': '#0891A6'},
         ],
         'icons': [
           {'id': 'sigma', 'subject': 'Mathematics'},
@@ -50,8 +52,8 @@ void main() {
     test('битый hex не роняет разбор', () {
       final o = CoverOptions.fromJson({
         'colors': [
-          {'id': 'broken', 'hex': 'not-a-colour', 'deep': '#000000'},
-          {'id': 'blue', 'hex': '#0A84FF', 'deep': '#0A2A5E'},
+          {'id': 'broken', 'hex': 'not-a-colour', 'base': '#000000'},
+          {'id': 'blue', 'hex': '#0A84FF', 'base': '#1C5FC4'},
         ],
         'icons': [
           {'id': 'book', 'subject': 'Literature'},
@@ -128,6 +130,52 @@ void main() {
     test('цвет попадает в stroke', () {
       expect(coverIconSvg('atom', color: const Color(0xFF00B1C9)),
           contains('stroke="#00b1c9"'));
+    });
+  });
+
+  group('SubjectIconOverlay', () {
+    testWidgets('рисует иконку предмета вместе с тенью', (tester) async {
+      await tester.pumpWidget(const MaterialApp(
+        home: Scaffold(body: SubjectIconOverlay(icon: 'sigma', size: 40)),
+      ));
+      await tester.pump();
+      // Два слоя: размытая тёмная подложка + белый глиф поверх. Тень нужна,
+      // потому что модель не всегда оставляет центр кадра идеально пустым.
+      expect(find.byType(SvgPicture), findsNWidgets(2));
+      expect(find.byType(ImageFiltered), findsOneWidget);
+    });
+
+    testWidgets('легаси-обложку без иконки не перекрывает', (tester) async {
+      // cover_icon == null означает картинку, загруженную пользователем по
+      // старой системе: рисовать поверх неё чужой символ нельзя.
+      for (final icon in [null, '']) {
+        await tester.pumpWidget(MaterialApp(
+          home: Scaffold(body: SubjectIconOverlay(icon: icon, size: 40)),
+        ));
+        await tester.pump();
+        expect(find.byType(SvgPicture), findsNothing);
+      }
+    });
+
+    testWidgets('не перехватывает нажатия по обложке', (tester) async {
+      // Оверлей лежит поверх карточки — если бы он ел тапы, класс перестал бы
+      // открываться нажатием в центр обложки.
+      var taps = 0;
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: GestureDetector(
+            onTap: () => taps++,
+            child: const Stack(fit: StackFit.expand, children: [
+              ColoredBox(color: Color(0xFF1C5FC4)),
+              SubjectIconOverlay(icon: 'sigma', size: 40),
+            ]),
+          ),
+        ),
+      ));
+      await tester.pump();
+      await tester.tapAt(tester.getCenter(find.byType(Stack).first));
+      await tester.pump();
+      expect(taps, 1);
     });
   });
 

@@ -344,6 +344,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
         title: displayTitle,
         desc: displayDesc,
         coverImg: coverImg,
+        coverIcon: (meta['cover_icon'] ?? clsData['cover_icon']) as String?,
         isTeacher: auth.isTeacher,
         isArchived: isArchivedForUser,
         archivedLabel: l.t('archived_badge'),

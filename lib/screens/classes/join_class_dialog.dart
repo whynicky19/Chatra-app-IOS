@@ -14,6 +14,7 @@ import '../../utils/image_cache.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/network_cover_image.dart';
+import '../../widgets/subject_cover.dart';
 import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
 
@@ -218,7 +219,8 @@ class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
               Builder(builder: (_) {
                 final coverImg = cardCoverUrl(_foundClass!);
                 return SizedBox(height: 80, width: double.infinity,
-                  child: coverImg != null && coverImg.toString().startsWith('data:')
+                  child: Stack(fit: StackFit.expand, children: [
+                  coverImg != null && coverImg.toString().startsWith('data:')
                       ? Builder(builder: (_) {
                           final bytes = decodeBase64Image(coverImg.toString());
                           return bytes != null
@@ -228,7 +230,9 @@ class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
                       : coverImg != null
                           ? NetworkCoverImage(url: context.read<ApiService>().fixUrl(coverImg.toString()), memCacheWidth: 480,
                               errorBuilder: (_) => Container(color: adaptiveSurface2(context)))
-                          : Container(color: adaptiveSurface2(context)));
+                          : Container(color: adaptiveSurface2(context)),
+                  SubjectIconOverlay(icon: _foundClass!['cover_icon'] as String?, size: 30),
+                ]));
               }),
               Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(children: [

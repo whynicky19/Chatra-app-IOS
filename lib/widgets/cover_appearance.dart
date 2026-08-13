@@ -11,7 +11,6 @@
 /// сразу после создания.
 library;
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -21,6 +20,7 @@ import '../providers/l10n_provider.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/cover_art.dart';
+import 'subject_cover.dart';
 import 'tappable.dart';
 
 class CoverAppearance extends StatefulWidget {
@@ -116,31 +116,26 @@ class _CoverAppearanceState extends State<CoverAppearance> {
                 fontSize: 13, fontWeight: FontWeight.w600, color: adaptiveText3(context))),
       );
 
-  /// Превью: сохранённая обложка, если она уже сгенерирована, иначе локальный
-  /// градиент с иконкой в том же визуальном языке.
+  /// Превью — тот же виджет, что рисует обложку во всём остальном приложении,
+  /// поэтому здесь видно ровно то, что получит пользователь: фон (сохранённый
+  /// или ровная заливка цвета) + иконка поверх.
   Widget _preview(BuildContext context, L10n l, CoverColorOption color) {
     final url = widget.coverUrl;
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppRadii.card),
-      child: Container(
+      child: SizedBox(
         height: 160,
         width: double.infinity,
-        decoration: BoxDecoration(gradient: coverPreviewGradient(color)),
         child: Stack(fit: StackFit.expand, children: [
-          if (url != null && url.isNotEmpty)
-            CachedNetworkImage(
-              imageUrl: context.read<ApiService>().fixUrl(url),
-              fit: BoxFit.cover,
-              memCacheWidth: 900,
-              fadeInDuration: Duration.zero,
-              fadeOutDuration: Duration.zero,
-              placeholder: (_, __) => const SizedBox.shrink(),
-              // Обложка не загрузилась — молча показываем локальное превью,
-              // а не пустой прямоугольник.
-              errorWidget: (_, __, ___) => _glyph(),
-            )
-          else
-            _glyph(),
+          SubjectCover(
+            url: (url == null || url.isEmpty)
+                ? null
+                : context.read<ApiService>().fixUrl(url),
+            icon: widget.icon,
+            color: color.id,
+            iconSize: 60,
+            memCacheWidth: 900,
+          ),
           if (widget.generating)
             Container(
               color: Colors.black.withValues(alpha: 0.55),
@@ -160,14 +155,6 @@ class _CoverAppearanceState extends State<CoverAppearance> {
     );
   }
 
-  Widget _glyph() => Center(
-        child: SvgPicture.string(
-          coverIconSvg(widget.icon),
-          width: 66,
-          height: 66,
-        ),
-      );
-
   Widget _colorRow(BuildContext context, CoverColorOption selected) => Wrap(
         spacing: 10,
         runSpacing: 10,
@@ -181,7 +168,7 @@ class _CoverAppearanceState extends State<CoverAppearance> {
                 width: 34,
                 height: 34,
                 decoration: BoxDecoration(
-                  gradient: coverPreviewGradient(c),
+                  color: c.base,
                   shape: BoxShape.circle,
                   border: c.id == selected.id
                       ? Border.all(color: adaptiveText1(context), width: 2.5)

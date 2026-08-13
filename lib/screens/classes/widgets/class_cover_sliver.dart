@@ -3,12 +3,17 @@ import 'package:flutter/material.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/image_cache.dart';
 import '../../../widgets/network_cover_image.dart';
+import '../../../widgets/subject_cover.dart';
 import '../../../widgets/tappable.dart';
 
 class ClassCoverSliver extends StatelessWidget {
   final String title;
   final String desc;
   final dynamic coverImg;
+
+  /// Слаг предметной иконки; null — легаси-обложка, оверлей не рисуем.
+  final String? coverIcon;
+
   final bool isTeacher;
   final bool isArchived;
   final String archivedLabel;
@@ -21,6 +26,7 @@ class ClassCoverSliver extends StatelessWidget {
     required this.title,
     required this.desc,
     required this.coverImg,
+    this.coverIcon,
     required this.isTeacher,
     required this.isArchived,
     required this.archivedLabel,
@@ -84,6 +90,7 @@ class ClassCoverSliver extends StatelessWidget {
             begin: Alignment.topLeft, end: Alignment.bottomRight,
           ))),
           cover,
+          SubjectIconOverlay(icon: coverIcon, size: 52),
           Container(decoration: const BoxDecoration(gradient: LinearGradient(
             begin: Alignment.topCenter, end: Alignment.bottomCenter,
             stops: [0.0, 0.4, 1.0],

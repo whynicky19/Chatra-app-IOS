@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../widgets/network_cover_image.dart';
+import '../../widgets/subject_cover.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../providers/classes_provider.dart';
@@ -588,6 +589,7 @@ class _ClassContextMenu extends StatelessWidget {
                     : coverImg != null
                         ? NetworkCoverImage(url: context.read<ApiService>().fixUrl(coverImg.toString()), memCacheWidth: coverCacheWidth, errorBuilder: (_) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))))
                         : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight))),
+                SubjectIconOverlay(icon: cls['cover_icon'] as String?, size: 34),
                 Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                   begin: Alignment.topCenter, end: Alignment.bottomCenter,
                   colors: [Colors.transparent, Colors.black.withValues(alpha: 0.55)],
@@ -877,6 +879,7 @@ class _ClassCard extends StatelessWidget {
                             errorBuilder: (_) => gradient,
                           );
                   }),
+                  SubjectIconOverlay(icon: cls['cover_icon'] as String?, size: 44),
                   Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                     begin: Alignment.topCenter, end: Alignment.bottomCenter,
                     stops: const [0.5, 1.0],

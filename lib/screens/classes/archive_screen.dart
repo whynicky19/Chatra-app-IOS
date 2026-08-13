@@ -8,6 +8,7 @@ import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/image_cache.dart';
 import '../../widgets/network_cover_image.dart';
+import '../../widgets/subject_cover.dart';
 import '../../utils/haptics.dart';
 import '../../utils/nav_guard.dart';
 
@@ -212,6 +213,7 @@ class _ArchiveCard extends StatelessWidget {
                               url: context.read<ApiService>().fixUrl(coverImg.toString()),
                               memCacheWidth: coverCacheWidth,
                             ),
+                    SubjectIconOverlay(icon: cls['cover_icon'] as String?, size: 40),
                     Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                       begin: Alignment.topCenter, end: Alignment.bottomCenter,
                       stops: const [0.45, 1.0],

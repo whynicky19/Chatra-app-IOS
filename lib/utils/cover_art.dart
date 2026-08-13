@@ -6,22 +6,27 @@
 /// сервер не знает. Здесь только кэш ответа, запасной набор на случай
 /// отсутствия сети и SVG-глифы для превью и пикера.
 ///
-/// Глифы повторяют пути из composables/useCoverArt.ts (веб) и обводки, которые
-/// рисует Pillow на бэкенде, — так выбор иконки выглядит одинаково на всех
-/// трёх сторонах, и превью совпадает с итоговой обложкой.
+/// Глифы повторяют пути из composables/useCoverArt.ts (веб), поэтому выбор
+/// иконки выглядит одинаково на обоих клиентах.
 ///
-/// В самой сохранённой обложке иконка уже впечатана бэкендом, поэтому карточки,
-/// шапка класса, архив и админка ничего не дорисовывают — они как и раньше
-/// показывают одну картинку по cover_image/cover_thumbnail.
+/// Иконка НЕ входит в сохранённую картинку: бэкенд генерирует только фон и
+/// специально оставляет центр кадра пустым. Рисует иконку виджет
+/// widgets/subject_cover.dart — он и есть единственное место, где обложка
+/// собирается для показа.
 library;
 
 import 'package:flutter/material.dart';
 
 class CoverColorOption {
   final String id;
+
+  /// Акцент бренда: свотч в пикере и цвет выделения.
   final Color hex;
-  final Color deep;
-  const CoverColorOption(this.id, this.hex, this.deep);
+
+  /// Заливка фона обложки — из неё строится превью до генерации.
+  final Color base;
+
+  const CoverColorOption(this.id, this.hex, this.base);
 }
 
 class CoverIconOption {
@@ -50,9 +55,9 @@ class CoverOptions {
     for (final raw in (json['colors'] as List? ?? const [])) {
       final m = Map<String, dynamic>.from(raw as Map);
       final hex = parseHex(m['hex'] as String?);
-      final deep = parseHex(m['deep'] as String?);
-      if (hex == null || deep == null) continue;
-      colors.add(CoverColorOption(m['id'] as String, hex, deep));
+      final base = parseHex(m['base'] as String?);
+      if (hex == null || base == null) continue;
+      colors.add(CoverColorOption(m['id'] as String, hex, base));
     }
     final icons = [
       for (final raw in (json['icons'] as List? ?? const []))
@@ -91,14 +96,14 @@ Color? parseHex(String? value) {
 /// Значения совпадают с PALETTE в services/cover_art.py.
 const kFallbackCoverOptions = CoverOptions(
   colors: [
-    CoverColorOption('blue', Color(0xFF0A84FF), Color(0xFF0A2A5E)),
-    CoverColorOption('purple', Color(0xFF8B5CF6), Color(0xFF2B1857)),
-    CoverColorOption('green', Color(0xFF22C55E), Color(0xFF0B3722)),
-    CoverColorOption('orange', Color(0xFFF97316), Color(0xFF54220A)),
-    CoverColorOption('red', Color(0xFFEF4444), Color(0xFF511616)),
-    CoverColorOption('pink', Color(0xFFEC4899), Color(0xFF4F1030)),
-    CoverColorOption('teal', Color(0xFF00B1C9), Color(0xFF00303A)),
-    CoverColorOption('indigo', Color(0xFF6366F1), Color(0xFF1C1D52)),
+    CoverColorOption('blue', Color(0xFF0A84FF), Color(0xFF1C5FC4)),
+    CoverColorOption('purple', Color(0xFF8B5CF6), Color(0xFF6D45CE)),
+    CoverColorOption('green', Color(0xFF22C55E), Color(0xFF1E9B54)),
+    CoverColorOption('orange', Color(0xFFF97316), Color(0xFFD2600F)),
+    CoverColorOption('red', Color(0xFFEF4444), Color(0xFFC93A3A)),
+    CoverColorOption('pink', Color(0xFFEC4899), Color(0xFFC43B80)),
+    CoverColorOption('teal', Color(0xFF00B1C9), Color(0xFF0891A6)),
+    CoverColorOption('indigo', Color(0xFF6366F1), Color(0xFF4B4ECC)),
   ],
   icons: [
     CoverIconOption('sigma', 'Mathematics'),
@@ -189,13 +194,11 @@ String coverIconSvg(String? icon, {Color color = Colors.white, double strokeWidt
       'stroke-linejoin="round"><path d="$path"/></svg>';
 }
 
-/// Градиент превью — тот же диагональный переход deep→hex, что рисует
-/// render_background() на бэкенде, чтобы выбор не обманывал ожидания.
-LinearGradient coverPreviewGradient(CoverColorOption color) => LinearGradient(
-      colors: [color.deep, color.hex],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-    );
+/// Подложка превью — ровная заливка того же тона, что и фон обложки
+/// (render_background() на бэкенде): выбор цвета не должен обманывать
+/// ожидания. Именно заливка, а не градиент — обложка теперь плоский
+/// графический баннер.
+Color coverPreviewBackground(CoverColorOption color) => color.base;
 
 /// Локализованные подписи иконок — предмет, для которого иконка предлагается.
 const Map<String, Map<String, String>> kCoverIconLabels = {

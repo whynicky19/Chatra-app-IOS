@@ -13,6 +13,7 @@ import '../../utils/dates.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/cupertino_liquid_switch.dart';
 import '../../widgets/network_cover_image.dart';
+import '../../widgets/subject_cover.dart';
 import '../../widgets/inset_group.dart';
 import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
@@ -936,12 +937,12 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
             child: RepaintBoundary(child: Padding(
               padding: const EdgeInsets.only(bottom: 14),
               child: GroupRow.card(
-                onTap: () => _showStudentsSheet(classId, title, coverImg, i),
+                onTap: () => _showStudentsSheet(classId, title, coverImg, i, cls['cover_icon'] as String?),
                 padding: EdgeInsets.zero,
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   SizedBox(height: 120, width: double.infinity,
                     child: Stack(fit: StackFit.expand, children: [
-                      _classCover(coverImg, i),
+                      _classCover(coverImg, i, icon: cls['cover_icon'] as String?),
                       Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                         begin: Alignment.topCenter, end: Alignment.bottomCenter,
                         stops: const [0.45, 1.0], colors: [Colors.transparent, Colors.black.withValues(alpha: 0.45)],
@@ -1019,7 +1020,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     ]),
   );
 
-  void _showStudentsSheet(int classId, String className, dynamic coverImg, int colorIdx) {
+  void _showStudentsSheet(int classId, String className, dynamic coverImg, int colorIdx, String? coverIcon) {
     final l       = context.read<L10n>();
     final primary = Theme.of(context).colorScheme.primary;
 
@@ -1050,7 +1051,8 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
 
               Padding(padding: const EdgeInsets.fromLTRB(20, 0, 12, 14), child: Row(children: [
                 ClipRRect(borderRadius: BorderRadius.circular(AppRadii.tile),
-                  child: SizedBox(width: 52, height: 52, child: _classCover(coverImg, colorIdx))),
+                  child: SizedBox(width: 52, height: 52,
+                    child: _classCover(coverImg, colorIdx, icon: coverIcon, iconSize: 22))),
                 const SizedBox(width: 14),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(className,
@@ -1269,20 +1271,32 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _classCover(dynamic coverImg, int index) {
+  Widget _classCover(dynamic coverImg, int index, {String? icon, double iconSize = 40}) {
     const grads = [[Color(0xFF006475), Color(0xFF009AAF)], [Color(0xFF7C2D12), Color(0xFFD97706)],
                    [Color(0xFF581C87), Color(0xFF9333EA)], [Color(0xFF134E4A), Color(0xFF0D9488)],
                    [Color(0xFF9D174D), Color(0xFFDB2777)]];
     final colors = grads[index % grads.length];
-    if (coverImg == null) return Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight)));
+    if (coverImg == null) {
+      return Stack(fit: StackFit.expand, children: [
+        Container(decoration: BoxDecoration(gradient: LinearGradient(
+          colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight))),
+        SubjectIconOverlay(icon: icon, size: iconSize),
+      ]);
+    }
+    final Widget background;
     if (coverImg.toString().startsWith('data:')) {
       final bytes = decodeBase64Image(coverImg.toString());
-      return bytes != null
+      background = bytes != null
           ? Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, gaplessPlayback: true, cacheWidth: 480)
           : Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors)));
+    } else {
+      background = NetworkCoverImage(url: context.read<ApiService>().fixUrl(coverImg.toString()), memCacheWidth: 480,
+        errorBuilder: (_) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))));
     }
-    return NetworkCoverImage(url: context.read<ApiService>().fixUrl(coverImg.toString()), memCacheWidth: 480,
-      errorBuilder: (_) => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: colors))));
+    return Stack(fit: StackFit.expand, children: [
+      background,
+      SubjectIconOverlay(icon: icon, size: iconSize),
+    ]);
   }
 
   Future<bool> _action(dynamic u, String action) async {

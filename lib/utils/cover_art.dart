@@ -23,11 +23,11 @@ class CoverColorOption {
   /// Акцент бренда: свотч в пикере и цвет выделения.
   final Color hex;
 
-  /// Светлая пастельная заливка фона — из неё строится превью до генерации.
+  /// Основной насыщенный тон композиции — из него строится превью до генерации.
   final Color base;
 
-  /// Цвет предметной иконки поверх обложки: в тон, а не белый — белая иконка
-  /// на светлой пастели просто пропадает.
+  /// Тон иконки, когда она рисуется в цвет. На самой обложке глиф белый
+  /// (композиция насыщенная, см. ICON_ON_ARTWORK) — значение нужно пикеру.
   final Color ink;
 
   const CoverColorOption(this.id, this.hex, this.base, this.ink);
@@ -101,14 +101,14 @@ Color? parseHex(String? value) {
 /// Значения совпадают с PALETTE в services/cover_art.py.
 const kFallbackCoverOptions = CoverOptions(
   colors: [
-    CoverColorOption('blue', Color(0xFF0A84FF), Color(0xFFE3EDFF), Color(0xFF1D4ED8)),
-    CoverColorOption('purple', Color(0xFF8B5CF6), Color(0xFFEDE9FE), Color(0xFF7C3AED)),
-    CoverColorOption('green', Color(0xFF22C55E), Color(0xFFDEF7E9), Color(0xFF047857)),
-    CoverColorOption('orange', Color(0xFFF97316), Color(0xFFFFEBD9), Color(0xFFC2410C)),
-    CoverColorOption('red', Color(0xFFEF4444), Color(0xFFFEE4E2), Color(0xFFB91C1C)),
-    CoverColorOption('pink', Color(0xFFEC4899), Color(0xFFFCE7F3), Color(0xFFBE185D)),
-    CoverColorOption('teal', Color(0xFF00B1C9), Color(0xFFD6F1F7), Color(0xFF0E7490)),
-    CoverColorOption('indigo', Color(0xFF6366F1), Color(0xFFE6E7FD), Color(0xFF4F46E5)),
+    CoverColorOption('blue', Color(0xFF0A84FF), Color(0xFF3B82F6), Color(0xFF1D4ED8)),
+    CoverColorOption('purple', Color(0xFF8B5CF6), Color(0xFF7C5CE6), Color(0xFF6D28D9)),
+    CoverColorOption('green', Color(0xFF22C55E), Color(0xFF12A970), Color(0xFF047857)),
+    CoverColorOption('orange', Color(0xFFF97316), Color(0xFFF4842B), Color(0xFFC2410C)),
+    CoverColorOption('red', Color(0xFFEF4444), Color(0xFFE4534F), Color(0xFFB91C1C)),
+    CoverColorOption('pink', Color(0xFFEC4899), Color(0xFFE8559C), Color(0xFFBE185D)),
+    CoverColorOption('teal', Color(0xFF00B1C9), Color(0xFF12A2B5), Color(0xFF0E7490)),
+    CoverColorOption('indigo', Color(0xFF6366F1), Color(0xFF5A5FE0), Color(0xFF4338CA)),
   ],
   icons: [
     CoverIconOption('sigma', 'Mathematics'),

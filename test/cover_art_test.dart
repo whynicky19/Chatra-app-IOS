@@ -137,7 +137,7 @@ void main() {
   });
 
   group('SubjectIconOverlay', () {
-    testWidgets('рисует иконку в тон обложки, а не белой', (tester) async {
+    testWidgets('рисует белый глиф с тенью', (tester) async {
       CoverOptionsCache.reset(kFallbackCoverOptions);
       addTearDown(CoverOptionsCache.reset);
 
@@ -146,13 +146,12 @@ void main() {
       ));
       await tester.pump();
 
-      // Один слой, без теневой подложки: фон — светлая пастель, контраст даёт
-      // сам цвет глифа. Белая иконка на такой обложке просто пропала бы.
-      expect(find.byType(SvgPicture), findsOneWidget);
-
-      final ink = kFallbackCoverOptions.colorFor('teal').ink;
-      expect(ink, isNot(Colors.white));
-      expect(coverIconSvg('sigma', color: ink), contains('stroke="#0e7490"'));
+      // Два слоя: размытая тёмная подложка + белый глиф. Композиция под иконкой
+      // насыщенная и её яркость заранее неизвестна — иконка в тон давала на ней
+      // контраст 1.5-2.0 и пропадала.
+      expect(find.byType(SvgPicture), findsNWidgets(2));
+      expect(find.byType(ImageFiltered), findsOneWidget);
+      expect(coverIconSvg('sigma'), contains('stroke="#ffffff"'));
     });
 
     testWidgets('легаси-обложку без иконки не перекрывает', (tester) async {

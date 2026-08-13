@@ -61,20 +61,65 @@ class CoverAppearance extends StatefulWidget {
   State<CoverAppearance> createState() => _CoverAppearanceState();
 }
 
+/// Сколько символов помещается в одну полоску пикера — она же ширина сетки.
+const _kIconsPerRow = 6;
+
 class _CoverAppearanceState extends State<CoverAppearance> {
   CoverOptions _options = CoverOptionsCache.current;
+
+  /// Символов больше сорока: по умолчанию видна только первая полоска, весь
+  /// список открывается кнопкой. Развёрнутая сетка занимала восемь рядов и
+  /// выталкивала за экран название предмета и кнопку сохранения.
+  bool _expanded = false;
 
   @override
   void initState() {
     super.initState();
+    _syncExpanded();
     _loadOptions();
+  }
+
+  @override
+  void didUpdateWidget(CoverAppearance oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.icon != widget.icon) _syncExpanded();
+  }
+
+  /// Выбранный символ обязан быть виден. Если он не попал в первую полоску
+  /// (например «Кулинария» из последней секции), список открыт сразу — иначе
+  /// при редактировании непонятно, что вообще выбрано.
+  void _syncExpanded() {
+    if (_expanded) return;
+    final firstRow = _options.icons.take(_kIconsPerRow).map((i) => i.id);
+    if (!firstRow.contains(widget.icon)) _expanded = true;
   }
 
   Future<void> _loadOptions() async {
     if (CoverOptionsCache.isLoaded) return;
     final api = context.read<ApiService>();
     final loaded = await CoverOptionsCache.load(api.getCoverOptions);
-    if (mounted) setState(() => _options = loaded);
+    if (mounted) {
+      setState(() {
+        _options = loaded;
+        _syncExpanded();
+      });
+    }
+  }
+
+  /// Символы секциями; неизвестная или пустая группа — одним блоком в конец,
+  /// чтобы ответ старого бэкенда без groups не потерял ни одного варианта.
+  List<({String label, List<CoverIconOption> icons})> _sections(String lang) {
+    final result = <({String label, List<CoverIconOption> icons})>[];
+    final taken = <String>{};
+    for (final g in _options.groups) {
+      final icons = _options.icons.where((i) => i.group == g.id).toList();
+      if (icons.isEmpty) continue;
+      taken.addAll(icons.map((i) => i.id));
+      result.add((label: coverGroupLabel(g.id, lang, g.label), icons: icons));
+    }
+    final rest = _options.icons.where((i) => !taken.contains(i.id)).toList();
+    if (rest.isNotEmpty) result.add((label: '', icons: rest));
+    return result;
   }
 
   @override
@@ -100,7 +145,7 @@ class _CoverAppearanceState extends State<CoverAppearance> {
         _colorRow(context, selected),
         const SizedBox(height: 18),
         _label(context, l.t('cover_icon')),
-        _iconGrid(context, l, selected),
+        _iconPicker(context, l, selected),
         if (widget.classId != null && _options.aiAvailable) ...[
           const SizedBox(height: 18),
           _generateButton(context, l, selected),
@@ -182,14 +227,85 @@ class _CoverAppearanceState extends State<CoverAppearance> {
         ],
       );
 
-  Widget _iconGrid(BuildContext context, L10n l, CoverColorOption selected) => GridView.count(
-        crossAxisCount: 6,
+  Widget _iconPicker(BuildContext context, L10n l, CoverColorOption selected) {
+    final all = _options.icons;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (!_expanded)
+          _iconGrid(context, l, selected, all.take(_kIconsPerRow).toList())
+        else
+          // Развёрнутый список ограничен по высоте и скроллится внутри: иначе
+          // он растягивает форму на несколько экранов.
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 300),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final s in _sections(l.lang)) ...[
+                    if (s.label.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6, left: 2),
+                        child: Text(
+                          s.label.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 11,
+                            // w600, а не w700: на мелком кегле шкала
+                            // app_theme.dart жирный запрещает.
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                            color: adaptiveText4(context),
+                          ),
+                        ),
+                      ),
+                    _iconGrid(context, l, selected, s.icons),
+                    const SizedBox(height: 14),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        if (all.length > _kIconsPerRow)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Tappable(
+              onTap: () => setState(() => _expanded = !_expanded),
+              label: _expanded
+                  ? l.t('cover_icons_less')
+                  : '${l.t('cover_icons_all')} (${all.length})',
+              minSize: 0,
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Text(
+                  _expanded
+                      ? l.t('cover_icons_less')
+                      : '${l.t('cover_icons_all')} (${all.length})',
+                  style: TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w600, color: selected.hex),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  _expanded ? CupertinoIcons.chevron_up : CupertinoIcons.chevron_down,
+                  size: 13,
+                  color: selected.hex,
+                ),
+              ]),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _iconGrid(BuildContext context, L10n l, CoverColorOption selected,
+          List<CoverIconOption> icons) =>
+      GridView.count(
+        crossAxisCount: _kIconsPerRow,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         mainAxisSpacing: 8,
         crossAxisSpacing: 8,
         children: [
-          for (final i in _options.icons)
+          for (final i in icons)
             Tappable(
               onTap: widget.generating ? null : () => widget.onIconChanged(i.id),
               label: coverIconLabel(i.id, l.lang),

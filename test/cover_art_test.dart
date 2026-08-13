@@ -95,6 +95,30 @@ void main() {
       }
     });
 
+    test('у каждой иконки есть группа из объявленного списка', () {
+      // Пикер рисуется секциями: символ без группы уехал бы в безымянный
+      // блок в конце и выглядел бы потерянным.
+      final groups = kFallbackCoverOptions.groups.map((g) => g.id).toSet();
+      expect(groups, isNotEmpty);
+      for (final icon in kFallbackCoverOptions.icons) {
+        expect(groups.contains(icon.group), isTrue,
+            reason: 'группа «${icon.group}» символа ${icon.id} не объявлена');
+      }
+      for (final g in kFallbackCoverOptions.groups) {
+        for (final lang in ['RU', 'EN', 'KZ']) {
+          expect(kCoverGroupLabels[g.id]?[lang], isNotNull,
+              reason: 'нет подписи группы ${g.id} для $lang');
+        }
+      }
+    });
+
+    test('набор покрывает направления школы и вуза', () {
+      // Восьми цветов и двенадцати символов на реальный список направлений
+      // не хватало — под это расширен и бэкенд (services/cover_art.py).
+      expect(kFallbackCoverOptions.colors.length, greaterThanOrEqualTo(12));
+      expect(kFallbackCoverOptions.icons.length, greaterThanOrEqualTo(40));
+    });
+
     test('дефолты входят в набор', () {
       expect(kFallbackCoverOptions.colors.map((c) => c.id),
           contains(kFallbackCoverOptions.defaultColor));
@@ -108,7 +132,8 @@ void main() {
       const expected = {
         'blue': 0xFF0A84FF, 'purple': 0xFF8B5CF6, 'green': 0xFF22C55E,
         'orange': 0xFFF97316, 'red': 0xFFEF4444, 'pink': 0xFFEC4899,
-        'teal': 0xFF00B1C9, 'indigo': 0xFF6366F1,
+        'teal': 0xFF00B1C9, 'indigo': 0xFF6366F1, 'gold': 0xFFEAB308,
+        'lime': 0xFF84CC16, 'bronze': 0xFFC2763A, 'slate': 0xFF7C8BA5,
       };
       expect(
         {for (final c in kFallbackCoverOptions.colors) c.id: c.hex.toARGB32()},
@@ -304,6 +329,64 @@ void main() {
       await tester.pump();
 
       expect(find.textContaining('без ИИ'), findsOneWidget);
+    });
+
+    testWidgets('по умолчанию показывает одну полоску символов', (tester) async {
+      // Сорок пять плиток разворачивали форму на несколько экранов: название
+      // предмета и кнопка сохранения уезжали за пределы видимости.
+      await tester.pumpWidget(wrap(CoverAppearance(
+        color: 'blue',
+        icon: 'sigma',
+        classId: null,
+        onColorChanged: (_) {},
+        onIconChanged: (_) {},
+        onGenerate: () {},
+      )));
+      await tester.pump();
+
+      final shown = kFallbackCoverOptions.icons
+          .where((i) => find.bySemanticsLabel(coverIconLabel(i.id, 'RU')).evaluate().isNotEmpty)
+          .length;
+      expect(shown, 6);
+      expect(find.textContaining('Все иконки'), findsOneWidget);
+    });
+
+    testWidgets('кнопка раскрывает весь список секциями', (tester) async {
+      await tester.pumpWidget(wrap(CoverAppearance(
+        color: 'blue',
+        icon: 'sigma',
+        classId: null,
+        onColorChanged: (_) {},
+        onIconChanged: (_) {},
+        onGenerate: () {},
+      )));
+      await tester.pump();
+
+      await tester.tap(find.textContaining('Все иконки'));
+      await tester.pump();
+
+      expect(find.text('ТОЧНЫЕ НАУКИ'), findsOneWidget);
+      expect(find.text('IT И ИНЖЕНЕРИЯ'), findsOneWidget);
+      expect(find.text('Свернуть'), findsOneWidget);
+      // Символ из дальней секции теперь доступен для выбора.
+      expect(find.bySemanticsLabel(coverIconLabel('chef', 'RU')), findsOneWidget);
+    });
+
+    testWidgets('открывает список, если выбранный символ вне первой полоски',
+        (tester) async {
+      // Иначе при редактировании предмета непонятно, что вообще выбрано.
+      await tester.pumpWidget(wrap(CoverAppearance(
+        color: 'blue',
+        icon: 'chef',
+        classId: null,
+        onColorChanged: (_) {},
+        onIconChanged: (_) {},
+        onGenerate: () {},
+      )));
+      await tester.pump();
+
+      expect(find.text('Свернуть'), findsOneWidget);
+      expect(find.bySemanticsLabel(coverIconLabel('chef', 'RU')), findsOneWidget);
     });
 
     testWidgets('выбор цвета и иконки уходит наверх', (tester) async {

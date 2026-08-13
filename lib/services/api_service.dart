@@ -796,9 +796,42 @@ class ApiService {
   Future<void> adminUnblock(int userId) async => _dio.put('/admin/users/$userId/unblock');
   Future<void> adminDelete(int userId) async => _dio.delete('/admin/users/$userId');
 
-  Future<Map<String, dynamic>> adminAiUsagePage({int? classId, int page = 1, int pageSize = 50}) async {
+  /// Список пользователей с агрегатами (расход токенов, число предметов,
+  /// последнее действие) — одна строка списка админки без запроса на каждого.
+  Future<List<dynamic>> adminUsersOverview() async =>
+      _asList((await _dio.get('/admin/users/overview')).data);
+
+  /// Карточка пользователя целиком: профиль, расход ИИ по видам, квота,
+  /// предметы и учебная активность.
+  Future<Map<String, dynamic>> adminUserDetail(int userId) async =>
+      _asMap((await _dio.get('/admin/users/$userId')).data);
+
+  /// Карточка предмета: состав с расходом, потоки, содержимое, расход ИИ.
+  Future<Map<String, dynamic>> adminClassDetail(int classId) async =>
+      _asMap((await _dio.get('/admin/classes/$classId')).data);
+
+  /// Дашборд расхода ИИ за период: итоги, разбивка по видам, классам, дням и
+  /// пользователям одним запросом.
+  Future<Map<String, dynamic>> adminAiDashboard({int days = 30}) async =>
+      _asMap((await _dio.get('/admin/ai-usage/dashboard',
+              queryParameters: {'days': days}))
+          .data);
+
+  /// [endpoint] — вид расхода; можно перечислить несколько через запятую
+  /// (чат = chat,chat_vision). [classId] = 0 — расход вне предметов.
+  Future<Map<String, dynamic>> adminAiUsagePage({
+    int? classId,
+    String? endpoint,
+    int? userId,
+    int? days,
+    int page = 1,
+    int pageSize = 50,
+  }) async {
     final params = <String, dynamic>{'page': page, 'page_size': pageSize};
     if (classId != null) params['class_id'] = classId;
+    if (endpoint != null && endpoint.isNotEmpty) params['endpoint'] = endpoint;
+    if (userId != null) params['user_id'] = userId;
+    if (days != null) params['days'] = days;
     final response = await _dio.get('/admin/ai-usage', queryParameters: params);
     final data = response.data;
     if (data is Map<String, dynamic>) return data;

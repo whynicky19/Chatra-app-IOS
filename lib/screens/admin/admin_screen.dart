@@ -11,12 +11,15 @@ import '../../utils/errors.dart';
 import '../../utils/image_cache.dart';
 import '../../utils/dates.dart';
 import '../../widgets/app_dialog.dart';
-import '../../widgets/cupertino_liquid_switch.dart';
 import '../../widgets/network_cover_image.dart';
 import '../../widgets/subject_cover.dart';
 import '../../widgets/inset_group.dart';
 import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
+import 'admin_format.dart';
+import 'ai_dashboard_tab.dart';
+import 'class_card_sheet.dart';
+import 'user_card_sheet.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -27,19 +30,16 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
   late TabController _tabCtrl;
   List<dynamic> _users   = [];
   List<Map<String, dynamic>> _allClassPosts = [];
-  List<dynamic> _aiLogs  = [];
   List<dynamic> _aiSummary = [];
-  Map<int, List<dynamic>> _classMembers = {};
   bool _loading       = true;
-  bool _aiLoading     = true;
   bool _classesLoading = true;
   String _search      = '';
-  int _totalTokens    = 0;
-  int? _aiFilterClassId;
-  int _aiLogPage      = 1;
-  int _aiLogTotal     = 0;
-  bool _aiLogLoadingMore = false;
-  static const _aiLogPageSize = 30;
+
+  // Фильтры и сортировка списка пользователей — те же, что в веб-админке.
+  String _roleFilter   = 'all';
+  bool _onlyBlocked    = false;
+  bool _onlyUnlimited  = false;
+  String _sort         = 'tokens';
 
   @override
   void initState() {
@@ -50,13 +50,13 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
 
   Timer? _searchDebounce;
 
-  Widget? _usersTabCache, _aiTabCache, _classesTabCache;
-  String _usersTabSig = '', _aiTabSig = '', _classesTabSig = '';
+  Widget? _usersTabCache, _classesTabCache;
+  String _usersTabSig = '', _classesTabSig = '';
 
   @override void dispose() { _searchDebounce?.cancel(); _tabCtrl.dispose(); super.dispose(); }
 
   Future<void> _initAll() async {
-    await Future.wait([_load(), _loadClasses(), _loadAi(), _loadReports()]);
+    await Future.wait([_load(), _loadClasses(), _loadReports()]);
   }
 
   // ── Очередь модерации ──────────────────────────────────────────────────
@@ -251,9 +251,18 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
   }
 
   Future<void> _load() async {
+    if (!mounted) return;
     setState(() => _loading = true);
-    try { _users = await context.read<ApiService>().adminUsers(); } catch (_) {}
-    setState(() => _loading = false);
+    final api = context.read<ApiService>();
+    try {
+      _users = await api.adminUsersOverview();
+    } catch (e) {
+      // Бэкенд без /users/overview (не обновлён) — показываем хотя бы список
+      // аккаунтов, без расхода и последней активности.
+      logError('AdminScreen.loadUsersOverview', e);
+      try { _users = await api.adminUsers(); } catch (_) {}
+    }
+    if (mounted) setState(() => _loading = false);
   }
 
   Future<void> _loadClasses() async {
@@ -261,81 +270,59 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     setState(() => _classesLoading = true);
     final api = context.read<ApiService>();
     var classes = <dynamic>[];
-    try { classes = await api.getAllClasses(); } catch (_) {}
+    try { classes = await api.getAllClasses(); } catch (e) { logError('AdminScreen.loadClasses', e); }
+    // member_count приходит прямо со списком (/classes/all), поэтому состав
+    // каждого предмета больше не догружается отдельным запросом: на 20
+    // предметах это было 20 лишних обращений при каждом открытии админки.
     _allClassPosts = classes
         .map((c) => {...c as Map<String, dynamic>, 'title': c['name'], 'teacher_name': c['teacher'], 'user_id': c['created_by']})
         .toList();
-    final results = await Future.wait(_allClassPosts.map((c) async {
-      final id = (c['id'] as num?)?.toInt();
-      if (id == null) return const MapEntry(0, <dynamic>[]);
-      try {
-        final members = await api.getClassMembers(id, isAdmin: true);
-        return MapEntry(id, members);
-      } catch (_) {
-        return MapEntry(id, <dynamic>[]);
-      }
-    }));
-    _classMembers = Map.fromEntries(results.where((e) => e.key != 0));
+    try { _aiSummary = await api.adminAiSummary(); } catch (e) { logError('AdminScreen.loadAiSummary', e); }
     if (mounted) setState(() => _classesLoading = false);
   }
 
-  Future<void> _loadAi() async {
-    if (!mounted) return;
-    setState(() => _aiLoading = true);
-    try {
-      final api = context.read<ApiService>();
-      _aiSummary = await api.adminAiSummary();
-      final page = await api.adminAiUsagePage(classId: _aiFilterClassId, page: 1, pageSize: _aiLogPageSize);
-      _aiLogs    = List<dynamic>.from(page['items'] as List? ?? const []);
-      _aiLogTotal = (page['total'] as num?)?.toInt() ?? _aiLogs.length;
-      _aiLogPage = 1;
-      _recomputeTotalTokens();
-    } catch (_) {}
-    if (mounted) setState(() => _aiLoading = false);
-  }
-
-  void _recomputeTotalTokens() {
-    if (_aiFilterClassId == null) {
-      _totalTokens = 0;
-      for (final s in _aiSummary) {
-        _totalTokens += (s['total_tokens'] as num? ?? 0).toInt();
+  /// Расход токенов по предмету — из сводки /admin/ai-usage/summary.
+  (int tokens, int requests) _classUsage(int classId) {
+    for (final s in _aiSummary) {
+      if ((s['class_id'] as num?)?.toInt() == classId) {
+        return ((s['total_tokens'] as num? ?? 0).toInt(), (s['request_count'] as num? ?? 0).toInt());
       }
-    } else {
-      final match = _aiSummary.firstWhere(
-        (s) => (s['class_id'] as num?)?.toInt() == _aiFilterClassId,
-        orElse: () => const <String, dynamic>{},
-      );
-      _totalTokens = (match['total_tokens'] as num? ?? 0).toInt();
     }
+    return (0, 0);
   }
 
-  void _setAiFilterClass(int? classId) {
-    if (_aiFilterClassId == classId) return;
-    setState(() => _aiFilterClassId = classId);
-    _loadAi();
+  List<dynamic> get _filtered {
+    final q = _search.trim().toLowerCase();
+    final list = _users.where((u) {
+      if (_roleFilter != 'all' && (u['role'] ?? 'student') != _roleFilter) return false;
+      if (_onlyBlocked && u['is_active'] != false) return false;
+      if (_onlyUnlimited && u['ai_unlimited'] != true) return false;
+      if (q.isEmpty) return true;
+      return (u['email'] ?? '').toString().toLowerCase().contains(q) ||
+          (u['full_name'] ?? '').toString().toLowerCase().contains(q);
+    }).toList();
+
+    int tokensOf(dynamic u) => (u['total_tokens'] as num? ?? 0).toInt();
+    String nameOf(dynamic u) => ((u['full_name'] ?? u['email'] ?? '').toString()).toLowerCase();
+    int seenOf(dynamic u) => parseServerDate(u['last_active'] as String?)?.millisecondsSinceEpoch ?? 0;
+
+    list.sort((a, b) => switch (_sort) {
+      'active' => seenOf(b).compareTo(seenOf(a)),
+      'name' => nameOf(a).compareTo(nameOf(b)),
+      _ => tokensOf(b).compareTo(tokensOf(a)) != 0
+          ? tokensOf(b).compareTo(tokensOf(a))
+          : nameOf(a).compareTo(nameOf(b)),
+    });
+    return list;
   }
 
-  Future<void> _loadMoreAiLogs() async {
-    if (_aiLogLoadingMore || _aiLogs.length >= _aiLogTotal) return;
-    setState(() => _aiLogLoadingMore = true);
-    try {
-      final api = context.read<ApiService>();
-      final page = await api.adminAiUsagePage(classId: _aiFilterClassId, page: _aiLogPage + 1, pageSize: _aiLogPageSize);
-      final items = List<dynamic>.from(page['items'] as List? ?? const []);
-      if (mounted) setState(() { _aiLogs.addAll(items); _aiLogPage++; });
-    } catch (_) {}
-    if (mounted) setState(() => _aiLogLoadingMore = false);
-  }
-
-  List<dynamic> get _filtered => _users.where((u) {
-    final q = _search.toLowerCase();
-    return (u['email'] ?? '').toLowerCase().contains(q) || (u['full_name'] ?? '').toLowerCase().contains(q);
-  }).toList();
-
-  String _fmtTokens(num n) {
-    if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
-    if (n >= 1000)    return '${(n / 1000).toStringAsFixed(0)}K';
-    return '$n';
+  int get _maxUserTokens {
+    var max = 1;
+    for (final u in _users) {
+      final v = (u['total_tokens'] as num? ?? 0).toInt();
+      if (v > max) max = v;
+    }
+    return max;
   }
 
   Map<int, String> get _userNameMap {
@@ -348,39 +335,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           : u['email']?.toString() ?? 'Пользователь #$id';
     }
     return map;
-  }
-
-  Map<int, String> _classNameMapFrom(List<Map<String, dynamic>> classes) {
-    final map = <int, String>{};
-    for (final c in classes) {
-      final id = (c['id'] as num?)?.toInt();
-      if (id == null) continue;
-      map[id] = c['title']?.toString() ?? 'Класс #$id';
-    }
-    return map;
-  }
-
-  List<Map<String, dynamic>> _perUserSummary() {
-    final names = _userNameMap;
-    final map   = <int, Map<String, dynamic>>{};
-    for (final l in _aiLogs) {
-      final uid = (l['user_id'] as num?)?.toInt();
-      if (uid == null) continue;
-      final tokens = (l['total_tokens'] as num? ?? 0).toInt();
-      if (map.containsKey(uid)) {
-        map[uid]!['tokens'] = (map[uid]!['tokens'] as int) + tokens;
-        map[uid]!['count']  = (map[uid]!['count']  as int) + 1;
-      } else {
-        map[uid] = {'name': names[uid] ?? 'Пользователь #$uid', 'tokens': tokens, 'count': 1};
-      }
-    }
-    final list = map.values.toList();
-    list.sort((a, b) => (b['tokens'] as int).compareTo(a['tokens'] as int));
-    return list;
-  }
-
-  List<dynamic> _membersForClass(int classId) {
-    return _classMembers[classId] ?? [];
   }
 
   @override
@@ -467,7 +421,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           ),
           Expanded(child: TabBarView(controller: _tabCtrl, children: [
             _memoUsersTab(tabSig),
-            _memoAiTab(tabSig),
+            const AiDashboardTab(),
             _memoClassesTab(tabSig),
             _reportsTab(),
           ])),
@@ -477,7 +431,8 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
   }
 
   Widget _memoUsersTab(String tl) {
-    final sig = 'u|$_loading|${identityHashCode(_users)}|$_search|$tl';
+    final sig = 'u|$_loading|${identityHashCode(_users)}|$_search|$_roleFilter'
+        '|$_onlyBlocked|$_onlyUnlimited|$_sort|$tl';
     if (sig != _usersTabSig || _usersTabCache == null) {
       _usersTabSig = sig;
       _usersTabCache = _usersTab();
@@ -485,21 +440,9 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     return _usersTabCache!;
   }
 
-  Widget _memoAiTab(String tl) {
-    final sig = 'a|$_aiLoading|${identityHashCode(_aiLogs)}|${_aiLogs.length}|$_aiLogPage'
-        '|${identityHashCode(_aiSummary)}|${identityHashCode(_allClassPosts)}'
-        '|${identityHashCode(_users)}|$_aiFilterClassId|$_aiLogLoadingMore'
-        '|$_aiLogTotal|$_totalTokens|$tl';
-    if (sig != _aiTabSig || _aiTabCache == null) {
-      _aiTabSig = sig;
-      _aiTabCache = _aiTab();
-    }
-    return _aiTabCache!;
-  }
-
   Widget _memoClassesTab(String tl) {
     final sig = 'c|$_classesLoading|${identityHashCode(_allClassPosts)}'
-        '|${identityHashCode(_classMembers)}|${identityHashCode(_users)}|$tl';
+        '|${identityHashCode(_aiSummary)}|${identityHashCode(_users)}|$tl';
     if (sig != _classesTabSig || _classesTabCache == null) {
       _classesTabSig = sig;
       _classesTabCache = _classesTab();
@@ -508,8 +451,10 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
   }
 
   Widget _usersTab() {
-    final l       = context.read<L10n>();
+    final l = context.read<L10n>();
     final filtered = _filtered;
+    final maxTokens = _maxUserTokens;
+
     return Column(children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 2, 16, 10),
@@ -529,368 +474,261 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
           },
         ),
       ),
+
+      // Фильтры и сортировка одной прокручиваемой строкой — на телефоне они не
+      // помещаются в ряд, а прятать их в меню значит скрыть состояние.
+      SizedBox(
+        height: 34,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          children: [
+            _filterChip(l.t('filter_all'), _roleFilter == 'all', _roleCount('all'),
+                () => setState(() => _roleFilter = 'all')),
+            _filterChip(l.t('students_label'), _roleFilter == 'student', _roleCount('student'),
+                () => setState(() => _roleFilter = 'student')),
+            _filterChip(l.t('teachers_label'), _roleFilter == 'teacher', _roleCount('teacher'),
+                () => setState(() => _roleFilter = 'teacher')),
+            _filterChip(l.t('role_admin_short'), _roleFilter == 'admin', _roleCount('admin'),
+                () => setState(() => _roleFilter = 'admin')),
+            Container(width: hairline(context), height: 18, margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8), color: groupSeparator(context)),
+            _filterChip(l.t('blocked_short'), _onlyBlocked, _blockedCount,
+                () => setState(() => _onlyBlocked = !_onlyBlocked)),
+            _filterChip(l.t('ai_unlimited'), _onlyUnlimited, _unlimitedCount,
+                () => setState(() => _onlyUnlimited = !_onlyUnlimited)),
+          ],
+        ),
+      ),
+      const SizedBox(height: 8),
+
+      Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 16, 8),
+        child: Row(children: [
+          Expanded(
+            child: Text('${filtered.length} ${l.t('of_word')} ${_users.length}',
+                style: TextStyle(fontSize: 13, color: adaptiveText4(context))),
+          ),
+          Tappable(
+            onTap: _showSortSheet,
+            label: l.t('sort_label'),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(CupertinoIcons.arrow_up_arrow_down, size: 14, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 6),
+                Text(_sortLabel(l),
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.2,
+                        color: Theme.of(context).colorScheme.primary)),
+              ]),
+            ),
+          ),
+        ]),
+      ),
+
       Expanded(child: _loading
         ? const Center(child: CupertinoActivityIndicator(radius: 13, color: C.text3))
-        : CustomScrollView(slivers: [
-            CupertinoSliverRefreshControl(onRefresh: _load),
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(16, 0, 16, bottomBarClearance(context)),
-              sliver: SliverList(delegate: SliverChildBuilderDelegate(
-                childCount: filtered.length,
-                (ctx, i) {
-                final u    = filtered[i];
-                final name = u['full_name'] ?? u['email']?.split('@').first ?? '';
-                final role = u['role'] ?? 'student';
-                final isBlocked = u['is_active'] == false;
-
-                // Без «аватарки»-кружка с первой буквой: имя и почта и так
-                // идентифицируют человека, а буква в круге читалась как
-                // подмена фотографии. Строка — две строки текста, поэтому все
-                // карточки списка одной высоты.
-                return Entrance(
-                  key: ValueKey(u['id']),
-                  index: i,
-                  child: RepaintBoundary(child: Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: GroupRow.card(
-                      onTap: () => _showUserActionsSheet(u),
-                      padding: const EdgeInsets.fromLTRB(16, 12, 4, 12),
-                      child: Row(children: [
-                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Row(children: [
-                            Flexible(child: Text(name,
-                                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.4, color: adaptiveTextSoft(context)),
-                                maxLines: 1, overflow: TextOverflow.ellipsis)),
-                            if (isBlocked) Container(
-                              margin: const EdgeInsets.only(left: 7),
-                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                              decoration: BoxDecoration(color: C.red.withValues(alpha: 0.13), borderRadius: BorderRadius.circular(100)),
-                              child: Text(l.t('blocked_short'),
-                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: C.red)),
-                            ),
-                          ]),
-                          const SizedBox(height: 2),
-                          Text(u['email'] ?? '',
-                              style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText4(context)),
-                              maxLines: 1, overflow: TextOverflow.ellipsis),
-                        ])),
-                        const SizedBox(width: 10),
-                        _RoleBadge(role: role),
-                        Tappable(
-                          onTap: () => _showUserActionsSheet(u),
-                          label: 'Действия с пользователем',
-                          child: SizedBox(width: 40, height: 46,
-                              child: Icon(CupertinoIcons.ellipsis_vertical, size: 18, color: adaptiveText4(context))),
-                        ),
-                      ]),
-                    ),
-                  )),
-                );
-                },
-              )),
-            ),
-          ]),
+        : filtered.isEmpty
+          ? Center(child: Padding(
+              padding: const EdgeInsets.fromLTRB(28, 0, 28, 60),
+              child: Text(l.t('nobody_found'), textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.3, color: adaptiveText4(context))),
+            ))
+          : CustomScrollView(slivers: [
+              CupertinoSliverRefreshControl(onRefresh: _load),
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(16, 0, 16, bottomBarClearance(context)),
+                sliver: SliverList(delegate: SliverChildBuilderDelegate(
+                  childCount: filtered.length,
+                  (ctx, i) => Entrance(
+                    key: ValueKey(filtered[i]['id']),
+                    index: i,
+                    child: RepaintBoundary(child: Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _userRow(l, filtered[i] as Map<String, dynamic>, maxTokens),
+                    )),
+                  ),
+                )),
+              ),
+            ]),
       ),
     ]);
   }
 
-  Widget _aiTab() {
-    final l       = context.read<L10n>();
-    final surface = Theme.of(context).colorScheme.surface;
-    final primary = Theme.of(context).colorScheme.primary;
+  int _roleCount(String role) =>
+      role == 'all' ? _users.length : _users.where((u) => (u['role'] ?? 'student') == role).length;
+  int get _blockedCount => _users.where((u) => u['is_active'] == false).length;
+  int get _unlimitedCount => _users.where((u) => u['ai_unlimited'] == true).length;
 
-    if (_aiLoading) return const Center(child: CupertinoActivityIndicator(radius: 13, color: C.text3));
+  String _sortLabel(L10n l) => switch (_sort) {
+    'active' => l.t('sort_by_activity'),
+    'name' => l.t('sort_by_name'),
+    _ => l.t('sort_by_tokens'),
+  };
 
-    final classes      = _allClassPosts;
-    final classNames   = _classNameMapFrom(classes);
-    final userNames    = _userNameMap;
-    final userSummary  = _perUserSummary();
-    final maxTokens    = userSummary.isNotEmpty ? (userSummary.first['tokens'] as int) : 1;
-
-    return CustomScrollView(slivers: [
-      CupertinoSliverRefreshControl(onRefresh: _loadAi),
-      SliverPadding(
-        padding: EdgeInsets.fromLTRB(16, 8, 16, bottomBarClearance(context)),
-        sliver: SliverList(delegate: SliverChildListDelegate([
-
-        // Итог по токенам: тот же градиент, но без цветного свечения под
-        // карточкой и с табличными цифрами — число обновляется, и «прыгающая»
-        // ширина разрядов бросалась в глаза.
-        Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [Theme.of(context).colorScheme.secondary, primary], begin: Alignment.topLeft, end: Alignment.bottomRight),
-            borderRadius: BorderRadius.circular(AppRadii.card),
-          ),
-          child: Row(children: [
-            Container(width: 46, height: 46,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(AppRadii.tile)),
-              child: const Icon(CupertinoIcons.bolt_fill, color: Colors.white, size: 24)),
-            const SizedBox(width: 14),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(l.t('total_tokens').toUpperCase(),
-                  style: const TextStyle(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.w600, letterSpacing: 0.7)),
-              const SizedBox(height: 4),
-              Text(_fmtTokens(_totalTokens),
-                  style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w700, color: Colors.white, height: 1,
-                      letterSpacing: -1, fontFeatures: [FontFeature.tabularFigures()])),
-            ])),
-            Tappable(
-              onTap: _loadAi,
-              label: l.t('refresh'),
-              child: SizedBox(width: 44, height: 44,
-                  child: Icon(CupertinoIcons.arrow_counterclockwise, size: 20, color: Colors.white.withValues(alpha: 0.9))),
-            ),
-          ]),
-        ),
-        const SizedBox(height: 18),
-
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(children: [
-            _AiFilterChip(label: l.t('filter_all'), selected: _aiFilterClassId == null, onTap: () => _setAiFilterClass(null)),
-            const SizedBox(width: 8),
-            ...classes.map((c) {
-              final cid = (c['id'] as num?)?.toInt();
-              if (cid == null) return const SizedBox.shrink();
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: _AiFilterChip(
-                  label: classNames[cid] ?? 'Класс #$cid',
-                  selected: _aiFilterClassId == cid,
-                  onTap: () => _setAiFilterClass(cid),
-                ),
-              );
-            }),
-          ]),
-        ),
-        const SizedBox(height: 20),
-
-        if (_aiFilterClassId == null && _aiSummary.isNotEmpty) ...[
-          _SectionLabel(l.t('by_classes')),
-          const SizedBox(height: 8),
-          ..._aiSummary.asMap().entries.map((entry) {
-            final i   = entry.key;
-            final s   = entry.value;
-            final cid = (s['class_id'] as num?)?.toInt();
-            final className = cid != null ? (classNames[cid] ?? 'Класс #$cid') : l.t('no_class_label');
-            final tokens    = (s['total_tokens'] as num? ?? 0).toInt();
-            final reqCount  = (s['request_count'] as num? ?? 0).toInt();
-            return TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0.0, end: 1.0),
-              duration: Duration(milliseconds: 280 + i * 40),
-              curve: Curves.easeOutCubic,
-              builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 10 * (1-t)), child: child)),
-              child: RepaintBoundary(child: Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: GroupRow.card(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                  child: Row(children: [
-                    Container(width: 46, height: 46,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: primary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(AppRadii.tile)),
-                      child: Icon(CupertinoIcons.book_fill, size: 21, color: primary)),
-                    const SizedBox(width: 14),
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(className,
-                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.4, color: adaptiveTextSoft(context)),
-                          maxLines: 1, overflow: TextOverflow.ellipsis),
-                      const SizedBox(height: 3),
-                      Text('$reqCount ${l.t('requests_count')}',
-                          style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText4(context))),
-                    ])),
-                    const SizedBox(width: 10),
-                    Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                      Text(_fmtTokens(tokens),
-                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.4, color: adaptiveTextSoft(context),
-                              fontFeatures: const [FontFeature.tabularFigures()])),
-                      Text(l.t('tokens'), style: TextStyle(fontSize: 13, color: adaptiveText4(context))),
-                    ]),
-                  ]),
-                ),
-              )),
-            );
-          }),
-          const SizedBox(height: 20),
-        ],
-
-        if (userSummary.isNotEmpty) ...[
-          _SectionLabel(l.t('by_users')),
-          const SizedBox(height: 8),
-          ...userSummary.asMap().entries.map((entry) {
-            final i      = entry.key;
-            final u      = entry.value;
-            final name   = u['name'] as String;
-            final tokens = u['tokens'] as int;
-            final count  = u['count'] as int;
-            final pct = maxTokens > 0 ? (tokens / maxTokens).clamp(0.0, 1.0) : 0.0;
-            return TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0.0, end: 1.0),
-              duration: Duration(milliseconds: 300 + i * 40),
-              curve: Curves.easeOutCubic,
-              builder: (_, t, child) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 10*(1-t)), child: child)),
-              child: RepaintBoundary(child: Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: GroupRow.card(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 13),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Row(children: [
-                      Expanded(child: Text(name,
-                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.4, color: adaptiveTextSoft(context)),
-                          maxLines: 1, overflow: TextOverflow.ellipsis)),
-                      const SizedBox(width: 10),
-                      Text(_fmtTokens(tokens),
-                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.4, color: adaptiveTextSoft(context),
-                              fontFeatures: const [FontFeature.tabularFigures()])),
-                    ]),
-                    const SizedBox(height: 3),
-                    Row(children: [
-                      Expanded(child: Text('$count ${l.t('requests_label')}',
-                          style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText4(context)))),
-                      Text(l.t('tokens'), style: TextStyle(fontSize: 13, color: adaptiveText4(context))),
-                    ]),
-                    const SizedBox(height: 10),
-                    // Доля этого пользователя от самого активного — полоса на
-                    // всю ширину карточки, а не зажатая между кружком и цифрой.
-                    ClipRRect(borderRadius: BorderRadius.circular(100),
-                      child: LinearProgressIndicator(value: pct, backgroundColor: primary.withValues(alpha: 0.10), color: primary, minHeight: 6)),
-                  ]),
-                ),
-              )),
-            );
-          }),
-          const SizedBox(height: 20),
-        ],
-
-        if (_aiLogs.isNotEmpty) ...[
-          _SectionLabel('${l.t('detail_log')} (${_aiLogs.length}/$_aiLogTotal)'),
-          const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: surface,
-              borderRadius: BorderRadius.circular(AppRadii.card),
-              border: Border.all(color: groupSeparator(context), width: hairline(context)),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Column(children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                child: Row(children: [
-                  SizedBox(width: 24, child: Text('#', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: adaptiveText4(context)))),
-                  Expanded(flex: 3, child: Text(l.t('user_label').toUpperCase(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: adaptiveText4(context), letterSpacing: 0.6))),
-                  Expanded(flex: 2, child: Text(l.t('class_col').toUpperCase(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: adaptiveText4(context), letterSpacing: 0.6))),
-                  SizedBox(width: 74, child: Text(l.t('tokens_col').toUpperCase(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: adaptiveText4(context), letterSpacing: 0.6), textAlign: TextAlign.right)),
-                ]),
-              ),
-              Container(height: hairline(context), color: groupSeparator(context)),
-              ...List.generate(_aiLogs.length, (i) {
-                final entry     = _aiLogs[i];
-                final uid       = (entry['user_id'] as num?)?.toInt();
-                final cid       = (entry['class_id'] as num?)?.toInt();
-                final userName  = uid != null ? (userNames[uid] ?? 'Пользователь #$uid') : '—';
-                final className = cid != null ? (classNames[cid] ?? 'Класс #$cid') : '—';
-                final isGrade   = (entry['endpoint'] ?? '').toString().contains('grade');
-                final promptTokens     = (entry['prompt_tokens'] as num?)?.toInt() ?? 0;
-                final completionTokens = (entry['completion_tokens'] as num?)?.toInt() ?? 0;
-                final totalTokens      = (entry['total_tokens'] as num?)?.toInt() ?? (promptTokens + completionTokens);
-                final date = (() {
-                  final d = parseServerDate(entry['created_at']);
-                  if (d == null) return '';
-                  return '${d.day.toString().padLeft(2,'0')}.${d.month.toString().padLeft(2,'0')} ${d.hour.toString().padLeft(2,'0')}:${d.minute.toString().padLeft(2,'0')}';
-                })();
-                // Строки разделены волосяной линией, без «зебры»: чередование
-                // заливки — приём таблиц Material, в системных списках iOS
-                // строки разделяет линия по началу контента.
-                return Column(children: [
-                  if (i > 0)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 16),
-                      child: Container(height: hairline(context), color: groupSeparator(context)),
-                    ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    child: Row(children: [
-                      SizedBox(width: 24, child: Text('${i+1}',
-                          style: TextStyle(fontSize: 13, color: adaptiveText4(context), fontFeatures: const [FontFeature.tabularFigures()]))),
-                      Expanded(flex: 3, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(userName,
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, letterSpacing: -0.2, color: adaptiveTextSoft(context)),
-                            maxLines: 1, overflow: TextOverflow.ellipsis),
-                        Text(date, style: TextStyle(fontSize: 13, color: adaptiveText4(context))),
-                      ])),
-                      Expanded(flex: 2, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(className,
-                            style: TextStyle(fontSize: 13, color: adaptiveText4(context)),
-                            maxLines: 1, overflow: TextOverflow.ellipsis),
-                        Container(
-                          margin: const EdgeInsets.only(top: 3),
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: isGrade ? primary.withValues(alpha: 0.12) : C.green.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(100),
-                          ),
-                          child: Text(isGrade ? l.t('check_type') : l.t('chat_type'),
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isGrade ? primary : C.green)),
-                        ),
-                      ])),
-                      SizedBox(width: 74, child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                        Text('$totalTokens',
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: adaptiveTextSoft(context),
-                                fontFeatures: const [FontFeature.tabularFigures()])),
-                        Text('$promptTokens+$completionTokens',
-                            style: TextStyle(fontSize: 13, color: adaptiveText4(context),
-                                fontFeatures: const [FontFeature.tabularFigures()])),
-                      ])),
-                    ]),
-                  ),
-                ]);
+  void _showSortSheet() {
+    final l = context.read<L10n>();
+    showCupertinoModalPopup(
+      context: context,
+      builder: (ctx) => CupertinoActionSheet(
+        title: Text(l.t('sort_label')),
+        actions: [
+          for (final option in const ['tokens', 'active', 'name'])
+            CupertinoActionSheetAction(
+              onPressed: () {
+                Navigator.pop(ctx);
+                if (_sort != option) setState(() => _sort = option);
+              },
+              child: Text(switch (option) {
+                'active' => l.t('sort_by_activity'),
+                'name' => l.t('sort_by_name'),
+                _ => l.t('sort_by_tokens'),
               }),
-              if (_aiLogs.length < _aiLogTotal) ...[
-                Padding(
-                  padding: const EdgeInsets.only(left: 16),
-                  child: Container(height: hairline(context), color: groupSeparator(context)),
-                ),
-                // «Показать ещё» — акцентная текстовая строка в самом списке,
-                // как «Load More» в системных приложениях, а не серая кнопка.
-                GroupRow(
-                  pos: GroupPos.last,
-                  color: Colors.transparent,
-                  onTap: _aiLogLoadingMore ? null : _loadMoreAiLogs,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Center(child: _aiLogLoadingMore
-                      ? CupertinoActivityIndicator(radius: 9, color: adaptiveText4(context))
-                      : Text(l.t('show_more_full'),
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, letterSpacing: -0.3, color: primary))),
-                ),
-              ],
-            ]),
-          ),
+            ),
         ],
-
-        if (_aiSummary.isEmpty && _aiLogs.isEmpty)
-          Padding(padding: const EdgeInsets.fromLTRB(28, 48, 28, 48), child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Container(width: 76, height: 76,
-              decoration: BoxDecoration(
-                gradient: RadialGradient(colors: [primary.withValues(alpha: 0.16), primary.withValues(alpha: 0.03)]),
-                shape: BoxShape.circle),
-              child: Icon(CupertinoIcons.bolt_fill, size: 32, color: primary)),
-            const SizedBox(height: 18),
-            Text(l.t('no_ai_data'), textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, letterSpacing: -0.4, color: adaptiveTextSoft(context))),
-          ]))),
-        ])),
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(ctx),
+          child: Text(l.t('cancel')),
+        ),
       ),
-    ]);
+    );
+  }
+
+  Widget _filterChip(String label, bool selected, int count, VoidCallback onTap) {
+    final primary = Theme.of(context).colorScheme.primary;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Tappable(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+          decoration: BoxDecoration(
+            color: selected ? primary.withValues(alpha: 0.13) : Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(100),
+            border: selected ? null : Border.all(color: groupSeparator(context), width: hairline(context)),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Text(label,
+                style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                    letterSpacing: -0.2,
+                    color: selected ? primary : adaptiveText2(context))),
+            if (count > 0) ...[
+              const SizedBox(width: 6),
+              Text('$count',
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: selected ? primary : adaptiveText4(context),
+                      fontFeatures: const [FontFeature.tabularFigures()])),
+            ],
+          ]),
+        ),
+      ),
+    );
+  }
+
+  /// Строка списка: кто это, чем выделяется и сколько тратит — без открытия
+  /// карточки видно главное, а нажатие открывает всё остальное.
+  Widget _userRow(L10n l, Map<String, dynamic> u, int maxTokens) {
+    final id = (u['id'] as num?)?.toInt() ?? 0;
+    final name = (u['full_name'] ?? '').toString().trim().isNotEmpty
+        ? u['full_name'].toString()
+        : (u['email'] ?? '').toString().split('@').first;
+    final role = (u['role'] ?? 'student').toString();
+    final blocked = u['is_active'] == false;
+    final unlimited = u['ai_unlimited'] == true;
+    final unverified = u['is_verified'] == false;
+    final tokens = (u['total_tokens'] as num? ?? 0).toInt();
+    final classCount = (u['class_count'] as num? ?? 0).toInt();
+
+    return GroupRow.card(
+      onTap: () => _openUserCard(u),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 13),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          InitialsAvatar(id: id, name: name, size: 40, radius: 13),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Flexible(child: Text(name,
+                  maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.4, color: adaptiveTextSoft(context)))),
+              if (blocked) _tag(l.t('blocked_short'), C.red)
+              else if (unverified) _tag(l.t('email_unverified_short'), C.amber),
+              if (unlimited) _tag(l.t('ai_unlimited_tag'), Theme.of(context).colorScheme.primary),
+            ]),
+            const SizedBox(height: 2),
+            Text((u['email'] ?? '').toString(),
+                maxLines: 1, overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText4(context))),
+          ])),
+          const SizedBox(width: 10),
+          _RoleBadge(role: role),
+        ]),
+        const SizedBox(height: 10),
+        Row(children: [
+          Expanded(child: MiniBar(
+            value: tokens > 0 ? tokens / maxTokens : 0,
+            color: Theme.of(context).colorScheme.primary,
+            height: 5,
+          )),
+          const SizedBox(width: 10),
+          Text(fmtInt(tokens),
+              style: TextStyle(
+                  fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: -0.2,
+                  color: adaptiveText2(context), fontFeatures: const [FontFeature.tabularFigures()])),
+        ]),
+        const SizedBox(height: 5),
+        Text(
+          [
+            l.t('tokens').toLowerCase(),
+            if (classCount > 0) '$classCount ${l.t('subjects_short')}',
+            fmtRelativeDate(u['last_active'] as String?, l),
+          ].join(' · '),
+          maxLines: 1, overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: 12, color: adaptiveText4(context)),
+        ),
+      ]),
+    );
+  }
+
+  Widget _tag(String text, Color color) => Container(
+    margin: const EdgeInsets.only(left: 6),
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+    decoration: BoxDecoration(color: color.withValues(alpha: 0.13), borderRadius: BorderRadius.circular(100)),
+    child: Text(text, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+  );
+
+  Future<void> _openUserCard(Map<String, dynamic> u) async {
+    final isSelf = (u['id'] as num?)?.toInt() == context.read<AuthProvider>().userId;
+    await showUserCardSheet(
+      context,
+      row: u,
+      isSelf: isSelf,
+      onAction: (action) => _action(u, action),
+      onDeleted: () {
+        if (!mounted) return;
+        setState(() => _users = _users.where((x) => x['id'] != u['id']).toList());
+      },
+    );
+    // Карточка могла поменять роль/блокировку/безлимит — список перечитываем,
+    // чтобы строка и агрегаты соответствовали новому состоянию.
+    if (mounted) _load();
   }
 
   Widget _classesTab() {
-    final l       = context.read<L10n>();
-    if (_classesLoading) return const Center(child: CupertinoActivityIndicator(radius: 13, color: C.text3));
+    final l = context.read<L10n>();
+    if (_classesLoading && _allClassPosts.isEmpty) {
+      return const Center(child: CupertinoActivityIndicator(radius: 13, color: C.text3));
+    }
 
-    final classes   = _allClassPosts;
+    final classes = _allClassPosts;
     final userNames = _userNameMap;
 
     if (classes.isEmpty) {
@@ -910,6 +748,14 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
       ));
     }
 
+    // Самый «дорогой» предмет задаёт масштаб полосы: в списке важно, кто
+    // выделяется, а не сколько процентов у каждого.
+    var maxTokens = 1;
+    for (final c in classes) {
+      final v = _classUsage((c['id'] as num?)?.toInt() ?? 0).$1;
+      if (v > maxTokens) maxTokens = v;
+    }
+
     return CustomScrollView(slivers: [
       CupertinoSliverRefreshControl(onRefresh: () async { await _load(); await _loadClasses(); }),
       SliverPadding(
@@ -917,28 +763,25 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
         sliver: SliverList(delegate: SliverChildBuilderDelegate(
           childCount: classes.length,
           (ctx, i) {
-          final cls         = classes[i];
-          final classId     = (cls['id'] as num?)?.toInt() ?? 0;
-          final title       = cls['title']?.toString() ?? '';
-          final coverImg    = cardCoverUrl(cls);
-          final uid         = (cls['user_id'] as num?)?.toInt();
-          final creatorName = uid != null ? (userNames[uid] ?? 'Пользователь #$uid') : '—';
-          final description = (cls['description'] ?? '').toString();
-          final teacherName = (cls['teacher_name'] ?? '').toString();
-          final members     = _membersForClass(classId);
-          final students    = members.where((m) => (m['role'] ?? '') == 'student').toList();
+          final cls = classes[i];
+          final classId = (cls['id'] as num?)?.toInt() ?? 0;
+          final title = cls['title']?.toString() ?? '';
+          final coverImg = cardCoverUrl(cls);
+          final uid = (cls['user_id'] as num?)?.toInt();
+          final teacherName = (cls['teacher_name'] ?? '').toString().trim();
+          final creatorName = teacherName.isNotEmpty
+              ? teacherName
+              : uid != null ? (userNames[uid] ?? '#$uid') : '—';
+          final members = (cls['member_count'] as num? ?? 0).toInt();
+          final usage = _classUsage(classId);
 
-          // Без стопки кружков-«аватарок» студентов и без кружка автора: состав
-          // класса теперь читается словами (кто создал, сколько студентов), а
-          // открывается он по нажатию на всю карточку.
           return Entrance(
             key: ValueKey(cls['id']),
             index: i,
             child: RepaintBoundary(child: Padding(
               padding: const EdgeInsets.only(bottom: 14),
               child: GroupRow.card(
-                onTap: () => _showStudentsSheet(classId, title, coverImg, i,
-                    cls['cover_icon'] as String?, cls['cover_color'] as String?),
+                onTap: () => _openClassCard(cls),
                 padding: EdgeInsets.zero,
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   SizedBox(height: 120, width: double.infinity,
@@ -960,7 +803,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                             child: Row(mainAxisSize: MainAxisSize.min, children: [
                               const Icon(CupertinoIcons.person_2_fill, size: 13, color: Colors.white),
                               const SizedBox(width: 5),
-                              Text('${members.length}',
+                              Text('$members',
                                   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white,
                                       fontFeatures: [FontFeature.tabularFigures()])),
                             ]),
@@ -968,35 +811,33 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                         ),
                       )),
                     ])),
-                  Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 15), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Padding(padding: const EdgeInsets.fromLTRB(16, 13, 16, 14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(title,
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, letterSpacing: -0.5, height: 1.15, color: adaptiveTextSoft(context)),
+                        style: TextStyle(fontSize: 19, fontWeight: FontWeight.w600, letterSpacing: -0.5, height: 1.15, color: adaptiveTextSoft(context)),
                         maxLines: 2, overflow: TextOverflow.ellipsis),
-                    if (description.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4),
-                      child: Text(description,
-                          style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText3(context)),
-                          maxLines: 2, overflow: TextOverflow.ellipsis)),
-                    const SizedBox(height: 12),
-                    // Метаданные класса — сгруппированной секцией «метка → значение».
-                    InsetGroup(
-                      color: adaptiveSurface2(context),
-                      radius: AppRadii.tile,
-                      children: [
-                        _metaRow(l.t('created_by'), creatorName, pos: teacherName.isNotEmpty ? GroupPos.middle : GroupPos.last),
-                        if (teacherName.isNotEmpty)
-                          _metaRow(l.t('role_teacher'), teacherName, pos: GroupPos.last),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 3),
                     Row(children: [
-                      Icon(CupertinoIcons.person_2, size: 15, color: adaptiveText4(context)),
-                      const SizedBox(width: 6),
-                      Expanded(child: Text(students.isEmpty
-                            ? l.t('no_students_class')
-                            : '${students.length} ${l.t('students_count')}',
-                          style: TextStyle(fontSize: 15, letterSpacing: -0.2,
-                              color: students.isEmpty ? adaptiveText4(context) : adaptiveText2(context)))),
+                      Icon(CupertinoIcons.person, size: 13, color: adaptiveText4(context)),
+                      const SizedBox(width: 5),
+                      Expanded(child: Text(creatorName,
+                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 14, letterSpacing: -0.2, color: adaptiveText4(context)))),
                     ]),
+                    const SizedBox(height: 12),
+                    // Три числа предмета в ряд — как итоги в системных карточках.
+                    Row(children: [
+                      _classMetric(fmtCompact(usage.$1, l), l.t('tokens').toLowerCase()),
+                      _metricDivider(),
+                      _classMetric(fmtInt(usage.$2), l.t('requests_short')),
+                      _metricDivider(),
+                      _classMetric(fmtInt(members), l.t('members_label').toLowerCase()),
+                    ]),
+                    const SizedBox(height: 11),
+                    MiniBar(
+                      value: usage.$1 > 0 ? usage.$1 / maxTokens : 0,
+                      color: Theme.of(context).colorScheme.primary,
+                      height: 4,
+                    ),
                   ])),
                 ]),
               ),
@@ -1008,272 +849,38 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     ]);
   }
 
-  /// Строка «метка — значение» внутри сгруппированной секции карточки класса.
-  Widget _metaRow(String label, String value, {required GroupPos pos}) => GroupRow(
-    pos: pos,
-    color: Colors.transparent,
-    separatorInset: 12,
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-    child: Row(children: [
-      Text(label, style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText4(context))),
-      const SizedBox(width: 12),
-      Expanded(child: Text(value, textAlign: TextAlign.right,
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, letterSpacing: -0.2, color: adaptiveTextSoft(context)),
-          maxLines: 1, overflow: TextOverflow.ellipsis)),
+  Widget _classMetric(String value, String label) => Expanded(
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Text(value,
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: -0.4,
+                color: adaptiveTextSoft(context), fontFeatures: const [FontFeature.tabularFigures()])),
+      ),
+      Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: 12, color: adaptiveText4(context))),
     ]),
   );
 
-  void _showStudentsSheet(int classId, String className, dynamic coverImg, int colorIdx,
-      String? coverIcon, String? coverColor) {
-    final l       = context.read<L10n>();
-    final primary = Theme.of(context).colorScheme.primary;
+  Widget _metricDivider() => Container(
+    width: 1, height: 26,
+    margin: const EdgeInsets.symmetric(horizontal: 10),
+    color: groupSeparator(context),
+  );
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setS) {
-          final members      = _membersForClass(classId);
-          final studentCount = members.where((m) => (m['role'] ?? '') == 'student').length;
-
-          Future<void> doRefresh() async {
-            final api = context.read<ApiService>();
-            try {
-              final fresh = await api.getClassMembers(classId, isAdmin: true);
-              if (mounted) setState(() => _classMembers[classId] = fresh);
-            } catch (_) {}
-            if (mounted) setS(() {});
-          }
-
-          return DraggableScrollableSheet(
-            expand: false, initialChildSize: 0.65, maxChildSize: 0.92,
-            builder: (ctx, sc) => Column(children: [
-              Container(width: 40, height: 5, margin: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(color: adaptiveText4(context).withValues(alpha: 0.35), borderRadius: BorderRadius.circular(100))),
-
-              Padding(padding: const EdgeInsets.fromLTRB(20, 0, 12, 14), child: Row(children: [
-                ClipRRect(borderRadius: BorderRadius.circular(AppRadii.tile),
-                  child: SizedBox(width: 52, height: 52,
-                    child: _classCover(coverImg, colorIdx,
-                        icon: coverIcon, color: coverColor, iconSize: 24))),
-                const SizedBox(width: 14),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(className,
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, letterSpacing: -0.5, height: 1.15, color: adaptiveTextSoft(context)),
-                      maxLines: 2, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 3),
-                  Text('$studentCount ${l.t('students_count')}  ·  ${l.t('total_label').toLowerCase()} ${members.length}',
-                      style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText4(context)),
-                      maxLines: 1, overflow: TextOverflow.ellipsis),
-                ])),
-                // Действия листа — акцентные глифы, как в баре системного
-                // приложения, вместо цветных плашек-квадратов.
-                Tappable(
-                  onTap: () => _showRejoinableSheet(classId, className, doRefresh),
-                  label: 'Вернуть студента',
-                  child: SizedBox(width: 44, height: 44,
-                      child: Icon(CupertinoIcons.person_badge_plus, size: 22, color: primary)),
-                ),
-                Tappable(
-                  onTap: doRefresh,
-                  label: 'Обновить',
-                  child: SizedBox(width: 44, height: 44,
-                      child: Icon(CupertinoIcons.arrow_counterclockwise, size: 20, color: primary)),
-                ),
-              ])),
-
-              Container(height: hairline(context), color: groupSeparator(context)),
-
-              Expanded(child: members.isEmpty
-                ? Center(child: Padding(
-                    padding: const EdgeInsets.fromLTRB(40, 0, 40, 40),
-                    child: Column(mainAxisSize: MainAxisSize.min, children: [
-                      Icon(CupertinoIcons.person_2, size: 34, color: adaptiveText4(context).withValues(alpha: 0.7)),
-                      const SizedBox(height: 14),
-                      Text(l.t('no_students_class'), textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.4, color: adaptiveTextSoft(context))),
-                      const SizedBox(height: 14),
-                      Tappable(
-                        onTap: doRefresh,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                          child: Text(l.t('refresh_list'),
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, letterSpacing: -0.3, color: primary)),
-                        ),
-                      ),
-                    ]),
-                  ))
-                // Состав класса — сгруппированный список без «аватарок»:
-                // имя, почта и роль-пилюля справа.
-                : CustomScrollView(
-                    controller: sc,
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    slivers: [
-                      CupertinoSliverRefreshControl(onRefresh: doRefresh),
-                      SliverPadding(
-                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
-                        sliver: SliverToBoxAdapter(child: InsetGroup(children: [
-                          for (var j = 0; j < members.length; j++) ...(() {
-                            final s        = members[j];
-                            final name     = (s['full_name'] ?? '').toString().trim();
-                            final email    = (s['email'] ?? '').toString();
-                            final role     = (s['role'] ?? '').toString();
-                            final display  = name.isNotEmpty ? name : email.split('@').first;
-                            final isTeacher  = role == 'teacher' || role == 'admin';
-                            final roleColor  = isTeacher ? C.indigo : adaptiveText4(context);
-                            final roleLabel  = isTeacher ? l.t('role_teacher_short') : l.t('role_student_short');
-                            return [GroupRow(
-                              pos: innerPos(j, members.length),
-                              color: Colors.transparent,
-                              separatorInset: 16,
-                              padding: const EdgeInsets.fromLTRB(16, 11, 16, 11),
-                              child: Row(children: [
-                                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                  Text(display,
-                                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.4, color: adaptiveTextSoft(context)),
-                                      maxLines: 1, overflow: TextOverflow.ellipsis),
-                                  const SizedBox(height: 1),
-                                  Text(email,
-                                      style: TextStyle(fontSize: 14, letterSpacing: -0.1, color: adaptiveText4(context)),
-                                      maxLines: 1, overflow: TextOverflow.ellipsis),
-                                ])),
-                                const SizedBox(width: 10),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                  decoration: BoxDecoration(color: roleColor.withValues(alpha: 0.13), borderRadius: BorderRadius.circular(100)),
-                                  child: Text(roleLabel,
-                                      style: TextStyle(fontSize: 13, color: roleColor, fontWeight: FontWeight.w600, letterSpacing: -0.1)),
-                                ),
-                              ]),
-                            )];
-                          })(),
-                        ])),
-                      ),
-                    ],
-                  )),
-            ]),
-          );
-        },
-      ),
+  Future<void> _openClassCard(Map<String, dynamic> cls) async {
+    final classId = (cls['id'] as num?)?.toInt();
+    if (classId == null) return;
+    await showClassCardSheet(
+      context,
+      classId: classId,
+      name: cls['title']?.toString() ?? '',
+      coverIcon: cls['cover_icon'] as String?,
+      coverColor: cls['cover_color'] as String?,
     );
-  }
-
-  void _showRejoinableSheet(int classId, String className, Future<void> Function() onChanged) {
-    final l = context.read<L10n>();
-    final primary = Theme.of(context).colorScheme.primary;
-    final api = context.read<ApiService>();
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-      builder: (ctx) {
-        List<dynamic> candidates = [];
-        bool loading = true;
-        bool started = false;
-        final adding = <int>{};
-
-        return StatefulBuilder(builder: (ctx, setS) {
-          if (!started) {
-            started = true;
-            api.getRejoinableStudents(classId).then((v) {
-              candidates = v;
-              if (ctx.mounted) setS(() => loading = false);
-            }).catchError((_) {
-              if (ctx.mounted) setS(() => loading = false);
-            });
-          }
-
-          Future<void> add(Map<String, dynamic> u) async {
-            final id = u['id'] as int;
-            setS(() => adding.add(id));
-            try {
-              await api.addClassMember(classId, id);
-              candidates.removeWhere((c) => c['id'] == id);
-              if (mounted) showToast(context, l.t('student_returned'));
-              await onChanged();
-            } catch (_) {
-              if (mounted) showToast(context, l.t('not_found'), error: true);
-            }
-            if (ctx.mounted) setS(() => adding.remove(id));
-          }
-
-          return DraggableScrollableSheet(
-            expand: false, initialChildSize: 0.6, maxChildSize: 0.92,
-            builder: (ctx, sc) => Column(children: [
-              Container(width: 40, height: 5, margin: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(color: adaptiveText4(context).withValues(alpha: 0.35), borderRadius: BorderRadius.circular(100))),
-              Padding(padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(l.t('return_student'),
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, letterSpacing: -0.5, color: adaptiveTextSoft(context))),
-                  const SizedBox(height: 4),
-                  Text('$className · ${l.t('return_student_hint')}',
-                      style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText3(context), height: 1.35)),
-                ])),
-              Container(height: hairline(context), color: groupSeparator(context)),
-              Expanded(child: loading
-                ? const Center(child: CupertinoActivityIndicator(color: C.text3))
-                : candidates.isEmpty
-                  ? Center(child: Padding(
-                      padding: const EdgeInsets.fromLTRB(40, 0, 40, 40),
-                      child: Column(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(CupertinoIcons.checkmark_circle, size: 34, color: adaptiveText4(context).withValues(alpha: 0.7)),
-                        const SizedBox(height: 14),
-                        Text(l.t('no_archived_students'), textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 16, letterSpacing: -0.2, color: adaptiveText3(context), height: 1.4)),
-                      ]),
-                    ))
-                  // Кандидаты — сгруппированным списком без «аватарок»;
-                  // «Вернуть» справа акцентным текстом, как действия в
-                  // системных списках.
-                  : ListView(
-                      controller: sc,
-                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
-                      children: [InsetGroup(children: [
-                        for (var i = 0; i < candidates.length; i++) ...(() {
-                          final u = candidates[i] as Map<String, dynamic>;
-                          final display = (u['full_name'] ?? u['email'] ?? '').toString();
-                          final email = (u['email'] ?? '').toString();
-                          final busy = adding.contains(u['id']);
-                          return [GroupRow(
-                            pos: innerPos(i, candidates.length),
-                            color: Colors.transparent,
-                            separatorInset: 16,
-                            padding: const EdgeInsets.fromLTRB(16, 10, 10, 10),
-                            onTap: busy ? null : () => add(u),
-                            child: Row(children: [
-                              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                Text(display,
-                                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.4, color: adaptiveTextSoft(context)),
-                                    maxLines: 1, overflow: TextOverflow.ellipsis),
-                                const SizedBox(height: 1),
-                                Text(email,
-                                    style: TextStyle(fontSize: 14, letterSpacing: -0.1, color: adaptiveText4(context)),
-                                    maxLines: 1, overflow: TextOverflow.ellipsis),
-                              ])),
-                              const SizedBox(width: 10),
-                              busy
-                                ? Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                                    child: CupertinoActivityIndicator(radius: 9, color: adaptiveText4(context)))
-                                : Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                                    child: Text(l.t('return_add'),
-                                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, letterSpacing: -0.3, color: primary))),
-                            ]),
-                          )];
-                        })(),
-                      ])],
-                    )),
-            ]),
-          );
-        });
-      },
-    );
+    // В карточке можно вернуть студента — состав и счётчики могли измениться.
+    if (mounted) _loadClasses();
   }
 
   Widget _classCover(dynamic coverImg, int index,
@@ -1324,182 +931,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
       if (mounted) showToast(context, context.read<L10n>().t('error'), error: true);
       return false;
     }
-  }
-
-  void _showUserActionsSheet(dynamic u) {
-    final l       = context.read<L10n>();
-    final isSelf  = u['id'] == context.read<AuthProvider>().userId;
-    final name    = (u['full_name'] ?? u['email']?.split('@').first ?? '').toString();
-    final email   = (u['email'] ?? '').toString();
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-      builder: (ctx) => StatefulBuilder(builder: (ctx, setS) {
-        final primary     = Theme.of(ctx).colorScheme.primary;
-        final role        = (u['role'] ?? 'student').toString();
-        final isBlocked   = u['is_active'] == false;
-        final aiUnlimited = u['ai_unlimited'] == true;
-
-        // Роль — сегментированный переключатель в капсуле: выбор одного из
-        // трёх взаимоисключающих значений, ровно та роль, что у нативного
-        // segmented control (раньше это были три плитки с цветными рамками).
-        Widget roleSegment(String value, String label, Color color) {
-          final selected = role == value;
-          return Expanded(child: Tappable(
-            onTap: selected ? null : () async {
-              final ok = await _action(u, value);
-              if (ok && ctx.mounted) setS(() => u['role'] = value);
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 160),
-              curve: Curves.easeOut,
-              padding: const EdgeInsets.symmetric(vertical: 9),
-              decoration: BoxDecoration(
-                color: selected ? Theme.of(ctx).colorScheme.surface : Colors.transparent,
-                borderRadius: BorderRadius.circular(100),
-                boxShadow: selected
-                    ? [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 3, offset: const Offset(0, 1))]
-                    : null,
-              ),
-              child: Center(child: Text(label,
-                  style: TextStyle(fontSize: 15, fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                      letterSpacing: -0.2, color: selected ? color : adaptiveText3(ctx)))),
-            ),
-          ));
-        }
-
-        Widget actionRow({required IconData icon, required Color color, required String title, String? subtitle, Widget? trailing, VoidCallback? onTap, required GroupPos pos}) {
-          return GroupRow(
-            pos: pos,
-            color: Colors.transparent,
-            onTap: onTap,
-            separatorInset: 62,
-            padding: const EdgeInsets.fromLTRB(16, 11, 16, 11),
-            child: Row(children: [
-              Container(width: 32, height: 32,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(color: color.withValues(alpha: 0.13), borderRadius: BorderRadius.circular(9)),
-                child: Icon(icon, size: 18, color: color)),
-              const SizedBox(width: 14),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(title,
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.4, color: color == C.red ? C.red : adaptiveTextSoft(ctx))),
-                if (subtitle != null) Padding(padding: const EdgeInsets.only(top: 1),
-                  child: Text(subtitle, style: TextStyle(fontSize: 13, height: 1.3, color: adaptiveText4(ctx)))),
-              ])),
-              if (trailing != null) trailing else
-                Icon(CupertinoIcons.chevron_right, size: 14, color: adaptiveText4(ctx).withValues(alpha: 0.8)),
-            ]),
-          );
-        }
-
-        return SafeArea(child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Center(child: Container(width: 40, height: 5, margin: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(color: adaptiveText4(ctx).withValues(alpha: 0.35), borderRadius: BorderRadius.circular(100)))),
-
-            // Заголовок листа — имя и почта, без кружка с буквой.
-            Padding(
-              padding: const EdgeInsets.fromLTRB(4, 4, 0, 0),
-              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [
-                    Flexible(child: Text(name,
-                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, letterSpacing: -0.5, color: adaptiveTextSoft(ctx)),
-                        maxLines: 1, overflow: TextOverflow.ellipsis)),
-                    if (isBlocked) Container(
-                      margin: const EdgeInsets.only(left: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                      decoration: BoxDecoration(color: C.red.withValues(alpha: 0.13), borderRadius: BorderRadius.circular(100)),
-                      child: Text(l.t('blocked_short'),
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: C.red)),
-                    ),
-                  ]),
-                  const SizedBox(height: 3),
-                  Text(email,
-                      style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText4(ctx)),
-                      maxLines: 1, overflow: TextOverflow.ellipsis),
-                ])),
-                const SizedBox(width: 10),
-                _RoleBadge(role: role),
-              ]),
-            ),
-            const SizedBox(height: 22),
-
-            _SectionLabel(l.t('role')),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(color: adaptiveSurface2(ctx), borderRadius: BorderRadius.circular(100)),
-              child: Row(children: [
-                roleSegment('student', l.t('role_student_short'),  const Color(0xFF059669)),
-                roleSegment('teacher', l.t('role_teacher_short'), C.indigo),
-                roleSegment('admin',   l.t('role_admin_short'),   primary),
-              ]),
-            ),
-            const SizedBox(height: 22),
-
-            _SectionLabel(l.t('actions_label')),
-            const SizedBox(height: 8),
-            InsetGroup(children: [
-            actionRow(
-              pos: isSelf ? GroupPos.last : GroupPos.middle,
-              icon: aiUnlimited ? CupertinoIcons.bolt_fill : CupertinoIcons.bolt,
-              color: C.amber,
-              title: l.t('ai_unlimited'),
-              subtitle: aiUnlimited ? l.t('ai_unlimited_on_sub') : l.t('ai_unlimited_off_sub'),
-              trailing: IgnorePointer(child: CupertinoLiquidSwitch(value: aiUnlimited, onChanged: (_) {}, accent: C.amber)),
-              onTap: () async {
-                final ok = await _action(u, 'toggle_ai_unlimited');
-                if (ok && ctx.mounted) setS(() => u['ai_unlimited'] = !aiUnlimited);
-              },
-            ),
-            if (!isSelf) actionRow(
-              pos: GroupPos.middle,
-              icon: isBlocked ? CupertinoIcons.lock_open : CupertinoIcons.nosign,
-              color: isBlocked ? C.green : C.red,
-              title: isBlocked ? l.t('unblock') : l.t('block'),
-              subtitle: isBlocked ? l.t('unblock_sub') : l.t('block_sub'),
-              onTap: () async {
-                final action = isBlocked ? 'unblock' : 'block';
-                if (!isBlocked) {
-                  final sure = await showConfirmDialog(context,
-                    title: '${l.t('block')}?',
-                    message: l.t('block_user_msg'),
-                    icon: CupertinoIcons.nosign, danger: true,
-                    confirmText: l.t('block'), cancelText: l.t('cancel'));
-                  if (sure != true) return;
-                }
-                final ok = await _action(u, action);
-                if (ok && ctx.mounted) setS(() => u['is_active'] = isBlocked);
-              },
-            ),
-            if (!isSelf) actionRow(
-              pos: GroupPos.last,
-              icon: CupertinoIcons.trash,
-              color: C.red,
-              title: l.t('delete'),
-              subtitle: l.t('delete_user_sub'),
-              onTap: () async {
-                final sure = await showConfirmDialog(context,
-                  title: l.t('delete_user_q'),
-                  message: l.t('delete_user_msg'),
-                  icon: CupertinoIcons.trash, danger: true,
-                  confirmText: l.t('delete'), cancelText: l.t('cancel'));
-                if (sure != true) return;
-                final ok = await _action(u, 'delete');
-                if (ok && ctx.mounted) Navigator.pop(ctx);
-              },
-            ),
-            ]),
-          ]),
-        ));
-      }),
-    );
   }
 
   void _showCreateDialog() {
@@ -1689,49 +1120,6 @@ class _RoleBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(color: color.withValues(alpha: 0.13), borderRadius: BorderRadius.circular(100)),
       child: Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, letterSpacing: -0.1, color: color)),
-    );
-  }
-}
-
-/// Подпись над сгруппированной секцией: мелкий кегль капсом с положительным
-/// трекингом — правило Apple для мелкого текста (крупный, наоборот, поджимают).
-class _SectionLabel extends StatelessWidget {
-  final String text;
-  const _SectionLabel(this.text);
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(left: 6),
-    child: Text(text.toUpperCase(),
-      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.6, color: adaptiveText3(context))),
-  );
-}
-
-class _AiFilterChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  const _AiFilterChip({required this.label, required this.selected, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
-    return Tappable(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        curve: Curves.easeOut,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          // Капсула вместо скруглённого прямоугольника и без цветного свечения:
-          // фильтр — это переключатель, а не главная кнопка экрана.
-          color: selected ? primary : Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(100),
-          border: selected ? null : Border.all(color: groupSeparator(context), width: hairline(context)),
-        ),
-        child: Text(label,
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, letterSpacing: -0.2,
-                color: selected ? Colors.white : adaptiveText2(context))),
-      ),
     );
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -674,11 +676,13 @@ class _DailyChart extends StatelessWidget {
     final l = context.watch<L10n>();
     final buckets = _buckets();
     if (buckets.isEmpty) return const SizedBox.shrink();
-    final maxTotal = buckets.fold<int>(1, (m, b) => b.total > m ? b.total : m);
+    final peak = buckets.fold<int>(1, (m, b) => b.total > m ? b.total : m);
+    final bounds = _logBounds(buckets);
     final order = groups.map((g) => (g['group'] ?? 'other').toString()).toList();
     final weekly = days.length > 92;
 
     return GroupRow.card(
+      key: const ValueKey('daily-chart'),
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
@@ -686,7 +690,7 @@ class _DailyChart extends StatelessWidget {
             child: Text(weekly ? l.t('by_weeks') : l.t('by_days'),
                 style: TextStyle(fontSize: 13, letterSpacing: -0.2, color: adaptiveText4(context))),
           ),
-          Text('${l.t('peak_label')} ${fmtCompact(maxTotal, l)}',
+          Text('${l.t('peak_label')} ${fmtCompact(peak, l)}',
               style: TextStyle(fontSize: 13, color: adaptiveText4(context))),
         ]),
         const SizedBox(height: 12),
@@ -697,7 +701,7 @@ class _DailyChart extends StatelessWidget {
             children: [
               for (var i = 0; i < buckets.length; i++) ...[
                 if (i > 0) const SizedBox(width: 2),
-                Expanded(child: _column(context, buckets[i], maxTotal, order)),
+                Expanded(child: _column(context, buckets[i], bounds, order)),
               ],
             ],
           ),
@@ -708,6 +712,11 @@ class _DailyChart extends StatelessWidget {
           const Spacer(),
           Text(buckets.last.label, style: TextStyle(fontSize: 11, color: adaptiveText4(context))),
         ]),
+        const SizedBox(height: 8),
+        // Логарифм — это не деталь реализации: без подписи читатель сравнивал бы
+        // высоты столбиков напрямую и ошибался бы на порядок.
+        Text('${l.t('log_scale_note')} ${fmtCompact(bounds.$1, l)} — ${fmtCompact(bounds.$2, l)}',
+            style: TextStyle(fontSize: 11, height: 1.35, color: adaptiveText4(context))),
         const SizedBox(height: 10),
         Wrap(spacing: 12, runSpacing: 6, children: [
           for (final g in groups)
@@ -728,41 +737,56 @@ class _DailyChart extends StatelessWidget {
     );
   }
 
-  Widget _column(BuildContext context, _Bucket b, int maxTotal, List<String> order) {
+  /// Границы логарифмической шкалы — степени десяти вокруг данных.
+  ///
+  /// Дневной расход отличается в тысячи раз: десятки токенов в тихий день
+  /// против сотен тысяч в день массовой проверки работ. На линейной шкале всё,
+  /// кроме пика, ложится в пиксель — именно так график и выглядел раньше.
+  (double bottom, double top) _logBounds(List<_Bucket> buckets) {
+    final values = buckets.where((b) => b.total > 0).map((b) => b.total).toList();
+    if (values.isEmpty) return (1, 10);
+    final min = values.reduce((a, b) => a < b ? a : b);
+    final max = values.reduce((a, b) => a > b ? a : b);
+    final bottom = math.max(1.0, math.pow(10, (math.log(min) / math.ln10).floor()).toDouble());
+    final top = math.max(bottom * 10, math.pow(10, (math.log(max) / math.ln10).ceil()).toDouble());
+    return (bottom, top);
+  }
+
+  Widget _column(BuildContext context, _Bucket b, (double, double) bounds, List<String> order) {
+    const maxH = 112.0;
+    // День без запросов — тонкая полоска подложки: пустое место читалось бы
+    // как «столбик не нарисовался».
     if (b.total <= 0) {
       return Container(
         height: 2,
         decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(1)),
       );
     }
-    final height = ((b.total / maxTotal) * 112).clamp(2.0, 112.0);
-    final parts = [
-      for (final g in order)
-        if ((b.byGroup[g] ?? 0) > 0) (g, b.byGroup[g]!),
-    ];
-    if (parts.isEmpty) {
-      return SizedBox(
-        height: height,
-        child: DecoratedBox(decoration: BoxDecoration(color: kindColor(context, 'other'))),
-      );
+
+    // Преобладающий вид расхода за день: на логарифмической шкале стек не имеет
+    // смысла (доли сегментов перестают складываться в целое), поэтому столбик
+    // одноцветный, а полная разбивка живёт в карточках выше.
+    var group = 'other';
+    var best = 0;
+    for (final g in order) {
+      final v = b.byGroup[g] ?? 0;
+      if (v > best) {
+        best = v;
+        group = g;
+      }
     }
-    // Зазор в 2px между сегментами — это поверхность, а не обводка; его высоту
-    // вычитаем из доступной, иначе сумма сегментов вылезет за столбик.
-    final gaps = (parts.length - 1) * 2.0;
-    final usable = (height - gaps).clamp(1.0, height);
-    final segments = <Widget>[];
-    for (final part in parts) {
-      if (segments.isNotEmpty) segments.add(const SizedBox(height: 2));
-      segments.add(SizedBox(
-        height: (part.$2 / b.total) * usable,
-        child: DecoratedBox(decoration: BoxDecoration(color: kindColor(context, part.$1))),
-      ));
-    }
+
+    final span = (math.log(bounds.$2) - math.log(bounds.$1)) / math.ln10;
+    final frac = span <= 0
+        ? 1.0
+        : ((math.log(b.total) / math.ln10) - (math.log(bounds.$1) / math.ln10)) / span;
+    final height = (frac * maxH).clamp(4.0, maxH);
+
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
       child: SizedBox(
         height: height,
-        child: Column(mainAxisAlignment: MainAxisAlignment.end, children: segments.reversed.toList()),
+        child: ColoredBox(color: kindColor(context, group)),
       ),
     );
   }

@@ -18,20 +18,21 @@ class SecuritySettingsScreen extends StatelessWidget {
       title: l.t('security_section'),
       subtitle: l.t('security_section_sub'),
       children: [
+        // Оба пункта — одной группой с разделителем, как «Условия» и
+        // «Конфиденциальность» в about_settings_screen или блок «Разделы» в
+        // настройках. Отступ в 26 pt в этом экране разделял две одиночные
+        // карточки и читался как пустой провал, хотя везде он отбивает
+        // секции по несколько строк. Необратимость удаления по-прежнему видна
+        // по красной плитке и красному заголовку.
         SettingsGroup(children: [
           SettingsRow(
-            pos: GroupPos.last,
+            pos: GroupPos.middle,
             icon: CupertinoIcons.lock_rotation,
             iconBg: primary,
             title: l.t('change_password'),
             sub: l.t('change_password_sub'),
             onTap: () => openChangePassword(context),
           ),
-        ]),
-        const SizedBox(height: 26),
-        // Необратимое действие — отдельной группой снизу, как «Удалить» в
-        // системных настройках: не соседствует с обычными пунктами.
-        SettingsGroup(children: [
           SettingsRow(
             pos: GroupPos.last,
             icon: CupertinoIcons.trash,

@@ -128,12 +128,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final l       = context.watch<L10n>();
     final auth    = context.watch<AuthProvider>();
     final org     = context.watch<OrgProvider>();
-    final sc      = _pwScore;
     final isDark  = Theme.of(context).brightness == Brightness.dark;
     final primary = org.primaryColor;
-    final canSubmit = !auth.isLoading && _isValid && !_submitted;
 
-    final nameWords = _name.text.trim().split(RegExp(r'\s+')).where((s) => s.isNotEmpty).length;
+    // Подсказки под полями, шкала надёжности пароля и активность кнопки —
+    // единственное, что зависит от набранного текста. Раньше каждое поле на
+    // каждую букву звало setState, и форма перестраивалась целиком: логотип,
+    // заголовки, чекбокс согласия, три ссылки на документы и обёртки анимации
+    // появления. Теперь пересобираются только эти три блока — через подписку
+    // на сами контроллеры.
 
     return Scaffold(
       backgroundColor: isDark ? C.darkBg : C.bg,
@@ -176,12 +179,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
                         child: Icon(CupertinoIcons.person, size: 18, color: C.text4)),
                     ),
-                    onChanged: (_) => setState(() {}),
                   ),
-                  if (_name.text.isNotEmpty && nameWords < 2)
-                    _hint(l.t('enter_full_name')),
-                  if (_name.text.isNotEmpty && nameWords >= 2 && !_nameIsValid)
-                    _hint(l.t('name_letters_only'), error: true),
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _name,
+                    builder: (context, value, _) {
+                      final name = value.text.trim();
+                      if (name.isEmpty) return const SizedBox.shrink();
+                      final words = name.split(RegExp(r'\s+')).where((s) => s.isNotEmpty).length;
+                      if (words < 2) return _hint(l.t('enter_full_name'));
+                      if (!_nameIsValid) return _hint(l.t('name_letters_only'), error: true);
+                      return const SizedBox.shrink();
+                    },
+                  ),
                   const SizedBox(height: 14),
 
                   _fieldLabel('Email'),
@@ -196,7 +205,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       prefixIcon: Padding(padding: EdgeInsets.only(left: 4),
                         child: Icon(CupertinoIcons.mail, size: 18, color: C.text4)),
                     ),
-                    onChanged: (_) => setState(() {}),
                   ),
                   const SizedBox(height: 14),
 
@@ -221,9 +229,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         onPressed: () => setState(() => _showPw = !_showPw),
                       ),
                     ),
-                    onChanged: (_) => setState(() {}),
                   ),
-                  if (_pw.text.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8),
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _pw,
+                    builder: (context, value, _) {
+                      if (value.text.isEmpty) return const SizedBox.shrink();
+                      final sc = _pwScore;
+                      return Padding(padding: const EdgeInsets.only(top: 8),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Row(children: [
                         Expanded(child: ClipRRect(
@@ -253,7 +265,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   : 'Пароль слишком слабый. Добавьте заглавные буквы, цифры или символы',
                           error: true,
                         ),
-                    ])),
+                    ]));
+                    },
+                  ),
                 ])),
                 const SizedBox(height: 20),
 
@@ -324,10 +338,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 18),
 
                 _reveal(3, Column(children: [
-                  AppButton.primary(
-                    label: l.t('register_btn'),
-                    onPressed: canSubmit ? _submit : null,
-                    loading: auth.isLoading,
+                  // Активность кнопки зависит сразу от трёх полей, поэтому
+                  // слушаем их вместе. auth.isLoading/_submitted приходят
+                  // обычной перестройкой сверху и здесь просто читаются.
+                  AnimatedBuilder(
+                    animation: Listenable.merge([_name, _email, _pw]),
+                    builder: (context, _) => AppButton.primary(
+                      label: l.t('register_btn'),
+                      onPressed: (!auth.isLoading && _isValid && !_submitted) ? _submit : null,
+                      loading: auth.isLoading,
+                    ),
                   ),
                   const SizedBox(height: 20),
                   Row(mainAxisAlignment: MainAxisAlignment.center, children: [

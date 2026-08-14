@@ -95,12 +95,22 @@ const int _feedPageSize = 200;
 const Duration _newAssignmentWindow = Duration(days: 7);
 const Duration _deadlineWindow = Duration(hours: 48);
 
-Future<NotifFeed> loadNotifFeed(ApiService api, {DateTime? now}) async {
+/// [myClasses] — уже загруженный список классов пользователя (ответ
+/// `GET /classes/`). Передавай его, если вызывающий только что получил тот же
+/// список: иначе фид сходит за ним ещё раз. Так делает [ClassesProvider], у
+/// которого членство и так грузится при открытии главной. `null` — фид
+/// запрашивает список сам (экран уведомлений открывают отдельно, и ему нужны
+/// свежие данные).
+Future<NotifFeed> loadNotifFeed(
+  ApiService api, {
+  DateTime? now,
+  List<dynamic>? myClasses,
+}) async {
   final at = now ?? DateTime.now();
 
   List<dynamic> mySubs = [];
   List<dynamic> assignments = [];
-  List<dynamic> myClasses = [];
+  List<dynamic> classes = myClasses ?? [];
   List<dynamic> states = [];
 
   // Каждый запрос со своим catch: одна упавшая ручка не должна обнулять фид
@@ -108,7 +118,8 @@ Future<NotifFeed> loadNotifFeed(ApiService api, {DateTime? now}) async {
   await Future.wait([
     () async { try { mySubs = await api.getMySubmissions(); } catch (_) {} }(),
     () async { try { assignments = await api.getAssignments(pageSize: _feedPageSize); } catch (_) {} }(),
-    () async { try { myClasses = await api.getClasses(); } catch (_) {} }(),
+    if (myClasses == null)
+      () async { try { classes = await api.getClasses(); } catch (_) {} }(),
     () async { try { states = await api.getNotifStates(); } catch (_) {} }(),
   ]);
 
@@ -125,7 +136,7 @@ Future<NotifFeed> loadNotifFeed(ApiService api, {DateTime? now}) async {
   // новом устройстве или после входа в другой аккаунт список пуст, а счётчик
   // считает по данным сервера.
   final classNames = <int, String>{};
-  for (final c in myClasses) {
+  for (final c in classes) {
     final id = (c['id'] as num?)?.toInt();
     if (id == null) continue;
     classNames[id] = (c['name'] ?? c['title'] ?? '').toString();

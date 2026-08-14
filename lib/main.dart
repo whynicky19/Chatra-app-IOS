@@ -259,14 +259,27 @@ class _AuthGateState extends State<_AuthGate> {
       );
     }
 
+    // Вход в приложение — намеренно без кросс-фейда, сразу шеллом.
+    //
+    // Пока MainShell был веткой AnimatedSwitcher, переход занимал 250 мс, в
+    // течение которых жили и рисовались ОБА дерева: уходящий экран логина и
+    // строящийся шелл. А первый кадр шелла — самый тяжёлый за всю сессию:
+    // раскладка карточек классов, декодирование обложек, компиляция шейдера
+    // стеклянного таб-бара. Вдобавок FadeTransition — это Opacity < 1, то есть
+    // оба экрана рисуются в отдельные offscreen-слои (saveLayer), а
+    // BackdropFilter таб-бара внутри такого слоя ещё и не видит фон за собой
+    // (та же механика, что чинилась на кнопке экрана выбора организации).
+    //
+    // Анимация между самими экранами входа (выбор организации → логин)
+    // осталась: там оба дерева лёгкие.
+    if (auth.isAuthenticated) return const MainShell(key: ValueKey('main'));
+
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 250),
       switchInCurve: Curves.easeOut,
-      child: auth.isAuthenticated
-          ? const MainShell(key: ValueKey('main'))
-          : !org.isSelected
-              ? const OrgSelectScreen(key: ValueKey('org'))
-              : const _AuthNavigator(key: ValueKey('auth')),
+      child: !org.isSelected
+          ? const OrgSelectScreen(key: ValueKey('org'))
+          : const _AuthNavigator(key: ValueKey('auth')),
     );
   }
 }

@@ -41,6 +41,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   bool get _emailValid => RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(_email.text.trim());
 
+  /// Единственное, ради чего поля звали setState на каждую букву, — сброс
+  /// плашки с ошибкой. Она есть далеко не всегда, а перестраивался при этом
+  /// весь экран: логотип со свечением, два радиальных градиента фона,
+  /// заголовки и кнопка. Теперь перестройка происходит ровно один раз — когда
+  /// ошибку реально надо убрать.
+  void _clearError(String _) {
+    if (_error == null) return;
+    setState(() => _error = null);
+  }
+
   Future<void> _sendCode() async {
     if (!_emailValid || _busy) return;
     final l = context.read<L10n>();
@@ -83,7 +93,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     final org = context.read<OrgProvider>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = org.primaryColor;
-    final canReset = _code.text.trim().length >= 4 && _pw.text.length >= 8;
 
     return Scaffold(
       backgroundColor: isDark ? C.darkBg : C.bg,
@@ -120,7 +129,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     textInputAction: TextInputAction.done,
                     decoration: const InputDecoration(hintText: 'you@example.com',
                       prefixIcon: Padding(padding: EdgeInsets.only(left: 4), child: Icon(CupertinoIcons.mail, size: 18, color: C.text4))),
-                    onChanged: (_) => setState(() { if (_error != null) _error = null; }),
+                    onChanged: _clearError,
                     onSubmitted: (_) => _sendCode(),
                   ),
                 ] else ...[
@@ -134,7 +143,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: 8),
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: const InputDecoration(hintText: '••••••', counterText: ''),
-                    onChanged: (_) => setState(() { if (_error != null) _error = null; }),
+                    onChanged: _clearError,
                   ),
                   const SizedBox(height: 14),
                   _fieldLabel(l.t('new_password')),
@@ -152,7 +161,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         tooltip: _showPw ? 'Скрыть пароль' : 'Показать пароль',
                         onPressed: () => setState(() => _showPw = !_showPw)),
                     ),
-                    onChanged: (_) => setState(() { if (_error != null) _error = null; }),
+                    onChanged: _clearError,
                   ),
                   Padding(padding: const EdgeInsets.only(top: 6, left: 2),
                     child: Text(l.t('password_min_8'), style: TextStyle(fontSize: 13, color: adaptiveText3(context)))),
@@ -169,20 +178,30 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     ]))),
                 const SizedBox(height: 24),
 
-                Tappable(
+                // Вид кнопки зависит от набранного текста (email на первом
+                // шаге, код и пароль на втором) — слушаем сами контроллеры,
+                // а не перестраиваем ради этого экран.
+                AnimatedBuilder(
+                  animation: Listenable.merge([_email, _code, _pw]),
+                  builder: (context, _) {
+                    final canReset = _code.text.trim().length >= 4 && _pw.text.length >= 8;
+                    final ready = _codeSent ? canReset : _emailValid;
+                    return Tappable(
                   onTap: _busy ? null : (_codeSent ? _reset : _sendCode),
                   child: AnimatedContainer(duration: const Duration(milliseconds: 200),
                     constraints: const BoxConstraints(minHeight: 52),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: (_codeSent ? canReset : _emailValid) || _busy ? primary : adaptiveSurface2(context),
+                      color: ready || _busy ? primary : adaptiveSurface2(context),
                       borderRadius: BorderRadius.circular(AppRadii.tile),
-                      boxShadow: (_codeSent ? canReset : _emailValid) && !_busy ? primaryGlow(primary, opacity: 0.34) : null),
+                      boxShadow: ready && !_busy ? primaryGlow(primary, opacity: 0.34) : null),
                     child: Align(heightFactor: 1, child: _busy
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
                       : Text(_codeSent ? l.t('reset_btn') : l.t('send_code'),
                           style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600,
-                            color: (_codeSent ? canReset : _emailValid) ? Colors.white : adaptiveText3(context))))),
+                            color: ready ? Colors.white : adaptiveText3(context))))),
+                );
+                  },
                 ),
                 if (_codeSent) ...[
                   const SizedBox(height: 16),

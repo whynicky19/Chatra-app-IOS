@@ -33,6 +33,11 @@ class ClassesProvider extends ChangeNotifier {
   /// пока не отработает load() нового — а в офлайне не пропадают вовсе.
   void reset() {
     _cachedAllClasses = [];
+    _myClassesRaw = null;
+    // Забываем загрузку прошлого аккаунта: без этого первый же loadJoined()
+    // нового пользователя приклеился бы к запросу, отправленному со старым
+    // токеном, и получил бы чужой список классов.
+    _joinedInFlight = null;
     joinedClassIds = {};
     archivedClassIds = {};
     notifBadge.value = 0;
@@ -73,10 +78,32 @@ class ClassesProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loadJoined() async {
+  /// Сырой ответ последнего УСПЕШНОГО `GET /classes/`. Тот же список нужен
+  /// ленте уведомлений (названия классов), и раньше она запрашивала его вторым
+  /// запросом параллельно с этим — два одинаковых обращения к серверу на
+  /// каждое открытие главной. `null` — членство ни разу не загрузилось (или
+  /// сбросили аккаунт): тогда фид сходит за списком сам.
+  List<dynamic>? _myClassesRaw;
+
+  /// Загрузка членства «в полёте». Служит двум целям: не пускать второй такой
+  /// же запрос (главная зовёт loadJoined и из initState, и из pull-to-refresh)
+  /// и дать [loadNotifBadge] точку синхронизации — он ждёт именно эту загрузку
+  /// вместо того, чтобы гонять свою копию запроса или читать устаревший кэш.
+  Future<void>? _joinedInFlight;
+
+  Future<void> loadJoined() {
+    final existing = _joinedInFlight;
+    if (existing != null) return existing;
+    final future = _loadJoined().whenComplete(() => _joinedInFlight = null);
+    _joinedInFlight = future;
+    return future;
+  }
+
+  Future<void> _loadJoined() async {
     final uid = _auth.userId ?? 0;
     try {
       final list = await _api.getClasses();
+      _myClassesRaw = list;
       joinedClassIds = list.map((c) => (c['id'] as num).toInt()).toSet();
       archivedClassIds = list
           .where((c) => c['is_archived_for_user'] == true)
@@ -216,7 +243,19 @@ class ClassesProvider extends ChangeNotifier {
   Future<void> loadNotifBadge() async {
     if (_auth.isTeacher) return;
     try {
-      final feed = await loadNotifFeed(_api);
+      // Список классов берём у загрузки членства, а не запрашиваем свой.
+      // Порядок важен: если она прямо сейчас в полёте (pull-to-refresh зовёт
+      // обе разом) — ждём её и получаем свежий ответ; если уже отработала —
+      // берём готовый; и только если членство не грузилось ни разу, запускаем
+      // загрузку сами. Раньше вместо этого всегда шёл второй такой же запрос,
+      // причём параллельно первому.
+      final inFlight = _joinedInFlight;
+      if (inFlight != null) {
+        await inFlight;
+      } else if (_myClassesRaw == null) {
+        await loadJoined();
+      }
+      final feed = await loadNotifFeed(_api, myClasses: _myClassesRaw);
       notifBadge.value = feed.unreadCount;
     } catch (e) {
       // Бейдж — фоновая задача, пользователю о её сбое сообщать нечего.

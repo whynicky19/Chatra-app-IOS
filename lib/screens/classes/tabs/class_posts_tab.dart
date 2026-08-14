@@ -37,6 +37,11 @@ class ClassPostsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.read<L10n>();
     final accentColor = Theme.of(context).colorScheme.primary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Плитка лекции нейтрально-серая, как у задания без статуса сдачи
+    // (см. class_assignments_tab): цветом в списках помечается только статус,
+    // а сам факт «это лекция» уже несут иконка и вкладка.
+    final leadColor = adaptiveText4(context);
 
     String clean(String t) => t.replaceFirst(_lectureTitleRe, '').trim();
 
@@ -164,10 +169,10 @@ class ClassPostsTab extends StatelessWidget {
                         width: 46, height: 46,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: accentColor.withValues(alpha: 0.12),
+                          color: leadColor.withValues(alpha: isDark ? 0.18 : 0.12),
                           borderRadius: BorderRadius.circular(AppRadii.tile),
                         ),
-                        child: Icon(CupertinoIcons.book_fill, size: 21, color: accentColor),
+                        child: Icon(CupertinoIcons.book_fill, size: 21, color: leadColor),
                       ),
                       const SizedBox(width: 14),
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

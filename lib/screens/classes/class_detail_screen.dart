@@ -173,25 +173,36 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     if (mounted) setState(() => _loadingAsg = false);
   }
 
-  /// Быстрое добавление (учитель): акцентная «мягкая» кнопка в духе iOS —
-  /// заливка цветом темы с малой альфой и цветной глиф/подпись, вместо
-  /// нейтрально-серой плашки, которая читалась как выключенная.
-  Widget _quickAddButton({required IconData icon, required String label, required VoidCallback onTap}) {
-    final primary = Theme.of(context).colorScheme.primary;
+  /// Быстрое добавление (учитель) — нативная iOS-кнопка стиля `.bordered`:
+  /// серая заливка системного fill, капсула (как сегмент-контрол над ней),
+  /// волосяная граница и нейтральная подпись цветом основного текста.
+  /// Раньше кнопка была залита полупрозрачным акцентом, с двумя глифами
+  /// (плюс + предмет) и голубой подписью — три акцентных пятна подряд
+  /// перетягивали внимание с самого списка. Теперь голубого в панели нет
+  /// вовсе (как и на плитках карточек), а «создать» читается по плюсу.
+  Widget _quickAddButton({required String label, required VoidCallback onTap}) {
+    final labelColor = adaptiveText1(context);
     return Tappable(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 11),
+        height: 36,
+        alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: primary.withValues(alpha: 0.11),
-          borderRadius: BorderRadius.circular(AppRadii.button),
+          color: adaptiveSurface2(context),
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(
+            color: adaptiveBorder(context),
+            width: 1 / MediaQuery.of(context).devicePixelRatio,
+          ),
         ),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(CupertinoIcons.plus, size: 12, color: primary),
-          const SizedBox(width: 5),
-          Icon(icon, size: 15, color: primary),
+          // Плюс на тон светлее подписи: он служебный указатель действия,
+          // а не второй по важности элемент строки.
+          Icon(CupertinoIcons.plus, size: 13, color: adaptiveText3(context)),
           const SizedBox(width: 6),
-          Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: primary)),
+          Flexible(child: Text(label,
+            maxLines: 1, overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: labelColor))),
         ]),
       ),
     );
@@ -409,17 +420,17 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 if (_tabCtrl.index == 2) return const SizedBox.shrink();
                 return Padding(
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+                  // Порядок кнопок повторяет порядок вкладок: лекции слева,
+                  // задания справа.
                   child: Row(children: [
                     Expanded(child: _quickAddButton(
-                      icon: CupertinoIcons.doc_text,
-                      label: l.t('assignment'),
-                      onTap: () => _createAssignment(),
+                      label: l.t('lecture'),
+                      onTap: () => _showAddMenu(),
                     )),
                     const SizedBox(width: 10),
                     Expanded(child: _quickAddButton(
-                      icon: CupertinoIcons.book,
-                      label: l.t('lecture'),
-                      onTap: () => _showAddMenu(),
+                      label: l.t('assignment'),
+                      onTap: () => _createAssignment(),
                     )),
                   ]),
                 );

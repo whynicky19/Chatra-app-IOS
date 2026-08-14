@@ -14,6 +14,7 @@ import '../../utils/nav_guard.dart';
 import 'about_settings_screen.dart';
 import 'ai_limits_screen.dart';
 import 'security_settings_screen.dart';
+import '../../widgets/wrapping_field.dart';
 import 'settings_shared.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -89,9 +90,13 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 ),
               ]),
               const SizedBox(height: 7),
-              TextField(controller: _nameCtrl, onChanged: (_) => setState(() {}), decoration: const InputDecoration(
-                prefixIcon: Padding(padding: EdgeInsets.only(left: 4),
-                  child: Icon(CupertinoIcons.person, size: 18, color: C.text4)))),
+              WrappingField(
+                controller: _nameCtrl,
+                onChanged: (_) => setState(() {}),
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(
+                  prefixIcon: Padding(padding: EdgeInsets.only(left: 4),
+                    child: Icon(CupertinoIcons.person, size: 18, color: C.text4)))),
               if (_nameCtrl.text.isNotEmpty && !_isValidName(_nameCtrl.text))
                 Padding(padding: const EdgeInsets.only(top: 8),
                   child: Container(

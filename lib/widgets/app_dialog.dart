@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import 'app_button.dart';
+import 'wrapping_field.dart';
 
 Future<T?> showAppDialog<T>(
   BuildContext context, {
@@ -256,13 +257,25 @@ Future<String?> showInputDialog(
         Text(message, textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: adaptiveText3(ctx), height: 1.45)),
       ],
       const SizedBox(height: 16),
-      TextField(
-        controller: ctrl,
-        maxLines: maxLines,
-        autofocus: true,
-        style: const TextStyle(fontSize: 15),
-        decoration: InputDecoration(hintText: hint),
-      ),
+      // maxLines: 1 у вызывающих значит «значение в одну строку» (имя чата), а
+      // не «показывать одну строку»: длинное имя в таком поле уезжало вбок и
+      // прятало начало. WrappingField переносит текст, но переводы строки в
+      // значение всё равно не пускает.
+      if (maxLines == 1)
+        WrappingField(
+          controller: ctrl,
+          hintText: hint,
+          autofocus: true,
+          style: const TextStyle(fontSize: 15),
+        )
+      else
+        TextField(
+          controller: ctrl,
+          maxLines: maxLines,
+          autofocus: true,
+          style: const TextStyle(fontSize: 15),
+          decoration: InputDecoration(hintText: hint),
+        ),
       const SizedBox(height: 16),
       AppDialogActions(
         cancelText: cancelText,

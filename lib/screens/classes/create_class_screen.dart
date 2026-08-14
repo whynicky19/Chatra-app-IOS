@@ -11,6 +11,7 @@ import '../../widgets/app_button.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/cover_appearance.dart';
 import '../../widgets/toast.dart';
+import '../../widgets/wrapping_field.dart';
 
 /// Полноэкранная форма создания класса — раньше была модальным `Dialog`
 /// фиксированной высоты, где длинное описание или клавиатура обрезали форму.
@@ -222,9 +223,9 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
 
   List<Widget> _classFields(L10n l) => [
                     _label('${l.t('class_name_required')} *'),
-                    TextField(
+                    WrappingField(
                       controller: _nameC,
-                      decoration: InputDecoration(hintText: l.t('class_name_hint')),
+                      hintText: l.t('class_name_hint'),
                       onChanged: (_) => _markDirty(),
                     ),
                     const SizedBox(height: 18),
@@ -255,9 +256,13 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
                         onChanged: (_) => _markDirty(),
                       )),
                       const SizedBox(width: 14),
-                      Expanded(child: TextField(
+                      // Поле вдвое уже экрана — ФИО целиком не помещается в
+                      // строку почти никогда, поэтому именно здесь перенос
+                      // важнее всего.
+                      Expanded(child: WrappingField(
                         controller: _teacherC,
-                        decoration: InputDecoration(hintText: l.t('your_name_hint')),
+                        hintText: l.t('your_name_hint'),
+                        textCapitalization: TextCapitalization.words,
                         onChanged: (_) => _markDirty(),
                       )),
                     ]),

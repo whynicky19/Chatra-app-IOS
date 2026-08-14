@@ -15,6 +15,7 @@ import '../../widgets/app_dialog.dart';
 import '../../widgets/cupertino_date_sheet.dart';
 import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
+import '../../widgets/wrapping_field.dart';
 import 'class_detail_utils.dart' show cleanContent, encodeUploadedFileUrl, fileDisplayName, fileUrlRe, mdFileRe;
 
 /// Контроллеры критерия обязаны жить столько же, сколько сама строка, а не
@@ -284,9 +285,9 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
             padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).viewInsets.bottom + 24),
             children: [
               _label('${l.t('assignment_title')} *'),
-              TextField(
+              WrappingField(
                 controller: _titleC,
-                decoration: InputDecoration(hintText: l.t('assignment_title_hint')),
+                hintText: l.t('assignment_title_hint'),
                 onChanged: (_) => _markDirty(),
               ),
               const SizedBox(height: 16),
@@ -472,16 +473,24 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(color: Theme.of(context).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(AppRadii.tile)),
-      child: Row(children: [
-        Text('${i + 1}', style: const TextStyle(fontSize: 13, color: C.text4)),
+      // Номер и крестик прижаты к верху: поле критерия растёт вниз при длинной
+      // формулировке, и по центру они уезжали бы от первой строки текста.
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 11),
+          child: Text('${i + 1}', style: const TextStyle(fontSize: 13, color: C.text4)),
+        ),
         const SizedBox(width: 8),
-        Expanded(child: TextField(
+        Expanded(child: WrappingField(
           controller: c.nameC,
           decoration: InputDecoration(hintText: l.t('criterion_short'), contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)),
           onChanged: (v) { c.name = v; _markDirty(); },
         )),
         const SizedBox(width: 4),
-        Tappable(onTap: () => _removeCriterion(i), label: 'Удалить критерий', child: const Icon(CupertinoIcons.xmark, size: 16, color: C.red)),
+        Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: Tappable(onTap: () => _removeCriterion(i), label: 'Удалить критерий', child: const Icon(CupertinoIcons.xmark, size: 16, color: C.red)),
+        ),
       ]),
     );
   }

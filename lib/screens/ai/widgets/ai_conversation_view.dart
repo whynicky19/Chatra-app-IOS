@@ -778,7 +778,10 @@ class _AiInputBar extends StatelessWidget {
                   contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                 ),
                 onSubmitted: (_) => onSend(),
-                maxLines: 4,
+                // Растём до 6 строк, а не до 4: длинный вопрос с условием
+                // задачи начинал скроллиться внутри поля слишком рано, и
+                // проверить начало написанного было нельзя, не промотав его.
+                maxLines: 6,
                 minLines: 1,
               ),
             ),

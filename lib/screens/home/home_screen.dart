@@ -18,6 +18,7 @@ import '../../widgets/app_dialog.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
+import '../../widgets/wrapping_field.dart';
 import '../notifications/notifications_screen.dart';
 import '../calendar/calendar_screen.dart';
 import '../../utils/haptics.dart';
@@ -476,11 +477,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 13, color: adaptiveText3(c), height: 1.45)),
                       const SizedBox(height: 16),
-                      TextField(
+                      // Здесь нужно ввести название класса символ в символ —
+                      // тем более нельзя прятать начало набранного за левым
+                      // краем поля.
+                      WrappingField(
                         controller: nameCtrl,
                         autofocus: true,
                         style: const TextStyle(fontSize: 15),
-                        decoration: InputDecoration(hintText: title),
+                        hintText: title,
                         onChanged: (_) => setS(() {}),
                       ),
                       const SizedBox(height: 16),

@@ -372,9 +372,11 @@ void main() {
       expect(find.bySemanticsLabel(coverIconLabel('chef', 'RU')), findsOneWidget);
     });
 
-    testWidgets('открывает список, если выбранный символ вне первой полоски',
+    testWidgets('символ из дальней секции показан в свёрнутой полоске',
         (tester) async {
-      // Иначе при редактировании предмета непонятно, что вообще выбрано.
+      // Выбранный символ обязан быть виден (иначе при редактировании предмета
+      // непонятно, что выбрано), но раскрывать ради этого весь список нельзя:
+      // на создании класса дефолтный символ тоже лежит вне первой полоски.
       await tester.pumpWidget(wrap(CoverAppearance(
         color: 'blue',
         icon: 'chef',
@@ -385,8 +387,25 @@ void main() {
       )));
       await tester.pump();
 
-      expect(find.text('Свернуть'), findsOneWidget);
+      expect(find.text('Свернуть'), findsNothing);
       expect(find.bySemanticsLabel(coverIconLabel('chef', 'RU')), findsOneWidget);
+    });
+
+    testWidgets('на создании класса список символов свёрнут', (tester) async {
+      await tester.pumpWidget(wrap(CoverAppearance(
+        color: kFallbackCoverOptions.defaultColor,
+        icon: kFallbackCoverOptions.defaultIcon,
+        classId: null,
+        onColorChanged: (_) {},
+        onIconChanged: (_) {},
+        onGenerate: () {},
+      )));
+      await tester.pump();
+
+      expect(find.text('Свернуть'), findsNothing);
+      // Дефолтный символ виден, хотя в общем списке он далеко не первый.
+      expect(find.bySemanticsLabel(coverIconLabel(kFallbackCoverOptions.defaultIcon, 'RU')),
+          findsOneWidget);
     });
 
     testWidgets('выбор цвета и иконки уходит наверх', (tester) async {

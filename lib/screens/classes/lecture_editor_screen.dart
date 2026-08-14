@@ -13,6 +13,7 @@ import '../../widgets/app_button.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
+import '../../widgets/wrapping_field.dart';
 import 'class_detail_utils.dart' show cleanPostTitle, encodeUploadedFileUrl, fileDisplayName;
 
 /// Полноэкранная форма лекции — создание (`post == null`) и редактирование.
@@ -175,9 +176,9 @@ class _LectureEditorScreenState extends State<LectureEditorScreen> {
             padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).viewInsets.bottom + 24),
             children: [
               _label('${l.t('lecture_topic')} *'),
-              TextField(
+              WrappingField(
                 controller: _titleC,
-                decoration: InputDecoration(hintText: l.t('topic_hint')),
+                hintText: l.t('topic_hint'),
                 onChanged: (_) => _markDirty(),
               ),
               const SizedBox(height: 16),

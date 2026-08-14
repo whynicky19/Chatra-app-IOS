@@ -20,6 +20,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/toast.dart';
 import '../../widgets/tappable.dart';
+import '../../widgets/wrapping_field.dart';
 import 'tabs/class_posts_tab.dart';
 import 'tabs/class_assignments_tab.dart';
 import 'tabs/class_ai_tab.dart';
@@ -663,7 +664,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             Expanded(child: variants == null
                 ? Center(child: CupertinoActivityIndicator(radius: 13, color: Theme.of(context).colorScheme.primary))
                 : ListView(controller: scroll, padding: const EdgeInsets.fromLTRB(20, 8, 20, 24), children: [
-                    TextField(controller: variantTitleC, decoration: InputDecoration(hintText: l.t('variant_title_hint'))),
+                    WrappingField(controller: variantTitleC, hintText: l.t('variant_title_hint')),
                     const SizedBox(height: 8),
                     TextField(controller: variantContentC, decoration: InputDecoration(hintText: l.t('variant_content_hint')), maxLines: 3),
                     const SizedBox(height: 10),
@@ -826,13 +827,13 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           ),
           const SizedBox(height: 20),
           _fieldLabel2('${l.t('class_name')} *'),
-          TextField(controller: tc, decoration: InputDecoration(hintText: l.t('class_name_simple_hint'))),
+          WrappingField(controller: tc, hintText: l.t('class_name_simple_hint')),
           const SizedBox(height: 16),
           _fieldLabel2(l.t('class_desc')),
           TextField(controller: dc, decoration: InputDecoration(hintText: l.t('class_desc_simple_hint')), maxLines: 3),
           const SizedBox(height: 16),
           _fieldLabel2(l.t('teacher_name_label')),
-          TextField(controller: tn, decoration: InputDecoration(hintText: l.t('teacher_display_hint'))),
+          WrappingField(controller: tn, hintText: l.t('teacher_display_hint'), textCapitalization: TextCapitalization.words),
           const SizedBox(height: 28),
           Row(children: [
             Expanded(child: OutlinedButton(onPressed: saving ? null : () => Navigator.pop(ctx), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)), child: Text(l.t('cancel')))),

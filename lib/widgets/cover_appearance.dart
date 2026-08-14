@@ -75,35 +75,31 @@ class _CoverAppearanceState extends State<CoverAppearance> {
   @override
   void initState() {
     super.initState();
-    _syncExpanded();
     _loadOptions();
   }
 
-  @override
-  void didUpdateWidget(CoverAppearance oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.icon != widget.icon) _syncExpanded();
-  }
-
-  /// Выбранный символ обязан быть виден. Если он не попал в первую полоску
-  /// (например «Кулинария» из последней секции), список открыт сразу — иначе
-  /// при редактировании непонятно, что вообще выбрано.
-  void _syncExpanded() {
-    if (_expanded) return;
-    final firstRow = _options.icons.take(_kIconsPerRow).map((i) => i.id);
-    if (!firstRow.contains(widget.icon)) _expanded = true;
+  /// Свёрнутая полоска: первые символы списка, но выбранный всегда среди них.
+  ///
+  /// Выбранный символ обязан быть виден — иначе при редактировании предмета
+  /// непонятно, что вообще выбрано. Раньше ради этого список раскрывался
+  /// целиком, и на создании класса форма сразу открывалась восемью рядами
+  /// символов: дефолтный символ ('book') в первую полоску не попадает, хотя
+  /// пользователь ещё ничего не выбирал. Теперь вместо раскрытия выбранный
+  /// символ просто становится первым в свёрнутой полоске.
+  List<CoverIconOption> _collapsedRow() {
+    final all = _options.icons;
+    final head = all.take(_kIconsPerRow).toList();
+    if (head.any((i) => i.id == widget.icon)) return head;
+    final idx = all.indexWhere((i) => i.id == widget.icon);
+    if (idx == -1) return head;
+    return [all[idx], ...head.take(_kIconsPerRow - 1)];
   }
 
   Future<void> _loadOptions() async {
     if (CoverOptionsCache.isLoaded) return;
     final api = context.read<ApiService>();
     final loaded = await CoverOptionsCache.load(api.getCoverOptions);
-    if (mounted) {
-      setState(() {
-        _options = loaded;
-        _syncExpanded();
-      });
-    }
+    if (mounted) setState(() => _options = loaded);
   }
 
   /// Символы секциями; неизвестная или пустая группа — одним блоком в конец,
@@ -233,7 +229,7 @@ class _CoverAppearanceState extends State<CoverAppearance> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (!_expanded)
-          _iconGrid(context, l, selected, all.take(_kIconsPerRow).toList())
+          _iconGrid(context, l, selected, _collapsedRow())
         else
           // Развёрнутый список ограничен по высоте и скроллится внутри: иначе
           // он растягивает форму на несколько экранов.

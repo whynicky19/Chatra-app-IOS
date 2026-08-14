@@ -271,7 +271,8 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
                 filled: false, contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
               ),
               onSubmitted: (_) => _send(),
-              maxLines: 4, minLines: 1,
+              // Тот же потолок, что и в общем ИИ-чате (см. ai_conversation_view).
+              maxLines: 6, minLines: 1,
             ),
           )),
           const SizedBox(width: 10),

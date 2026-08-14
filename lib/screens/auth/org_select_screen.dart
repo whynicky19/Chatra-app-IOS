@@ -35,13 +35,23 @@ class _OrgSelectScreenState extends State<OrgSelectScreen> {
     await context.read<OrgProvider>().select(picked);
   }
 
-  Widget _reveal(int step, Widget child) {
+  /// Появление блока: сдвиг снизу + проявление.
+  ///
+  /// [fade] выключают для стеклянной кнопки. `Opacity` с t < 1 рисует ребёнка
+  /// в отдельный слой, а `BackdropFilter` внутри такого слоя фон за собой не
+  /// видит — пока анимация идёт (почти секунда для последнего шага), у кнопки
+  /// «Продолжить» не было заливки, и она появлялась рывком в конце. Сдвиг
+  /// такого слоя не создаёт, поэтому хореография сохраняется.
+  Widget _reveal(int step, Widget child, {bool fade = true}) {
     if (MediaQuery.of(context).disableAnimations) return child;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
       duration: Duration(milliseconds: 420 + step * 110),
       curve: Curves.easeOutCubic,
-      builder: (_, t, c) => Opacity(opacity: t, child: Transform.translate(offset: Offset(0, 18 * (1 - t)), child: c)),
+      builder: (_, t, c) {
+        final moved = Transform.translate(offset: Offset(0, 18 * (1 - t)), child: c);
+        return fade ? Opacity(opacity: t, child: moved) : moved;
+      },
       child: child,
     );
   }
@@ -125,24 +135,24 @@ class _OrgSelectScreenState extends State<OrgSelectScreen> {
             ),
           ))),
 
-          _reveal(5, Padding(
+          Padding(
             padding: const EdgeInsets.fromLTRB(24, 4, 24, 20),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Column(mainAxisSize: MainAxisSize.min, children: [
-                _GlassButton(
+                _reveal(5, fade: false, _GlassButton(
                   active: hasPick,
                   accent: _accent,
                   label: l.t('org_continue'),
                   onPressed: hasPick ? _continue : null,
-                ),
+                )),
                 const SizedBox(height: 12),
-                Text(l.t('org_change_hint'),
+                _reveal(5, Text(l.t('org_change_hint'),
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
+                  style: TextStyle(fontSize: 13, color: adaptiveText3(context)))),
               ]),
             ),
-          )),
+          ),
         ])),
       ]),
     );

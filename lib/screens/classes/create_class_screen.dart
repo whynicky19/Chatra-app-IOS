@@ -171,6 +171,17 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
                 child: ListView(
                   padding: EdgeInsets.fromLTRB(20, 8, 20, MediaQuery.of(context).viewInsets.bottom + 28),
                   children: [
+                    // Сначала данные предмета, оформление — после: название и
+                    // описание обязательны, а цвет с символом у обложки уже
+                    // выбраны по умолчанию. Когда пикер обложки шёл первым,
+                    // форма открывалась на необязательном шаге, а поле
+                    // «Название» — единственное, без которого нельзя создать
+                    // класс — оказывалось ниже сгиба.
+                    //
+                    // Поля скрываются после создания: на втором шаге экран
+                    // занимается только обложкой, и они отвлекали бы.
+                    if (_created == null) ..._classFields(l),
+
                     CoverAppearance(
                       color: _coverColor,
                       icon: _coverIcon,
@@ -184,10 +195,6 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
                       onGenerate: _generateCover,
                     ),
                     const SizedBox(height: 28),
-
-                    // Поля предмета скрываются после создания: на втором шаге
-                    // экран занимается только обложкой, и лишние поля отвлекали бы.
-                    if (_created == null) ..._classFields(l),
 
                     if (_created == null)
                       AppButton.primary(

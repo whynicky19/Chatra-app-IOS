@@ -977,7 +977,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
         final pct = score != null && maxScore > 0 ? (score / maxScore * 100).round().clamp(0, 999) : null;
 
         return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(c).viewInsets.bottom),
+          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(c).bottom),
           child: Container(
             decoration: BoxDecoration(
               color: Theme.of(c).colorScheme.surface,
@@ -985,7 +985,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             ),
             clipBehavior: Clip.antiAlias,
             child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(c).padding.bottom + 20),
+              padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.paddingOf(c).bottom + 20),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Center(child: Container(
                   width: 36, height: 4, margin: const EdgeInsets.only(bottom: 18),

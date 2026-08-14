@@ -34,7 +34,7 @@ class AppDialogCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return AnimatedPadding(
-      padding: MediaQuery.of(context).viewInsets + const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+      padding: MediaQuery.viewInsetsOf(context) + const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
       duration: const Duration(milliseconds: 150),
       curve: Curves.easeOut,
       child: Center(

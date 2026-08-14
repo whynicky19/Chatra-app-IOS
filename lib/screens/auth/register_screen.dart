@@ -92,7 +92,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _reveal(int step, Widget child) {
-    if (MediaQuery.of(context).disableAnimations) return child;
+    if (MediaQuery.disableAnimationsOf(context)) return child;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
       duration: Duration(milliseconds: 220 + step * 45),

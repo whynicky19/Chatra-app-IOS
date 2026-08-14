@@ -178,7 +178,7 @@ class _ArchiveCard extends StatelessWidget {
     final teacher = (cls['teacher'] ?? cls['teacher_name'] ?? '').toString();
     // Полноширинная карточка — кэш-растр по ширине экрана × DPR, иначе на
     // retina обложка декодируется мельче виджета и размывается при растяжке.
-    final coverCacheWidth = (MediaQuery.of(context).size.width * MediaQuery.of(context).devicePixelRatio).round();
+    final coverCacheWidth = (MediaQuery.sizeOf(context).width * MediaQuery.devicePixelRatioOf(context)).round();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),

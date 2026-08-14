@@ -150,7 +150,7 @@ void showImageViewer(BuildContext ctx, String url, String name) {
               errorWidget: (_, __, ___) => const Icon(CupertinoIcons.photo, color: Colors.white54, size: 64),
             ),
           )),
-          Positioned(top: MediaQuery.of(ctx).padding.top + 8, right: 16,
+          Positioned(top: MediaQuery.paddingOf(ctx).top + 8, right: 16,
             child: Tappable(
               onTap: () => Navigator.pop(ctx),
               label: 'Закрыть просмотр изображения',
@@ -158,7 +158,7 @@ void showImageViewer(BuildContext ctx, String url, String name) {
                 decoration: const BoxDecoration(color: Colors.black45, shape: BoxShape.circle),
                 child: const Icon(CupertinoIcons.xmark, color: Colors.white, size: 18)),
             )),
-          Positioned(bottom: MediaQuery.of(ctx).padding.bottom + 16, left: 0, right: 0,
+          Positioned(bottom: MediaQuery.paddingOf(ctx).bottom + 16, left: 0, right: 0,
             child: Center(child: Text(name, style: const TextStyle(color: Colors.white70, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis))),
         ]),
       ),

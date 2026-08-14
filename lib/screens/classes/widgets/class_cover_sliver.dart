@@ -46,7 +46,7 @@ class ClassCoverSliver extends StatelessWidget {
     final isNetwork = coverImg != null && !isData;
     // Полноэкранная обложка — кэш-растр по ширине экрана × DPR, иначе на
     // retina обложка декодируется мельче виджета и размывается при растяжке.
-    final coverCacheWidth = (MediaQuery.of(context).size.width * MediaQuery.of(context).devicePixelRatio).round();
+    final coverCacheWidth = (MediaQuery.sizeOf(context).width * MediaQuery.devicePixelRatioOf(context)).round();
 
     Widget cover;
     if (isNetwork) {
@@ -80,7 +80,7 @@ class ClassCoverSliver extends StatelessWidget {
         child: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(AppRadii.chip)), child: const Icon(CupertinoIcons.chevron_left, color: Colors.white, size: 20)),
       ),
       flexibleSpace: LayoutBuilder(builder: (context, constraints) {
-        final topPad = MediaQuery.of(context).padding.top;
+        final topPad = MediaQuery.paddingOf(context).top;
         final settle = ((constraints.maxHeight - kToolbarHeight - topPad) /
                 (220 - kToolbarHeight))
             .clamp(0.0, 1.0);

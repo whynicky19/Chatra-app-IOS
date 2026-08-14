@@ -49,7 +49,7 @@ Color groupPressFill(BuildContext context) {
 }
 
 /// Толщина линии в физический пиксель — как настоящие разделители iOS.
-double hairline(BuildContext context) => 1 / MediaQuery.of(context).devicePixelRatio;
+double hairline(BuildContext context) => 1 / MediaQuery.devicePixelRatioOf(context);
 
 /// Контейнер сгруппированной секции: заливка, скругление, волосяная рамка.
 /// Строки внутри — [GroupRow] с `color: Colors.transparent` (заливку и

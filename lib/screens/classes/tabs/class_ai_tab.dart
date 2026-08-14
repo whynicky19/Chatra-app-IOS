@@ -240,7 +240,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
       ClipRect(child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
         child: Container(
-        padding: EdgeInsets.fromLTRB(14, 10, 14, MediaQuery.of(context).padding.bottom + 10),
+        padding: EdgeInsets.fromLTRB(14, 10, 14, MediaQuery.paddingOf(context).bottom + 10),
         decoration: BoxDecoration(
           color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.80),
           border: Border(top: BorderSide(color: adaptiveBorder(context).withValues(alpha: 0.5), width: hairline(context))),

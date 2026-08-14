@@ -173,7 +173,7 @@ class _LectureEditorScreenState extends State<LectureEditorScreen> {
         ),
         body: SafeArea(
           child: ListView(
-            padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).viewInsets.bottom + 24),
+            padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.viewInsetsOf(context).bottom + 24),
             children: [
               _label('${l.t('lecture_topic')} *'),
               WrappingField(

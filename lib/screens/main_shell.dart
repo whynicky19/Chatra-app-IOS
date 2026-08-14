@@ -242,7 +242,7 @@ class _MainShellState extends State<MainShell>
         // устройствах без выреза (padding.bottom == 0, кнопка Home) отступ
         // не уходит в минус — max(0, ...) держит бар над истинным краем.
         left: 16, right: 16,
-        bottom: (MediaQuery.of(context).padding.bottom - 8).clamp(0.0, double.infinity),
+        bottom: (MediaQuery.paddingOf(context).bottom - 8).clamp(0.0, double.infinity),
         child: RepaintBoundary(
           child: FadeTransition(
             opacity: CurvedAnimation(
@@ -415,7 +415,7 @@ class _OfflineBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final topPad = MediaQuery.of(context).padding.top;
+    final topPad = MediaQuery.paddingOf(context).top;
     final glass = isDark
         ? const Color(0xFF1C1C1E).withValues(alpha: 0.72)
         : Colors.white.withValues(alpha: 0.80);

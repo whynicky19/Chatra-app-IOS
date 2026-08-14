@@ -52,8 +52,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       provider.loadJoined();
-      provider.load();
-      provider.loadNotifBadge();
+      // Бейдж уведомлений — после списка классов, а не параллельно с ним.
+      // loadNotifBadge() внутри поднимает целый фид (сдачи + задания + классы
+      // + состояния прочтения, четыре запроса), и раньше эта пачка приходила
+      // ровно в те же кадры, где строится первый экран после логина: главная
+      // ещё раскладывает карточки с обложками, а изолят уже разбирает чужие
+      // ответы. Число на колокольчике появляется на доли секунды позже —
+      // взамен первый экран доезжает без рывка.
+      provider.load().whenComplete(() {
+        if (mounted) provider.loadNotifBadge();
+      });
     });
     _loadPersistedState();
   }
@@ -571,7 +579,7 @@ class _ClassContextMenu extends StatelessWidget {
     // Кэш-растр должен покрывать физические пиксели карточки (288 логических
     // × DPR), иначе на retina-экранах картинка декодируется мельче виджета и
     // растягивается — отсюда размытость.
-    final coverCacheWidth = (288 * MediaQuery.of(context).devicePixelRatio).round();
+    final coverCacheWidth = (288 * MediaQuery.devicePixelRatioOf(context)).round();
 
     return Material(
       color: Colors.transparent,
@@ -849,7 +857,7 @@ class _ClassCard extends StatelessWidget {
     // Карточка на всю ширину экрана — берём ширину экрана как верхнюю
     // границу физического размера, чтобы не декодировать мельче виджета
     // на retina-экранах.
-    final coverCacheWidth = (MediaQuery.of(context).size.width * MediaQuery.of(context).devicePixelRatio).round();
+    final coverCacheWidth = (MediaQuery.sizeOf(context).width * MediaQuery.devicePixelRatioOf(context)).round();
 
     return RepaintBoundary(
       child: Tappable(

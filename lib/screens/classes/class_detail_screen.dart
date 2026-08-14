@@ -193,7 +193,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           borderRadius: BorderRadius.circular(100),
           border: Border.all(
             color: adaptiveBorder(context),
-            width: 1 / MediaQuery.of(context).devicePixelRatio,
+            width: 1 / MediaQuery.devicePixelRatioOf(context),
           ),
         ),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -381,7 +381,7 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
               // «слой Material», наезжающий на список.
               border: Border(bottom: BorderSide(
                 color: isDark ? Colors.white.withValues(alpha: 0.10) : Colors.black.withValues(alpha: 0.07),
-                width: 1 / MediaQuery.of(context).devicePixelRatio,
+                width: 1 / MediaQuery.devicePixelRatioOf(context),
               )),
             ),
             child: Column(children: [

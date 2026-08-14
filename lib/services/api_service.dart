@@ -12,6 +12,20 @@ final _loopbackRe = RegExp(r'https?://127\.0\.0\.1:\d+');
 final _relUploadsRe = RegExp(r'(^|\s)(/uploads/\S+)');
 final _absUrlPathRe = RegExp(r'^https?://[^/]+(/.*)$');
 
+/// Обрезанное представление тела запроса/ответа для отладочного лога.
+///
+/// Раньше в консоль уходило тело целиком. Список классов с превью обложек,
+/// ответ ИИ или лента заданий — это сотни килобайт: их `toString()` собирался
+/// на главном изоляте, а вывод в консоль синхронно ждал IO. На каждый ответ
+/// это давало заметный фриз в debug-сборке (в release весь блок и так вырезан
+/// по kDebugMode) — как раз в момент входа в аккаунт, когда ответы приходят
+/// пачкой.
+String _short(Object? data) {
+  if (data == null) return 'null';
+  final text = data.toString();
+  return text.length <= 500 ? text : '${text.substring(0, 500)}… (${text.length} символов)';
+}
+
 class ApiService {
   late final Dio _dio;
   Dio get dio => _dio;
@@ -75,21 +89,21 @@ class ApiService {
     if (kDebugMode) {
       print('>>> REQUEST: ${options.method} ${options.baseUrl}${options.path}');
       final isAuth = options.path.startsWith('/auth/');
-      print('>>> DATA: ${isAuth ? '<redacted>' : options.data}');
+      print('>>> DATA: ${isAuth ? '<redacted>' : _short(options.data)}');
     }
     return handler.next(options);
   },
   onResponse: (response, handler) {
     if (kDebugMode) {
       final isAuth = response.requestOptions.path.startsWith('/auth/');
-      print('>>> RESPONSE: ${response.statusCode} ${isAuth ? '<redacted>' : response.data}');
+      print('>>> RESPONSE: ${response.statusCode} ${isAuth ? '<redacted>' : _short(response.data)}');
     }
     return handler.next(response);
   },
   onError: (error, handler) {
     if (kDebugMode) {
       print('>>> ERROR: ${error.type} ${error.message}');
-      print('>>> ERROR RESPONSE: ${error.response?.data}');
+      print('>>> ERROR RESPONSE: ${_short(error.response?.data)}');
     }
     return handler.next(error);
   },

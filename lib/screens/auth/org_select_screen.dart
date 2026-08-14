@@ -43,7 +43,7 @@ class _OrgSelectScreenState extends State<OrgSelectScreen> {
   /// «Продолжить» не было заливки, и она появлялась рывком в конце. Сдвиг
   /// такого слоя не создаёт, поэтому хореография сохраняется.
   Widget _reveal(int step, Widget child, {bool fade = true}) {
-    if (MediaQuery.of(context).disableAnimations) return child;
+    if (MediaQuery.disableAnimationsOf(context)) return child;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
       duration: Duration(milliseconds: 420 + step * 110),

@@ -24,20 +24,14 @@ const List<String> kCodeFontFallback = ['Menlo', 'Courier New', 'Courier'];
 /// формулы рисуются через flutter_math_fork, остальной текст — обычными
 /// словами во `Wrap`, чтобы формулы могли стоять прямо посреди строки.
 /// Внутри пунктов списка и ячеек таблицы поддерживаются только инлайн-формулы.
-class AiMessageContent extends StatelessWidget {
+class AiMessageContent extends StatefulWidget {
   final String text;
   final TextStyle style;
 
   const AiMessageContent({super.key, required this.text, required this.style});
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: _buildDocument(text, style),
-    );
-  }
+  State<AiMessageContent> createState() => _AiMessageContentState();
 
   // ── Document-level: параграфы / списки / таблицы ──────────────────────────
   List<Widget> _buildDocument(String text, TextStyle style) {
@@ -403,6 +397,37 @@ class AiMessageContent extends StatelessWidget {
     if (last < text.length) segs.add(_Seg(_SegType.text, text.substring(last)));
     return segs;
   }
+}
+
+/// Разбор текста кэшируется: он идёт по всему сообщению построчно, режет его
+/// на параграфы/списки/таблицы и собирает `Math.tex` на каждую формулу. Пока
+/// это был StatelessWidget, вся работа повторялась при любой перестройке
+/// родителя — а ListView чата перестраивает видимые сообщения на каждый
+/// setState (пришёл ответ, сменился индикатор загрузки, доехал скролл). Теперь
+/// документ пересобирается только при смене самого текста или стиля.
+class _AiMessageContentState extends State<AiMessageContent> {
+  late List<Widget> _children;
+
+  @override
+  void initState() {
+    super.initState();
+    _children = widget._buildDocument(widget.text, widget.style);
+  }
+
+  @override
+  void didUpdateWidget(AiMessageContent old) {
+    super.didUpdateWidget(old);
+    if (old.text != widget.text || old.style != widget.style) {
+      _children = widget._buildDocument(widget.text, widget.style);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: _children,
+      );
 }
 
 enum _SegType { text, inline, block, code }

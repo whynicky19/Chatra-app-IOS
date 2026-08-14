@@ -169,7 +169,7 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
               ),
               Expanded(
                 child: ListView(
-                  padding: EdgeInsets.fromLTRB(20, 8, 20, MediaQuery.of(context).viewInsets.bottom + 28),
+                  padding: EdgeInsets.fromLTRB(20, 8, 20, MediaQuery.viewInsetsOf(context).bottom + 28),
                   children: [
                     // Сначала данные предмета, оформление — после: название и
                     // описание обязательны, а цвет с символом у обложки уже

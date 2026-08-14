@@ -92,25 +92,36 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               const SizedBox(height: 7),
               WrappingField(
                 controller: _nameCtrl,
-                onChanged: (_) => setState(() {}),
                 textCapitalization: TextCapitalization.words,
                 decoration: const InputDecoration(
                   prefixIcon: Padding(padding: EdgeInsets.only(left: 4),
                     child: Icon(CupertinoIcons.person, size: 18, color: C.text4)))),
-              if (_nameCtrl.text.isNotEmpty && !_isValidName(_nameCtrl.text))
-                Padding(padding: const EdgeInsets.only(top: 8),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-                    decoration: BoxDecoration(
-                      color: C.red.withValues(alpha: isDark ? 0.16 : 0.08),
-                      borderRadius: BorderRadius.circular(AppRadii.tile)),
-                    child: Row(children: [
-                      const Icon(CupertinoIcons.exclamationmark_circle_fill, size: 15, color: C.red),
-                      const SizedBox(width: 8),
-                      Expanded(child: Text(l.t('name_letters_only'),
-                        style: const TextStyle(fontSize: 14, color: C.red, fontWeight: FontWeight.w500, letterSpacing: -0.2))),
-                    ]),
-                  )),
+              // Подписка на сам контроллер вместо setState в onChanged: от
+              // одной буквы перестраивался весь экран настроек — обе группы
+              // строк, переключатели и их анимации появления. Здесь же
+              // перерисовывается ровно то, что зависит от текста: плашка
+              // ошибки и кнопка сохранения ниже.
+              ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _nameCtrl,
+                builder: (context, value, _) {
+                  if (value.text.isEmpty || _isValidName(value.text)) {
+                    return const SizedBox.shrink();
+                  }
+                  return Padding(padding: const EdgeInsets.only(top: 8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                      decoration: BoxDecoration(
+                        color: C.red.withValues(alpha: isDark ? 0.16 : 0.08),
+                        borderRadius: BorderRadius.circular(AppRadii.tile)),
+                      child: Row(children: [
+                        const Icon(CupertinoIcons.exclamationmark_circle_fill, size: 15, color: C.red),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(l.t('name_letters_only'),
+                          style: const TextStyle(fontSize: 14, color: C.red, fontWeight: FontWeight.w500, letterSpacing: -0.2))),
+                      ]),
+                    ));
+                },
+              ),
               const SizedBox(height: 16),
               _fieldLabel(l.t('email')),
               const SizedBox(height: 7),
@@ -119,32 +130,41 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 prefixIcon: const Padding(padding: EdgeInsets.only(left: 4),
                   child: Icon(CupertinoIcons.mail, size: 18, color: C.text4)))),
               // Кнопка появляется только когда есть что сохранять.
-              if (_nameCtrl.text.trim().isNotEmpty && _nameCtrl.text.trim() != auth.fullName.trim()) ...[
-                const SizedBox(height: 18),
-                Tappable(
-                  onTap: _saving ? null : () async {
-                    setState(() => _saving = true);
-                    await auth.updateProfile(_nameCtrl.text.trim());
-                    if (!context.mounted) return;
-                    setState(() => _saving = false);
-                    showToast(context, l.t('saved'));
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    height: 50,
-                    decoration: BoxDecoration(
-                      // Плоская акцентная кнопка без цветного свечения — как
-                      // «Готово» в системных формах.
-                      color: primary,
-                      borderRadius: BorderRadius.circular(AppRadii.button),
+              ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _nameCtrl,
+                builder: (context, value, _) {
+                  final name = value.text.trim();
+                  if (name.isEmpty || name == auth.fullName.trim()) {
+                    return const SizedBox.shrink();
+                  }
+                  return Column(children: [
+                    const SizedBox(height: 18),
+                    Tappable(
+                      onTap: _saving ? null : () async {
+                        setState(() => _saving = true);
+                        await auth.updateProfile(name);
+                        if (!context.mounted) return;
+                        setState(() => _saving = false);
+                        showToast(context, l.t('saved'));
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        height: 50,
+                        decoration: BoxDecoration(
+                          // Плоская акцентная кнопка без цветного свечения — как
+                          // «Готово» в системных формах.
+                          color: primary,
+                          borderRadius: BorderRadius.circular(AppRadii.button),
+                        ),
+                        child: Center(child: _saving
+                          ? const SizedBox(width: 18, height: 18, child: CupertinoActivityIndicator(radius: 9, color: Colors.white))
+                          : Text(l.t('save_changes'),
+                              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.3, color: Colors.white))),
+                      ),
                     ),
-                    child: Center(child: _saving
-                      ? const SizedBox(width: 18, height: 18, child: CupertinoActivityIndicator(radius: 9, color: Colors.white))
-                      : Text(l.t('save_changes'),
-                          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.3, color: Colors.white))),
-                  ),
-                ),
-              ],
+                  ]);
+                },
+              ),
             ]),
           ),
         ]), 0.1, 0.6),

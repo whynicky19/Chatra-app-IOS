@@ -544,7 +544,7 @@ class _AiConversationViewState extends State<AiConversationView> {
     // Верхний паддинг = safe-area + место под плавающую кнопку истории —
     // без отдельной полосы-хедера: это просто отступ первого сообщения
     // внутри самого скролла, он уезжает вверх при прокрутке как обычно.
-    final topPad = MediaQuery.of(context).padding.top + 60;
+    final topPad = MediaQuery.paddingOf(context).top + 60;
     return ListView.builder(
       key: const ValueKey('msg_list'),
       controller: _scroll,

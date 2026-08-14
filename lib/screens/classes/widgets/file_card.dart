@@ -109,7 +109,7 @@ class _FileRowContent extends StatelessWidget {
     // Без memCacheWidth/Height CachedNetworkImage декодирует превью в
     // исходном разрешении файла ради плитки 40×40 — в списке вложений с
     // несколькими фото это лишняя память и CPU на decode на каждую строку.
-    final previewPx = (40 * MediaQuery.of(context).devicePixelRatio).round();
+    final previewPx = (40 * MediaQuery.devicePixelRatioOf(context)).round();
     final hasPreview = _imagePreviewExts.contains(ext) && file.previewUrl != null;
 
     Widget fallback() => Container(

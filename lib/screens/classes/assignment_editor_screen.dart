@@ -282,7 +282,7 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
         ),
         body: SafeArea(
           child: ListView(
-            padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).viewInsets.bottom + 24),
+            padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.viewInsetsOf(context).bottom + 24),
             children: [
               _label('${l.t('assignment_title')} *'),
               WrappingField(

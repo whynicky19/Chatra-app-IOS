@@ -11,7 +11,6 @@ class ClassesProvider extends ChangeNotifier {
   final ApiService _api;
   final AuthProvider _auth;
 
-  List<dynamic> posts = [];
   List<Map<String, dynamic>> _cachedAllClasses = [];
   Set<int> joinedClassIds = {};
   Set<int> archivedClassIds = {};
@@ -33,7 +32,6 @@ class ClassesProvider extends ChangeNotifier {
   /// список вступлений предыдущего пользователя остаются на экране до тех пор,
   /// пока не отработает load() нового — а в офлайне не пропадают вовсе.
   void reset() {
-    posts = [];
     _cachedAllClasses = [];
     joinedClassIds = {};
     archivedClassIds = {};
@@ -57,11 +55,16 @@ class ClassesProvider extends ChangeNotifier {
     errorMessage = null;
     notifyListeners();
     try {
-      final results = await Future.wait([_api.getAllClasses(), _api.getPosts()]);
-      _cachedAllClasses = results[0]
-          .map((c) => _normalizeClass(c as Map<String, dynamic>))
-          .toList();
-      posts = results[1];
+      // Раньше рядом с классами грузился ещё и GET /posts/?page_size=100 —
+      // все лекции всех классов сразу. Их результат клался в `posts`, который
+      // никто никогда не читал: у экрана класса свой запрос с class_id. При
+      // этом Future.wait ждал ОБА ответа, то есть скелет на главной висел до
+      // самого медленного из них, а самый тяжёлый payload приложения качался и
+      // разбирался ровно в тот момент, когда строится первый экран после
+      // логина. Запрос убран целиком.
+      final list = await _api.getAllClasses();
+      _cachedAllClasses =
+          list.map((c) => _normalizeClass(c as Map<String, dynamic>)).toList();
     } catch (e) {
       logError('ClassesProvider.load', e);
       errorMessage = 'err_load_data';

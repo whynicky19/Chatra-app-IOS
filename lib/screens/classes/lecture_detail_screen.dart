@@ -141,7 +141,7 @@ class _MetaRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: detailSurface(context),
         borderRadius: BorderRadius.circular(100),
-        border: Border.all(color: detailBorder(context), width: 1 / MediaQuery.of(context).devicePixelRatio),
+        border: Border.all(color: detailBorder(context), width: 1 / MediaQuery.devicePixelRatioOf(context)),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(icon, size: 13, color: text2),

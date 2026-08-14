@@ -345,7 +345,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
           child: ListView(
             physics: const BouncingScrollPhysics(),
             padding: EdgeInsets.fromLTRB(20, 8, 20,
-                showSubmitBar || showRetractBar || showViewWorksBar ? 104 : 24 + MediaQuery.of(context).padding.bottom),
+                showSubmitBar || showRetractBar || showViewWorksBar ? 104 : 24 + MediaQuery.paddingOf(context).bottom),
             children: [
               _topBar(context, isDark),
               const SizedBox(height: 16),
@@ -522,7 +522,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                   decoration: BoxDecoration(
                     color: detailSurface(context),
                     borderRadius: BorderRadius.circular(AppRadii.card),
-                    border: Border.all(color: detailBorder(context), width: 1 / MediaQuery.of(context).devicePixelRatio),
+                    border: Border.all(color: detailBorder(context), width: 1 / MediaQuery.devicePixelRatioOf(context)),
                   ),
                   child: CupertinoTextField(
                     controller: _tc,
@@ -543,7 +543,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                     borderRadius: BorderRadius.circular(AppRadii.card),
                     border: Border.all(
                       color: _pickedFiles.isEmpty ? detailBorder(context) : accent.withValues(alpha: 0.45),
-                      width: _pickedFiles.isEmpty ? 1 / MediaQuery.of(context).devicePixelRatio : 1,
+                      width: _pickedFiles.isEmpty ? 1 / MediaQuery.devicePixelRatioOf(context) : 1,
                     ),
                   ),
                   child: Tappable(
@@ -627,7 +627,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
         decoration: BoxDecoration(
           color: detailSurface(context),
           shape: BoxShape.circle,
-          border: Border.all(color: detailBorder(context), width: 1 / MediaQuery.of(context).devicePixelRatio),
+          border: Border.all(color: detailBorder(context), width: 1 / MediaQuery.devicePixelRatioOf(context)),
         ),
         child: Icon(icon, size: 19, color: detailText1(context)),
       ),
@@ -665,7 +665,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
       decoration: BoxDecoration(
         color: detailSurface(context),
         borderRadius: BorderRadius.circular(AppRadii.card),
-        border: Border.all(color: detailBorder(context), width: 1 / MediaQuery.of(context).devicePixelRatio),
+        border: Border.all(color: detailBorder(context), width: 1 / MediaQuery.devicePixelRatioOf(context)),
       ),
       child: Column(children: [
         Text('${grade['score']}',
@@ -772,7 +772,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
     // родном разрешении (фото с телефона — это легко 3000×4000px) ради
     // плитки ~100px в сетке до 3 в ряд — на экран ответа с несколькими
     // фото-вложениями это заметные лишние мегабайты в памяти и время на decode.
-    final px = (width * MediaQuery.of(context).devicePixelRatio).round();
+    final px = (width * MediaQuery.devicePixelRatioOf(context)).round();
 
     return Tappable(
       onTap: () => widget.onOpenFile(url, name),
@@ -846,7 +846,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
           // следующего в единый абзац.
           if (i != criteriaScores.length - 1) ...[
             const SizedBox(height: 14),
-            Container(height: 1 / MediaQuery.of(context).devicePixelRatio, color: detailBorder(context)),
+            Container(height: 1 / MediaQuery.devicePixelRatioOf(context), color: detailBorder(context)),
             const SizedBox(height: 14),
           ],
         ],
@@ -1047,7 +1047,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
           borderRadius: BorderRadius.circular(AppRadii.card),
           border: Border.all(
             color: done ? C.green.withValues(alpha: 0.3) : detailBorder(context),
-            width: done ? 1 : 1 / MediaQuery.of(context).devicePixelRatio,
+            width: done ? 1 : 1 / MediaQuery.devicePixelRatioOf(context),
           ),
         ),
         child: Row(children: [
@@ -1102,7 +1102,7 @@ class _BottomActionBar extends StatelessWidget {
         child: Container(
       decoration: BoxDecoration(
         color: bg.withValues(alpha: 0.82),
-        border: Border(top: BorderSide(color: detailBorder(context), width: 1 / MediaQuery.of(context).devicePixelRatio)),
+        border: Border(top: BorderSide(color: detailBorder(context), width: 1 / MediaQuery.devicePixelRatioOf(context))),
       ),
       child: SafeArea(
         minimum: const EdgeInsets.fromLTRB(20, 12, 20, 12),

@@ -54,6 +54,13 @@ class SubjectIconOverlay extends StatelessWidget {
     final stroke = (40 / size).clamp(1.1, 1.8);
 
     return IgnorePointer(
+      // Своя граница перерисовки: тень глифа — это ImageFilter.blur, то есть
+      // saveLayer + размытие на растровом потоке, и делается он заново каждый
+      // раз, когда перерисовывается карточка (а список классов перестраивается
+      // на каждый notifyListeners провайдера — при загрузке это несколько раз
+      // подряд). Со своим слоем размытие считается один раз и дальше просто
+      // переиспользуется композитором.
+      child: RepaintBoundary(
       child: Center(
         child: SizedBox(
           width: size,
@@ -80,6 +87,7 @@ class SubjectIconOverlay extends StatelessWidget {
             ),
           ]),
         ),
+      ),
       ),
     );
   }

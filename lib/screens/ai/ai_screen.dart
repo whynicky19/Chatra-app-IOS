@@ -99,7 +99,7 @@ class _AiScreenState extends State<AiScreen> {
         // сплошная плашка) держит их читаемыми, не забирая место у контента.
         const Positioned(top: 0, left: 0, right: 0, child: IgnorePointer(child: _StatusBarScrim())),
         Positioned(
-          top: MediaQuery.of(context).padding.top + 12,
+          top: MediaQuery.paddingOf(context).top + 12,
           left: 16,
           child: _HistoryButton(onTap: () => _scaffoldKey.currentState?.openDrawer()),
         ),
@@ -118,7 +118,7 @@ class _StatusBarScrim extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bg = Theme.of(context).scaffoldBackgroundColor;
-    final height = MediaQuery.of(context).padding.top + 16;
+    final height = MediaQuery.paddingOf(context).top + 16;
     return Container(
       height: height,
       decoration: BoxDecoration(

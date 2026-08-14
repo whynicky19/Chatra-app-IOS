@@ -46,7 +46,7 @@ Widget sectionCard(BuildContext context, bool isDark, {required List<Widget> chi
     decoration: BoxDecoration(
       color: detailSurface(context),
       borderRadius: BorderRadius.circular(AppRadii.card),
-      border: Border.all(color: detailBorder(context), width: 1 / MediaQuery.of(context).devicePixelRatio),
+      border: Border.all(color: detailBorder(context), width: 1 / MediaQuery.devicePixelRatioOf(context)),
     ),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
   );

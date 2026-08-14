@@ -130,7 +130,7 @@ Color adaptivePrimaryLt(BuildContext context) {
 ///
 /// Это НЕ полный клиренс на устройствах с Home Indicator — сама константа
 /// не знает про safe-area снизу (main_shell.dart позиционирует бар как
-/// `bottom: 16 + MediaQuery.of(context).padding.bottom`, вне обычного
+/// `bottom: 16 + MediaQuery.paddingOf(context).bottom`, вне обычного
 /// Scaffold/SafeArea). Для реального отступа над баром используй
 /// [bottomBarClearance], а не эту константу напрямую.
 const double kBottomBarHeight = 90;
@@ -140,7 +140,7 @@ const double kBottomBarHeight = 90;
 /// с ним голого [kBottomBarHeight] не хватает — контент упирался бы в бар
 /// или прятался под ним.
 double bottomBarClearance(BuildContext context) =>
-    kBottomBarHeight + MediaQuery.of(context).padding.bottom;
+    kBottomBarHeight + MediaQuery.paddingOf(context).bottom;
 
 /// Отмечает поддерево вкладки main_shell, поверх которой плавает навбар
 /// (он рисуется в отдельном верхнем слое Stack — см. main_shell.dart). Тосты
@@ -169,7 +169,7 @@ class FloatingNavBarScope extends InheritedWidget {
 /// MediaQuery.viewInsets.bottom здесь — живое значение, обновляется
 /// каждый кадр вместе с реальной анимацией клавиатуры.
 double bottomBarInset(BuildContext context) =>
-    (MediaQuery.of(context).viewInsets.bottom + 8)
+    (MediaQuery.viewInsetsOf(context).bottom + 8)
         .clamp(bottomBarClearance(context), double.infinity);
 
 Color adaptiveBorder(BuildContext context) {

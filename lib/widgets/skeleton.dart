@@ -42,7 +42,14 @@ class _SkeletonBoxState extends State<SkeletonBox>
     final base = isDark ? C.darkSurface2 : const Color(0xFFE2E9EC);
     final highlight = isDark ? const Color(0xFF1F3540) : Colors.white;
 
-    return AnimatedBuilder(
+    // Каждый блок мерцает своим контроллером на 60 fps и перекрашивает
+    // градиент каждый кадр. Без своей границы перерисовки эта перекраска
+    // поднималась до ближайшего слоя выше — то есть весь список скелетонов
+    // (а это три карточки по несколько блоков) перерисовывался целиком каждый
+    // кадр ровно в те секунды, когда приложение и так занято ответами сервера
+    // после логина.
+    return RepaintBoundary(
+      child: AnimatedBuilder(
       animation: _ctrl,
       builder: (_, __) {
         final spotX = -2.0 + 4.0 * _ctrl.value;
@@ -59,6 +66,7 @@ class _SkeletonBoxState extends State<SkeletonBox>
           ),
         );
       },
+      ),
     );
   }
 }
@@ -129,7 +137,7 @@ class SkeletonNotifCard extends StatelessWidget {
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const SkeletonBox(width: 150, height: 14, borderRadius: 7),
           const SizedBox(height: 8),
-          SkeletonBox(width: MediaQuery.of(context).size.width * 0.5, height: 12, borderRadius: 6),
+          SkeletonBox(width: MediaQuery.sizeOf(context).width * 0.5, height: 12, borderRadius: 6),
         ])),
       ]),
     );

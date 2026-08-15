@@ -88,7 +88,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       } catch (_) {}
     }
     setState(() {
-      _pinnedIds = pinnedList.map(int.parse).toSet();
+      // tryParse, а не parse: порядок рядом уже разбирается под try/catch, а
+      // здесь одна испорченная запись в prefs роняла бы весь _loadPersistedState
+      // необработанным FormatException внутри async-метода.
+      _pinnedIds = pinnedList.map(int.tryParse).nonNulls.toSet();
       _classOrder = order;
       _showDragHint = _classOrder.isEmpty && !shown;
     });
@@ -135,7 +138,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   void _onReorderItem(int oldIndex, int newIndex) {
     final classes = _sortedClasses;
-    final pinnedCount = _pinnedIds.length;
+    // Считаем закреплённые В ПОКАЗАННОМ списке, а не размер _pinnedIds: там
+    // остаются id классов, которые пользователь покинул или которые ушли в
+    // архив (открепление там не происходит). Из-за этого граница закреплённой
+    // группы уезжала вправо, и проверка ниже путала обычную карточку с
+    // закреплённой — перетаскивание либо молча блокировалось, либо тащило
+    // элемент через границу, ломая порядок.
+    final pinnedCount =
+        classes.where((c) => _pinnedIds.contains(c['id'] as int)).length;
     final isOldPinned = oldIndex < pinnedCount;
     final isNewPinned = newIndex < pinnedCount;
     if (isOldPinned != isNewPinned) {

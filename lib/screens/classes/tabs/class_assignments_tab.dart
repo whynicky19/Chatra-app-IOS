@@ -526,14 +526,21 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
           // поэтому прогресс симулируем на клиенте (тот же текст, что на Web).
           int checkStepIdx = 0;
           Timer? checkStepTimer;
-          void startCheckSteps(void Function(void Function()) setS) {
+          void stopCheckSteps() { checkStepTimer?.cancel(); checkStepTimer = null; }
+          // sheetCtx нужен, чтобы тикер знал, жив ли ещё сам лист. Проверка ИИ
+          // держит соединение до двух минут (receiveTimeout в aiGrade), и если
+          // за это время лист закрыли, setS звался на размонтированном
+          // StatefulBuilder — исключение раз в 3.5 секунды до конца запроса,
+          // причём из колбэка таймера, то есть прямиком в Crashlytics как
+          // фатальное.
+          void startCheckSteps(BuildContext sheetCtx, void Function(void Function()) setS) {
             checkStepIdx = 0;
             checkStepTimer?.cancel();
             checkStepTimer = Timer.periodic(const Duration(milliseconds: 3500), (_) {
+              if (!mounted || !sheetCtx.mounted) { stopCheckSteps(); return; }
               if (checkStepIdx < _checkSteps.length - 1) setS(() => checkStepIdx++);
             });
           }
-          void stopCheckSteps() { checkStepTimer?.cancel(); checkStepTimer = null; }
           return StatefulBuilder(builder: (ctx, setS) => DraggableScrollableSheet(expand: false, initialChildSize: 0.85, maxChildSize: 0.95, builder: (ctx, sc) {
             final graded = subs.where((s) => s['status'] == 'graded').length;
             final pending = subs.length - graded;
@@ -735,7 +742,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
                     onPressed: grading ? null : () async {
                       setS(() => grading = true);
-                      startCheckSteps(setS);
+                      startCheckSteps(ctx, setS);
                       try {
                         final result = await context.read<ApiService>().aiGrade(selectedSub['id']);
                         if (!mounted || !ctx.mounted) return;
@@ -774,7 +781,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
                     onPressed: grading ? null : () async {
                       setS(() => grading = true);
-                      startCheckSteps(setS);
+                      startCheckSteps(ctx, setS);
                       try {
                         final result = await context.read<ApiService>().aiGrade(selectedSub['id']);
                         if (!mounted || !ctx.mounted) return;
@@ -923,7 +930,10 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     const SizedBox(width: 8),
                     Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                       if (score != null)
-                        Text('$score/100',
+                        // Знаменатель — максимум ЭТОГО задания, а не жёсткая
+                        // сотня: у задания с max_score 50 список работ показывал
+                        // «45/100», хотя в карточке сдачи рядом стоит «45 / 50».
+                        Text('$score/${assignmentMaxScore.toInt()}',
                             style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4, color: primaryColor, fontFeatures: const [FontFeature.tabularFigures()]))
                       else
                         Text('—', style: TextStyle(fontSize: 17, color: adaptiveText4(context))),
@@ -937,7 +947,10 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             );
           }));
         });
-    } catch (_) { showToast(context, l.t('error_loading'), error: true); }
+    // mounted обязателен: getSubmissions выше — сетевой запрос, и если уйти с
+    // экрана класса, пока он летит, showToast искал бы ScaffoldMessenger по
+    // уже деактивированному контексту.
+    } catch (_) { if (mounted) showToast(context, l.t('error_loading'), error: true); }
   }
 
   Widget _manualGradeAndDeleteRow(BuildContext ctx, dynamic sub, num maxScore, void Function(dynamic updated) onGraded, VoidCallback onDeleted) {

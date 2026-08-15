@@ -44,6 +44,12 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
   String? _kindFilter;
   String _kindFilterLabel = '';
 
+  /// Поколение запроса журнала. Период и фильтр переключаются одним тапом,
+  /// а «Показать ещё» может быть ещё в полёте: без этого счётчика её страница,
+  /// набранная по СТАРОМУ фильтру, дописывалась в уже перезаполненный список,
+  /// подмешивая чужие строки и сбивая _logPage.
+  int _logReq = 0;
+
   @override
   void initState() {
     super.initState();
@@ -67,6 +73,7 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
 
   Future<void> _loadLogs() async {
     if (!mounted) return;
+    final req = ++_logReq;
     setState(() => _logLoading = true);
     try {
       final page = await context.read<ApiService>().adminAiUsagePage(
@@ -75,17 +82,22 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
             page: 1,
             pageSize: _pageSize,
           );
+      // Пока запрос летел, пользователь мог переключить период ещё раз —
+      // применяем только ответ на САМЫЙ СВЕЖИЙ запрос, иначе выигрывает тот,
+      // что вернулся последним, а не тот, что запрошен последним.
+      if (req != _logReq) return;
       _logs = List<dynamic>.from(page['items'] as List? ?? const []);
       _logTotal = (page['total'] as num?)?.toInt() ?? _logs.length;
       _logPage = 1;
     } catch (e) {
       logError('AdminAiDashboard.logs', e);
     }
-    if (mounted) setState(() => _logLoading = false);
+    if (mounted && req == _logReq) setState(() => _logLoading = false);
   }
 
   Future<void> _loadMoreLogs() async {
     if (_logMoreLoading || _logs.length >= _logTotal) return;
+    final req = _logReq;
     setState(() => _logMoreLoading = true);
     try {
       final page = await context.read<ApiService>().adminAiUsagePage(
@@ -95,7 +107,7 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
             pageSize: _pageSize,
           );
       final items = List<dynamic>.from(page['items'] as List? ?? const []);
-      if (mounted) {
+      if (mounted && req == _logReq) {
         setState(() {
           _logs.addAll(items);
           _logPage++;

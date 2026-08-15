@@ -110,7 +110,11 @@ class _MainShellState extends State<MainShell>
   /// поймает возврат сети — это лишь подстраховка.
   void _startRecheck() {
     _recheckTimer?.cancel();
-    final seconds = (2 << _recheckAttempt).clamp(2, 60);
+    // Счётчик ограничен до сдвига, а не после: `2 << 62` переполняет 64-битный
+    // int в отрицательное число, и clamp(2, 60) отдаёт тогда 2 секунды. То есть
+    // примерно через час без сети откат схлопывался обратно в опрос каждые две
+    // секунды — и так до конца сессии (телефон, оставленный офлайн на ночь).
+    final seconds = (2 << _recheckAttempt.clamp(0, 5)).clamp(2, 60);
     _recheckTimer = Timer(Duration(seconds: seconds), () async {
       if (!mounted) return;
       _recheckAttempt++;

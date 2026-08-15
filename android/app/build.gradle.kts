@@ -21,7 +21,12 @@ plugins {
 
 android {
     namespace = "kz.chatra.app"
-    compileSdk = 35
+    // 36, а не 35: androidx.core 1.18 (тянется транзитивно через
+    // firebase_messaging / flutter_local_notifications) требует компиляции
+    // против API 36 — со значением 35 задача bundleRelease падала целиком.
+    // compileSdk влияет только на доступный набор API при компиляции, к
+    // runtime-поведению отношения не имеет (за это отвечает targetSdk ниже).
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -40,9 +45,14 @@ android {
         // Версии зафиксированы явно, а не взяты из flutter.*: иначе итоговый
         // targetSdk зависит от версии Flutter SDK на машине сборки, и после
         // отката SDK получается AAB с устаревшим target, который Play не
-        // принимает (требование targetSdk >= 35 действует с 31.08.2025).
+        // принимает (требование targetSdk >= 35 действует с 31.08.2025,
+        // >= 36 — с 31.08.2026).
         minSdk = 24          // требование firebase_messaging 16.x
-        targetSdk = 35
+        // ВНИМАНИЕ: на Android 16 (API 36) вступает в силу принудительный
+        // edge-to-edge — отказаться от него через windowOptOutEdgeToEdgeEnforcement
+        // на этом target уже нельзя. Отступы шелла и плавающего таб-бара под
+        // системными панелями на реальном Android 16 ещё НЕ проверялись.
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }

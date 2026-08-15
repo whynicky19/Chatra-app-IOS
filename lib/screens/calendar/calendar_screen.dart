@@ -9,6 +9,7 @@ import '../../theme/app_theme.dart';
 import '../classes/class_detail_screen.dart';
 import '../../utils/dates.dart';
 import '../../utils/nav_guard.dart';
+import '../../widgets/inset_group.dart';
 import '../../widgets/tappable.dart';
 
 class CalendarScreen extends StatefulWidget {
@@ -136,13 +137,20 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       await _load();
                     },
                   ),
+                  // Подзаголовок под largeTitle. maxLines: 2 — «Алдағы
+                  // тапсырмалар: 12» и «No upcoming deadlines» длиннее
+                  // русского варианта, а обрезать сводку нельзя: это
+                  // единственное место, где видно общее число.
                   SliverToBoxAdapter(child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
                     child: Text(
                       _deadlineMap.isEmpty
                           ? l.t('no_upcoming_deadlines')
                           : '${l.t('upcoming_tasks')}: ${_deadlineMap.values.fold<int>(0, (n, list) => n + list.length)}',
-                      style: TextStyle(fontSize: 13, color: adaptiveText3(context)),
+                      maxLines: 2, overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w500, letterSpacing: -0.2,
+                        height: 1.25, color: adaptiveText3(context)),
                     ),
                   )),
 
@@ -174,17 +182,33 @@ class _CalendarScreenState extends State<CalendarScreen> {
         Row(children: [
           _navBtn(CupertinoIcons.chevron_left, () => setState(() =>
             _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month - 1)), 'Предыдущий месяц'),
-          Expanded(child: Text(
-            '${l.t('months_full').split(',')[_focusedMonth.month - 1]} ${_focusedMonth.year}',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary),
+          // FittedBox: «Қыркүйек 2026» / «September 2026» заметно длиннее
+          // «Май 2026», а между двумя кнопками-стрелками остаётся всего ~230pt.
+          // Заголовок месяца ужимается, но не обрывается многоточием.
+          Expanded(child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              '${l.t('months_full').split(',')[_focusedMonth.month - 1]} ${_focusedMonth.year}',
+              maxLines: 1,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4,
+                color: adaptiveText1(context)),
+            ),
           )),
           _navBtn(CupertinoIcons.chevron_right, () => setState(() =>
             _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month + 1)), 'Следующий месяц'),
         ]),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
+        // Подписи дней недели ужимаются каждая в своей колонке: «Mon/Tue» на 3
+        // буквы шире, чем «Пн/Вт», и на узком экране упирались друг в друга.
         Row(children: l.t('weekdays_short').split(',').map((d) => Expanded(
-          child: Center(child: Text(d, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: adaptiveText3(context)))),
+          child: Center(child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(d, maxLines: 1, style: TextStyle(
+              fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.2,
+              color: adaptiveText4(context))),
+          )),
         )).toList()),
         const SizedBox(height: 8),
         GridView.count(
@@ -217,9 +241,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
               return Tappable(
                 onTap: () => setState(() => _selectedDay = day),
+                // Ячейка дня не «пружинит»: 42 клетки подряд, сжатие каждой по
+                // тапу читалось бы как дребезг сетки, а не как отклик.
+                scale: 1,
                 child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                   AnimatedContainer(
-                    duration: const Duration(milliseconds: 160),
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOutCubic,
                     width: 34, height: 34,
                     decoration: BoxDecoration(
                       color: isSelected
@@ -231,7 +259,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       boxShadow: isSelected ? primaryGlow(Theme.of(context).colorScheme.primary, opacity: 0.28) : null,
                     ),
                     child: Center(child: Text('${i + 1}', style: TextStyle(
-                      fontSize: 13, fontWeight: isSelected || isToday ? FontWeight.w600 : FontWeight.w600,
+                      fontSize: 15, letterSpacing: -0.3,
+                      // Раньше здесь стоял тернарник `w600 : w600` — обе ветки
+                      // одинаковые, то есть вся сетка была полужирной и
+                      // «сегодня» в ней ничем не выделялось.
+                      fontWeight: isSelected || isToday ? FontWeight.w600 : FontWeight.w500,
                       color: isSelected ? Colors.white
                           : (isToday ? Theme.of(context).colorScheme.primary : adaptiveText1(context)),
                     ))),
@@ -240,7 +272,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     Container(
                       width: 5, height: 5,
                       margin: const EdgeInsets.only(top: 2),
-                      decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+                      // На залитом кружке выбранного дня цветная точка тонет —
+                      // там она белая, как в календаре iOS.
+                      decoration: BoxDecoration(
+                        color: isSelected ? Colors.white : dotColor,
+                        shape: BoxShape.circle),
                     )
                   else
                     const SizedBox(height: 7),
@@ -249,26 +285,41 @@ class _CalendarScreenState extends State<CalendarScreen> {
             }),
           ],
         ),
-        const SizedBox(height: 6),
-        Divider(height: 1, color: adaptiveBorder(context).withValues(alpha: 0.5)),
-        const SizedBox(height: 10),
-        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Flexible(child: _legendDot(Theme.of(context).colorScheme.primary, context.read<L10n>().t('cal_legend_due'))),
-          const SizedBox(width: 12),
-          Flexible(child: _legendDot(C.red, context.read<L10n>().t('cal_legend_multiple'))),
-          const SizedBox(width: 12),
-          Flexible(child: _legendDot(C.green, context.read<L10n>().t('cal_legend_done'))),
-        ]),
+        const SizedBox(height: 8),
+        Divider(height: 1, color: groupSeparator(context)),
+        const SizedBox(height: 12),
+        // Wrap, а не Row: три подписи легенды в одну строку помещаются только
+        // по-русски. «бірнеше тапсырма» и «several due» на узком экране уже не
+        // влезали и обрезались многоточием — теперь лишний пункт целиком
+        // переносится на вторую строку. Wrap отдаёт детям maxWidth всей строки,
+        // поэтому и одна длинная подпись переносится по словам, а не уходит за
+        // край карточки.
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 16, runSpacing: 8,
+          children: [
+            _legendDot(Theme.of(context).colorScheme.primary, l.t('cal_legend_due')),
+            _legendDot(C.red, l.t('cal_legend_multiple')),
+            _legendDot(C.green, l.t('cal_legend_done')),
+          ],
+        ),
       ]),
     );
   }
 
-  Widget _legendDot(Color color, String label) => Row(mainAxisSize: MainAxisSize.min, children: [
-    Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-    const SizedBox(width: 5),
-    Flexible(child: Text(label, style: TextStyle(fontSize: 11, color: adaptiveText3(context), fontWeight: FontWeight.w500),
-      maxLines: 1, overflow: TextOverflow.ellipsis)),
-  ]);
+  Widget _legendDot(Color color, String label) => Row(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Container(width: 6, height: 6, margin: const EdgeInsets.only(top: 4),
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+      const SizedBox(width: 6),
+      // Без maxLines/ellipsis: подпись легенды должна читаться целиком на любом
+      // языке — не влезла в строку, значит переносится.
+      Flexible(child: Text(label, style: TextStyle(
+        fontSize: 12, height: 1.2, letterSpacing: -0.1,
+        color: adaptiveText3(context), fontWeight: FontWeight.w500))),
+    ]);
 
   Widget _navBtn(IconData icon, VoidCallback onTap, String label) => Tappable(
     onTap: onTap,
@@ -276,20 +327,20 @@ class _CalendarScreenState extends State<CalendarScreen> {
     child: Container(
       width: 32, height: 32,
       decoration: BoxDecoration(
-        color: adaptiveSurface2(context),
-        borderRadius: BorderRadius.circular(AppRadii.chip),
+        color: adaptiveSurface2(context).withValues(alpha: 0.55),
+        shape: BoxShape.circle,
       ),
-      child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
+      child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 18),
     ),
   );
 
   Widget _build7DayScroll(DateTime today, bool isDark) {
     final l = context.read<L10n>();
     return SizedBox(
-      height: 88,
+      height: 92,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+        padding: const EdgeInsets.fromLTRB(16, 2, 16, 10),
         itemCount: 7,
         itemBuilder: (_, i) {
           final day = today.add(Duration(days: i));
@@ -297,6 +348,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           final items = _deadlineMap[key] ?? [];
           final count = items.length;
           final isSelected = key == _selectedDay;
+          final isToday = i == 0;
           final dayName = l.t('weekdays_short').split(',')[day.weekday - 1];
           final allDone = count > 0 && items.every((a) {
             final s = _submissionStatus(a);
@@ -308,41 +360,58 @@ class _CalendarScreenState extends State<CalendarScreen> {
               _selectedDay = key;
               _focusedMonth = DateTime(key.year, key.month);
             }),
+            label: '${day.day}',
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              // Фиксированная ширина вместо padding по содержимому: с ней лента
+              // идёт ровным ритмом. Раньше ячейка «Mon» была шире «Пн», а день
+              // со счётчиком — шире дня без него, и колонки гуляли.
+              width: 58,
               margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 9),
               decoration: BoxDecoration(
                 color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(AppRadii.tile),
+                border: isSelected ? null : Border.all(color: groupSeparator(context), width: hairline(context)),
                 boxShadow: isSelected ? primaryGlow(Theme.of(context).colorScheme.primary, opacity: 0.2) : softShadow(isDark),
               ),
               child: Column(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
-                Text(dayName, style: TextStyle(
-                  fontSize: 11, fontWeight: FontWeight.w600,
-                  color: isSelected ? Colors.white70 : adaptiveText3(context),
-                )),
-                const SizedBox(height: 2),
+                // FittedBox: «Mon/Tue/Wed» на треть длиннее «Пн/Вт», а ячейка
+                // теперь фиксированной ширины.
+                FittedBox(fit: BoxFit.scaleDown, child: Text(dayName.toUpperCase(), maxLines: 1, style: TextStyle(
+                  fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.3,
+                  color: isSelected ? Colors.white.withValues(alpha: 0.75) : adaptiveText4(context),
+                ))),
+                const SizedBox(height: 3),
                 Text('${day.day}', style: TextStyle(
-                  fontSize: 15, fontWeight: FontWeight.w600,
-                  color: isSelected ? Colors.white : Theme.of(context).colorScheme.primary,
+                  fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4, height: 1.1,
+                  color: isSelected
+                      ? Colors.white
+                      : (isToday ? Theme.of(context).colorScheme.primary : adaptiveText1(context)),
                 )),
-                if (count > 0) ...[
-                  const SizedBox(height: 3),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? Colors.white.withValues(alpha: 0.25)
-                          : (allDone ? C.green.withValues(alpha: 0.15) : Theme.of(context).colorScheme.primary.withValues(alpha: 0.12)),
-                      borderRadius: BorderRadius.circular(AppRadii.chip),
-                    ),
-                    child: Text('$count', style: TextStyle(
-                      fontSize: 11, fontWeight: FontWeight.w600,
-                      color: isSelected ? Colors.white : (allDone ? C.green : Theme.of(context).colorScheme.primary),
-                    )),
-                  ),
-                ],
+                const SizedBox(height: 4),
+                // Место под счётчик занято всегда: без этого ячейки с
+                // заданиями были выше пустых и лента шла «ступеньками».
+                SizedBox(
+                  height: 16,
+                  child: count == 0
+                      ? null
+                      : Container(
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? Colors.white.withValues(alpha: 0.25)
+                                : (allDone ? C.green.withValues(alpha: 0.15) : Theme.of(context).colorScheme.primary.withValues(alpha: 0.12)),
+                            borderRadius: BorderRadius.circular(AppRadii.chip),
+                          ),
+                          child: Text('$count', style: TextStyle(
+                            fontSize: 11, fontWeight: FontWeight.w600, height: 1.1,
+                            color: isSelected ? Colors.white : (allDone ? C.green : Theme.of(context).colorScheme.primary),
+                          )),
+                        ),
+                ),
               ]),
             ),
           );
@@ -368,11 +437,24 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
     if (items.isEmpty) {
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 40),
+        padding: const EdgeInsets.fromLTRB(40, 34, 40, 40),
         child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(CupertinoIcons.calendar_badge_plus, size: 52, color: C.text4.withValues(alpha: 0.4)),
-          const SizedBox(height: 12),
-          Text(l.t('no_deadlines'), style: TextStyle(fontSize: 15, color: adaptiveText3(context))),
+          Container(
+            width: 66, height: 66,
+            decoration: BoxDecoration(
+              gradient: RadialGradient(colors: [
+                Theme.of(context).colorScheme.primary.withValues(alpha: 0.14),
+                Theme.of(context).colorScheme.primary.withValues(alpha: 0.03),
+              ]),
+              shape: BoxShape.circle),
+            child: Icon(CupertinoIcons.calendar, size: 28, color: Theme.of(context).colorScheme.primary),
+          ),
+          const SizedBox(height: 14),
+          Text('$dayLabel · ${l.t('no_deadlines')}',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 15, fontWeight: FontWeight.w500, letterSpacing: -0.2,
+              height: 1.35, color: adaptiveText3(context))),
         ])),
       );
     }
@@ -381,10 +463,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8, top: 4),
+          padding: const EdgeInsets.only(left: 4, right: 4, bottom: 10, top: 4),
+          // Flexible вокруг подписи дня: «15 қыркүйек»/«15 September» длиннее
+          // «Сегодня», и без него длинная дата выдавливала пилюлю со счётчиком
+          // за край строки.
           child: Row(children: [
-            Text(dayLabel.toUpperCase(), style: TextStyle(
-              fontSize: 11, fontWeight: FontWeight.w600, color: adaptiveText3(context), letterSpacing: 1.0)),
+            Flexible(child: Text(dayLabel.toUpperCase(),
+              maxLines: 2, overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12, fontWeight: FontWeight.w600, height: 1.25,
+                color: adaptiveText3(context), letterSpacing: 0.6))),
             const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
@@ -392,7 +480,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(AppRadii.chip)),
               child: Text('${items.length}', style: TextStyle(
-                fontSize: 11, fontWeight: FontWeight.w600,
+                fontSize: 12, fontWeight: FontWeight.w600,
                 color: Theme.of(context).colorScheme.primary)),
             ),
           ]),
@@ -403,37 +491,42 @@ class _CalendarScreenState extends State<CalendarScreen> {
           final status = _submissionStatus(a);
           final isSubmitted = status == 'submitted' || status == 'graded';
           final classId = (a['class_id'] as num?)?.toInt();
+          final className = classId == null ? '' : (classNames[classId] ?? '');
 
-          Color bg;
+          // Карточка всегда на обычной поверхности, а состояние несут значок и
+          // время. Раньше вся карточка заливалась жёлтым/зелёным/фирменным
+          // цветом: список из пяти заданий на разные дни превращался в
+          // светофор, а текст на пастельной заливке терял контраст в тёмной
+          // теме. Акцент цветом — точечный, как в Напоминаниях: красный только
+          // на «сегодня», янтарный на «завтра», дальше — фирменный.
+          final Color accentColor;
           if (isSubmitted) {
-            bg = isDark ? C.green.withValues(alpha: 0.15) : C.greenLt;
+            accentColor = C.green;
           } else if (_selectedDay == today) {
-            bg = isDark ? C.yellow.withValues(alpha: 0.1) : C.yellowLt;
+            accentColor = C.red;
           } else if (_selectedDay == tomorrow) {
-            bg = adaptivePrimaryLt(context);
+            accentColor = C.amberDk;
           } else {
-            bg = Theme.of(context).colorScheme.surface;
+            accentColor = Theme.of(context).colorScheme.primary;
           }
 
-          final accentColor = isSubmitted ? C.green : Theme.of(context).colorScheme.primary;
-
-          return Tappable(
-            onTap: classId != null ? () => guardedPush(context, MaterialPageRoute(
-              builder: (_) => ClassDetailScreen(classId: classId, initialTab: 1),
-            )) : null,
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: bg,
-                borderRadius: BorderRadius.circular(AppRadii.tile),
-                boxShadow: cardShadow(isDark),
-              ),
-              child: Row(children: [
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: GroupRow.card(
+              onTap: classId != null ? () => guardedPush(context, MaterialPageRoute(
+                builder: (_) => ClassDetailScreen(classId: classId, initialTab: 1),
+              )) : null,
+              label: (a['title'] ?? '').toString(),
+              radius: AppRadii.tile,
+              padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
+              // start: название занимает до двух строк, и значок обязан
+              // держаться верха карточки, а не «плавать» по её центру.
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Container(
                   width: 42, height: 42,
+                  alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: accentColor.withValues(alpha: isDark ? 0.22 : 0.14),
+                    color: accentColor.withValues(alpha: isDark ? 0.22 : 0.12),
                     borderRadius: BorderRadius.circular(AppRadii.tile),
                   ),
                   child: Icon(isSubmitted ? CupertinoIcons.checkmark_alt : CupertinoIcons.clock,
@@ -441,30 +534,47 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 ),
                 const SizedBox(width: 12),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(a['title'] ?? '', style: TextStyle(
-                    fontSize: 15, fontWeight: FontWeight.w600,
+                  Text((a['title'] ?? '').toString(), style: TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w600,
+                    letterSpacing: -0.3, height: 1.25,
                     color: adaptiveText1(context),
                   ), maxLines: 2, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 3),
-                  Row(children: [
+                  const SizedBox(height: 6),
+                  // Время фиксированной ширины (5 знаков), а всё оставшееся
+                  // место в строке отдано названию предмета — и до двух строк.
+                  // Раньше они делили строку поровну через Flexible с
+                  // `maxLines: 1`, и предмет почти всегда обрывался.
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     if (due != null) ...[
-                      Icon(CupertinoIcons.clock, size: 12, color: isSubmitted ? C.green : C.text4),
-                      const SizedBox(width: 3),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Icon(CupertinoIcons.clock, size: 12, color: accentColor),
+                      ),
+                      const SizedBox(width: 4),
                       Text(
                         '${due.hour.toString().padLeft(2,'0')}:${due.minute.toString().padLeft(2,'0')}',
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isSubmitted ? C.green : C.text3),
+                        style: TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w600,
+                          letterSpacing: -0.1, height: 1.25, color: accentColor),
                       ),
-                    ],
-                    if (classId != null && (classNames[classId] ?? '').isNotEmpty) ...[
                       const SizedBox(width: 8),
-                      Flexible(child: Text(classNames[classId]!,
-                        style: TextStyle(fontSize: 13, color: adaptiveText3(context)),
-                        maxLines: 1, overflow: TextOverflow.ellipsis)),
                     ],
+                    if (className.isNotEmpty)
+                      Expanded(child: Text(className,
+                        style: TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w500,
+                          letterSpacing: -0.1, height: 1.25, color: adaptiveText3(context)),
+                        maxLines: 2, overflow: TextOverflow.ellipsis)),
                   ]),
                 ])),
-                if (classId != null)
-                  const Icon(CupertinoIcons.chevron_right, size: 18, color: C.text4),
+                if (classId != null) ...[
+                  const SizedBox(width: 6),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Icon(CupertinoIcons.chevron_right, size: 15,
+                        color: adaptiveText4(context).withValues(alpha: 0.7)),
+                  ),
+                ],
               ]),
             ),
           );

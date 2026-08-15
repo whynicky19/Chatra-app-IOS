@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -256,13 +257,14 @@ void main() {
   group('экран уведомлений', () {
     setUp(() => SharedPreferences.setMockInitialValues({}));
 
-    Future<(ClassesProvider, _FakeApi)> pumpScreen(WidgetTester tester, _FakeApi api) async {
+    Future<(ClassesProvider, _FakeApi)> pumpScreen(WidgetTester tester, _FakeApi api,
+        {String lang = 'RU'}) async {
       final auth = AuthProvider(api);
       final classes = ClassesProvider(api, auth);
       classes.notifBadge.value = 7; // как будто бейдж уже висит с прошлого раза
       await tester.pumpWidget(MultiProvider(
         providers: [
-          ChangeNotifierProvider(create: (_) => L10n()),
+          ChangeNotifierProvider(create: (_) => L10n()..setLang(lang)),
           Provider<ApiService>.value(value: api),
           ChangeNotifierProvider.value(value: auth),
           ChangeNotifierProvider.value(value: classes),
@@ -294,7 +296,7 @@ void main() {
       expect(fake.marked, isEmpty);
     });
 
-    testWidgets('карточки уведомлений одной высоты при разной длине текста', (tester) async {
+    testWidgets('карточки одного типа одной высоты при разной длине текста', (tester) async {
       final now = DateTime.now();
       final api = _FakeApi(
         classes: [cls(1, 'Класс с очень длинным названием, которое не влезает в строку')],
@@ -312,6 +314,58 @@ void main() {
           .toSet();
       expect(heights, hasLength(1), reason: 'высота карточек уведомлений разошлась');
       expect(heights.single, greaterThan(70));
+    });
+
+    // Регрессия на «название предмета в карточке обрезается». Раньше предмет,
+    // название задания и балл делили ОДНУ строку с `maxLines: 1`, и предмет
+    // почти всегда уходил под многоточие. Теперь у него своя строка на всю
+    // ширину карточки — проверяем это на узком экране и во всех трёх языках,
+    // потому что казахский и английский заметно длиннее русского.
+    testWidgets('длинные названия предмета и задания не обрезаются (RU/KZ/EN)', (tester) async {
+      tester.view.physicalSize = const Size(750, 1334); // iPhone SE, @2x
+      tester.view.devicePixelRatio = 2;
+      addTearDown(tester.view.reset);
+
+      const className = 'Алгебра и начала анализа';
+      const title = 'Контрольная работа №5';
+      final at = DateTime.now();
+
+      for (final lang in const ['RU', 'KZ', 'EN']) {
+        // Карточка «новое задание»: название предмета и название задания
+        // целиком, каждое на своей строке.
+        await pumpScreen(tester, _FakeApi(
+          classes: [cls(1, className)],
+          assignments: [
+            {'id': 10, 'class_id': 1, 'title': title, 'created_at': iso(at.subtract(const Duration(hours: 2)))},
+          ],
+        ), lang: lang);
+
+        expect(tester.takeException(), isNull, reason: 'переполнение вёрстки на языке $lang');
+
+        for (final text in const [className, title]) {
+          final paragraphs = tester.renderObjectList<RenderParagraph>(find.text(text)).toList();
+          // Под старой вёрсткой предмет вообще не был отдельным Text — он
+          // склеивался с названием задания в одну строку, и этот поиск не
+          // нашёл бы его.
+          expect(paragraphs, isNotEmpty, reason: '«$text» не отрисован на языке $lang');
+          for (final p in paragraphs) {
+            expect(p.didExceedMaxLines, isFalse, reason: '«$text» обрезан на языке $lang');
+          }
+        }
+
+        // Полный набор типов (оценка с пилюлей балла, дедлайн с остатком,
+        // новое задание) — здесь важно именно отсутствие переполнения.
+        await pumpScreen(tester, _FakeApi(
+          classes: [cls(1, className)],
+          assignments: [
+            {'id': 10, 'class_id': 1, 'title': title, 'created_at': iso(at.subtract(const Duration(hours: 2)))},
+            {'id': 11, 'class_id': 1, 'title': title, 'deadline': iso(at.add(const Duration(hours: 5)))},
+          ],
+          subs: [gradedSub(100, 10, gradedAt: at.subtract(const Duration(hours: 1)))],
+        ), lang: lang);
+
+        expect(tester.takeException(), isNull, reason: 'переполнение вёрстки на языке $lang');
+      }
     });
   });
 }

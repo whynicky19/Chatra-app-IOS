@@ -122,8 +122,12 @@ class SkeletonNotifCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = Theme.of(context).colorScheme.surface;
 
+    // Метрики повторяют живую карточку уведомления (см. _NotifCard): плитка
+    // 44, отступ 13, ТРИ строки — тип, название задания, предмет. Скелет с
+    // двумя строками был заметно ниже реальной карточки, и список «подпрыгивал»
+    // в момент подмены заглушек данными.
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: surface,
@@ -133,11 +137,13 @@ class SkeletonNotifCard extends StatelessWidget {
       ),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const SkeletonBox(width: 44, height: 44, borderRadius: AppRadii.tile),
-        const SizedBox(width: 12),
+        const SizedBox(width: 13),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const SkeletonBox(width: 150, height: 14, borderRadius: 7),
+          const SkeletonBox(width: 110, height: 11, borderRadius: 6),
           const SizedBox(height: 8),
-          SkeletonBox(width: MediaQuery.sizeOf(context).width * 0.5, height: 12, borderRadius: 6),
+          SkeletonBox(width: MediaQuery.sizeOf(context).width * 0.52, height: 14, borderRadius: 7),
+          const SizedBox(height: 9),
+          const SkeletonBox(width: 96, height: 11, borderRadius: 6),
         ])),
       ]),
     );

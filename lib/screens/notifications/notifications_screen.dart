@@ -101,22 +101,30 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
-  String _body(NotifItem n, L10n l) {
-    final title = n.assignmentTitle?.trim().isNotEmpty == true
-        ? n.assignmentTitle!
-        : l.t('assignment');
+  /// Название задания — главная строка карточки. Кавычек нет: заголовок и так
+  /// выделен весом, а в списке из нескольких карточек ёлочки читались как шум.
+  String _subject(NotifItem n, L10n l) =>
+      n.assignmentTitle?.trim().isNotEmpty == true ? n.assignmentTitle! : l.t('assignment');
+
+  /// Короткая акцентная метка справа в мета-строке: балл или остаток времени.
+  /// Всегда коротка по построению (число + единица), поэтому пилюля под неё
+  /// может быть без переносов — место под неё ограничено и предсказуемо.
+  ///
+  /// Название предмета сюда НЕ входит: оно переменной длины и в трёх языках
+  /// доходит до нескольких слов, поэтому живёт отдельной строкой (см.
+  /// [_NotifCard]). Раньше и предмет, и балл, и название задания жались в одну
+  /// строку с `maxLines: 1` — предмет обрезался почти всегда.
+  String? _accent(NotifItem n, L10n l) {
     switch (n.kind) {
       case NotifKind.grade:
-        return '"$title" — ${n.score ?? 0} ${l.t('pts')}';
+        return '${n.score ?? 0} ${l.t('pts')}';
       case NotifKind.deadline:
         final d = n.remaining ?? Duration.zero;
-        final left = d.inHours >= 1
+        return d.inHours >= 1
             ? '${d.inHours} ${l.t('hours_short')}'
             : '${d.inMinutes} ${l.t('minutes_short')}';
-        return '"$title"  •  $left';
       case NotifKind.newAssignment:
-        final cName = n.className ?? '';
-        return '"$title"${cName.isNotEmpty ? '  •  $cName' : ''}';
+        return null;
     }
   }
 
@@ -199,8 +207,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 2, 20, 14),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(l.t('notifications'),
-                style: TextStyle(fontSize: 34, fontWeight: FontWeight.w700, letterSpacing: -1, height: 1.1, color: adaptiveText1(context))),
+            // FittedBox, а не ellipsis: заголовок экрана обрезать многоточием
+            // нельзя, а «Хабарламалар» на узком экране (SE) в 34pt уже не
+            // помещается. Уменьшение кегля — то же, что делает нативный
+            // largeTitle iOS с длинным заголовком.
+            SizedBox(
+              width: double.infinity,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(l.t('notifications'),
+                    maxLines: 1,
+                    style: TextStyle(fontSize: 34, fontWeight: FontWeight.w700, letterSpacing: -1, height: 1.1, color: adaptiveText1(context))),
+              ),
+            ),
             if (!_loading) ...[
               const SizedBox(height: 4),
               Row(children: [
@@ -211,9 +231,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   Icon(CupertinoIcons.checkmark_circle_fill, size: 14, color: C.green.withValues(alpha: 0.85)),
                   const SizedBox(width: 5),
                 ],
+                // maxLines: 2 — «оқылмаған»/«unread» со счётчиком в одну
+                // строку помещается, но при крупном системном шрифте
+                // (Dynamic Type) строка переносится, а не обрезается.
                 Flexible(child: Text(fresh > 0 ? '$fresh ${l.t('notif_unread')}' : l.t('all_read'),
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText3(context), fontWeight: FontWeight.w500))),
+                  maxLines: 2, overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 15, letterSpacing: -0.2, height: 1.25, color: adaptiveText3(context), fontWeight: FontWeight.w500))),
               ]),
             ],
           ]),
@@ -244,9 +267,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     final item = grouped[i];
                     if (item is String) {
                       return Padding(
-                        padding: EdgeInsets.only(left: 6, top: i == 0 ? 2 : 18, bottom: 10),
-                        child: Text(item.toUpperCase(), style: TextStyle(
-                          fontSize: 12, fontWeight: FontWeight.w600, color: adaptiveText3(context), letterSpacing: 0.6)),
+                        padding: EdgeInsets.only(left: 6, right: 6, top: i == 0 ? 2 : 22, bottom: 10),
+                        child: Text(item.toUpperCase(), maxLines: 2, overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w600, height: 1.25,
+                            color: adaptiveText3(context), letterSpacing: 0.6)),
                       );
                     }
                     final n = item as NotifItem;
@@ -279,10 +304,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           ]),
                         ),
                         child: _NotifCard(
-                          title: _title(n, l),
-                          body: _body(n, l),
+                          kindLabel: _title(n, l),
+                          subject: _subject(n, l),
+                          className: n.className,
+                          accent: _accent(n, l),
                           isFresh: _fresh.contains(n.key),
-                          config: cfg,
+                          icon: cfg.icon,
+                          color: cfg.color,
                           surface: surface,
                           timeAgo: _timeAgo(n, l),
                           onTap: () {
@@ -306,14 +334,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  Map<String, dynamic> _config(NotifKind kind) {
+  ({IconData icon, Color color}) _config(NotifKind kind) {
     switch (kind) {
       case NotifKind.grade:
-        return {'icon': CupertinoIcons.rosette, 'color': Theme.of(context).colorScheme.primary};
+        return (icon: CupertinoIcons.rosette, color: Theme.of(context).colorScheme.primary);
       case NotifKind.deadline:
-        return {'icon': CupertinoIcons.clock_fill, 'color': C.red};
+        return (icon: CupertinoIcons.clock_fill, color: C.red);
       case NotifKind.newAssignment:
-        return {'icon': CupertinoIcons.doc_text_fill, 'color': C.indigo};
+        return (icon: CupertinoIcons.doc_text_fill, color: C.indigo);
     }
   }
 
@@ -339,29 +367,50 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 }
 
-/// Карточка одного уведомления в духе списка Apple Mail: плоский цветной
-/// значок, время — в строке заголовка, непрочитанное отмечено точкой у
-/// заголовка и более насыщенной подложкой значка.
+/// Карточка одного уведомления в духе Центра уведомлений iOS: плоский цветной
+/// значок, тип события мелкой акцентной строкой, время — справа в той же
+/// строке, дальше содержимое. Непрочитанное отмечено точкой у типа и более
+/// насыщенной подложкой значка.
 ///
 /// Раньше непрочитанное дополнительно обводилось цветной рамкой в 1.2px по
 /// всей карточке: в списке из нескольких непрочитанных экран превращался в
 /// набор конкурирующих цветных прямоугольников. Теперь рамка всегда одна и та
-/// же волосяная, а «непрочитанность» несут точка, вес заголовка и значок —
-/// ровно как в Mail.
+/// же волосяная, а «непрочитанность» несут точка и значок — ровно как в Mail.
+///
+/// ТРИ строки вместо двух — это и есть починка обрезания. В прежней вёрстке
+/// название предмета приклеивалось к названию задания в одну строку с
+/// `maxLines: 1`, и в русском/казахском предмет пропадал под многоточием почти
+/// всегда. Теперь у каждой сущности своя строка: тип (1 строка, ужимается),
+/// название задания (до 2 строк), предмет (до 2 строк) плюс короткая пилюля
+/// балла/остатка времени, ширина которой ограничена по построению.
 class _NotifCard extends StatelessWidget {
-  final String title;
-  final String body;
+  /// Тип события: «Задание проверено», «Скоро дедлайн», «Новое задание».
+  final String kindLabel;
+
+  /// Название задания — главная строка карточки.
+  final String subject;
+
+  /// Название предмета; null/пусто — строка не рисуется.
+  final String? className;
+
+  /// Короткая метка справа в мета-строке (балл, остаток времени).
+  final String? accent;
+
   final bool isFresh;
-  final Map<String, dynamic> config;
+  final IconData icon;
+  final Color color;
   final Color surface;
   final String timeAgo;
   final VoidCallback onTap;
 
   const _NotifCard({
-    required this.title,
-    required this.body,
+    required this.kindLabel,
+    required this.subject,
+    required this.className,
+    required this.accent,
     required this.isFresh,
-    required this.config,
+    required this.icon,
+    required this.color,
     required this.surface,
     required this.timeAgo,
     required this.onTap,
@@ -369,51 +418,93 @@ class _NotifCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = config['color'] as Color;
-    final icon = config['icon'] as IconData;
+    final hasClass = className != null && className!.trim().isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      // Те же метрики, что у карточек лекции и задания: плитка 46, ровно две
-      // строки текста (заголовок 17 / текст 15), воздух 16 по вертикали. Раньше
-      // карточка была компактнее остальных списков приложения, а текст в две
-      // строки делал соседние карточки разной высоты. Шеврона «открыть» нет —
-      // нажимается вся карточка.
       child: GroupRow.card(
         onTap: onTap,
         color: surface,
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-        child: Row(children: [
-          Container(width: 46, height: 46,
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+        // crossAxisAlignment.start: карточка теперь переменной высоты (задание
+        // может занять две строки), и значок обязан держаться верха, а не
+        // «плавать» по центру относительно соседних карточек.
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(width: 44, height: 44,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: c.withValues(alpha: isFresh ? 0.18 : 0.10),
+              color: color.withValues(alpha: isFresh ? 0.18 : 0.10),
               borderRadius: BorderRadius.circular(AppRadii.tile),
             ),
-            child: Icon(icon, size: 21, color: c)),
-          const SizedBox(width: 14),
+            child: Icon(icon, size: 20, color: color)),
+          const SizedBox(width: 13),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            // ── Строка 1: тип события + время ────────────────────────────
             Row(children: [
               if (isFresh)
-                Container(width: 7, height: 7, margin: const EdgeInsets.only(right: 7),
-                    decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
-              Expanded(child: Text(title,
-                  // Вес заголовка одинаков для новых и прочитанных: «новизну»
-                  // и так несут точка слева и насыщенность значка, а разный вес
-                  // делал список визуально рваным.
-                  style: TextStyle(
-                    fontSize: 17, fontWeight: FontWeight.w600,
-                    letterSpacing: -0.4, color: adaptiveText1(context), height: 1.2),
-                  maxLines: 1, overflow: TextOverflow.ellipsis)),
+                Container(width: 7, height: 7, margin: const EdgeInsets.only(right: 6),
+                    decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+              // FittedBox внутри Expanded: тип события — короткая служебная
+              // подпись, её лучше слегка ужать, чем оборвать многоточием
+              // («Тапсырма бағаланды» длиннее английского вдвое).
+              Expanded(child: Align(
+                alignment: Alignment.centerLeft,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(kindLabel, maxLines: 1,
+                    style: TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w600,
+                      letterSpacing: 0.1, color: color, height: 1.2)),
+                ),
+              )),
               if (timeAgo.isNotEmpty) ...[
-                const SizedBox(width: 10),
-                Text(timeAgo,
-                    style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText4(context))),
+                const SizedBox(width: 8),
+                Text(timeAgo, maxLines: 1,
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500,
+                      letterSpacing: -0.1, color: adaptiveText4(context))),
               ],
             ]),
             const SizedBox(height: 4),
-            Text(body, maxLines: 1, overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText3(context))),
+
+            // ── Строка 2: название задания ───────────────────────────────
+            Text(subject,
+              maxLines: 2, overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 16, fontWeight: FontWeight.w600,
+                letterSpacing: -0.3, color: adaptiveText1(context), height: 1.25)),
+
+            // ── Строка 3: предмет + балл/остаток ─────────────────────────
+            if (hasClass || accent != null) ...[
+              const SizedBox(height: 7),
+              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                if (hasClass) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(top: 1.5),
+                    child: Icon(CupertinoIcons.book_fill, size: 12, color: adaptiveText4(context)),
+                  ),
+                  const SizedBox(width: 5),
+                  Expanded(child: Text(className!,
+                    maxLines: 2, overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500,
+                      letterSpacing: -0.1, height: 1.25, color: adaptiveText3(context)))),
+                ] else
+                  const Spacer(),
+                if (accent != null) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(AppRadii.chip),
+                    ),
+                    child: Text(accent!, maxLines: 1,
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
+                        letterSpacing: -0.1, color: color)),
+                  ),
+                ],
+              ]),
+            ],
           ])),
         ]),
       ),

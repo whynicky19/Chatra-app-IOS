@@ -50,7 +50,8 @@ void main() {
 
   String iso(DateTime d) => d.toUtc().toIso8601String();
 
-  Future<void> pumpCalendar(WidgetTester tester, _FakeApi api, {String lang = 'RU'}) async {
+  Future<void> pumpCalendar(WidgetTester tester, _FakeApi api,
+      {String lang = 'RU', bool dark = false}) async {
     final auth = AuthProvider(api);
     final classes = ClassesProvider(api, auth);
     await classes.load();
@@ -68,7 +69,9 @@ void main() {
         ChangeNotifierProvider.value(value: auth),
         ChangeNotifierProvider.value(value: classes),
       ],
-      child: MaterialApp(theme: AppTheme.light, home: const CalendarScreen()),
+      child: MaterialApp(
+        theme: dark ? AppTheme.dark : AppTheme.light,
+        home: const CalendarScreen()),
     ));
     await tester.pump(const Duration(milliseconds: 600));
   }
@@ -78,17 +81,22 @@ void main() {
     tester.view.devicePixelRatio = 2;
     addTearDown(tester.view.reset);
 
-    for (final lang in const ['RU', 'KZ', 'EN']) {
-      await pumpCalendar(tester, _FakeApi(), lang: lang);
-      expect(tester.takeException(), isNull, reason: 'переполнение вёрстки на языке $lang');
+    // Обе темы: в тёмной у экрана другие подложки, и раньше именно там ломался
+    // контраст на цветных заливках.
+    for (final dark in const [false, true]) {
+      for (final lang in const ['RU', 'KZ', 'EN']) {
+        final where = '$lang/${dark ? 'dark' : 'light'}';
+        await pumpCalendar(tester, _FakeApi(), lang: lang, dark: dark);
+        expect(tester.takeException(), isNull, reason: 'переполнение вёрстки: $where');
 
-      final l = L10n()..setLang(lang);
-      for (final key in const ['cal_legend_due', 'cal_legend_multiple', 'cal_legend_done']) {
-        final label = l.t(key);
-        final paragraphs = tester.renderObjectList<RenderParagraph>(find.text(label)).toList();
-        expect(paragraphs, isNotEmpty, reason: '«$label» не отрисован на языке $lang');
-        for (final p in paragraphs) {
-          expect(p.didExceedMaxLines, isFalse, reason: '«$label» обрезан на языке $lang');
+        final l = L10n()..setLang(lang);
+        for (final key in const ['cal_legend_due', 'cal_legend_multiple', 'cal_legend_done']) {
+          final label = l.t(key);
+          final paragraphs = tester.renderObjectList<RenderParagraph>(find.text(label)).toList();
+          expect(paragraphs, isNotEmpty, reason: '«$label» не отрисован: $where');
+          for (final p in paragraphs) {
+            expect(p.didExceedMaxLines, isFalse, reason: '«$label» обрезан: $where');
+          }
         }
       }
     }

@@ -8,19 +8,53 @@ import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../classes/class_detail_screen.dart';
 import '../../utils/dates.dart';
+import '../../utils/haptics.dart';
 import '../../utils/nav_guard.dart';
 import '../../widgets/inset_group.dart';
 import '../../widgets/tappable.dart';
 
+/// Календарь дедлайнов в идиоме нативного Календаря iOS.
+///
+/// Что изменилось по сравнению с прошлой версией и почему:
+///
+///  * **Сетка месяца больше не лежит в карточке.** Она рисуется прямо на фоне
+///    страницы: карточка с тенью вокруг календаря делала его «виджетом внутри
+///    экрана», хотя это и есть главное содержимое экрана.
+///  * **Месяц листается свайпом** ([PageView]), а не только стрелками. Прямая
+///    манипуляция вместо двух кнопок — палец ведёт сетку, а не нажимает
+///    «следующий».
+///  * **Убрана лента «ближайшие 7 дней».** Это был второй выбор дня поверх
+///    первого: та же неделя уже есть в сетке месяца, с теми же точками. Два
+///    механизма для одного действия — ровно то, от чего интерфейс перестаёт
+///    читаться с первого взгляда.
+///  * **Список заданий дня — inset-grouped группа**, как на экране уведомлений,
+///    а не стопка карточек с цветной заливкой всей плашки. Цвет теперь точечный
+///    (значок и время), а не фон: пять заданий на разные дни превращали список
+///    в светофор, а текст на пастельной заливке терял контраст в тёмной теме.
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
   @override
   State<CalendarScreen> createState() => _CalendarScreenState();
 }
 
+/// Сколько месяцев доступно свайпом в каждую сторону от текущего. Индекс
+/// страницы [PageView] — это смещение в месяцах от «сегодня» плюс эта база.
+const int _kMonthPageBase = 600;
+
+/// Высота одной строки сетки: кружок дня 36 + зазор 3 + точка 5 + воздух.
+const double _kDayCellHeight = 50;
+
+/// Сетка всегда в шесть строк — столько нужно самому длинному месяцу. При
+/// подгонке под конкретный месяц (4-6 строк) содержимое ниже прыгало вверх-вниз
+/// при листании.
+const int _kGridRows = 6;
+
 class _CalendarScreenState extends State<CalendarScreen> {
-  DateTime _focusedMonth = DateTime.now();
-  DateTime _selectedDay = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+  final DateTime _today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+
+  late DateTime _focusedMonth = DateTime(_today.year, _today.month);
+  late DateTime _selectedDay = _today;
+  late final PageController _monthPages = PageController(initialPage: _kMonthPageBase);
 
   Map<DateTime, List<dynamic>> _deadlineMap = {};
   Map<int, dynamic> _submissionMap = {};
@@ -32,12 +66,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
     _load();
   }
 
+  @override
+  void dispose() {
+    _monthPages.dispose();
+    super.dispose();
+  }
+
+  DateTime _monthAt(int page) => DateTime(_today.year, _today.month + (page - _kMonthPageBase));
+
   Future<void> _load() async {
     try {
       final api = context.read<ApiService>();
       final isStudent = !context.read<AuthProvider>().isTeacher;
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
 
       final activeClassIds = context.read<ClassesProvider>()
           .classes
@@ -72,7 +112,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
         final dt = parseServerDate(dueStr);
         if (dt == null) continue;
         final dueDay = DateTime(dt.year, dt.month, dt.day);
-        if (dueDay.isBefore(today)) continue;
+        // Прошедшие сроки не показываем: экран про то, что ВПЕРЕДИ.
+        if (dueDay.isBefore(_today)) continue;
         map.putIfAbsent(dueDay, () => []).add(a);
       }
 
@@ -97,221 +138,257 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return sub?['status'] as String?;
   }
 
+  bool _isDone(dynamic a) {
+    final s = _submissionStatus(a);
+    return s == 'submitted' || s == 'graded';
+  }
+
+  void _selectDay(DateTime day) {
+    if (day == _selectedDay) return;
+    hapticSelection();
+    setState(() => _selectedDay = day);
+  }
+
+  void _stepMonth(int delta) {
+    hapticLight();
+    _monthPages.animateToPage(
+      (_monthPages.page ?? _kMonthPageBase.toDouble()).round() + delta,
+      // Отклик на кнопку, а не «проезд»: без перелёта, коротко.
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = context.watch<L10n>();
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = Theme.of(context).scaffoldBackgroundColor;
 
     return Scaffold(
-      body: SafeArea(
-        child: _loading
-            ? Center(child: CupertinoActivityIndicator(radius: 13, color: Theme.of(context).colorScheme.primary))
-            : CustomScrollView(slivers: [
-                  CupertinoSliverNavigationBar(
-                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                    border: null,
-                    stretch: true,
-                    leading: Tappable(
-                      onTap: () => Navigator.pop(context),
-                      label: 'Назад',
-                      child: Container(
-                        width: 38, height: 38,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
-                          shape: BoxShape.circle,
-                          boxShadow: softShadow(isDark),
-                        ),
-                        child: Icon(CupertinoIcons.chevron_left, size: 17, color: adaptiveText1(context)),
-                      ),
-                    ),
-                    largeTitle: Text(l.t('deadlines'), style: TextStyle(
-                      fontSize: 28, fontWeight: FontWeight.w700,
-                      color: adaptiveText1(context), letterSpacing: -0.4, height: 1.1,
-                    )),
-                  ),
-                  CupertinoSliverRefreshControl(
-                    onRefresh: () async {
-                      setState(() => _loading = true);
-                      await _load();
-                    },
-                  ),
-                  // Подзаголовок под largeTitle. maxLines: 2 — «Алдағы
-                  // тапсырмалар: 12» и «No upcoming deadlines» длиннее
-                  // русского варианта, а обрезать сводку нельзя: это
-                  // единственное место, где видно общее число.
-                  SliverToBoxAdapter(child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-                    child: Text(
-                      _deadlineMap.isEmpty
-                          ? l.t('no_upcoming_deadlines')
-                          : '${l.t('upcoming_tasks')}: ${_deadlineMap.values.fold<int>(0, (n, list) => n + list.length)}',
-                      maxLines: 2, overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w500, letterSpacing: -0.2,
-                        height: 1.25, color: adaptiveText3(context)),
-                    ),
-                  )),
-
-                  SliverToBoxAdapter(child: _buildCalendar(isDark, today)),
-                  SliverToBoxAdapter(child: _build7DayScroll(today, isDark)),
-                  SliverToBoxAdapter(child: _buildDayList(isDark, today)),
-                  SliverToBoxAdapter(child: SizedBox(height: bottomBarClearance(context))),
-                ]),
-      ),
-    );
-  }
-
-  Widget _buildCalendar(bool isDark, DateTime today) {
-    final l = context.read<L10n>();
-    final surface = Theme.of(context).colorScheme.surface;
-    final daysInMonth = DateUtils.getDaysInMonth(_focusedMonth.year, _focusedMonth.month);
-    final firstDay = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
-    final leadingBlanks = (firstDay.weekday - 1) % 7;
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-      decoration: BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(AppRadii.card),
-        boxShadow: cardShadow(isDark),
-      ),
-      child: Column(children: [
-        Row(children: [
-          _navBtn(CupertinoIcons.chevron_left, () => setState(() =>
-            _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month - 1)), 'Предыдущий месяц'),
-          // FittedBox: «Қыркүйек 2026» / «September 2026» заметно длиннее
-          // «Май 2026», а между двумя кнопками-стрелками остаётся всего ~230pt.
-          // Заголовок месяца ужимается, но не обрывается многоточием.
-          Expanded(child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              '${l.t('months_full').split(',')[_focusedMonth.month - 1]} ${_focusedMonth.year}',
-              maxLines: 1,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4,
-                color: adaptiveText1(context)),
-            ),
-          )),
-          _navBtn(CupertinoIcons.chevron_right, () => setState(() =>
-            _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month + 1)), 'Следующий месяц'),
-        ]),
-        const SizedBox(height: 14),
-        // Подписи дней недели ужимаются каждая в своей колонке: «Mon/Tue» на 3
-        // буквы шире, чем «Пн/Вт», и на узком экране упирались друг в друга.
-        Row(children: l.t('weekdays_short').split(',').map((d) => Expanded(
-          child: Center(child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(d, maxLines: 1, style: TextStyle(
-              fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.2,
-              color: adaptiveText4(context))),
-          )),
-        )).toList()),
-        const SizedBox(height: 8),
-        GridView.count(
-          crossAxisCount: 7,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          childAspectRatio: 1,
-          children: [
-            ...List.generate(leadingBlanks, (_) => const SizedBox()),
-            ...List.generate(daysInMonth, (i) {
-              final day = DateTime(_focusedMonth.year, _focusedMonth.month, i + 1);
-              final deadlines = _getForDay(day);
-              final isSelected = day == _selectedDay;
-              final isToday = day == today;
-
-              Color? dotColor;
-              if (deadlines.isNotEmpty) {
-                final allDone = deadlines.every((a) {
-                  final s = _submissionStatus(a);
-                  return s == 'submitted' || s == 'graded';
-                });
-                if (allDone) {
-                  dotColor = C.green;
-                } else if (deadlines.length > 1) {
-                  dotColor = C.red;
-                } else {
-                  dotColor = Theme.of(context).colorScheme.primary;
-                }
-              }
-
-              return Tappable(
-                onTap: () => setState(() => _selectedDay = day),
-                // Ячейка дня не «пружинит»: 42 клетки подряд, сжатие каждой по
-                // тапу читалось бы как дребезг сетки, а не как отклик.
-                scale: 1,
-                child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    curve: Curves.easeOutCubic,
-                    width: 34, height: 34,
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? Theme.of(context).colorScheme.primary
-                          : isToday
-                              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.12)
-                              : Colors.transparent,
-                      shape: BoxShape.circle,
-                      boxShadow: isSelected ? primaryGlow(Theme.of(context).colorScheme.primary, opacity: 0.28) : null,
-                    ),
-                    child: Center(child: Text('${i + 1}', style: TextStyle(
-                      fontSize: 15, letterSpacing: -0.3,
-                      // Раньше здесь стоял тернарник `w600 : w600` — обе ветки
-                      // одинаковые, то есть вся сетка была полужирной и
-                      // «сегодня» в ней ничем не выделялось.
-                      fontWeight: isSelected || isToday ? FontWeight.w600 : FontWeight.w500,
-                      color: isSelected ? Colors.white
-                          : (isToday ? Theme.of(context).colorScheme.primary : adaptiveText1(context)),
-                    ))),
-                  ),
-                  if (dotColor != null)
-                    Container(
-                      width: 5, height: 5,
-                      margin: const EdgeInsets.only(top: 2),
-                      // На залитом кружке выбранного дня цветная точка тонет —
-                      // там она белая, как в календаре iOS.
-                      decoration: BoxDecoration(
-                        color: isSelected ? Colors.white : dotColor,
-                        shape: BoxShape.circle),
-                    )
-                  else
-                    const SizedBox(height: 7),
-                ]),
-              );
-            }),
-          ],
+      backgroundColor: bg,
+      body: CustomScrollView(slivers: [
+        // Полупрозрачный фон бара включает под ним блюр: сетка календаря
+        // уезжает ПОД свёрнутый заголовок, а не упирается в непрозрачную
+        // полосу. Кружок-подложка у «назад» убран — в системных барах iOS
+        // кнопка это одиночный акцентный глиф.
+        CupertinoSliverNavigationBar(
+          backgroundColor: bg.withValues(alpha: 0.78),
+          border: null,
+          stretch: true,
+          padding: const EdgeInsetsDirectional.only(start: 4, end: 8),
+          leading: Tappable(
+            onTap: () => Navigator.pop(context),
+            label: 'Назад',
+            child: SizedBox(width: 40, height: 40,
+              child: Icon(CupertinoIcons.back, size: 26, color: Theme.of(context).colorScheme.primary)),
+          ),
+          largeTitle: Text(l.t('deadlines'),
+            maxLines: 1,
+            style: TextStyle(
+              fontSize: 34, fontWeight: FontWeight.w700,
+              letterSpacing: -1, height: 1.1, color: adaptiveText1(context))),
         ),
-        const SizedBox(height: 8),
-        Divider(height: 1, color: groupSeparator(context)),
-        const SizedBox(height: 12),
-        // Wrap, а не Row: три подписи легенды в одну строку помещаются только
-        // по-русски. «бірнеше тапсырма» и «several due» на узком экране уже не
-        // влезали и обрезались многоточием — теперь лишний пункт целиком
-        // переносится на вторую строку. Wrap отдаёт детям maxWidth всей строки,
-        // поэтому и одна длинная подпись переносится по словам, а не уходит за
-        // край карточки.
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 16, runSpacing: 8,
-          children: [
-            _legendDot(Theme.of(context).colorScheme.primary, l.t('cal_legend_due')),
-            _legendDot(C.red, l.t('cal_legend_multiple')),
-            _legendDot(C.green, l.t('cal_legend_done')),
-          ],
-        ),
+
+        if (_loading)
+          const SliverFillRemaining(hasScrollBody: false, child: _CalendarLoading())
+        else ...[
+          CupertinoSliverRefreshControl(onRefresh: () async {
+            setState(() => _loading = true);
+            await _load();
+          }),
+
+          if (_deadlineMap.isNotEmpty) SliverToBoxAdapter(child: _summary(l)),
+          SliverToBoxAdapter(child: _monthHeader(l)),
+          SliverToBoxAdapter(child: _weekdayRow(l)),
+          SliverToBoxAdapter(child: _monthPager()),
+          SliverToBoxAdapter(child: _legend(l)),
+          ..._daySlivers(l, isDark),
+          SliverToBoxAdapter(child: SizedBox(height: bottomBarClearance(context))),
+        ],
       ]),
     );
   }
+
+  // ── Шапка ──────────────────────────────────────────────────────────────────
+
+  /// Сводка под заголовком: сколько дедлайнов впереди всего. Когда впереди
+  /// пусто, строки нет совсем: под сеткой в этом случае и так стоит «Сегодня ·
+  /// Дедлайнов нет», и два сообщения об одной и той же пустоте на одном экране
+  /// читались как ошибка вёрстки.
+  Widget _summary(L10n l) {
+    final total = _deadlineMap.values.fold<int>(0, (n, list) => n + list.length);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 2, 20, 22),
+      child: Text(
+        '${l.t('upcoming_tasks')}: $total',
+        maxLines: 2, overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 15, fontWeight: FontWeight.w500, letterSpacing: -0.2,
+          height: 1.25, color: adaptiveText3(context)),
+      ),
+    );
+  }
+
+  /// Название месяца — крупным весом слева, стрелки справа: та же композиция,
+  /// что у месячного вида Календаря iOS. Раньше это была мелкая подпись,
+  /// зажатая по центру между двумя кнопками.
+  Widget _monthHeader(L10n l) {
+    final months = l.t('months_full').split(',');
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 12, 10),
+      child: Row(children: [
+        // FittedBox: «Қыркүйек 2026» / «September 2026» заметно длиннее
+        // «Май 2026». Заголовок ужимается, но не обрывается многоточием.
+        Expanded(child: Align(
+          alignment: Alignment.centerLeft,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text('${months[_focusedMonth.month - 1]} ${_focusedMonth.year}',
+              maxLines: 1,
+              style: TextStyle(
+                fontSize: 22, fontWeight: FontWeight.w700,
+                letterSpacing: -0.5, height: 1.15, color: adaptiveText1(context))),
+          ),
+        )),
+        _navBtn(CupertinoIcons.chevron_left, () => _stepMonth(-1), 'Предыдущий месяц'),
+        _navBtn(CupertinoIcons.chevron_right, () => _stepMonth(1), 'Следующий месяц'),
+      ]),
+    );
+  }
+
+  Widget _navBtn(IconData icon, VoidCallback onTap, String label) => Tappable(
+    onTap: onTap,
+    label: label,
+    child: SizedBox(width: 40, height: 40,
+      child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 19)),
+  );
+
+  Widget _weekdayRow(L10n l) => Padding(
+    padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+    // Подписи ужимаются каждая в своей колонке: «Mon/Tue» на треть шире
+    // «Пн/Вт» и на узком экране упирались друг в друга.
+    child: Row(children: l.t('weekdays_short').split(',').map((d) => Expanded(
+      child: Center(child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(d.toUpperCase(), maxLines: 1, style: TextStyle(
+          fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.4,
+          color: adaptiveText4(context))),
+      )),
+    )).toList()),
+  );
+
+  // ── Сетка месяца ───────────────────────────────────────────────────────────
+
+  Widget _monthPager() => SizedBox(
+    height: _kDayCellHeight * _kGridRows,
+    child: PageView.builder(
+      controller: _monthPages,
+      onPageChanged: (page) {
+        hapticSelection();
+        setState(() => _focusedMonth = _monthAt(page));
+      },
+      itemBuilder: (_, page) => _monthGrid(_monthAt(page)),
+    ),
+  );
+
+  Widget _monthGrid(DateTime month) {
+    final daysInMonth = DateUtils.getDaysInMonth(month.year, month.month);
+    final leadingBlanks = (DateTime(month.year, month.month, 1).weekday - 1) % 7;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Column(children: List.generate(_kGridRows, (row) => SizedBox(
+        height: _kDayCellHeight,
+        child: Row(children: List.generate(7, (col) {
+          final dayNum = row * 7 + col - leadingBlanks + 1;
+          if (dayNum < 1 || dayNum > daysInMonth) return const Expanded(child: SizedBox());
+          return Expanded(child: _dayCell(DateTime(month.year, month.month, dayNum)));
+        })),
+      ))),
+    );
+  }
+
+  Widget _dayCell(DateTime day) {
+    final deadlines = _getForDay(day);
+    final isSelected = day == _selectedDay;
+    final isToday = day == _today;
+    final primary = Theme.of(context).colorScheme.primary;
+
+    Color? dotColor;
+    if (deadlines.isNotEmpty) {
+      if (deadlines.every(_isDone)) {
+        dotColor = C.green;
+      } else if (deadlines.length > 1) {
+        dotColor = C.red;
+      } else {
+        dotColor = primary;
+      }
+    }
+
+    return Tappable(
+      onTap: () => _selectDay(day),
+      // Ячейка дня не «пружинит»: 42 клетки подряд, сжатие каждой по тапу
+      // читалось бы как дребезг сетки, а не как отклик. Отклик несёт заливка
+      // кружка, она появляется мгновенно.
+      scale: 1,
+      minSize: 0,
+      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 170),
+          curve: Curves.easeOutCubic,
+          width: 36, height: 36,
+          decoration: BoxDecoration(
+            color: isSelected ? primary : Colors.transparent,
+            shape: BoxShape.circle,
+          ),
+          child: Center(child: Text('${day.day}', style: TextStyle(
+            fontSize: 16, letterSpacing: -0.4, height: 1,
+            // Выделен только сегодняшний и выбранный день. Раньше здесь стоял
+            // тернарник `w600 : w600` — обе ветки одинаковые, вся сетка была
+            // полужирной, и «сегодня» в ней ничем не читалось.
+            fontWeight: isSelected || isToday ? FontWeight.w600 : FontWeight.w400,
+            color: isSelected ? Colors.white : (isToday ? primary : adaptiveText1(context)),
+            // Табличные цифры: иначе «11» и «18» разной ширины и колонки сетки
+            // оптически гуляют.
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ))),
+        ),
+        const SizedBox(height: 3),
+        // Место под точку занято всегда — иначе дни с заданиями и без них
+        // стоят на разной высоте.
+        SizedBox(height: 5, child: dotColor == null ? null : Center(
+          child: Container(width: 5, height: 5, decoration: BoxDecoration(
+            color: isSelected ? Colors.white : dotColor, shape: BoxShape.circle)),
+        )),
+      ]),
+    );
+  }
+
+  /// Что означают цвета точек. Wrap, а не Row: три подписи в одну строку
+  /// помещаются только по-русски — «бірнеше тапсырма» и «several due» на узком
+  /// экране обрезались многоточием. Теперь лишний пункт целиком переносится
+  /// строкой ниже; Wrap отдаёт детям ширину всей строки, поэтому и одна длинная
+  /// подпись переносится по словам, а не уходит за край.
+  Widget _legend(L10n l) => Padding(
+    padding: const EdgeInsets.fromLTRB(20, 14, 20, 4),
+    child: Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 16, runSpacing: 8,
+      children: [
+        _legendDot(Theme.of(context).colorScheme.primary, l.t('cal_legend_due')),
+        _legendDot(C.red, l.t('cal_legend_multiple')),
+        _legendDot(C.green, l.t('cal_legend_done')),
+      ],
+    ),
+  );
 
   Widget _legendDot(Color color, String label) => Row(
     mainAxisSize: MainAxisSize.min,
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Container(width: 6, height: 6, margin: const EdgeInsets.only(top: 4),
+      Container(width: 5, height: 5, margin: const EdgeInsets.only(top: 4),
         decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
       const SizedBox(width: 6),
       // Без maxLines/ellipsis: подпись легенды должна читаться целиком на любом
@@ -321,133 +398,34 @@ class _CalendarScreenState extends State<CalendarScreen> {
         color: adaptiveText3(context), fontWeight: FontWeight.w500))),
     ]);
 
-  Widget _navBtn(IconData icon, VoidCallback onTap, String label) => Tappable(
-    onTap: onTap,
-    label: label,
-    child: Container(
-      width: 32, height: 32,
-      decoration: BoxDecoration(
-        color: adaptiveSurface2(context).withValues(alpha: 0.55),
-        shape: BoxShape.circle,
-      ),
-      child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 18),
-    ),
-  );
+  // ── Задания выбранного дня ─────────────────────────────────────────────────
 
-  Widget _build7DayScroll(DateTime today, bool isDark) {
-    final l = context.read<L10n>();
-    return SizedBox(
-      height: 92,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(16, 2, 16, 10),
-        itemCount: 7,
-        itemBuilder: (_, i) {
-          final day = today.add(Duration(days: i));
-          final key = DateTime(day.year, day.month, day.day);
-          final items = _deadlineMap[key] ?? [];
-          final count = items.length;
-          final isSelected = key == _selectedDay;
-          final isToday = i == 0;
-          final dayName = l.t('weekdays_short').split(',')[day.weekday - 1];
-          final allDone = count > 0 && items.every((a) {
-            final s = _submissionStatus(a);
-            return s == 'submitted' || s == 'graded';
-          });
-
-          return Tappable(
-            onTap: () => setState(() {
-              _selectedDay = key;
-              _focusedMonth = DateTime(key.year, key.month);
-            }),
-            label: '${day.day}',
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOutCubic,
-              // Фиксированная ширина вместо padding по содержимому: с ней лента
-              // идёт ровным ритмом. Раньше ячейка «Mon» была шире «Пн», а день
-              // со счётчиком — шире дня без него, и колонки гуляли.
-              width: 58,
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 9),
-              decoration: BoxDecoration(
-                color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(AppRadii.tile),
-                border: isSelected ? null : Border.all(color: groupSeparator(context), width: hairline(context)),
-                boxShadow: isSelected ? primaryGlow(Theme.of(context).colorScheme.primary, opacity: 0.2) : softShadow(isDark),
-              ),
-              child: Column(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
-                // FittedBox: «Mon/Tue/Wed» на треть длиннее «Пн/Вт», а ячейка
-                // теперь фиксированной ширины.
-                FittedBox(fit: BoxFit.scaleDown, child: Text(dayName.toUpperCase(), maxLines: 1, style: TextStyle(
-                  fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.3,
-                  color: isSelected ? Colors.white.withValues(alpha: 0.75) : adaptiveText4(context),
-                ))),
-                const SizedBox(height: 3),
-                Text('${day.day}', style: TextStyle(
-                  fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4, height: 1.1,
-                  color: isSelected
-                      ? Colors.white
-                      : (isToday ? Theme.of(context).colorScheme.primary : adaptiveText1(context)),
-                )),
-                const SizedBox(height: 4),
-                // Место под счётчик занято всегда: без этого ячейки с
-                // заданиями были выше пустых и лента шла «ступеньками».
-                SizedBox(
-                  height: 16,
-                  child: count == 0
-                      ? null
-                      : Container(
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.symmetric(horizontal: 6),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? Colors.white.withValues(alpha: 0.25)
-                                : (allDone ? C.green.withValues(alpha: 0.15) : Theme.of(context).colorScheme.primary.withValues(alpha: 0.12)),
-                            borderRadius: BorderRadius.circular(AppRadii.chip),
-                          ),
-                          child: Text('$count', style: TextStyle(
-                            fontSize: 11, fontWeight: FontWeight.w600, height: 1.1,
-                            color: isSelected ? Colors.white : (allDone ? C.green : Theme.of(context).colorScheme.primary),
-                          )),
-                        ),
-                ),
-              ]),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildDayList(bool isDark, DateTime today) {
-    final l = context.watch<L10n>();
+  List<Widget> _daySlivers(L10n l, bool isDark) {
     final items = _getForDay(_selectedDay);
-    final tomorrow = today.add(const Duration(days: 1));
-    final classNames = <int, String>{
-      for (final c in context.read<ClassesProvider>().classes)
-        if (c['id'] != null) (c['id'] as num).toInt(): (c['title'] ?? '').toString(),
-    };
+    final tomorrow = _today.add(const Duration(days: 1));
     final monthGen = l.t('months_genitive').split(',');
-    final dayLabel = _selectedDay == today
+    final dayLabel = _selectedDay == _today
         ? l.t('notif_today')
         : _selectedDay == tomorrow
             ? l.t('tomorrow')
             : '${_selectedDay.day} ${monthGen[_selectedDay.month - 1]}';
 
     if (items.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(40, 34, 40, 40),
-        child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+      final primary = Theme.of(context).colorScheme.primary;
+      return [SliverToBoxAdapter(child: Padding(
+        padding: const EdgeInsets.fromLTRB(40, 26, 40, 20),
+        child: Column(children: [
+          // Мягкий ореол вместо голого серого глифа: одинокая блёклая иконка
+          // на пустом фоне читалась как незагрузившаяся картинка.
           Container(
-            width: 66, height: 66,
+            width: 56, height: 56,
             decoration: BoxDecoration(
               gradient: RadialGradient(colors: [
-                Theme.of(context).colorScheme.primary.withValues(alpha: 0.14),
-                Theme.of(context).colorScheme.primary.withValues(alpha: 0.03),
+                primary.withValues(alpha: 0.14),
+                primary.withValues(alpha: 0.03),
               ]),
               shape: BoxShape.circle),
-            child: Icon(CupertinoIcons.calendar, size: 28, color: Theme.of(context).colorScheme.primary),
+            child: Icon(CupertinoIcons.calendar, size: 24, color: primary),
           ),
           const SizedBox(height: 14),
           Text('$dayLabel · ${l.t('no_deadlines')}',
@@ -455,131 +433,148 @@ class _CalendarScreenState extends State<CalendarScreen> {
             style: TextStyle(
               fontSize: 15, fontWeight: FontWeight.w500, letterSpacing: -0.2,
               height: 1.35, color: adaptiveText3(context))),
-        ])),
-      );
+        ]),
+      ))];
     }
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, right: 4, bottom: 10, top: 4),
-          // Flexible вокруг подписи дня: «15 қыркүйек»/«15 September» длиннее
-          // «Сегодня», и без него длинная дата выдавливала пилюлю со счётчиком
-          // за край строки.
-          child: Row(children: [
-            Flexible(child: Text(dayLabel.toUpperCase(),
-              maxLines: 2, overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 12, fontWeight: FontWeight.w600, height: 1.25,
-                color: adaptiveText3(context), letterSpacing: 0.6))),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(AppRadii.chip)),
-              child: Text('${items.length}', style: TextStyle(
-                fontSize: 12, fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.primary)),
-            ),
+    final classNames = <int, String>{
+      for (final c in context.read<ClassesProvider>().classes)
+        if (c['id'] != null) (c['id'] as num).toInt(): (c['title'] ?? '').toString(),
+    };
+
+    return [
+      SliverToBoxAdapter(child: Padding(
+        padding: const EdgeInsets.fromLTRB(22, 22, 22, 8),
+        // Flexible вокруг подписи дня: «15 қыркүйек»/«15 September» длиннее
+        // «Сегодня», и без него длинная дата выдавливала счётчик за край.
+        child: Row(children: [
+          Flexible(child: Text(dayLabel.toUpperCase(),
+            maxLines: 2, overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12, fontWeight: FontWeight.w600, height: 1.25,
+              letterSpacing: 0.6, color: adaptiveText3(context)))),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(AppRadii.chip)),
+            child: Text('${items.length}', style: TextStyle(
+              fontSize: 12, fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.primary,
+              fontFeatures: const [FontFeature.tabularFigures()])),
+          ),
+        ]),
+      )),
+      SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        sliver: SliverList(delegate: SliverChildBuilderDelegate(
+          childCount: items.length,
+          (ctx, i) => _assignmentRow(items[i], groupPos(i, items.length), classNames, tomorrow, isDark),
+        )),
+      ),
+    ];
+  }
+
+  Widget _assignmentRow(
+    dynamic a,
+    GroupPos pos,
+    Map<int, String> classNames,
+    DateTime tomorrow,
+    bool isDark,
+  ) {
+    final dueStr = a['deadline'] as String?;
+    final due = dueStr != null ? parseServerDate(dueStr) : null;
+    final isSubmitted = _isDone(a);
+    final classId = (a['class_id'] as num?)?.toInt();
+    final className = classId == null ? '' : (classNames[classId] ?? '');
+    final title = (a['title'] ?? '').toString();
+
+    // Цвет — точечный акцент на значке и времени, а не заливка всей строки:
+    // красный на «сегодня», янтарный на «завтра», зелёный на сданном, дальше
+    // фирменный.
+    final Color accent;
+    if (isSubmitted) {
+      accent = C.green;
+    } else if (_selectedDay == _today) {
+      accent = C.red;
+    } else if (_selectedDay == tomorrow) {
+      accent = C.amberDk;
+    } else {
+      accent = Theme.of(context).colorScheme.primary;
+    }
+
+    return GroupRow(
+      pos: pos,
+      // Разделитель начинается там, где начинается текст: 14 + 26 + 12.
+      separatorInset: 52,
+      padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+      label: title,
+      onTap: classId == null ? null : () {
+        hapticSelection();
+        guardedPush(context, MaterialPageRoute(
+          builder: (_) => ClassDetailScreen(classId: classId, initialTab: 1)));
+      },
+      // center: значок и шеврон стоят по середине строки — так же, как в
+      // строке уведомления и в списках Настроек.
+      child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+        // Значок без подложки: цвет несёт сам глиф — см. тот же приём в строке
+        // уведомления. Ширина колонки фиксирована, чтобы названия всех заданий
+        // начинались по одной линии.
+        SizedBox(width: 26,
+          child: Icon(isSubmitted ? CupertinoIcons.checkmark_alt : CupertinoIcons.clock,
+              size: 22, color: accent)),
+        const SizedBox(width: 12),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title,
+            maxLines: 2, overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 16, fontWeight: FontWeight.w600,
+              letterSpacing: -0.3, height: 1.25, color: adaptiveText1(context))),
+          const SizedBox(height: 5),
+          // Время фиксированной ширины (5 знаков), всё оставшееся место в
+          // строке отдано предмету — и до двух строк. Раньше они делили строку
+          // поровну через Flexible с `maxLines: 1`, и предмет почти всегда
+          // обрывался.
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            if (due != null) ...[
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Icon(CupertinoIcons.clock, size: 12, color: accent),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '${due.hour.toString().padLeft(2, '0')}:${due.minute.toString().padLeft(2, '0')}',
+                style: TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w600, letterSpacing: -0.1,
+                  height: 1.25, color: accent,
+                  fontFeatures: const [FontFeature.tabularFigures()]),
+              ),
+              const SizedBox(width: 8),
+            ],
+            if (className.isNotEmpty)
+              Expanded(child: Text(className,
+                maxLines: 2, overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w500, letterSpacing: -0.1,
+                  height: 1.25, color: adaptiveText3(context)))),
           ]),
-        ),
-        ...items.map((a) {
-          final dueStr = a['deadline'] as String?;
-          final due = dueStr != null ? parseServerDate(dueStr) : null;
-          final status = _submissionStatus(a);
-          final isSubmitted = status == 'submitted' || status == 'graded';
-          final classId = (a['class_id'] as num?)?.toInt();
-          final className = classId == null ? '' : (classNames[classId] ?? '');
-
-          // Карточка всегда на обычной поверхности, а состояние несут значок и
-          // время. Раньше вся карточка заливалась жёлтым/зелёным/фирменным
-          // цветом: список из пяти заданий на разные дни превращался в
-          // светофор, а текст на пастельной заливке терял контраст в тёмной
-          // теме. Акцент цветом — точечный, как в Напоминаниях: красный только
-          // на «сегодня», янтарный на «завтра», дальше — фирменный.
-          final Color accentColor;
-          if (isSubmitted) {
-            accentColor = C.green;
-          } else if (_selectedDay == today) {
-            accentColor = C.red;
-          } else if (_selectedDay == tomorrow) {
-            accentColor = C.amberDk;
-          } else {
-            accentColor = Theme.of(context).colorScheme.primary;
-          }
-
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: GroupRow.card(
-              onTap: classId != null ? () => guardedPush(context, MaterialPageRoute(
-                builder: (_) => ClassDetailScreen(classId: classId, initialTab: 1),
-              )) : null,
-              label: (a['title'] ?? '').toString(),
-              radius: AppRadii.tile,
-              padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
-              // start: название занимает до двух строк, и значок обязан
-              // держаться верха карточки, а не «плавать» по её центру.
-              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Container(
-                  width: 42, height: 42,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: accentColor.withValues(alpha: isDark ? 0.22 : 0.12),
-                    borderRadius: BorderRadius.circular(AppRadii.tile),
-                  ),
-                  child: Icon(isSubmitted ? CupertinoIcons.checkmark_alt : CupertinoIcons.clock,
-                      size: 20, color: accentColor),
-                ),
-                const SizedBox(width: 12),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text((a['title'] ?? '').toString(), style: TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w600,
-                    letterSpacing: -0.3, height: 1.25,
-                    color: adaptiveText1(context),
-                  ), maxLines: 2, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 6),
-                  // Время фиксированной ширины (5 знаков), а всё оставшееся
-                  // место в строке отдано названию предмета — и до двух строк.
-                  // Раньше они делили строку поровну через Flexible с
-                  // `maxLines: 1`, и предмет почти всегда обрывался.
-                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    if (due != null) ...[
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Icon(CupertinoIcons.clock, size: 12, color: accentColor),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${due.hour.toString().padLeft(2,'0')}:${due.minute.toString().padLeft(2,'0')}',
-                        style: TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.w600,
-                          letterSpacing: -0.1, height: 1.25, color: accentColor),
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                    if (className.isNotEmpty)
-                      Expanded(child: Text(className,
-                        style: TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.w500,
-                          letterSpacing: -0.1, height: 1.25, color: adaptiveText3(context)),
-                        maxLines: 2, overflow: TextOverflow.ellipsis)),
-                  ]),
-                ])),
-                if (classId != null) ...[
-                  const SizedBox(width: 6),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: Icon(CupertinoIcons.chevron_right, size: 15,
-                        color: adaptiveText4(context).withValues(alpha: 0.7)),
-                  ),
-                ],
-              ]),
-            ),
-          );
-        }),
+        ])),
+        if (classId != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 6),
+            child: Icon(CupertinoIcons.chevron_right, size: 15,
+                color: adaptiveText4(context).withValues(alpha: 0.7)),
+          ),
       ]),
     );
   }
+}
+
+class _CalendarLoading extends StatelessWidget {
+  const _CalendarLoading();
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: CupertinoActivityIndicator(radius: 13, color: Theme.of(context).colorScheme.primary));
 }

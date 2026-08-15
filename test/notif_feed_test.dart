@@ -296,7 +296,7 @@ void main() {
       expect(fake.marked, isEmpty);
     });
 
-    testWidgets('карточки одного типа одной высоты при разной длине текста', (tester) async {
+    testWidgets('строки одного типа одной высоты при разной длине текста', (tester) async {
       final now = DateTime.now();
       final api = _FakeApi(
         classes: [cls(1, 'Класс с очень длинным названием, которое не влезает в строку')],
@@ -311,9 +311,17 @@ void main() {
       final heights = tester
           .widgetList<GroupRow>(find.byType(GroupRow))
           .map((w) => tester.getSize(find.byWidget(w)).height)
-          .toSet();
-      expect(heights, hasLength(1), reason: 'высота карточек уведомлений разошлась');
-      expect(heights.single, greaterThan(70));
+          .toList();
+      expect(heights, isNotEmpty);
+
+      // Допуск в пиксель — это волосяной разделитель: строки внутри группы
+      // несут его снизу, последняя в группе — нет, поэтому её высота меньше
+      // ровно на `1 / devicePixelRatio`. Всё, что больше, — уже реальный
+      // разъезд вёрстки.
+      final spread = heights.reduce((a, b) => a > b ? a : b) -
+          heights.reduce((a, b) => a < b ? a : b);
+      expect(spread, lessThanOrEqualTo(1.0), reason: 'высота строк уведомлений разошлась');
+      expect(heights.first, greaterThan(70));
     });
 
     // Регрессия на «название предмета в карточке обрезается». Раньше предмет,

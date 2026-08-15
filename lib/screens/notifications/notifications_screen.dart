@@ -13,9 +13,27 @@ import '../../widgets/inset_group.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/tappable.dart';
 
+/// Экран уведомлений в идиоме нативного iOS: полупрозрачный крупный заголовок,
+/// под который уезжает содержимое, и inset-grouped список вместо стопки
+/// плавающих карточек.
+///
+/// Раньше это была лента отдельных карточек с тенями и зазорами — та самая
+/// «карточная» подача iOS 12, от которой системные приложения ушли. Уведомления
+/// внутри одной группы («Сегодня», «Вчера») — не независимые объекты, а строки
+/// одного списка, поэтому теперь у группы одна сплошная подложка, волосяные
+/// разделители между строками и скругление только по краям — как в Почте,
+/// Настройках и Напоминаниях.
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
   @override State<NotificationsScreen> createState() => _NotificationsScreenState();
+}
+
+/// Строка списка вместе со своим местом в группе: скругление и разделитель
+/// зависят от того, первая она в секции, последняя или в середине.
+class _Row {
+  const _Row(this.item, this.pos);
+  final NotifItem item;
+  final GroupPos pos;
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
@@ -101,19 +119,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
-  /// Название задания — главная строка карточки. Кавычек нет: заголовок и так
-  /// выделен весом, а в списке из нескольких карточек ёлочки читались как шум.
+  /// Название задания — главная строка. Кавычек нет: заголовок и так выделен
+  /// весом, а в списке из нескольких строк ёлочки читались как шум.
   String _subject(NotifItem n, L10n l) =>
       n.assignmentTitle?.trim().isNotEmpty == true ? n.assignmentTitle! : l.t('assignment');
 
-  /// Короткая акцентная метка справа в мета-строке: балл или остаток времени.
-  /// Всегда коротка по построению (число + единица), поэтому пилюля под неё
-  /// может быть без переносов — место под неё ограничено и предсказуемо.
+  /// Короткая акцентная метка в мета-строке: балл или остаток времени. Коротка
+  /// по построению (число + единица), поэтому место под неё предсказуемо.
   ///
   /// Название предмета сюда НЕ входит: оно переменной длины и в трёх языках
-  /// доходит до нескольких слов, поэтому живёт отдельной строкой (см.
-  /// [_NotifCard]). Раньше и предмет, и балл, и название задания жались в одну
-  /// строку с `maxLines: 1` — предмет обрезался почти всегда.
+  /// доходит до нескольких слов, поэтому живёт отдельной строкой. Раньше и
+  /// предмет, и название задания, и балл жались в одну строку с `maxLines: 1`,
+  /// и предмет обрезался почти всегда.
   String? _accent(NotifItem n, L10n l) {
     switch (n.kind) {
       case NotifKind.grade:
@@ -128,6 +145,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
+  /// Плоский список для sliver-а: [String] — заголовок секции, [_Row] — строка
+  /// вместе со своей позицией внутри секции.
   List<Object> _grouped(L10n l) {
     final now = DateTime.now();
     final todayStart = DateTime(now.year, now.month, now.day);
@@ -153,7 +172,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       final list = buckets[b];
       if (list == null || list.isEmpty) continue;
       out.add(l.t(keys[b]));
-      out.addAll(list);
+      for (var i = 0; i < list.length; i++) {
+        out.add(_Row(list[i], groupPos(i, list.length)));
+      }
     }
     return out;
   }
@@ -176,162 +197,163 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     final l = context.watch<L10n>();
-    final surface = Theme.of(context).colorScheme.surface;
-    final fresh = _fresh.length;
+    final bg = Theme.of(context).scaffoldBackgroundColor;
     final grouped = _grouped(l);
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(child: Column(children: [
-        // Панель навигации в духе iOS: «назад» и «обновить» — одиночные
-        // акцентные глифы (рамок-квадратов, которые тут были раньше, в
-        // системных барах не бывает).
-        Padding(padding: const EdgeInsets.fromLTRB(8, 4, 16, 2), child: Row(children: [
-          Tappable(onTap: () => Navigator.pop(context),
+      backgroundColor: bg,
+      // SafeArea тут не нужен: верхний инсет забирает сам навбар, нижний
+      // добавлен отступом последнего sliver-а.
+      body: CustomScrollView(slivers: [
+        // Крупный заголовок теперь ЧАСТЬ прокрутки: он сжимается в обычный бар
+        // при скролле, а полупрозрачный фон включает под баром блюр — контент
+        // уезжает под него, а не упирается в непрозрачную полосу. Раньше
+        // заголовок стоял неподвижной строкой над списком.
+        CupertinoSliverNavigationBar(
+          backgroundColor: bg.withValues(alpha: 0.78),
+          border: null,
+          stretch: true,
+          padding: const EdgeInsetsDirectional.only(start: 4, end: 8),
+          leading: Tappable(
+            onTap: () => Navigator.pop(context),
             label: 'Назад',
-            child: SizedBox(width: 44, height: 44,
-              child: Icon(CupertinoIcons.back, size: 26, color: Theme.of(context).colorScheme.primary))),
-          const Spacer(),
+            child: SizedBox(width: 40, height: 40,
+              child: Icon(CupertinoIcons.back, size: 26, color: Theme.of(context).colorScheme.primary)),
+          ),
           // Кнопки «отметить все» больше нет: открытие экрана и есть просмотр,
           // после него отмечать нечего — раньше она оставалась активной и
           // «отмечала» то, что уже отмечено.
-          Tappable(onTap: _loading ? null : _load,
+          trailing: Tappable(
+            onTap: _loading ? null : () { hapticLight(); _load(); },
             label: 'Обновить',
-            child: SizedBox(width: 44, height: 44,
-              child: Icon(CupertinoIcons.refresh, size: 20,
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: _loading ? 0.4 : 1)))),
-        ])),
-
-        // Крупный заголовок отдельной строкой под баром — та же вертикальная
-        // структура, что у нативного largeTitle.
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 2, 20, 14),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            // FittedBox, а не ellipsis: заголовок экрана обрезать многоточием
-            // нельзя, а «Хабарламалар» на узком экране (SE) в 34pt уже не
-            // помещается. Уменьшение кегля — то же, что делает нативный
-            // largeTitle iOS с длинным заголовком.
-            SizedBox(
-              width: double.infinity,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text(l.t('notifications'),
-                    maxLines: 1,
-                    style: TextStyle(fontSize: 34, fontWeight: FontWeight.w700, letterSpacing: -1, height: 1.1, color: adaptiveText1(context))),
-              ),
-            ),
-            if (!_loading) ...[
-              const SizedBox(height: 4),
-              Row(children: [
-                if (fresh > 0)
-                  Container(width: 7, height: 7, margin: const EdgeInsets.only(right: 6),
-                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, shape: BoxShape.circle))
-                else ...[
-                  Icon(CupertinoIcons.checkmark_circle_fill, size: 14, color: C.green.withValues(alpha: 0.85)),
-                  const SizedBox(width: 5),
-                ],
-                // maxLines: 2 — «оқылмаған»/«unread» со счётчиком в одну
-                // строку помещается, но при крупном системном шрифте
-                // (Dynamic Type) строка переносится, а не обрезается.
-                Flexible(child: Text(fresh > 0 ? '$fresh ${l.t('notif_unread')}' : l.t('all_read'),
-                  maxLines: 2, overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 15, letterSpacing: -0.2, height: 1.25, color: adaptiveText3(context), fontWeight: FontWeight.w500))),
-              ]),
-            ],
-          ]),
+            child: SizedBox(width: 40, height: 40,
+              child: Icon(CupertinoIcons.arrow_clockwise, size: 20,
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: _loading ? 0.35 : 1))),
+          ),
+          largeTitle: Text(l.t('notifications'),
+            maxLines: 1,
+            style: TextStyle(
+              fontSize: 34, fontWeight: FontWeight.w700,
+              letterSpacing: -1, height: 1.1, color: adaptiveText1(context))),
         ),
 
-        Expanded(child: _loading
-          ? ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
-              itemCount: 5,
-              itemBuilder: (ctx, i) => TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0.0, end: 1.0),
-                duration: Duration(milliseconds: 260 + i * 70),
-                curve: Curves.easeOut,
-                builder: (_, t, child) => Opacity(opacity: t, child: child),
-                child: const SkeletonNotifCard(),
-              ),
-            )
-          : _items.isEmpty
-            ? _emptyState()
-            : CustomScrollView(
-                slivers: [
-                  CupertinoSliverRefreshControl(onRefresh: _load),
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
-                    sliver: SliverList(delegate: SliverChildBuilderDelegate(
-                      childCount: grouped.length,
-                      (ctx, i) {
-                    final item = grouped[i];
-                    if (item is String) {
-                      return Padding(
-                        padding: EdgeInsets.only(left: 6, right: 6, top: i == 0 ? 2 : 22, bottom: 10),
-                        child: Text(item.toUpperCase(), maxLines: 2, overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 12, fontWeight: FontWeight.w600, height: 1.25,
-                            color: adaptiveText3(context), letterSpacing: 0.6)),
-                      );
-                    }
-                    final n = item as NotifItem;
-                    final cfg = _config(n.kind);
-                    final canNavigate = n.classId != null;
-                    return Entrance(
-                      key: ValueKey(n.key),
-                      index: i,
-                      rise: 14,
-                      child: RepaintBoundary(child: Dismissible(
-                        key: ValueKey('dismiss_${n.key}'),
-                        direction: DismissDirection.endToStart,
-                        dismissThresholds: const {DismissDirection.endToStart: 0.4},
-                        onDismissed: (_) {
-                          hapticMedium();
-                          _dismiss(n.key);
-                        },
-                        background: Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          decoration: BoxDecoration(
-                            color: C.red,
-                            borderRadius: BorderRadius.circular(AppRadii.card),
-                          ),
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 22),
-                          child: Column(mainAxisSize: MainAxisSize.min, children: [
-                            const Icon(CupertinoIcons.trash_fill, color: Colors.white, size: 22),
-                            const SizedBox(height: 3),
-                            Text(l.t('delete'), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
-                          ]),
-                        ),
-                        child: _NotifCard(
-                          kindLabel: _title(n, l),
-                          subject: _subject(n, l),
-                          className: n.className,
-                          accent: _accent(n, l),
-                          isFresh: _fresh.contains(n.key),
-                          icon: cfg.icon,
-                          color: cfg.color,
-                          surface: surface,
-                          timeAgo: _timeAgo(n, l),
-                          onTap: () {
-                            // Прочитанным уведомление уже отмечено при загрузке
-                            // экрана — тапом снимаем только акцент «новое».
-                            setState(() => _fresh.remove(n.key));
-                            if (canNavigate) {
-                              guardedPush(context, MaterialPageRoute(
-                                builder: (_) => ClassDetailScreen(classId: n.classId!, initialTab: 1)));
-                            }
-                          },
-                        ),
-                      )),
-                    );
-                      },
-                    )),
-                  ),
-                ],
-              )),
-      ])),
+        CupertinoSliverRefreshControl(onRefresh: _load),
+
+        if (!_loading) SliverToBoxAdapter(child: _statusLine(l)),
+
+        if (_loading)
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+            sliver: SliverList(delegate: SliverChildBuilderDelegate(
+              childCount: 5,
+              (ctx, i) => SkeletonNotifCard(pos: groupPos(i, 5)),
+            )),
+          )
+        else if (_items.isEmpty)
+          SliverFillRemaining(hasScrollBody: false, child: _emptyState(l))
+        else
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 32 + MediaQuery.paddingOf(context).bottom),
+            sliver: SliverList(delegate: SliverChildBuilderDelegate(
+              childCount: grouped.length,
+              (ctx, i) {
+                final entry = grouped[i];
+                if (entry is String) return _sectionHeader(entry, first: i == 0);
+                return _row(entry as _Row, l);
+              },
+            )),
+          ),
+      ]),
     );
+  }
+
+  /// Строка состояния под заголовком: сколько нового с прошлого визита.
+  Widget _statusLine(L10n l) {
+    final fresh = _fresh.length;
+    final primary = Theme.of(context).colorScheme.primary;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 2, 20, 18),
+      child: Row(children: [
+        if (fresh > 0)
+          Container(width: 7, height: 7, margin: const EdgeInsets.only(right: 7),
+            decoration: BoxDecoration(color: primary, shape: BoxShape.circle))
+        else ...[
+          Icon(CupertinoIcons.checkmark_circle_fill, size: 15, color: C.green.withValues(alpha: 0.85)),
+          const SizedBox(width: 6),
+        ],
+        // maxLines: 2 — со счётчиком и на казахском строка длиннее русской, при
+        // крупном системном шрифте она переносится, а не обрезается.
+        Flexible(child: Text(fresh > 0 ? '$fresh ${l.t('notif_unread')}' : l.t('all_read'),
+          maxLines: 2, overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 15, fontWeight: FontWeight.w500, letterSpacing: -0.2,
+            height: 1.25, color: adaptiveText3(context)))),
+      ]),
+    );
+  }
+
+  Widget _sectionHeader(String title, {required bool first}) => Padding(
+    padding: EdgeInsets.only(left: 6, right: 6, top: first ? 0 : 26, bottom: 8),
+    child: Text(title.toUpperCase(), maxLines: 2, overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        fontSize: 12, fontWeight: FontWeight.w600, height: 1.25,
+        letterSpacing: 0.6, color: adaptiveText3(context))),
+  );
+
+  Widget _row(_Row row, L10n l) {
+    final n = row.item;
+    final cfg = _config(n.kind);
+    final canNavigate = n.classId != null;
+    final radius = groupRadius(row.pos, radius: AppRadii.card);
+
+    return RepaintBoundary(child: Dismissible(
+      key: ValueKey('dismiss_${n.key}'),
+      direction: DismissDirection.endToStart,
+      dismissThresholds: const {DismissDirection.endToStart: 0.4},
+      onDismissed: (_) {
+        hapticMedium();
+        _dismiss(n.key);
+      },
+      // Подложка повторяет скругление строки по её месту в группе: иначе у
+      // первой/последней строки из-под красного выглядывали прямые углы.
+      background: Container(
+        decoration: BoxDecoration(color: C.red, borderRadius: radius),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 22),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(CupertinoIcons.trash_fill, color: Colors.white, size: 21),
+          const SizedBox(height: 3),
+          Text(l.t('delete'), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+        ]),
+      ),
+      child: GroupRow(
+        pos: row.pos,
+        // Разделитель начинается там, где начинается текст, — правило iOS.
+        // 14 (отступ строки) + 12 (гуттер под точку) + 26 (значок) + 12 = 64.
+        separatorInset: 64,
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        onTap: () {
+          hapticSelection();
+          // Прочитанным уведомление уже отмечено при загрузке экрана — тапом
+          // снимаем только акцент «новое».
+          setState(() => _fresh.remove(n.key));
+          if (canNavigate) {
+            guardedPush(context, MaterialPageRoute(
+              builder: (_) => ClassDetailScreen(classId: n.classId!, initialTab: 1)));
+          }
+        },
+        child: _NotifRowContent(
+          kindLabel: _title(n, l),
+          subject: _subject(n, l),
+          className: n.className,
+          accent: _accent(n, l),
+          isFresh: _fresh.contains(n.key),
+          icon: cfg.icon,
+          color: cfg.color,
+          timeAgo: _timeAgo(n, l),
+        ),
+      ),
+    ));
   }
 
   ({IconData icon, Color color}) _config(NotifKind kind) {
@@ -345,11 +367,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
-  Widget _emptyState() {
-    final l = context.read<L10n>();
+  Widget _emptyState(L10n l) {
     final primary = Theme.of(context).colorScheme.primary;
     return Center(child: Padding(
-      padding: const EdgeInsets.fromLTRB(40, 0, 40, 60),
+      padding: const EdgeInsets.fromLTRB(40, 0, 40, 80),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Container(width: 76, height: 76,
           decoration: BoxDecoration(
@@ -367,27 +388,34 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 }
 
-/// Карточка одного уведомления в духе Центра уведомлений iOS: плоский цветной
-/// значок, тип события мелкой акцентной строкой, время — справа в той же
-/// строке, дальше содержимое. Непрочитанное отмечено точкой у типа и более
-/// насыщенной подложкой значка.
+/// Содержимое строки уведомления — три уровня, как в Центре уведомлений iOS:
+/// тип события мелкой акцентной подписью со временем справа, само событие
+/// главной строкой, предмет и балл — мета-строкой.
 ///
-/// Раньше непрочитанное дополнительно обводилось цветной рамкой в 1.2px по
-/// всей карточке: в списке из нескольких непрочитанных экран превращался в
-/// набор конкурирующих цветных прямоугольников. Теперь рамка всегда одна и та
-/// же волосяная, а «непрочитанность» несут точка и значок — ровно как в Mail.
+/// Непрочитанное отмечено точкой в ЛЕВОМ ГУТТЕРЕ, вне значка (так это сделано
+/// в Почте), а не рядом с заголовком: точка у текста конкурировала с самим
+/// заголовком за начало строки и сдвигала его, из-за чего заголовки соседних
+/// строк не выравнивались по левому краю.
 ///
-/// ТРИ строки вместо двух — это и есть починка обрезания. В прежней вёрстке
-/// название предмета приклеивалось к названию задания в одну строку с
-/// `maxLines: 1`, и в русском/казахском предмет пропадал под многоточием почти
-/// всегда. Теперь у каждой сущности своя строка: тип (1 строка, ужимается),
-/// название задания (до 2 строк), предмет (до 2 строк) плюс короткая пилюля
-/// балла/остатка времени, ширина которой ограничена по построению.
-class _NotifCard extends StatelessWidget {
+/// Три строки вместо двух — это и есть починка обрезания: раньше предмет
+/// приклеивался к названию задания в одну строку с `maxLines: 1` и в
+/// русском/казахском пропадал под многоточием почти всегда.
+class _NotifRowContent extends StatelessWidget {
+  const _NotifRowContent({
+    required this.kindLabel,
+    required this.subject,
+    required this.className,
+    required this.accent,
+    required this.isFresh,
+    required this.icon,
+    required this.color,
+    required this.timeAgo,
+  });
+
   /// Тип события: «Задание проверено», «Скоро дедлайн», «Новое задание».
   final String kindLabel;
 
-  /// Название задания — главная строка карточки.
+  /// Название задания — главная строка.
   final String subject;
 
   /// Название предмета; null/пусто — строка не рисуется.
@@ -399,115 +427,101 @@ class _NotifCard extends StatelessWidget {
   final bool isFresh;
   final IconData icon;
   final Color color;
-  final Color surface;
   final String timeAgo;
-  final VoidCallback onTap;
-
-  const _NotifCard({
-    required this.kindLabel,
-    required this.subject,
-    required this.className,
-    required this.accent,
-    required this.isFresh,
-    required this.icon,
-    required this.color,
-    required this.surface,
-    required this.timeAgo,
-    required this.onTap,
-  });
 
   @override
   Widget build(BuildContext context) {
     final hasClass = className != null && className!.trim().isNotEmpty;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: GroupRow.card(
-        onTap: onTap,
-        color: surface,
-        padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-        // crossAxisAlignment.start: карточка теперь переменной высоты (задание
-        // может занять две строки), и значок обязан держаться верха, а не
-        // «плавать» по центру относительно соседних карточек.
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Container(width: 44, height: 44,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: isFresh ? 0.18 : 0.10),
-              borderRadius: BorderRadius.circular(AppRadii.tile),
+    // center: значок и точка стоят по СЕРЕДИНЕ строки — так их ставят строки
+    // Настроек и Почты. Прижимать их к верху имело смысл, пока значок был
+    // плиткой 38×38 высотой в две текстовые строки; голый глиф 22pt на той же
+    // верхней линии выглядит просто съехавшим вверх, потому что текстовый блок
+    // втрое выше него.
+    return Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+      // Гуттер занят всегда, даже когда точки нет: иначе прочитанные и
+      // непрочитанные строки начинались бы с разного отступа и левый край
+      // списка «дышал» бы.
+      SizedBox(width: 12, child: isFresh
+          ? Center(child: Container(width: 8, height: 8,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle)))
+          : null),
+      // Значок без подложки: цвет несёт сам глиф. Плитка с тонированным фоном
+      // добавляла в каждую строку второй цветной прямоугольник, и список из
+      // нескольких типов уведомлений читался как набор разноцветных плашек, а
+      // не как текст. Ширина колонки фиксирована, чтобы текст всех строк
+      // начинался по одной линии независимо от глифа.
+      SizedBox(width: 26, child: Icon(icon, size: 22, color: color)),
+      const SizedBox(width: 12),
+      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // ── Строка 1: тип события + время ──────────────────────────────────
+        Row(children: [
+          // FittedBox внутри Expanded: тип события — короткая служебная
+          // подпись, её лучше слегка ужать, чем оборвать многоточием
+          // («Тапсырма бағаланды» заметно длиннее английского).
+          Expanded(child: Align(
+            alignment: Alignment.centerLeft,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(kindLabel, maxLines: 1,
+                style: TextStyle(
+                  fontSize: 12, fontWeight: FontWeight.w600,
+                  letterSpacing: 0.2, color: color, height: 1.2)),
             ),
-            child: Icon(icon, size: 20, color: color)),
-          const SizedBox(width: 13),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            // ── Строка 1: тип события + время ────────────────────────────
-            Row(children: [
-              if (isFresh)
-                Container(width: 7, height: 7, margin: const EdgeInsets.only(right: 6),
-                    decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-              // FittedBox внутри Expanded: тип события — короткая служебная
-              // подпись, её лучше слегка ужать, чем оборвать многоточием
-              // («Тапсырма бағаланды» длиннее английского вдвое).
-              Expanded(child: Align(
-                alignment: Alignment.centerLeft,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(kindLabel, maxLines: 1,
-                    style: TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.w600,
-                      letterSpacing: 0.1, color: color, height: 1.2)),
-                ),
-              )),
-              if (timeAgo.isNotEmpty) ...[
-                const SizedBox(width: 8),
-                Text(timeAgo, maxLines: 1,
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500,
-                      letterSpacing: -0.1, color: adaptiveText4(context))),
-              ],
-            ]),
-            const SizedBox(height: 4),
-
-            // ── Строка 2: название задания ───────────────────────────────
-            Text(subject,
-              maxLines: 2, overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 16, fontWeight: FontWeight.w600,
-                letterSpacing: -0.3, color: adaptiveText1(context), height: 1.25)),
-
-            // ── Строка 3: предмет + балл/остаток ─────────────────────────
-            if (hasClass || accent != null) ...[
-              const SizedBox(height: 7),
-              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                if (hasClass) ...[
-                  Padding(
-                    padding: const EdgeInsets.only(top: 1.5),
-                    child: Icon(CupertinoIcons.book_fill, size: 12, color: adaptiveText4(context)),
-                  ),
-                  const SizedBox(width: 5),
-                  Expanded(child: Text(className!,
-                    maxLines: 2, overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500,
-                      letterSpacing: -0.1, height: 1.25, color: adaptiveText3(context)))),
-                ] else
-                  const Spacer(),
-                if (accent != null) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(AppRadii.chip),
-                    ),
-                    child: Text(accent!, maxLines: 1,
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
-                        letterSpacing: -0.1, color: color)),
-                  ),
-                ],
-              ]),
-            ],
-          ])),
+          )),
+          if (timeAgo.isNotEmpty) ...[
+            const SizedBox(width: 8),
+            // Табличные цифры: иначе время в соседних строках «дышит» по
+            // ширине и правый край списка выглядит рваным.
+            Text(timeAgo, maxLines: 1,
+                style: TextStyle(
+                  fontSize: 12, fontWeight: FontWeight.w500, letterSpacing: -0.1,
+                  color: adaptiveText4(context),
+                  fontFeatures: const [FontFeature.tabularFigures()])),
+          ],
         ]),
-      ),
-    );
+        const SizedBox(height: 3),
+
+        // ── Строка 2: название задания ─────────────────────────────────────
+        Text(subject,
+          maxLines: 2, overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 16, fontWeight: FontWeight.w600,
+            letterSpacing: -0.3, color: adaptiveText1(context), height: 1.25)),
+
+        // ── Строка 3: предмет + балл/остаток ───────────────────────────────
+        if (hasClass || accent != null) ...[
+          const SizedBox(height: 5),
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            // Предмет занимает всю строку и выдавливает пилюлю вправо. Если
+            // предмета нет (класс, из которого выбыли), пилюля встаёт по
+            // левому краю: одиноко висящая справа плашка читалась как
+            // потерянный элемент в пустой строке.
+            if (hasClass) ...[
+              Expanded(child: Text(className!,
+                maxLines: 2, overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w500,
+                  letterSpacing: -0.1, height: 1.25, color: adaptiveText3(context)))),
+              const SizedBox(width: 8),
+            ],
+            if (accent != null) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppRadii.chip),
+                ),
+                child: Text(accent!, maxLines: 1,
+                  style: TextStyle(
+                    fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: -0.1,
+                    color: color, fontFeatures: const [FontFeature.tabularFigures()])),
+              ),
+            ],
+          ]),
+        ],
+      ])),
+    ]);
   }
 }

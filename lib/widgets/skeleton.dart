@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import 'inset_group.dart';
 
 class SkeletonBox extends StatefulWidget {
   final double width;
@@ -114,37 +115,48 @@ class SkeletonClassCard extends StatelessWidget {
   }
 }
 
+/// Заглушка ОДНОЙ строки списка уведомлений. Экран уведомлений — не стопка
+/// карточек, а inset-grouped группа, поэтому и заглушка теперь плоская строка
+/// без тени и зазора: с карточным видом список «схлопывался» в сплошную группу
+/// в момент подмены заглушек данными.
+///
+/// Метрики повторяют живую строку (см. `_NotifRowContent`): гуттер 12, колонка
+/// значка 26, отступ 12, ТРИ строки — тип, название задания, предмет.
 class SkeletonNotifCard extends StatelessWidget {
-  const SkeletonNotifCard({super.key});
+  const SkeletonNotifCard({super.key, this.pos = GroupPos.middle});
+
+  final GroupPos pos;
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface = Theme.of(context).colorScheme.surface;
-
-    // Метрики повторяют живую карточку уведомления (см. _NotifCard): плитка
-    // 44, отступ 13, ТРИ строки — тип, название задания, предмет. Скелет с
-    // двумя строками был заметно ниже реальной карточки, и список «подпрыгивал»
-    // в момент подмены заглушек данными.
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+    return DecoratedBox(
       decoration: BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(AppRadii.card),
-        boxShadow: cardShadow(isDark),
-        border: Border.all(color: adaptiveBorder(context).withValues(alpha: 0.5)),
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: groupRadius(pos),
       ),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const SkeletonBox(width: 44, height: 44, borderRadius: AppRadii.tile),
-        const SizedBox(width: 13),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const SkeletonBox(width: 110, height: 11, borderRadius: 6),
-          const SizedBox(height: 8),
-          SkeletonBox(width: MediaQuery.sizeOf(context).width * 0.52, height: 14, borderRadius: 7),
-          const SizedBox(height: 9),
-          const SkeletonBox(width: 96, height: 11, borderRadius: 6),
-        ])),
+      child: Column(children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+            const SizedBox(width: 12),
+            // Заглушка под сам глиф, а не под плитку: подложки у значка больше
+            // нет, и квадрат 38×38 обещал бы то, чего в живой строке не будет.
+            const SkeletonBox(width: 22, height: 22, borderRadius: 6),
+            const SizedBox(width: 16),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const SkeletonBox(width: 104, height: 10, borderRadius: 5),
+              const SizedBox(height: 8),
+              SkeletonBox(width: MediaQuery.sizeOf(context).width * 0.5, height: 14, borderRadius: 7),
+              const SizedBox(height: 8),
+              const SkeletonBox(width: 92, height: 11, borderRadius: 6),
+            ])),
+          ]),
+        ),
+        if (pos == GroupPos.first || pos == GroupPos.middle)
+          Padding(
+            padding: const EdgeInsets.only(left: 64),
+            child: Container(height: hairline(context), color: groupSeparator(context)),
+          ),
       ]),
     );
   }

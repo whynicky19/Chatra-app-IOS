@@ -211,7 +211,7 @@ class _RolloverScreenState extends State<RolloverScreen> {
           onTap: () => _step == 1 && !_loading
               ? setState(() => _step = 0)
               : Navigator.pop(context),
-          label: _step == 1 && !_loading ? 'Назад к переносу классов' : 'Назад',
+          label: _step == 1 && !_loading ? 'Назад к переносу предметов' : 'Назад',
           child: Container(
             width: 40, height: 40,
             decoration: BoxDecoration(

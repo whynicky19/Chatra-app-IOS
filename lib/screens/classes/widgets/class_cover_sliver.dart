@@ -118,13 +118,13 @@ class ClassCoverSliver extends StatelessWidget {
               child: Opacity(opacity: settle, child: IgnorePointer(ignoring: settle < 0.3, child: Row(children: [
                 Tappable(
                   onTap: onSettings,
-                  label: 'Настройки класса',
+                  label: 'Настройки предмета',
                   child: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(AppRadii.chip)), child: const Icon(CupertinoIcons.gear_alt_fill, color: Colors.white70, size: 17)),
                 ),
                 const SizedBox(width: 6),
                 Tappable(
                   onTap: onEdit,
-                  label: 'Редактировать класс',
+                  label: 'Редактировать предмет',
                   child: Container(width: 34, height: 34, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(AppRadii.chip)), child: const Icon(CupertinoIcons.pencil, color: Colors.white70, size: 18)),
                 ),
                 const SizedBox(width: 8),

@@ -29,7 +29,7 @@
 		<key>LSRequiresIPhoneOS</key>
 		<true/>
 		<key>NSPhotoLibraryUsageDescription</key>
-		<string>Доступ к фотогалерее нужен, чтобы прикреплять изображения к материалам, заданиям и обложкам классов</string>
+		<string>Доступ к фотогалерее нужен, чтобы прикреплять изображения к материалам, заданиям и обложкам предметов</string>
 		<key>UIApplicationSceneManifest</key>
 		<dict>
 			<key>UIApplicationSupportsMultipleScenes</key>

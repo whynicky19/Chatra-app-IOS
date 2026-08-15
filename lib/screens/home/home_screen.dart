@@ -227,7 +227,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ],
               if (auth.isTeacher) ...[
                 Tappable(onTap: _showCreateClass,
-                  label: 'Создать класс',
+                  label: 'Создать предмет',
                   child: Container(
                     width: 42, height: 42,
                     decoration: BoxDecoration(
@@ -952,7 +952,7 @@ class _ClassCard extends StatelessWidget {
                 const Spacer(),
                 if (isTeacher) _ActionBtn(
                   icon: CupertinoIcons.trash, color: C.text4, isDark: isDark,
-                  label: 'Удалить класс',
+                  label: 'Удалить предмет',
                   onTap: () async {
                     final ok = await showConfirmDialog(context,
                       title: deleteLabel,
@@ -965,7 +965,7 @@ class _ClassCard extends StatelessWidget {
                 ),
                 if (!isTeacher) _ActionBtn(
                   icon: CupertinoIcons.arrow_right_square, color: C.text4, isDark: isDark,
-                  label: 'Покинуть класс',
+                  label: 'Покинуть предмет',
                   onTap: () async {
                     final ok = await showConfirmDialog(context,
                       title: leaveLabel,

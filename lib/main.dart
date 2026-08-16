@@ -382,7 +382,7 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
                             );
                             if (isSchool) {
                               return Image.asset('assets/logo-icon.png', width: 96, height: 96,
-                                  fit: BoxFit.contain, color: C.amber,
+                                  fit: BoxFit.contain, color: C.orange,
                                   errorBuilder: (_, __, ___) => fallback);
                             }
                             return BrandGradient.mask(

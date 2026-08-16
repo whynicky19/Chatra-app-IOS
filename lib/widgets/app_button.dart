@@ -142,9 +142,13 @@ class AppButton extends StatelessWidget {
     final Color fg;
     switch (variant) {
       case AppButtonVariant.primary:
-        final accent = color ?? scheme.primary;
+        // Заливка — brandFill, а НЕ scheme.primary: у школьной светлой темы
+        // кнопка во всю ширину графитовая, оранжевый там остаётся акцентом
+        // (см. BrandFill в app_theme.dart). Явный `color` по-прежнему сильнее.
+        final brand = brandFill(context);
+        final accent = color ?? brand.fill;
         bg = disabled ? accent.withValues(alpha: 0.35) : accent;
-        fg = Colors.white;
+        fg = color != null ? Colors.white : brand.onFill;
       case AppButtonVariant.secondary:
         bg = background ?? adaptiveSurface2(context);
         fg = adaptiveText1(context).withValues(alpha: disabled ? 0.4 : 0.85);
@@ -190,7 +194,7 @@ class AppButton extends StatelessWidget {
           color: bg,
           borderRadius: BorderRadius.circular(AppRadii.button),
           boxShadow: glow && interactive && variant != AppButtonVariant.text
-              ? primaryGlow(variant == AppButtonVariant.destructive ? C.red : (color ?? scheme.primary), opacity: 0.30)
+              ? primaryGlow(variant == AppButtonVariant.destructive ? C.red : (color ?? brandFill(context).fill), opacity: 0.30)
               : null,
         ),
         // НЕ `alignment: Alignment.center` — Container оборачивает контент во

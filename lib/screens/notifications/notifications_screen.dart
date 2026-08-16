@@ -106,19 +106,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     try { await context.read<ApiService>().setNotifState(key, dismissed: true); } catch (_) {}
   }
 
-  /// Заголовок и тело строит экран, а не фид: фид отдаёт данные (тип, название
-  /// задания, балл), локализация — забота UI.
-  String _title(NotifItem n, L10n l) {
-    switch (n.kind) {
-      case NotifKind.grade:
-        return l.t('notif_graded');
-      case NotifKind.deadline:
-        return l.t('notif_deadline');
-      case NotifKind.newAssignment:
-        return l.t('new_assignment');
-    }
-  }
-
   /// Название задания — главная строка. Кавычек нет: заголовок и так выделен
   /// весом, а в списке из нескольких строк ёлочки читались как шум.
   String _subject(NotifItem n, L10n l) =>
@@ -182,14 +169,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   /// Для дедлайна возвращает пустую строку: его дата в будущем, и «сколько
   /// назад» для неё смысла не имеет — остаток времени и так стоит в тексте
   /// уведомления. Раньше такая карточка показывала «только что».
+  ///
+  /// Единицы КОРОТКИЕ («2 ч.», а не «2 ч. назад»): время стоит в одной строке
+  /// с названием задания и отъедает у него ширину, а «назад» в списке, где всё
+  /// про прошлое, ничего не добавляет — так же подписаны письма в Почте.
   String _timeAgo(NotifItem n, L10n l) {
     if (n.kind == NotifKind.deadline) return '';
     final diff = DateTime.now().difference(n.date);
     // Отрицательная разница (часы сервера впереди) попадает сюда же.
     if (diff.inMinutes < 1) return l.t('just_now');
-    if (diff.inHours < 1) return '${diff.inMinutes} ${l.t('min_ago')}';
-    if (diff.inDays < 1) return '${diff.inHours} ${l.t('hr_ago')}';
-    if (diff.inDays < 7) return '${diff.inDays} ${l.t('day_ago')}';
+    if (diff.inHours < 1) return '${diff.inMinutes} ${l.t('minutes_short')}';
+    if (diff.inDays < 1) return '${diff.inHours} ${l.t('hours_short')}';
+    if (diff.inDays < 7) return '${diff.inDays} ${l.t('days_short')}';
     final d = n.date;
     return '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
   }
@@ -343,7 +334,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           }
         },
         child: _NotifRowContent(
-          kindLabel: _title(n, l),
           subject: _subject(n, l),
           className: n.className,
           accent: _accent(n, l),
@@ -388,21 +378,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 }
 
-/// Содержимое строки уведомления — три уровня, как в Центре уведомлений iOS:
-/// тип события мелкой акцентной подписью со временем справа, само событие
-/// главной строкой, предмет и балл — мета-строкой.
+/// Содержимое строки уведомления — ДВА уровня, как в Почте: название задания
+/// главной строкой со временем справа, под ним одна серая мета-строка
+/// «тип события · предмет · балл».
+///
+/// Раньше уровней было три (тип события отдельной цветной подписью, название,
+/// и ещё строка «предмет + балл в цветной пилюле»), и строка занимала до пяти
+/// текстовых строк с тремя цветами и залитой плашкой — список читался как
+/// плотная стопка карточек, а не как перечень. Сейчас цвет несут только значок
+/// и короткий акцент в конце меты, пилюля убрана.
 ///
 /// Непрочитанное отмечено точкой в ЛЕВОМ ГУТТЕРЕ, вне значка (так это сделано
 /// в Почте), а не рядом с заголовком: точка у текста конкурировала с самим
 /// заголовком за начало строки и сдвигала его, из-за чего заголовки соседних
 /// строк не выравнивались по левому краю.
-///
-/// Три строки вместо двух — это и есть починка обрезания: раньше предмет
-/// приклеивался к названию задания в одну строку с `maxLines: 1` и в
-/// русском/казахском пропадал под многоточием почти всегда.
 class _NotifRowContent extends StatelessWidget {
   const _NotifRowContent({
-    required this.kindLabel,
     required this.subject,
     required this.className,
     required this.accent,
@@ -411,9 +402,6 @@ class _NotifRowContent extends StatelessWidget {
     required this.color,
     required this.timeAgo,
   });
-
-  /// Тип события: «Задание проверено», «Скоро дедлайн», «Новое задание».
-  final String kindLabel;
 
   /// Название задания — главная строка.
   final String subject;
@@ -454,22 +442,13 @@ class _NotifRowContent extends StatelessWidget {
       SizedBox(width: 26, child: Icon(icon, size: 22, color: color)),
       const SizedBox(width: 12),
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // ── Строка 1: тип события + время ──────────────────────────────────
+        // ── Строка 1: название задания + время ─────────────────────────────
         Row(children: [
-          // FittedBox внутри Expanded: тип события — короткая служебная
-          // подпись, её лучше слегка ужать, чем оборвать многоточием
-          // («Тапсырма бағаланды» заметно длиннее английского).
-          Expanded(child: Align(
-            alignment: Alignment.centerLeft,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(kindLabel, maxLines: 1,
-                style: TextStyle(
-                  fontSize: 12, fontWeight: FontWeight.w600,
-                  letterSpacing: 0.2, color: color, height: 1.2)),
-            ),
-          )),
+          Expanded(child: Text(subject,
+            maxLines: 2, overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 16, fontWeight: FontWeight.w600,
+              letterSpacing: -0.3, color: adaptiveText1(context), height: 1.25))),
           if (timeAgo.isNotEmpty) ...[
             const SizedBox(width: 8),
             // Табличные цифры: иначе время в соседних строках «дышит» по
@@ -481,23 +460,13 @@ class _NotifRowContent extends StatelessWidget {
                   fontFeatures: const [FontFeature.tabularFigures()])),
           ],
         ]),
-        const SizedBox(height: 3),
 
-        // ── Строка 2: название задания ─────────────────────────────────────
-        Text(subject,
-          maxLines: 2, overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 16, fontWeight: FontWeight.w600,
-            letterSpacing: -0.3, color: adaptiveText1(context), height: 1.25)),
-
-        // ── Строка 3: предмет + балл/остаток ───────────────────────────────
+        // ── Строка 2: предмет + балл/остаток ───────────────────────────────
         if (hasClass || accent != null) ...[
-          const SizedBox(height: 5),
+          const SizedBox(height: 3),
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            // Предмет занимает всю строку и выдавливает пилюлю вправо. Если
-            // предмета нет (класс, из которого выбыли), пилюля встаёт по
-            // левому краю: одиноко висящая справа плашка читалась как
-            // потерянный элемент в пустой строке.
+            // Предмет по-прежнему занимает всю ширину строки: он переменной
+            // длины и в трёх языках доходит до нескольких слов.
             if (hasClass) ...[
               Expanded(child: Text(className!,
                 maxLines: 2, overflow: TextOverflow.ellipsis,
@@ -506,19 +475,15 @@ class _NotifRowContent extends StatelessWidget {
                   letterSpacing: -0.1, height: 1.25, color: adaptiveText3(context)))),
               const SizedBox(width: 8),
             ],
-            if (accent != null) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(AppRadii.chip),
-                ),
-                child: Text(accent!, maxLines: 1,
-                  style: TextStyle(
-                    fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: -0.1,
-                    color: color, fontFeatures: const [FontFeature.tabularFigures()])),
-              ),
-            ],
+            // Балл/остаток — просто цветной текст. Пилюля с заливкой давала в
+            // каждой строке второй цветной прямоугольник поверх цветного
+            // значка, и список читался как стопка плашек.
+            if (accent != null)
+              Text(accent!, maxLines: 1,
+                style: TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w600, letterSpacing: -0.1,
+                  height: 1.25, color: color,
+                  fontFeatures: const [FontFeature.tabularFigures()])),
           ]),
         ],
       ])),

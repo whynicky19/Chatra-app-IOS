@@ -18,7 +18,7 @@ class OrgSelectScreen extends StatefulWidget {
 class _OrgSelectScreenState extends State<OrgSelectScreen> {
   OrgType? _picked;
 
-  Color get _accent => _picked == OrgType.school ? C.amber : C.teal;
+  Color get _accent => _picked == OrgType.school ? C.orange : C.teal;
 
   double get _logoT => _picked == OrgType.school ? 1.0 : 0.0;
 
@@ -126,7 +126,7 @@ class _OrgSelectScreenState extends State<OrgSelectScreen> {
                   title: l.t('org_school'),
                   subtitle: l.t('org_school_sub'),
                   icon: CupertinoIcons.book_fill,
-                  accent: C.amber,
+                  accent: C.orange,
                   gradient: C.amberGradient,
                   selected: _picked == OrgType.school,
                   onTap: () => _pick(OrgType.school),

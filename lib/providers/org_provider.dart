@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../theme/app_theme.dart';
+
 enum OrgType { university, school }
 
 class OrgProvider extends ChangeNotifier {
@@ -14,21 +16,17 @@ class OrgProvider extends ChangeNotifier {
   bool get isInitialized => _initialized;
   String get orgTypeString => isSchool ? 'school' : 'university';
 
-  Color get primaryColor => isSchool
-      ? const Color(0xFFF59E0B)
-      : const Color(0xFF00B1C9);
+  // Цвета берутся из палитры темы, а не дублируются здесь литералами: раньше
+  // те же hex-ы жили в двух местах, и школьный акцент на экранах входа мог
+  // разъехаться с акцентом остального приложения.
+  Color get primaryColor => isSchool ? C.orange : C.teal;
 
-  Color get primaryDark => isSchool
-      ? const Color(0xFFD97706)
-      : const Color(0xFF009AAF);
+  Color get primaryDark => isSchool ? C.orangeDk : C.tealDk;
 
-  Color get primaryLight => isSchool
-      ? const Color(0xFFFEF3C7)
-      : const Color(0xFFE6F9FB);
+  Color get primaryLight => isSchool ? C.orangeLt : C.tealLt;
 
-  List<Color> get gradientColors => isSchool
-      ? [const Color(0xFFB45309), const Color(0xFFF59E0B)]
-      : [const Color(0xFF006475), const Color(0xFF009AAF)];
+  List<Color> get gradientColors =>
+      isSchool ? C.amberGradient : C.tealGradient;
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();

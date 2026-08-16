@@ -216,11 +216,13 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
     }
     // Ленивый список: карточки заданий строятся по мере скролла, а не все сразу
     // (при 30–50 заданиях жадный ListView даёт заметный лаг на открытии вкладки).
-    // Тёмная ступень градиента берётся из палитры темы, а не хардкодом
-    // (#006475 — teal): в школьной теме (amber) синий градиент выпадал из
-    // всего остального оформления экрана.
+    // Градиент карточки рейтинга берётся из темы (BrandFill), а не хардкодом
+    // (#006475 — teal): в школьной теме синий градиент выпадал из всего
+    // остального оформления экрана. Через тему это ещё и единственный способ
+    // не разъехаться — сравнение вида `primary == C.amber` ломается молча,
+    // стоит поменять оттенок акцента.
     final primary = Theme.of(context).colorScheme.primary;
-    final primaryDeep = primary == C.amber ? C.amberDeep : C.tealDeep;
+    final ratingGradient = brandFill(context).gradient;
 
     final headers = <Widget>[
       if (!widget.isTeacher && widget.rating.isNotEmpty) Padding(
@@ -229,7 +231,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
           Expanded(child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [primaryDeep, primary], begin: Alignment.topLeft, end: Alignment.bottomRight),
+              gradient: LinearGradient(colors: ratingGradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
               borderRadius: BorderRadius.circular(AppRadii.card),
             ),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -370,7 +372,12 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
         final deadline = a['deadline'];
         final isLate = deadline != null && parseServerDate(deadline)?.isBefore(DateTime.now()) == true && sub == null;
 
-        final showBadge = isGraded || isNeedsReview || isSubmitted || isLate;
+        // Балл справа сам говорит, что работа проверена: он зелёный и стоит
+        // отдельным блоком. Слово «Оценено» рядом с ним было тем же фактом
+        // второй раз, поэтому в мете оно остаётся только для редкого случая
+        // «статус graded, а балла нет».
+        final showScore = grade != null;
+        final showBadge = (isGraded && !showScore) || isNeedsReview || isSubmitted || isLate;
         final Color statusColor = isGraded ? C.green : isNeedsReview ? C.amber : isSubmitted ? primary : C.red;
         final String statusText = isGraded ? l.t('graded') : isNeedsReview ? l.t('needs_review') : isSubmitted ? l.t('submitted') : l.t('overdue');
         final IconData statusIcon = isGraded ? CupertinoIcons.checkmark_circle_fill : isNeedsReview ? CupertinoIcons.exclamationmark_triangle : isSubmitted ? CupertinoIcons.arrow_up_doc : CupertinoIcons.clock;
@@ -420,7 +427,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                   // без статуса показываем максимальный балл. Пустой Row имел
                   // нулевую высоту, и такая карточка оказывалась на пиксель
                   // ниже соседних — ровно тот разнобой, который мы убираем.
-                  if (deadline == null && !showBadge)
+                  if (deadline == null && !showBadge && !showScore)
                     Text('${a['max_score'] ?? 100} ${l.t('pts')}',
                         style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText4(context))),
                   if (deadline != null)
@@ -434,7 +441,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                         maxLines: 1, overflow: TextOverflow.ellipsis)),
                 ]),
               ])),
-              if (grade != null) ...[
+              if (showScore) ...[
                 const SizedBox(width: 10),
                 RichText(text: TextSpan(children: [
                   TextSpan(text: '${grade['score']}',

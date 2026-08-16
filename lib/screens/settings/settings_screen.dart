@@ -151,16 +151,15 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                         duration: const Duration(milliseconds: 200),
                         height: 50,
                         decoration: BoxDecoration(
-                          // Плоская кнопка без цветного свечения — как «Готово»
-                          // в системных формах. Цвет — brandFill (крупная
-                          // заливка), а не акцент: см. BrandFill в app_theme.
-                          color: brandFill(context).fill,
+                          // Плоская акцентная кнопка без цветного свечения — как
+                          // «Готово» в системных формах.
+                          color: primary,
                           borderRadius: BorderRadius.circular(AppRadii.button),
                         ),
                         child: Center(child: _saving
-                          ? SizedBox(width: 18, height: 18, child: CupertinoActivityIndicator(radius: 9, color: brandFill(context).onFill))
+                          ? const SizedBox(width: 18, height: 18, child: CupertinoActivityIndicator(radius: 9, color: Colors.white))
                           : Text(l.t('save_changes'),
-                              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.3, color: brandFill(context).onFill))),
+                              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.3, color: Colors.white))),
                       ),
                     ),
                   ]);

@@ -58,7 +58,8 @@ class C {
   static const orangeLt  = Color(0xFFFBEDDF);
   static const darkOrangeLt = Color(0xFF2A1B08);
 
-  /// Графит для КРУПНЫХ заливок школьной светлой темы (см. [BrandFill]).
+  /// Графит для градиента крупной карточки в школьной светлой теме
+  /// (см. [BrandFill]) — единственное место, где школа не оранжевая.
   static const graphite   = text1;            // #1C1C1E
   static const graphiteLt = Color(0xFF3A3A3C);
 
@@ -122,60 +123,44 @@ class AppRadii {
   static const double dialog = card;
 }
 
-/// Цвет КРУПНЫХ заливок: кнопка-CTA во всю ширину, квадратная кнопка шапки,
-/// градиентная карточка рейтинга. Отделён от `colorScheme.primary`, потому что
-/// у школы это разные вещи.
+/// Градиент КРУПНОЙ карточки (сейчас — «Мой рейтинг» во вкладке заданий).
+/// Отделён от `colorScheme.primary`, потому что у школы это разные вещи.
 ///
-/// У университета заливка и есть акцент — бирюза спокойная, ею не жалко
-/// закрасить кнопку во всю ширину. Оранжевый на такой площади читается совсем
-/// иначе: три-четыре залитых блока на экране, и светлая школьная тема выглядит
-/// оранжевой целиком, а не «с оранжевым акцентом». Поэтому в СВЕТЛОЙ школьной
-/// теме крупные плоскости графитовые, а оранжевый остаётся там, где он и
-/// должен быть акцентом: значки, выбранная вкладка, акцентный текст, обводки,
-/// переключатели.
+/// У университета градиент и есть акцент — бирюза спокойная, ею не жалко
+/// залить карточку в пол-экрана. Оранжевый на такой площади читается иначе:
+/// самый крупный цветной блок экрана перетягивал на себя всё внимание, и
+/// светлая школьная тема выглядела оранжевой целиком. Поэтому в СВЕТЛОЙ
+/// школьной теме карточка графитовая, а оранжевый остаётся акцентом: кнопки,
+/// значки, выбранная вкладка, акцентный текст, обводки, переключатели.
 ///
-/// В ТЁМНОЙ школьной теме заливка остаётся оранжевой: на почти чёрном фоне тот
-/// же оранжевый прямоугольник ничего не «заливает» — он там единственное
-/// цветное пятно, и графит на графите просто потерялся бы.
+/// В ТЁМНОЙ школьной теме градиент остаётся оранжевым: на почти чёрном фоне он
+/// ничего не «заливает» — он там единственное цветное пятно, а графит на
+/// графите просто потерялся бы.
 @immutable
 class BrandFill extends ThemeExtension<BrandFill> {
-  const BrandFill({required this.fill, required this.onFill, required this.gradient});
+  const BrandFill({required this.gradient});
 
-  /// Заливка плоскости.
-  final Color fill;
-
-  /// Текст и значки на [fill].
-  final Color onFill;
-
-  /// Двухцветный градиент для крупных карточек (рейтинг во вкладке заданий).
+  /// Двухцветный градиент крупной карточки.
   final List<Color> gradient;
 
   @override
-  BrandFill copyWith({Color? fill, Color? onFill, List<Color>? gradient}) => BrandFill(
-        fill: fill ?? this.fill,
-        onFill: onFill ?? this.onFill,
-        gradient: gradient ?? this.gradient,
-      );
+  BrandFill copyWith({List<Color>? gradient}) =>
+      BrandFill(gradient: gradient ?? this.gradient);
 
   @override
   BrandFill lerp(BrandFill? other, double t) {
     if (other == null) return this;
-    return BrandFill(
-      fill: Color.lerp(fill, other.fill, t)!,
-      onFill: Color.lerp(onFill, other.onFill, t)!,
-      gradient: [
-        Color.lerp(gradient.first, other.gradient.first, t)!,
-        Color.lerp(gradient.last, other.gradient.last, t)!,
-      ],
-    );
+    return BrandFill(gradient: [
+      Color.lerp(gradient.first, other.gradient.first, t)!,
+      Color.lerp(gradient.last, other.gradient.last, t)!,
+    ]);
   }
 }
 
 /// [BrandFill] текущей темы. Фолбэк — университетский, чтобы виджет, поднятый
 /// в тесте на голом `ThemeData()`, не падал на `!`.
 BrandFill brandFill(BuildContext context) =>
-    Theme.of(context).extension<BrandFill>() ??
-    const BrandFill(fill: C.teal, onFill: Colors.white, gradient: C.tealGradient);
+    Theme.of(context).extension<BrandFill>() ?? const BrandFill(gradient: C.tealGradient);
 
 List<BoxShadow> cardShadow(bool isDark) => [
   BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.28 : 0.07), blurRadius: 20, offset: const Offset(0, 6)),
@@ -315,9 +300,9 @@ InputDecorationTheme _input(Color fill, Color focus) => InputDecorationTheme(
   hintStyle: const TextStyle(color: C.text4, fontSize: 15, fontWeight: FontWeight.w400),
 );
 
-ElevatedButtonThemeData _btnFor(BrandFill brand) => ElevatedButtonThemeData(style: ElevatedButton.styleFrom(
-  backgroundColor: brand.fill,
-  foregroundColor: brand.onFill,
+ElevatedButtonThemeData _btnFor(Color primary) => ElevatedButtonThemeData(style: ElevatedButton.styleFrom(
+  backgroundColor: primary,
+  foregroundColor: Colors.white,
   elevation: 0,
   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
   textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: 0.2),
@@ -376,12 +361,8 @@ class AppTheme {
     final primaryDk = isSchool ? C.orangeDk : C.tealDk;
     final primaryLt = isSchool ? C.orangeLt : C.tealLt;
     final brand = isSchool
-        ? const BrandFill(
-            fill: C.graphite, onFill: Colors.white,
-            gradient: [C.graphite, C.graphiteLt])
-        : const BrandFill(
-            fill: C.teal, onFill: Colors.white,
-            gradient: C.tealGradient);
+        ? const BrandFill(gradient: [C.graphite, C.graphiteLt])
+        : const BrandFill(gradient: C.tealGradient);
     return ThemeData(
       extensions: [brand],
       brightness: Brightness.light,
@@ -408,7 +389,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.card)),
       ),
       inputDecorationTheme: _input(C.surface2, primary),
-      elevatedButtonTheme: _btnFor(brand),
+      elevatedButtonTheme: _btnFor(primary),
       outlinedButtonTheme: OutlinedButtonThemeData(style: OutlinedButton.styleFrom(
         foregroundColor: primary,
         side: BorderSide(color: primary, width: 1.5),
@@ -445,12 +426,8 @@ class AppTheme {
     final primaryDk = isSchool ? C.orangeDk : C.tealDk;
     final primaryLt = isSchool ? C.darkOrangeLt : C.darkTealLt;
     final brand = isSchool
-        ? const BrandFill(
-            fill: C.orange, onFill: Colors.white,
-            gradient: [C.orangeDk, C.orange])
-        : const BrandFill(
-            fill: C.teal, onFill: Colors.white,
-            gradient: C.tealGradient);
+        ? const BrandFill(gradient: [C.orangeDk, C.orange])
+        : const BrandFill(gradient: C.tealGradient);
     return ThemeData(
       extensions: [brand],
       brightness: Brightness.dark,
@@ -471,7 +448,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.card)),
       ),
       inputDecorationTheme: _input(C.darkSurface2, primary),
-      elevatedButtonTheme: _btnFor(brand),
+      elevatedButtonTheme: _btnFor(primary),
       outlinedButtonTheme: OutlinedButtonThemeData(style: OutlinedButton.styleFrom(
         foregroundColor: primary,
         side: BorderSide(color: primary, width: 1.5),

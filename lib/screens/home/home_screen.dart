@@ -187,8 +187,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final provider = context.watch<ClassesProvider>();
     final isDark  = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
-    // Квадратные кнопки шапки — крупная заливка, а не акцент: см. BrandFill.
-    final brand = brandFill(context);
 
     return Scaffold(
       // bottom: false — список едет edge-to-edge под плавающий навбар (как в
@@ -233,11 +231,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   child: Container(
                     width: 42, height: 42,
                     decoration: BoxDecoration(
-                      color: brand.fill,
+                      color: primary,
                       borderRadius: BorderRadius.circular(AppRadii.tile),
-                      boxShadow: primaryGlow(brand.fill, opacity: 0.30),
+                      boxShadow: primaryGlow(primary, opacity: 0.30),
                     ),
-                    child: Icon(CupertinoIcons.add, color: brand.onFill, size: 20),
+                    child: const Icon(CupertinoIcons.add, color: Colors.white, size: 20),
                   )),
               ] else ...[
                 Tappable(
@@ -277,11 +275,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   child: Container(
                     width: 42, height: 42,
                     decoration: BoxDecoration(
-                      color: brand.fill,
+                      color: primary,
                       borderRadius: BorderRadius.circular(AppRadii.tile),
-                      boxShadow: primaryGlow(brand.fill, opacity: 0.30),
+                      boxShadow: primaryGlow(primary, opacity: 0.30),
                     ),
-                    child: Icon(CupertinoIcons.lock, color: brand.onFill, size: 18))),
+                    child: const Icon(CupertinoIcons.lock, color: Colors.white, size: 18))),
               ],
             ]),
           ))),

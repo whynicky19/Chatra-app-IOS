@@ -170,13 +170,6 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
     _saveHistory();
     try {
       final api = context.read<ApiService>();
-      // Материалы курса клиент больше не собирает и не шлёт — сервер сам
-      // ищет релевантные фрагменты лекций через RAG (векторный поиск по
-      // вопросу, services/rag_search.py) и вставляет их в системный промпт
-      // (routers/ai.py::ai_chat). Раньше здесь тянулся весь текст лекций
-      // класса (до 12 штук) и/или до 3 картинок — теперь этим полностью
-      // занимается бэкенд, и результат не зависит от того, успел ли клиент
-      // догрузить файлы к моменту вопроса.
       final apiMsgs = <Map<String, dynamic>>[
         {'role': 'system', 'content':
             'Ты AI-ассистент курса "${widget.className}". Отвечай на русском.'},
@@ -235,8 +228,6 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
         ),
       ])),
 
-      // Композер — матовое стекло поверх переписки (тот же материал, что у
-      // главного чата с ИИ): сообщения просвечивают сквозь него на скролле.
       ClipRect(child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
         child: Container(
@@ -435,8 +426,6 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
       padding: const EdgeInsets.only(bottom: 16, left: 48),
       child: Align(
         alignment: Alignment.centerRight,
-        // Плоская заливка акцентом: без градиента, свечения и тени под
-        // текстом — как пузырь iMessage.
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
           decoration: BoxDecoration(

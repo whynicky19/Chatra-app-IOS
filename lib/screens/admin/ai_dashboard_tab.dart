@@ -16,9 +16,6 @@ import 'admin_format.dart';
 /// Дашборд расхода токенов: куда именно уходят токены (чат, проверка работ,
 /// обложки, названия чатов), как расход шёл по дням, какие предметы и люди
 /// тратят больше всех, и журнал запросов с фильтром по виду расхода.
-///
-/// Всё считает бэкенд (`/admin/ai-usage/dashboard`) — экран только рисует,
-/// поэтому цифры совпадают с веб-админкой до единицы.
 class AiDashboardTab extends StatefulWidget {
   const AiDashboardTab({super.key});
 
@@ -44,10 +41,8 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
   String? _kindFilter;
   String _kindFilterLabel = '';
 
-  /// Поколение запроса журнала. Период и фильтр переключаются одним тапом,
-  /// а «Показать ещё» может быть ещё в полёте: без этого счётчика её страница,
-  /// набранная по СТАРОМУ фильтру, дописывалась в уже перезаполненный список,
-  /// подмешивая чужие строки и сбивая _logPage.
+  /// Поколение запроса журнала: без него страница «Показать ещё», набранная по
+  /// старому фильтру, дописалась бы в уже перезаполненный список.
   int _logReq = 0;
 
   @override
@@ -247,8 +242,6 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
     ]);
   }
 
-  /// endpoint → group: журнал приходит с endpoint'ом, а цвет закреплён за
-  /// семейством функций.
   Map<String, String> _endpointGroups(Map<String, dynamic> d) {
     final map = <String, String>{};
     for (final e in (d['by_endpoint'] as List?) ?? const []) {
@@ -725,8 +718,6 @@ class _DailyChart extends StatelessWidget {
           Text(buckets.last.label, style: TextStyle(fontSize: 11, color: adaptiveText4(context))),
         ]),
         const SizedBox(height: 8),
-        // Логарифм — это не деталь реализации: без подписи читатель сравнивал бы
-        // высоты столбиков напрямую и ошибался бы на порядок.
         Text('${l.t('log_scale_note')} ${fmtCompact(bounds.$1, l)} — ${fmtCompact(bounds.$2, l)}',
             style: TextStyle(fontSize: 11, height: 1.35, color: adaptiveText4(context))),
         const SizedBox(height: 10),
@@ -749,11 +740,8 @@ class _DailyChart extends StatelessWidget {
     );
   }
 
-  /// Границы логарифмической шкалы — степени десяти вокруг данных.
-  ///
-  /// Дневной расход отличается в тысячи раз: десятки токенов в тихий день
-  /// против сотен тысяч в день массовой проверки работ. На линейной шкале всё,
-  /// кроме пика, ложится в пиксель — именно так график и выглядел раньше.
+  /// Границы логарифмической шкалы — степени десяти вокруг данных: дневной
+  /// расход отличается в тысячи раз, на линейной шкале всё легло бы в пиксель.
   (double bottom, double top) _logBounds(List<_Bucket> buckets) {
     final values = buckets.where((b) => b.total > 0).map((b) => b.total).toList();
     if (values.isEmpty) return (1, 10);
@@ -766,8 +754,6 @@ class _DailyChart extends StatelessWidget {
 
   Widget _column(BuildContext context, _Bucket b, (double, double) bounds, List<String> order) {
     const maxH = 112.0;
-    // День без запросов — тонкая полоска подложки: пустое место читалось бы
-    // как «столбик не нарисовался».
     if (b.total <= 0) {
       return Container(
         height: 2,
@@ -775,9 +761,6 @@ class _DailyChart extends StatelessWidget {
       );
     }
 
-    // Преобладающий вид расхода за день: на логарифмической шкале стек не имеет
-    // смысла (доли сегментов перестают складываться в целое), поэтому столбик
-    // одноцветный, а полная разбивка живёт в карточках выше.
     var group = 'other';
     var best = 0;
     for (final g in order) {

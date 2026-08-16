@@ -1,14 +1,6 @@
 /// Выбор оформления обложки предмета: цвет + предметная иконка + превью.
-///
-/// Загрузки своей фотографии здесь нет: обложку рисует бэкенд по паре
-/// «цвет + иконка» (POST /classes/{id}/cover/generate). Тот же виджет
-/// используется и при создании, и при редактировании предмета, поэтому выбор
-/// выглядит одинаково в обоих местах — и совпадает с вебом
-/// (components/classes/CoverAppearance.vue).
-///
-/// Пока предмет ещё не создан (classId == null) кнопки генерации нет:
-/// показывается локальное превью, а генерацию запускает вызывающий экран
-/// сразу после создания.
+/// Загрузки своей фотографии нет — обложку рисует бэкенд по паре «цвет + иконка».
+/// При classId == null (предмет ещё не создан) кнопки генерации нет.
 library;
 
 import 'package:flutter/cupertino.dart';
@@ -67,9 +59,6 @@ const _kIconsPerRow = 6;
 class _CoverAppearanceState extends State<CoverAppearance> {
   CoverOptions _options = CoverOptionsCache.current;
 
-  /// Символов больше сорока: по умолчанию видна только первая полоска, весь
-  /// список открывается кнопкой. Развёрнутая сетка занимала восемь рядов и
-  /// выталкивала за экран название предмета и кнопку сохранения.
   bool _expanded = false;
 
   @override
@@ -78,14 +67,8 @@ class _CoverAppearanceState extends State<CoverAppearance> {
     _loadOptions();
   }
 
-  /// Свёрнутая полоска: первые символы списка, но выбранный всегда среди них.
-  ///
-  /// Выбранный символ обязан быть виден — иначе при редактировании предмета
-  /// непонятно, что вообще выбрано. Раньше ради этого список раскрывался
-  /// целиком, и на создании класса форма сразу открывалась восемью рядами
-  /// символов: дефолтный символ ('book') в первую полоску не попадает, хотя
-  /// пользователь ещё ничего не выбирал. Теперь вместо раскрытия выбранный
-  /// символ просто становится первым в свёрнутой полоске.
+  /// Свёрнутая полоска: первые символы списка, но выбранный всегда среди них —
+  /// иначе при редактировании непонятно, что вообще выбрано.
   List<CoverIconOption> _collapsedRow() {
     final all = _options.icons;
     final head = all.take(_kIconsPerRow).toList();
@@ -157,9 +140,6 @@ class _CoverAppearanceState extends State<CoverAppearance> {
                 fontSize: 13, fontWeight: FontWeight.w600, color: adaptiveText3(context))),
       );
 
-  /// Превью — тот же виджет, что рисует обложку во всём остальном приложении,
-  /// поэтому здесь видно ровно то, что получит пользователь: фон (сохранённый
-  /// или ровная заливка цвета) + иконка поверх.
   Widget _preview(BuildContext context, L10n l, CoverColorOption color) {
     final url = widget.coverUrl;
     return ClipRRect(
@@ -247,8 +227,6 @@ class _CoverAppearanceState extends State<CoverAppearance> {
                           s.label.toUpperCase(),
                           style: TextStyle(
                             fontSize: 11,
-                            // w600, а не w700: на мелком кегле шкала
-                            // app_theme.dart жирный запрещает.
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.5,
                             color: adaptiveText4(context),

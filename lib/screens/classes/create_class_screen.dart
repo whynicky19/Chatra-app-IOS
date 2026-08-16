@@ -13,8 +13,6 @@ import '../../widgets/cover_appearance.dart';
 import '../../widgets/toast.dart';
 import '../../widgets/wrapping_field.dart';
 
-/// Полноэкранная форма создания класса — раньше была модальным `Dialog`
-/// фиксированной высоты, где длинное описание или клавиатура обрезали форму.
 /// Здесь, как и в lecture_editor_screen.dart, `PopScope` не даёт случайно
 /// закрыть уже заполненную форму.
 class CreateClassScreen extends StatefulWidget {
@@ -93,9 +91,6 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
         _created = created;
         _submitting = false;
       });
-      // Первую генерацию запускаем сами — для пользователя это продолжение
-      // нажатия «Создать», а не отдельное непонятное действие. Предмет уже
-      // сохранён с обложкой-фолбэком, поэтому её сбой ничего не ломает.
       _generateCover();
     } catch (e) {
       if (!mounted) return;
@@ -171,15 +166,6 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
                 child: ListView(
                   padding: EdgeInsets.fromLTRB(20, 8, 20, MediaQuery.viewInsetsOf(context).bottom + 28),
                   children: [
-                    // Сначала данные предмета, оформление — после: название и
-                    // описание обязательны, а цвет с символом у обложки уже
-                    // выбраны по умолчанию. Когда пикер обложки шёл первым,
-                    // форма открывалась на необязательном шаге, а поле
-                    // «Название» — единственное, без которого нельзя создать
-                    // класс — оказывалось ниже сгиба.
-                    //
-                    // Поля скрываются после создания: на втором шаге экран
-                    // занимается только обложкой, и они отвлекали бы.
                     if (_created == null) ..._classFields(l),
 
                     CoverAppearance(
@@ -207,9 +193,6 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
                         minHeight: 52,
                       )
                     else
-                      // Предмет уже сохранён, поэтому это просто «закрыть»:
-                      // обложка есть в любом случае, даже если генерацию не
-                      // запускали или она не удалась.
                       AppButton.primary(
                         label: l.t('done'),
                         icon: CupertinoIcons.check_mark,
@@ -246,11 +229,6 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
                     ),
                     const SizedBox(height: 18),
 
-                    // Подписи и поля лежат в двух отдельных Row (а не парами
-                    // внутри своих Column), чтобы разная длина слова
-                    // "Период"/"Учитель" в разных языках не сдвигала поля
-                    // ввода друг относительно друга по высоте — Row всегда
-                    // берёт высоту самой высокой подписи для обеих колонок.
                     Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Expanded(child: _label(l.t('period_label'))),
                       const SizedBox(width: 14),
@@ -263,9 +241,6 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
                         onChanged: (_) => _markDirty(),
                       )),
                       const SizedBox(width: 14),
-                      // Поле вдвое уже экрана — ФИО целиком не помещается в
-                      // строку почти никогда, поэтому именно здесь перенос
-                      // важнее всего.
                       Expanded(child: WrappingField(
                         controller: _teacherC,
                         hintText: l.t('your_name_hint'),

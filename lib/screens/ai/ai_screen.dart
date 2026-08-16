@@ -84,8 +84,6 @@ class _AiScreenState extends State<AiScreen> {
         onSelect: _selectThread,
         onCreate: _createChat,
       ),
-      // Кнопка истории — плавающая поверх переписки (как в ChatGPT/Claude),
-      // без отдельной полосы-хедера, которая просто отъедала бы экран.
       body: Stack(children: [
         Positioned.fill(
           child: AiConversationView(
@@ -94,9 +92,6 @@ class _AiScreenState extends State<AiScreen> {
             onThreadCreated: (id) => setState(() => _activeThreadId = id),
           ),
         ),
-        // Контент едет под статус-бар edge-to-edge — часы/индикаторы теряются
-        // на светлом/пёстром фоне сообщений. Лёгкий градиент-подложка (не
-        // сплошная плашка) держит их читаемыми, не забирая место у контента.
         const Positioned(top: 0, left: 0, right: 0, child: IgnorePointer(child: _StatusBarScrim())),
         Positioned(
           top: MediaQuery.paddingOf(context).top + 12,
@@ -108,10 +103,8 @@ class _AiScreenState extends State<AiScreen> {
   }
 }
 
-/// Едва заметная подложка под статус-баром для edge-to-edge контента:
-/// градиент от фона экрана до прозрачного, а не сплошная плашка — время,
-/// Dynamic Island и индикаторы остаются читаемыми поверх любого сообщения,
-/// но полезная область экрана не уменьшается (высота — только safe area).
+/// Едва заметная подложка под статус-баром для edge-to-edge контента: градиент
+/// до прозрачного, а не плашка — индикаторы читаемы, место не отъедается.
 class _StatusBarScrim extends StatelessWidget {
   const _StatusBarScrim();
 
@@ -142,9 +135,6 @@ class _HistoryButton extends StatelessWidget {
     return Tappable(
       onTap: onTap,
       label: 'Открыть историю чатов',
-      // Кнопка плавает над перепиской, поэтому она из того же материала, что
-      // и композер снизу: блюр + полупрозрачная заливка + светлый край,
-      // вместо непрозрачного круга с тенью.
       child: ClipOval(
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),

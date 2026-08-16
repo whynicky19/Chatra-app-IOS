@@ -1,16 +1,9 @@
 import 'package:flutter/widgets.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-/// Сетевая обложка (класс/лекция) без отдельного compositing-слоя.
-///
-/// Раньше обложки рисовались виджетом CachedNetworkImage — он ради
-/// fade-перехода оборачивает картинку в свой AnimatedSwitcher, то есть это
-/// ОТДЕЛЬНЫЙ слой поверх фонового градиента-заглушки. Внутри ClipRRect со
-/// скруглёнными углами два независимо антиалиасенных слоя иногда не совпадали
-/// ровно по границе клипа на 1-2px — снаружи это выглядело как тонкая полоска
-/// цвета фонового градиента у одного из краёв обложки. Голый Image с тем же
-/// ImageProvider (тот же кэш, тот же cacheKey) красится одним слоем — щели
-/// быть не может.
+/// Сетевая обложка (класс/лекция) без отдельного compositing-слоя: у
+/// CachedNetworkImage свой AnimatedSwitcher, и внутри ClipRRect его слой
+/// расходился с фоном на 1-2px, оставляя полоску у края.
 class NetworkCoverImage extends StatelessWidget {
   final String url;
   final BoxFit fit;

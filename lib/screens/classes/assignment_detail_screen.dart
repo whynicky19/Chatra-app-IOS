@@ -261,9 +261,6 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
     );
   }
 
-  // ---- Разбор рубрики (assignment.criteria — JSON-определение критериев ДО
-  // проверки: name/weight/description) — используется как для превью учителя,
-  // так и чтобы подставить описание критерия рядом с фактическим баллом ИИ.
   List<Map<String, dynamic>> _rubricCriteria() {
     try {
       final decoded = jsonDecode(a['criteria']?.toString() ?? '[]');
@@ -282,10 +279,6 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
     return null;
   }
 
-  // Сильные/слабые стороны не хранятся на бэкенде отдельным полем — ИИ уже
-  // возвращает per-критериальный комментарий в criteria_scores (name/score/
-  // max/comment). Здесь мы просто перераспределяем ЭТИ данные по соотношению
-  // score/max, ничего не выдумывая и не делая новых запросов.
   (List<String>, List<String>) _splitStrengthsWeaknesses(List<Map<String, dynamic>> criteria) {
     final strengths = <String>[];
     final weaknesses = <String>[];
@@ -411,8 +404,6 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                             ]),
                           ],
                         ]),
-                      // Файлы — отдельной сгруппированной секцией под описанием,
-                      // а не вложенной стопкой карточек внутри карточки.
                       if (!isLoading && allFiles.isNotEmpty) ...[
                         SizedBox(height: descText.isNotEmpty ? 20 : 0),
                         Padding(
@@ -619,9 +610,6 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
       label: label,
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        // 40pt — размер круглой кнопки навигации в iOS 26 (Photos/Maps):
-        // заметно крупнее прежних 38 и попадает в HIG-минимум вместе с
-        // невидимым запасом Tappable.
         width: 40, height: 40,
         alignment: Alignment.center,
         decoration: BoxDecoration(
@@ -646,8 +634,6 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                 style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: accent, letterSpacing: 0.6)),
           ]),
           const SizedBox(height: 7),
-          // 28pt/w700 с трекингом -0.7 — шкала largeTitle iOS: раньше вес w800
-          // при -0.3 читался «жирнее и шире», чем нативные заголовки рядом.
           Text(a['title'] ?? '',
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: detailText1(context), letterSpacing: -0.7, height: 1.12)),
         ]),
@@ -691,8 +677,6 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
   Widget _chip(String text, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-      // Капсула (радиус = половина высоты), а не скругление chip: пилюли
-      // статуса в iOS всегда полностью круглые по торцам.
       decoration: BoxDecoration(color: color.withValues(alpha: 0.13), borderRadius: BorderRadius.circular(100)),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(icon, size: 12, color: color),
@@ -826,9 +810,6 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
       const SizedBox(height: 16),
       Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
         ScoreRing(score: score, maxScore: maxScore, size: 108, accentColor: accent),
-        // Текст фидбека здесь — только для оценки ИИ; для учительской оценки
-        // тот же feedback уже показан ниже отдельной секцией "Комментарий
-        // преподавателя" — дублировать его тут не нужно.
         if (gradedByAi && feedback.isNotEmpty) ...[
           const SizedBox(width: 16),
           Expanded(child: Text(feedback,
@@ -841,9 +822,6 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
         const SizedBox(height: 14),
         for (var i = 0; i < criteriaScores.length; i++) ...[
           _criteriaRow(context, criteriaScores[i], _rubricDescriptionFor((criteriaScores[i]['name'] ?? '').toString(), rubric)),
-          // Разделитель, а не просто отбивка: критериев обычно 4-6, и без
-          // линии длинные комментарии одного критерия склеивались с именем
-          // следующего в единый абзац.
           if (i != criteriaScores.length - 1) ...[
             const SizedBox(height: 14),
             Container(height: 1 / MediaQuery.devicePixelRatioOf(context), color: detailBorder(context)),
@@ -881,7 +859,6 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
         width: double.infinity,
         height: 7,
         child: ClipRRect(
-          // Полная капсула: полоса прогресса в iOS скруглена по высоте.
           borderRadius: BorderRadius.circular(100),
           child: Stack(children: [
             Positioned.fill(child: Container(color: detailBorder(context))),
@@ -908,9 +885,6 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
     final (strengths, weaknesses) = _splitStrengthsWeaknesses(criteriaScores);
     if (strengths.isEmpty && weaknesses.isEmpty) return const [];
 
-    // Две полноширинные секции друг под другом, а не колонки в один ряд:
-    // в две колонки на телефоне помещалось ~18 символов в строку, из-за чего
-    // формулировки ИИ рвались по слогам и приходилось мельчить кегль.
     return [
       if (strengths.isNotEmpty) ...[
         _entranceCard(_bulletCard(context, title: l.t('strengths'), items: strengths, icon: CupertinoIcons.checkmark_circle_fill, color: C.green), 0),
@@ -951,8 +925,6 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              // Маркер-точка цвета секции вместо повтора того же значка на
-              // каждом пункте: значок уже стоит в заголовке секции.
               Container(width: 5, height: 5, margin: const EdgeInsets.only(top: 8, right: 10),
                   decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
               Expanded(child: Text(item,
@@ -1093,9 +1065,6 @@ class _BottomActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bg = detailBg(context);
-    // Полупрозрачная панель поверх контента вместо непрозрачной полосы:
-    // содержимое видно сквозь стекло, и панель читается как плавающий слой
-    // хрома, а не как отрезанный кусок экрана.
     return ClipRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),

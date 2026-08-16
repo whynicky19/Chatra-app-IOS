@@ -38,9 +38,6 @@ class ClassPostsTab extends StatelessWidget {
     final l = context.read<L10n>();
     final accentColor = Theme.of(context).colorScheme.primary;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    // Плитка лекции нейтрально-серая, как у задания без статуса сдачи
-    // (см. class_assignments_tab): цветом в списках помечается только статус,
-    // а сам факт «это лекция» уже несут иконка и вкладка.
     final leadColor = adaptiveText4(context);
 
     String clean(String t) => t.replaceFirst(_lectureTitleRe, '').trim();
@@ -145,26 +142,11 @@ class ClassPostsTab extends StatelessWidget {
                 child: RepaintBoundary(
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 12),
-                    // Отдельная карточка на лекцию: каждая лекция — свой
-                    // «объект», а не атрибут одного списка, поэтому у неё
-                    // собственные скругления, рамка и мягкая тень.
-                    // Строка ровно из двух строк текста — название и мета —
-                    // поэтому все карточки списка одной высоты независимо от
-                    // длины описания (превью описания переехало на страницу
-                    // лекции: в карточке оно давало и разнобой по высоте, и
-                    // четвёртый конкурирующий за внимание блок).
                     child: GroupRow.card(
                     onTap: () => onShowPost(p, num),
                     onLongPress: () => showActions(p),
-                    // Крупная строка (~80pt): плитка 46 + два уровня текста в
-                    // размерах iOS (body 17 / subheadline 15) и воздух по 16 по
-                    // вертикали. Компактные 12/34/16 читались как «тонкая
-                    // полоска», особенно рядом с обложкой класса сверху.
                     padding: const EdgeInsets.fromLTRB(16, 16, 6, 16),
                     child: Row(children: [
-                      // Значок-предмет вместо номера: номер лекции всё равно
-                      // нужен только для перехода (onShowPost) и для чата с ИИ,
-                      // а в строке он выглядел как порядковый счётчик.
                       Container(
                         width: 46, height: 46,
                         alignment: Alignment.center,
@@ -180,9 +162,6 @@ class ClassPostsTab extends StatelessWidget {
                           style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, height: 1.25, letterSpacing: -0.4, color: adaptiveText1(context)),
                           maxLines: 1, overflow: TextOverflow.ellipsis),
                         const SizedBox(height: 4),
-                        // Дата и вложения — одной приглушённой строкой словами,
-                        // без иконок-календарика и скрепки: они добавляли шума
-                        // ровно там, где нужен спокойный второй план.
                         Text(
                           files > 0
                               ? '${fmtDate(p['created_at'] ?? '')}  ·  $files ${files == 1 ? l.t('file') : l.t('files')}'
@@ -190,11 +169,7 @@ class ClassPostsTab extends StatelessWidget {
                           style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText4(context)),
                           maxLines: 1, overflow: TextOverflow.ellipsis),
                       ])),
-                      // Меню доступно всем: учителю — правка/удаление, студенту —
-                      // жалоба. Раньше оно было только у преподавателя, из-за чего
-                      // пожаловаться на контент было невозможно в принципе.
-                      // Вертикальное троеточие — как в системных списках iOS;
-                      // шеврон «открыть» убран: нажимается вся карточка.
+                      // Меню доступно всем: учителю — правка/удаление, студенту — жалоба.
                       Tappable(
                         onTap: () => showActions(p),
                         label: 'Действия с лекцией',

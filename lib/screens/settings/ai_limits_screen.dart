@@ -14,11 +14,6 @@ import '../../widgets/toast.dart';
 import 'settings_shared.dart';
 
 /// Экран «AI лимит»: сколько сообщений осталось на сегодня и когда сброс.
-///
-/// Главный вопрос экрана — «сколько я ещё могу спросить», поэтому герой экрана
-/// это ОСТАТОК, а не расход: раньше в глаза бросалась строка «12 / 30
-/// использовано», и остаток приходилось вычитать в уме. Кольцо пустеет по мере
-/// расхода — та же метафора, что у заряда батареи.
 class AiLimitsScreen extends StatefulWidget {
   const AiLimitsScreen({super.key});
   @override State<AiLimitsScreen> createState() => _AiLimitsScreenState();
@@ -77,9 +72,6 @@ class _AiLimitsScreenState extends State<AiLimitsScreen> {
     return SettingsSubScreen(
       title: l.t('ai_limit_section'),
       subtitle: l.t('ai_limit_section_sub'),
-      // Обновление — единственное действие этого экрана, и раньше его не было
-      // вовсе: цифры замирали на момент открытия, а сброс квоты приходилось
-      // ловить перезаходом.
       action: _RefreshAction(busy: _refreshing || _loading, onTap: _refresh),
       children: [
         if (_loading)
@@ -169,9 +161,8 @@ class _QuotaHero extends StatelessWidget {
   }
 }
 
-/// Кольцо + центр, оживающие при открытии экрана: дуга вырастает от нуля, а
-/// число досчитывает вместе с ней. Один общий прогресс `t` на обе величины —
-/// иначе цифра и дуга приходят к финалу вразнобой.
+/// Кольцо и число оживают одним общим прогрессом `t` — иначе дуга и цифра
+/// приходят к финалу вразнобой.
 class _AnimatedRing extends StatelessWidget {
   const _AnimatedRing({required this.quota, required this.accent, required this.gradient, required this.flat});
 
@@ -242,8 +233,6 @@ class _RingCenter extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(mainAxisSize: MainAxisSize.min, children: [
       Text('$value',
-          // Крупный кегль — отрицательный трекинг: с ростом размера цифры
-          // читаются «разъехавшимися».
           style: TextStyle(fontSize: 48, fontWeight: FontWeight.w700, letterSpacing: -1.6, height: 1, color: color)),
       const SizedBox(height: 4),
       Padding(
@@ -440,9 +429,6 @@ class _Note extends StatelessWidget {
   }
 }
 
-/// Заглушка на время первой загрузки: та же геометрия, что у настоящей
-/// карточки. Спиннер по центру пустого экрана менял высоту содержимого при
-/// появлении данных — экран «прыгал».
 class _QuotaSkeleton extends StatefulWidget {
   const _QuotaSkeleton();
   @override State<_QuotaSkeleton> createState() => _QuotaSkeletonState();
@@ -513,9 +499,6 @@ class _ErrorCard extends StatelessWidget {
   }
 }
 
-/// Контейнер карточки этого экрана: заливка + волосяная рамка, как у групп
-/// настроек рядом. Раньше карточка лимита была единственной на всём экране с
-/// мягкой тенью — она «висела» на другой высоте, чем соседние блоки.
 class _Card extends StatelessWidget {
   const _Card({required this.child});
 

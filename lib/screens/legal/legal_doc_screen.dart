@@ -10,11 +10,6 @@ import '../../widgets/inset_group.dart' show hairline;
 /// Общий макет юридического документа (политика конфиденциальности, условия
 /// использования): крупный заголовок в духе iOS, который сворачивается в
 /// строку навигации при скролле, лид-абзац и список разделов.
-///
-/// Раньше шапка (иконка, дата, вступление) была россыпью голого текста над
-/// карточками разделов: вступление читалось как «карточка, у которой потеряли
-/// фон», а не как осознанный лид. Теперь у него своя тихая подложка, отличная
-/// от карточек разделов, — иерархия «обложка → лид → разделы» видна сразу.
 class LegalDocScreen extends StatefulWidget {
   const LegalDocScreen({
     super.key,
@@ -76,10 +71,6 @@ class _LegalDocScreenState extends State<LegalDocScreen> {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      // extendBodyBehindAppBar-подход вручную: контент проезжает ПОД матовой
-      // строкой навигации (см. §«Материалы» HIG) — только тогда у стекла есть
-      // что размывать, и вместо жёсткого разделителя получается край,
-      // проявляющийся сам собой.
       body: Stack(children: [
         Positioned.fill(
           child: ListView(
@@ -97,9 +88,6 @@ class _LegalDocScreenState extends State<LegalDocScreen> {
                 child: Icon(widget.headerIcon, size: 26, color: primary),
               ),
               const SizedBox(height: 16),
-              // Крупный заголовок: отрицательный трекинг и плотная интерлиньяж
-              // — по мере роста кегля буквы читаются слишком раскинутыми, а
-              // строки — слишком разъехавшимися.
               Text(title,
                   style: TextStyle(
                     fontSize: 34,
@@ -113,8 +101,6 @@ class _LegalDocScreenState extends State<LegalDocScreen> {
               const SizedBox(height: 22),
 
               // ── Лид ──────────────────────────────────────────────────
-              // Тихая заливка акцентом без рамки и тени: явно не одна из
-              // карточек-разделов ниже, но и не безнадзорный текст.
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
@@ -162,8 +148,6 @@ class _LegalDocScreenState extends State<LegalDocScreen> {
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(CupertinoIcons.clock, size: 12, color: adaptiveText4(context)),
           const SizedBox(width: 5),
-          // Мелкий текст — трекинг около нуля: сжимать его, как крупный
-          // заголовок, значит ухудшить разборчивость.
           Text('${l.t('pp_updated_label')}: ${widget.updated}',
               style: TextStyle(
                 fontSize: 13,
@@ -185,9 +169,6 @@ class _LegalDocScreenState extends State<LegalDocScreen> {
           curve: Curves.easeOut,
           padding: EdgeInsets.only(top: topInset),
           decoration: BoxDecoration(
-            // Пока крупный заголовок на месте, панель полностью прозрачна и
-            // не отделена ничем: отделять нечего. Разделитель и матовая
-            // заливка появляются ровно тогда, когда под панель заезжает текст.
             color: _collapsed ? bg.withValues(alpha: 0.80) : Colors.transparent,
             border: Border(
               bottom: BorderSide(
@@ -220,8 +201,6 @@ class _LegalDocScreenState extends State<LegalDocScreen> {
                       )),
                 ),
               ),
-              // Симметрия кнопке «назад», чтобы компактный заголовок не
-              // выглядел сдвинутым влево относительно оптического центра.
               const SizedBox(width: 48),
             ]),
           ),
@@ -238,8 +217,6 @@ class _LegalDocScreenState extends State<LegalDocScreen> {
       decoration: BoxDecoration(
         color: isDark ? C.darkSurface : Colors.white,
         borderRadius: BorderRadius.circular(AppRadii.card),
-        // Волосяная рамка вместо тени: сгруппированные списки iOS отделяются
-        // краем на общем фоне, а не «приподнятостью» материала.
         border: Border.all(color: adaptiveBorder(context), width: hairline(context)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

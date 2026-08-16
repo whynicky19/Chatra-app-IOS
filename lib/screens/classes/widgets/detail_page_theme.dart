@@ -35,10 +35,6 @@ Color detailText2(BuildContext context) {
 Color detailAccent(BuildContext context) => Theme.of(context).colorScheme.primary;
 
 /// Базовая "сгруппированная" карточка в духе iOS Settings/Files — заливка
-/// плюс волосяная рамка вместо тени. Тень убрана осознанно: на белом фоне
-/// страницы (detailBg) она читалась как "приподнятая плитка" из Material, а
-/// сгруппированные секции iOS лежат в плоскости страницы, отделяясь только
-/// заливкой и линией толщиной в физический пиксель.
 Widget sectionCard(BuildContext context, bool isDark, {required List<Widget> children, EdgeInsetsGeometry? padding}) {
   return Container(
     width: double.infinity,
@@ -52,9 +48,6 @@ Widget sectionCard(BuildContext context, bool isDark, {required List<Widget> chi
   );
 }
 
-/// Заголовок секции внутри [sectionCard]. Один стиль на все страницы: раньше
-/// те же по смыслу заголовки жили с разными кеглями/весами (16/w700, 13/w800,
-/// 13/w600) в трёх местах одного экрана.
 TextStyle cardTitleStyle(BuildContext context) => TextStyle(
   fontSize: 17,
   fontWeight: FontWeight.w600,
@@ -63,8 +56,6 @@ TextStyle cardTitleStyle(BuildContext context) => TextStyle(
 );
 
 /// Подпись НАД сгруппированной секцией (заголовок группы в iOS): мелкий кегль
-/// капсом с положительным трекингом — обратное правило к крупным заголовкам,
-/// мелкий текст нуждается в чуть большем межбуквенном расстоянии.
 TextStyle sectionCaptionStyle(BuildContext context) => TextStyle(
   fontSize: 12,
   fontWeight: FontWeight.w600,
@@ -80,8 +71,6 @@ TextStyle cardCaptionStyle(BuildContext context) => TextStyle(
   color: detailText2(context),
 );
 
-/// Основной текст страницы (описание задания, тело лекции): 17pt — размер
-/// body в iOS, с просторным интерлиньяжем для длинных абзацев.
 TextStyle detailBodyStyle(BuildContext context) => TextStyle(
   fontSize: 17,
   height: 1.55,

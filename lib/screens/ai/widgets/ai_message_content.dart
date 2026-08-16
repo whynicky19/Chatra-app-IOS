@@ -7,14 +7,8 @@ import '../../../widgets/tappable.dart';
 import '../../../widgets/toast.dart';
 import '../../../utils/haptics.dart';
 
-/// Моноширинный шрифт для кода в ответах ИИ.
-///
-/// `monospace` — это алиас платформы Android/Linux; на iOS и macOS семейства с
-/// таким именем нет, оно не резолвится, и код рисовался обычным пропорциональным
-/// системным шрифтом: отступы, выравнивание и ASCII-таблицы внутри код-блока
-/// разъезжались. Фолбэк перечисляет моно-шрифты, которые есть в системе Apple
-/// (Menlo — с macOS/iOS, Courier New — как последний рубеж), поэтому теперь код
-/// моноширинный на всех платформах.
+/// Моноширинный шрифт для кода в ответах ИИ. `monospace` — алиас Android/Linux,
+/// на Apple он не резолвится, поэтому нужен явный фолбэк (Menlo, Courier New).
 const String kCodeFontFamily = 'monospace';
 const List<String> kCodeFontFallback = ['Menlo', 'Courier New', 'Courier'];
 
@@ -194,10 +188,6 @@ class AiMessageContent extends StatefulWidget {
         width: double.infinity,
         padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
         decoration: BoxDecoration(color: const Color(0xFF0A0A16), borderRadius: BorderRadius.circular(8)),
-        // Clip.none: кнопка копирования нарочно чуть "вылезает" за границы
-        // код-блока (top:-4, right:-4) в отступ самого Container — по
-        // умолчанию Stack обрезает всё за своими границами (Clip.hardEdge),
-        // из-за чего иконка подрезалась по верхнему/правому краю.
         child: Stack(clipBehavior: Clip.none, children: [
           Padding(
             // Место справа под кнопку копирования, чтобы не наезжала на код.
@@ -326,12 +316,9 @@ class AiMessageContent extends StatefulWidget {
   static final _inlineCodeRe = RegExp(r'`([^`\n]+)`');
   static final _currencyRe = RegExp(r'^\s*\d[\d,.\s]*\s*$');
 
-  // flutter_math_fork регистрирует только aligned/alignedat/cases (см. пакет
-  // src/parser/tex/environments/eqn_array.dart) — align, align*, gather,
-  // gathered, equation и eqnarray не распознаются вообще и валят парсинг
-  // формулы целиком в onErrorFallback (сырой LaTeX-текст на экране). Модель
-  // же регулярно выбирает эти окружения (особенно align* для систем
-  // уравнений) — заменяем их на ближайший поддерживаемый аналог до рендера.
+  // flutter_math_fork знает только aligned/alignedat/cases: align, gather,
+  // equation и eqnarray валят парсинг формулы целиком в сырой текст на экране.
+  // Заменяем их на ближайший поддерживаемый аналог до рендера.
   static final _alignEnvRe = RegExp(r'\\(begin|end)\{align\*?\}');
   static final _eqnArrayEnvRe = RegExp(r'\\(begin|end)\{eqnarray\*?\}');
   static final _gatherEnvRe = RegExp(r'\\(begin|end)\{gather(?:ed)?\*?\}');
@@ -343,11 +330,8 @@ class AiMessageContent extends StatefulWidget {
     t = t.replaceAllMapped(_eqnArrayEnvRe, (m) => '\\${m.group(1)}{aligned}');
     t = t.replaceAllMapped(_gatherEnvRe, (m) => '\\${m.group(1)}{aligned}');
     t = t.replaceAll(_equationEnvRe, '');
-    // Модель часто переносит строки внутри формулы через "\\" вообще без
-    // окружения — а голый "\\" вне aligned/array/matrix невалиден и валит
-    // парсинг всей формулы (именно так на экране появляется сырой текст со
-    // "\\" и "\quad \Rightarrow \quad" вместо рендера). Раз перенос строк уже
-    // есть, а окружения нет — заворачиваем сами.
+    // Голый "\\" вне aligned/array/matrix невалиден и валит парсинг всей
+    // формулы, а модель часто переносит строки именно так — заворачиваем сами.
     if (t.contains(r'\\') && !t.contains(r'\begin{')) {
       t = '\\begin{aligned}$t\\end{aligned}';
     }
@@ -399,12 +383,6 @@ class AiMessageContent extends StatefulWidget {
   }
 }
 
-/// Разбор текста кэшируется: он идёт по всему сообщению построчно, режет его
-/// на параграфы/списки/таблицы и собирает `Math.tex` на каждую формулу. Пока
-/// это был StatelessWidget, вся работа повторялась при любой перестройке
-/// родителя — а ListView чата перестраивает видимые сообщения на каждый
-/// setState (пришёл ответ, сменился индикатор загрузки, доехал скролл). Теперь
-/// документ пересобирается только при смене самого текста или стиля.
 class _AiMessageContentState extends State<AiMessageContent> {
   late List<Widget> _children;
 

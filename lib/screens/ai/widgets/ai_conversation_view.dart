@@ -48,23 +48,15 @@ class _AiConversationViewState extends State<AiConversationView> {
   String? _pendingRequestId;
   AiQuota? _quota;
   int? _threadId;
-  // Сообщения с индексом < этого порога — уже загруженная история: у них
-  // нет entrance-анимации (см. _messageList). Иначе при открытии чата с
-  // длинной перепиской десятки сообщений одновременно проигрывали бы
-  // fade+slide, накладываясь на автоскролл — визуально «рвано». Анимация
-  // появления остаётся только для реально нового сообщения (send/receive).
+  // Сообщения с индексом < этого порога — уже загруженная история: у них нет
+  // entrance-анимации, иначе при открытии чата анимировались бы все сразу.
   int _bulkLoadedCount = 0;
-  // Пока история существующего треда ещё грузится, список скрыт — как
-  // только он готов (и уже доскроллен вниз), один плавный fade-in вместо
-  // резкого появления. Новый пустой чат виден сразу, скрывать нечего.
+  // Пока история существующего треда грузится, список скрыт: когда готов и
+  // доскроллен вниз — один плавный fade-in вместо резкого появления.
   bool _listVisible = false;
 
-  /// uid фиксируется один раз в initState. Раньше он читался через
-  /// context.read внутри _loadLocal/_saveHistory — то есть УЖЕ ПОСЛЕ
-  /// асинхронного разрыва (await SharedPreferences / .then). Если пользователь
-  /// закрывал чат в этот момент (отправил сообщение и сразу свайпнул назад),
-  /// context.read на деактивированном виджете бросал
-  /// «Looking up a deactivated widget's ancestor is unsafe».
+  /// uid фиксируется один раз в initState: читать его через context.read после
+  /// асинхронного разрыва нельзя — на закрытом чате это deactivated widget.
   late final String _uidPart;
 
   @override
@@ -257,11 +249,6 @@ class _AiConversationViewState extends State<AiConversationView> {
     await _requestReply();
   }
 
-  /// Пересылает боту хвост текущей `_msgs` (последнее сообщение в списке —
-  /// вопрос, на который нужен ответ) и добавляет ответ. Общая часть для
-  /// обычной отправки, повтора неудачной отправки и перегенерации ответа —
-  /// все три отличаются только тем, что делают с `_msgs` ДО вызова этого
-  /// метода, сама отправка и обработка результата одинаковые.
   Future<void> _requestReply() async {
     setState(() => _loading = true);
     _cancelToken = CancelToken();
@@ -318,10 +305,6 @@ class _AiConversationViewState extends State<AiConversationView> {
                 ? l.t('ai_not_configured')
                 : l.t('connection_error');
         showToast(context, errText, error: true);
-        // Раньше сюда добавлялось фейковое сообщение ассистента с текстом
-        // ошибки. Теперь вместо этого помечаем последнее (не отправленное)
-        // сообщение — оно рисуется приглушённым с кнопкой «Повторить»,
-        // см. _userMessage.
         if (_msgs.isNotEmpty && _msgs.last['role'] == 'user') {
           setState(() => _msgs[_msgs.length - 1] = {..._msgs.last, 'failed': 'true'});
         }
@@ -335,10 +318,8 @@ class _AiConversationViewState extends State<AiConversationView> {
     _scrollDown();
   }
 
-  /// Кнопка «Остановить» на композере — отменяет текущий запрос к ИИ и
-  /// отдельно сообщает бэкенду не сохранять ответ, если он всё же придёт
-  /// (см. ApiService.cancelAiChat — CancelToken рвёт только наше соединение,
-  /// сервер не всегда это замечает).
+  /// Отменяет текущий запрос и отдельно просит бэкенд не сохранять ответ:
+  /// CancelToken рвёт только наше соединение, сервер этого может не заметить.
   void _stop() {
     _cancelToken?.cancel();
     final requestId = _pendingRequestId;
@@ -367,13 +348,6 @@ class _AiConversationViewState extends State<AiConversationView> {
     await _requestReply();
   }
 
-  // animate=false — мгновенный переход в конец при открытии чата/подгрузке
-  // истории: если тут анимировать через animateTo, ListView.builder ещё не
-  // построенные сообщения лениво создаёт прямо во время скролла, и у каждого
-  // при первом построении играет своя entrance-анимация (см. _messageList) —
-  // это и давало ощущение «рваного» скролла на длинной переписке. Плавную
-  // анимацию оставляем только для реально нового сообщения (send/receive),
-  // там дистанция маленькая и лишних вставок не происходит.
   void _scrollDown({bool animate = true, bool reveal = false}) {
     Future.delayed(const Duration(milliseconds: 100), () {
       if (!_scroll.hasClients) {
@@ -382,8 +356,6 @@ class _AiConversationViewState extends State<AiConversationView> {
       }
       if (!animate) {
         _scroll.jumpTo(_scroll.position.maxScrollExtent);
-        // Список уже стоит на нужной позиции — теперь можно плавно проявить
-        // его одним лёгким fade-in вместо резкого появления.
         if (reveal && mounted) setState(() => _listVisible = true);
         // Корректирующий джамп: если контент (картинки/markdown) доразметился
         // уже после первого прыжка, maxScrollExtent мог вырасти.
@@ -399,10 +371,6 @@ class _AiConversationViewState extends State<AiConversationView> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    // watch, а не read: раньше L10n читался только внутри _emptyState, и при
-    // смене языка прямо в открытом чате с перепиской (messageList, не empty
-    // state) build ничего не перезапускал — дисклеймер и другие l.t() тексты
-    // «зависали» на старом языке, пока экран не переоткроют.
     final l = context.watch<L10n>();
 
     return Column(children: [
@@ -418,17 +386,9 @@ class _AiConversationViewState extends State<AiConversationView> {
               child: child,
             ),
           ),
-          // Пока грузится история уже существующего треда (threadId != null),
-          // держим _messageList (пусть пока и без элементов) вместо
-          // _emptyState — иначе на каждое открытие чата с перепиской
-          // AnimatedSwitcher лишний раз проигрывал бы fade+slide переход
-          // empty → list ровно в момент, когда сообщения появляются.
           child: (_msgs.isEmpty && widget.threadId == null)
               ? _emptyState(l)
               : AnimatedOpacity(
-                  // Список уже доскроллен вниз (см. _scrollDown reveal) —
-                  // остаётся только мягко проявить его одним fade-in, без
-                  // отдельных анимаций на каждое сообщение.
                   opacity: _listVisible ? 1 : 0,
                   duration: const Duration(milliseconds: 220),
                   curve: Curves.easeOut,
@@ -483,8 +443,6 @@ class _AiConversationViewState extends State<AiConversationView> {
                 style: TextStyle(fontSize: 16, color: adaptiveText3(context), height: 1.35, letterSpacing: -0.2),
                 textAlign: TextAlign.center),
             const SizedBox(height: 28),
-            // Подсказки — одна сгруппированная секция, а не стопка отдельных
-            // карточек с зазорами: так они читаются как один список выбора.
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 440),
               child: Container(
@@ -541,9 +499,6 @@ class _AiConversationViewState extends State<AiConversationView> {
   }
 
   Widget _messageList(bool isDark) {
-    // Верхний паддинг = safe-area + место под плавающую кнопку истории —
-    // без отдельной полосы-хедера: это просто отступ первого сообщения
-    // внутри самого скролла, он уезжает вверх при прокрутке как обычно.
     final topPad = MediaQuery.paddingOf(context).top + 60;
     return ListView.builder(
       key: const ValueKey('msg_list'),
@@ -558,10 +513,6 @@ class _AiConversationViewState extends State<AiConversationView> {
         final bubble = RepaintBoundary(
           child: isUser ? _userMessage(m, i) : _aiMessage(m, i, isDark),
         );
-        // Уже загруженная история появляется сразу, без entrance-анимации —
-        // она играла бы для каждого сообщения при каждом открытии чата
-        // (см. _bulkLoadedCount). Анимация появления — только для реально
-        // нового сообщения (только что отправленного/полученного).
         if (i < _bulkLoadedCount) return bubble;
         return TweenAnimationBuilder<double>(
           key: ValueKey('msg_$i'),
@@ -588,9 +539,6 @@ class _AiConversationViewState extends State<AiConversationView> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
         Opacity(
           opacity: failed ? 0.5 : 1,
-          // Плоская заливка акцентом без градиента, свечения и тени под
-          // текстом: пузырь iMessage — это ровный цвет, а тень/градиент/
-          // text-shadow заметно снижают читаемость белого текста.
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
             decoration: BoxDecoration(
@@ -738,10 +686,6 @@ class _AiInputBar extends StatelessWidget {
                 ? 'Ask Chatra AI...'
                 : 'Спросите Chatra AI...';
 
-    // Композер — матовое стекло поверх переписки: сообщения просвечивают
-    // сквозь него на скролле, вместо непрозрачной полосы, отрезающей низ
-    // экрана. Блюр + полупрозрачная заливка, светлая линия сверху = свет,
-    // поймавший край материала.
     return ClipRect(
       child: BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
@@ -778,9 +722,6 @@ class _AiInputBar extends StatelessWidget {
                   contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                 ),
                 onSubmitted: (_) => onSend(),
-                // Растём до 6 строк, а не до 4: длинный вопрос с условием
-                // задачи начинал скроллиться внутри поля слишком рано, и
-                // проверить начало написанного было нельзя, не промотав его.
                 maxLines: 6,
                 minLines: 1,
               ),
@@ -802,15 +743,11 @@ class _AiInputBar extends StatelessWidget {
                   height: 46,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    // Плоский акцент вместо цветного свечения: в iOS активная
-                    // кнопка отправки — просто залитый круг.
                     color: (active || loading) ? Theme.of(context).colorScheme.primary : adaptiveSurface2(context),
                     border: (active || loading)
                         ? null
                         : Border.all(color: adaptiveBorder(context).withValues(alpha: 0.45), width: hairline(context)),
                   ),
-                  // Пока идёт генерация — квадратик "стоп" вместо крутилки: и
-                  // видно, что запрос ещё летит, и его можно отменить тапом.
                   child: loading
                       ? const Center(
                           child: Icon(CupertinoIcons.stop_fill, color: Colors.white, size: 18))

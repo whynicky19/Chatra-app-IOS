@@ -5,11 +5,6 @@ import '../theme/app_theme.dart';
 /// стопки отдельных плавающих карточек с тенями — одна группа со сплошной
 /// заливкой, волосяными разделителями между строками и скруглением только у
 /// первой/последней строки.
-///
-/// Почему строка (а не вся группа) знает своё место: списки лекций/заданий
-/// строятся лениво через `SliverChildBuilderDelegate` (30-50 элементов), и
-/// оборачивать их в один общий контейнер значило бы строить все строки сразу.
-/// [GroupPos] позволяет сохранить и ленивость, и вид цельной группы.
 enum GroupPos { only, first, middle, last }
 
 GroupPos groupPos(int index, int count) {
@@ -33,16 +28,11 @@ BorderRadius groupRadius(GroupPos pos, {double radius = AppRadii.card}) {
   }
 }
 
-/// Волосяной разделитель iOS: не `dividerColor` темы (он заметно темнее и
-/// читается как рамка), а едва различимая линия внутри самой группы.
 Color groupSeparator(BuildContext context) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
   return isDark ? Colors.white.withValues(alpha: 0.10) : Colors.black.withValues(alpha: 0.07);
 }
 
-/// Подсветка нажатой строки списка. Строки списка в iOS не сжимаются
-/// (в отличие от кнопок — см. [Tappable]), а заливаются: масштаб на строке
-/// шириной во весь экран читается как дефект, а не как отклик.
 Color groupPressFill(BuildContext context) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
   return isDark ? Colors.white.withValues(alpha: 0.07) : Colors.black.withValues(alpha: 0.045);
@@ -54,10 +44,6 @@ double hairline(BuildContext context) => 1 / MediaQuery.devicePixelRatioOf(conte
 /// Контейнер сгруппированной секции: заливка, скругление, волосяная рамка.
 /// Строки внутри — [GroupRow] с `color: Colors.transparent` (заливку и
 /// скругление даёт контейнер, строке остаются разделитель и подсветка).
-///
-/// Годится только для коротких секций (файлы, настройки, подсказки): все
-/// строки строятся сразу. Длинные списки собирай из [GroupRow] с [groupPos]
-/// прямо в sliver, чтобы сохранить ленивость.
 class InsetGroup extends StatelessWidget {
   const InsetGroup({super.key, required this.children, this.color, this.radius = AppRadii.card});
 
@@ -85,12 +71,6 @@ GroupPos innerPos(int index, int count) => index == count - 1 ? GroupPos.last : 
 
 /// Строка сгруппированного списка: заливка группы, скругление по [pos],
 /// разделитель снизу (кроме последней) и мгновенная подсветка по нажатию.
-///
-/// Конструктор [GroupRow.card] — та же строка, но самостоятельной карточкой:
-/// полное скругление, волосяная рамка и мягкая тень. Список карточек с
-/// зазорами и список-группа — два разных ритма: карточки подходят там, где
-/// каждый элемент это отдельный «объект» (лекция, задание), группа — там, где
-/// элементы читаются как настройки/атрибуты одного объекта.
 class GroupRow extends StatefulWidget {
   const GroupRow({
     super.key,
@@ -127,13 +107,9 @@ class GroupRow extends StatefulWidget {
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
 
-  /// Accessibility-подпись действия (см. [Tappable] о том, зачем действие, а
-  /// не описание внешнего вида).
   final String? label;
   final EdgeInsetsGeometry padding;
 
-  /// Отступ разделителя слева — выравнивается по началу текста, а не по краю
-  /// карточки (iOS-конвенция: линия начинается там, где начинается контент).
   final double separatorInset;
   final Color? color;
   final double radius;
@@ -208,8 +184,6 @@ class _GroupRowState extends State<GroupRow> {
   }
 }
 
-/// Заголовок секции над группой: 13pt, приглушённый — вес несёт сама группа,
-/// а не подпись над ней.
 class GroupHeader extends StatelessWidget {
   const GroupHeader({super.key, required this.title, this.trailing, this.padding});
 
@@ -239,8 +213,6 @@ class GroupHeader extends StatelessWidget {
   }
 }
 
-/// Крупный заголовок раздела внутри вкладки. Отрицательный трекинг — правило
-/// Apple для крупного кегля: с ростом размера буквы читаются "разъехавшимися".
 class SectionTitle extends StatelessWidget {
   const SectionTitle({super.key, required this.title, this.trailing, this.padding});
 
@@ -271,9 +243,6 @@ class SectionTitle extends StatelessWidget {
   }
 }
 
-/// Мягкое появление секции/строки: fade + едва заметный подъём, без пружины —
-/// содержимое не «прилетает» от жеста пользователя, поэтому overshoot здесь
-/// был бы неоправданным (правило: bounce только там, где был импульс жеста).
 class Entrance extends StatelessWidget {
   const Entrance({super.key, required this.child, this.index = 0, this.rise = 12});
 
@@ -283,8 +252,6 @@ class Entrance extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Ступенька задержки ограничена: при 30+ элементах линейный рост
-    // превращал бы появление списка в затяжную волну.
     final ms = 240 + index.clamp(0, 6) * 45;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),

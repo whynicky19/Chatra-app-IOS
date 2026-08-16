@@ -3,23 +3,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/ai_thread.dart';
 
-// fixUrl()/fixUrlsInText() — одни из самых "горячих" вызовов в приложении:
-// каждая обложка класса, файл, аватар проходят через них при КАЖДОЙ
-// перестройке списка. RegExp() внутри метода компилировался заново на
-// каждый вызов — статические поля компилируют паттерн один раз.
 final _localhostRe = RegExp(r'https?://localhost:\d+');
 final _loopbackRe = RegExp(r'https?://127\.0\.0\.1:\d+');
 final _relUploadsRe = RegExp(r'(^|\s)(/uploads/\S+)');
 final _absUrlPathRe = RegExp(r'^https?://[^/]+(/.*)$');
 
 /// Обрезанное представление тела запроса/ответа для отладочного лога.
-///
-/// Раньше в консоль уходило тело целиком. Список классов с превью обложек,
-/// ответ ИИ или лента заданий — это сотни килобайт: их `toString()` собирался
-/// на главном изоляте, а вывод в консоль синхронно ждал IO. На каждый ответ
-/// это давало заметный фриз в debug-сборке (в release весь блок и так вырезан
-/// по kDebugMode) — как раз в момент входа в аккаунт, когда ответы приходят
-/// пачкой.
 String _short(Object? data) {
   if (data == null) return 'null';
   final text = data.toString();
@@ -62,8 +51,6 @@ class ApiService {
     return host.isEmpty || host == _apiHost;
   }
 
-  /// Публичная проверка: нужен вызывающему коду, чтобы выбрать клиент для
-  /// скачивания (свой — [dio], чужой — [downloadClient]).
   bool isOwnHostUrl(String url) {
     final host = Uri.tryParse(url)?.host ?? '';
     return host.isEmpty || host == _apiHost;
@@ -190,12 +177,8 @@ class ApiService {
   void setToken(String? token) => _token = token;
   String? get token => _token;
 
-  /// Безопасное приведение тела ответа к списку.
-  ///
-  /// Голое `response.data as List` роняет приложение TypeError'ом, когда
-  /// прокси/ngrok/Cloudflare вместо JSON отдают HTML-страницу ошибки или
-  /// пустое тело. Часть методов уже была защищена, часть — нет; теперь
-  /// правило одно на всех.
+  /// Безопасное приведение тела ответа к списку: голое `as List` роняет
+  /// приложение, когда прокси вместо JSON отдаёт HTML-страницу ошибки.
   static List<dynamic> _asList(dynamic data) {
     if (data is List) return data;
     if (data is Map && data['items'] is List) return data['items'] as List;
@@ -455,8 +438,7 @@ class ApiService {
     return _asMap(response.data);
   }
 
-  /// Обложка не загружается, а собирается сервером по паре «цвет + иконка»:
-  /// предмет создаётся сразу с готовой обложкой-фолбэком, AI-версию клиент
+  /// Обложка собирается сервером по паре «цвет + иконка»; AI-версию клиент
   /// запрашивает следующим шагом через [generateClassCover].
   Future<Map<String, dynamic>> createClass(String name,
       {String? description,
@@ -500,10 +482,6 @@ class ApiService {
     return _asMap(response.data);
   }
 
-  /// Генерация обложки — только владелец класса. Один и тот же вызов
-  /// обслуживает первую генерацию, «Перегенерировать» и переход старого
-  /// предмета с загруженной картинки на новую систему. Вызывать строго по
-  /// явному действию пользователя: каждый вызов стоит денег.
   Future<Map<String, dynamic>> generateClassCover(int classId,
       {String? color, String? icon}) async {
     final response = await _dio.post('/classes/$classId/cover/generate', data: {
@@ -601,9 +579,6 @@ class ApiService {
     return _asList(response.data);
   }
 
-  // Ответ теперь {status: 'graded'|'needs_review', grade, ai_confidence,
-  // ai_review_reasons} вместо голого Grade — confidence ниже порога
-  // means grade == null, сдача ждёт ручной проверки учителем.
   Future<Map<String, dynamic>> aiGrade(int submissionId) async {
     try {
       final response = await _dio.post('/submissions/$submissionId/ai-grade',
@@ -658,8 +633,6 @@ class ApiService {
   Future<Map<String, dynamic>> aiChat(List<Map<String, dynamic>> messages,
       {int? classId, int? threadId, int maxTokens = 1500, double temperature = 0.7,
       CancelToken? cancelToken, String? requestId}) async {
-    // Материалы класса сервер теперь ищет и собирает сам (RAG, см.
-    // routers/ai.py::ai_chat) — клиент их больше не собирает и не шлёт.
     final data = <String, dynamic>{
       'messages': messages,
       'max_tokens': maxTokens,
@@ -674,12 +647,9 @@ class ApiService {
     return _asMap(response.data);
   }
 
-  /// Сообщает бэкенду, что ответ на этот запрос больше не нужен — кнопка
-  /// «Остановить» рвёт клиентское соединение через `CancelToken`, но сам
-  /// запрос к OpenAI на сервере это не прерывает (может достаточно долго
-  /// висеть на keep-alive-сокете, так и не заметив разрыва). Без этого сигнала
-  /// сервер всё равно сохранял бы отменённый ответ в историю. Шлём отдельным
-  /// запросом (без cancelToken), поэтому свою же отмену он не отменяет.
+  /// Сообщает бэкенду, что ответ больше не нужен: `CancelToken` рвёт только
+  /// клиентское соединение, и сервер иначе сохранил бы отменённый ответ.
+  /// Шлём без cancelToken, иначе отмена отменила бы сама себя.
   Future<void> cancelAiChat(String requestId) async {
     try {
       await _dio.post('/ai/chat/cancel', data: {'request_id': requestId});
@@ -716,10 +686,7 @@ class ApiService {
     return _asList(response.data);
   }
 
-  // ── Модерация UGC ─────────────────────────────────────────────────────
-  // Требование App Store Guideline 1.2 и политики Google Play по
-  // пользовательскому контенту: жалоба на контент, блокировка пользователя
-  // и реакция модератора в течение 24 часов.
+  // ── Модерация UGC (App Store Guideline 1.2 и политика Google Play) ─────
 
   /// [targetType]: post | assignment | submission | ai_message | user
   Future<void> reportContent({
@@ -921,13 +888,9 @@ class ApiService {
   /// чужой — без. Используется в utils/file_opener.dart.
   Dio clientForUrl(String url) => isOwnHostUrl(url) ? _dio : _plainDio;
 
-  // Абсолютные URL файлов, которые отдаёт бэкенд (R2 и локальные /uploads),
-  // уже сами содержат "/api/uploads/..." после хоста (см. file_urls.py,
-  // r2_storage.py). baseUrl здесь — это Dio base, который тоже всегда
-  // заканчивается на "/api" (см. _resolveBaseUrl в main.dart). Если при
-  // подмене localhost/127.0.0.1 использовать baseUrl как есть, получится
-  // задвоенный "/api/api/uploads/..." (404) — поэтому для замены хоста нужен
-  // корень БЕЗ "/api".
+  // URL файлов от бэкенда уже содержат "/api/uploads/...", а baseUrl тоже
+  // заканчивается на "/api": подменять хост надо корнем БЕЗ "/api", иначе
+  // получится задвоенный "/api/api/uploads/..." и 404.
   String get _uploadHostRoot =>
       baseUrl.endsWith('/api') ? baseUrl.substring(0, baseUrl.length - 4) : baseUrl;
 

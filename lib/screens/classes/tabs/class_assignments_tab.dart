@@ -94,9 +94,6 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
     color: groupSeparator(context),
   );
 
-  // Та же карточка результата, что видит студент на AssignmentDetailScreen —
-  // кольцо с баллом + критерии-полосы вместо старой плоской вёрстки, чтобы
-  // учитель/админ видели идентичный дизайн после проверки работы.
   Widget _gradedScoreCard(BuildContext context, L10n l, dynamic grade, num score, String? feedback, List<dynamic> criteria, num maxScore) {
     final accent = detailAccent(context);
     final gradedByTeacher = grade != null && grade['graded_by'] == 'teacher';
@@ -216,11 +213,6 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
     }
     // Ленивый список: карточки заданий строятся по мере скролла, а не все сразу
     // (при 30–50 заданиях жадный ListView даёт заметный лаг на открытии вкладки).
-    // Градиент карточки рейтинга берётся из темы (BrandFill), а не хардкодом
-    // (#006475 — teal): в школьной теме синий градиент выпадал из всего
-    // остального оформления экрана. Через тему это ещё и единственный способ
-    // не разъехаться — сравнение вида `primary == C.amber` ломается молча,
-    // стоит поменять оттенок акцента.
     final primary = Theme.of(context).colorScheme.primary;
     final ratingGradient = brandFill(context).gradient;
 
@@ -282,8 +274,8 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               ]));
             }
             final next = upcoming.first;
-            // Без force unwrap: связь с фильтром выше неявная и легко ломается
-            // при рефакторинге, а падение здесь — красный экран внутри build.
+            // Без force unwrap: связь с фильтром выше неявная, а падение
+            // здесь — красный экран внутри build.
             final dl = parseServerDate(next['deadline']);
             if (dl == null) return const SizedBox.shrink();
             final diff = dl.difference(now);
@@ -372,19 +364,11 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
         final deadline = a['deadline'];
         final isLate = deadline != null && parseServerDate(deadline)?.isBefore(DateTime.now()) == true && sub == null;
 
-        // Балл справа сам говорит, что работа проверена: он зелёный и стоит
-        // отдельным блоком. Слово «Оценено» рядом с ним было тем же фактом
-        // второй раз, поэтому в мете оно остаётся только для редкого случая
-        // «статус graded, а балла нет».
         final showScore = grade != null;
         final showBadge = (isGraded && !showScore) || isNeedsReview || isSubmitted || isLate;
         final Color statusColor = isGraded ? C.green : isNeedsReview ? C.amber : isSubmitted ? primary : C.red;
         final String statusText = isGraded ? l.t('graded') : isNeedsReview ? l.t('needs_review') : isSubmitted ? l.t('submitted') : l.t('overdue');
         final IconData statusIcon = isGraded ? CupertinoIcons.checkmark_circle_fill : isNeedsReview ? CupertinoIcons.exclamationmark_triangle : isSubmitted ? CupertinoIcons.arrow_up_doc : CupertinoIcons.clock;
-        // Значок показывает состояние САМОЙ РАБОТЫ (проверена / сдана / нужна
-        // ручная проверка). Просроченный дедлайн его не красит: работа ещё не
-        // сдана, состояние прежнее, а красная плитка в списке читалась как
-        // ошибка. Сам факт просрочки остаётся в мете красным текстом.
         final hasSubmissionStatus = isGraded || isNeedsReview || isSubmitted;
         final Color leadColor = hasSubmissionStatus ? statusColor : adaptiveText4(context);
         final IconData leadIcon = hasSubmissionStatus ? statusIcon : CupertinoIcons.doc_text;
@@ -394,15 +378,9 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
           index: i,
           child: RepaintBoundary(child: Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            // Отдельная карточка на задание — см. class_posts_tab.
-            // Ровно две строки текста, как в карточке лекции: название и мета
-            // (срок · статус). Превью описания убрано — оно давало разную
-            // высоту карточкам и четвёртый блок, спорящий за внимание.
             child: GroupRow.card(
             onTap: () => _showAssignment(a, sub),
             onLongPress: widget.isTeacher ? () => _showAssignmentActions(a) : null,
-            // Те же метрики, что у карточки лекции (см. class_posts_tab):
-            // плитка 46, body 17 / subheadline 15, воздух 16 по вертикали.
             padding: EdgeInsets.fromLTRB(16, 16, widget.isTeacher ? 6 : 16, 16),
             child: Row(children: [
               Container(
@@ -420,13 +398,7 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, height: 1.25, letterSpacing: -0.4, color: adaptiveText1(context)),
                     maxLines: 1, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 4),
-                // Срок и статус одной приглушённой строкой, без иконки-
-                // календарика: цвет несёт только статус, и то текстом.
                 Row(children: [
-                  // Строка меты никогда не бывает пустой: у задания без срока и
-                  // без статуса показываем максимальный балл. Пустой Row имел
-                  // нулевую высоту, и такая карточка оказывалась на пиксель
-                  // ниже соседних — ровно тот разнобой, который мы убираем.
                   if (deadline == null && !showBadge && !showScore)
                     Text('${a['max_score'] ?? 100} ${l.t('pts')}',
                         style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText4(context))),
@@ -450,9 +422,6 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                       style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: adaptiveText4(context))),
                 ])),
               ],
-              // Вертикальное троеточие — как в системных списках iOS. Шеврона
-              // «открыть» нет: нажимается вся карточка, а стрелка была
-              // третьим значком в строке и только добавляла шума.
               if (widget.isTeacher)
                 Tappable(
                   onTap: () => _showAssignmentActions(a),
@@ -534,12 +503,9 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
           int checkStepIdx = 0;
           Timer? checkStepTimer;
           void stopCheckSteps() { checkStepTimer?.cancel(); checkStepTimer = null; }
-          // sheetCtx нужен, чтобы тикер знал, жив ли ещё сам лист. Проверка ИИ
-          // держит соединение до двух минут (receiveTimeout в aiGrade), и если
-          // за это время лист закрыли, setS звался на размонтированном
-          // StatefulBuilder — исключение раз в 3.5 секунды до конца запроса,
-          // причём из колбэка таймера, то есть прямиком в Crashlytics как
-          // фатальное.
+          // sheetCtx нужен, чтобы тикер знал, жив ли ещё лист: проверка ИИ
+          // держит соединение до двух минут, и на закрытом листе setS сыпал бы
+          // исключениями из колбэка таймера.
           void startCheckSteps(BuildContext sheetCtx, void Function(void Function()) setS) {
             checkStepIdx = 0;
             checkStepTimer?.cancel();
@@ -552,8 +518,6 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             final graded = subs.where((s) => s['status'] == 'graded').length;
             final pending = subs.length - graded;
             if (selectedSub != null) {
-              // Отдельный от build() флаг темы: этот лист живёт в своём
-              // builder-контексте модального окна.
               final isDark = Theme.of(ctx).brightness == Brightness.dark;
               final name = (selectedSub['student_name'] ?? '#${selectedSub['student_id']}').toString();
               final initials = initialsFrom(name);
@@ -570,8 +534,6 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
               }
               return ListView(controller: sc, padding: const EdgeInsets.all(20), children: [
                 Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 16), decoration: BoxDecoration(color: adaptiveBorder(context), borderRadius: BorderRadius.circular(AppRadii.chip)))),
-                // Возврат — текстовая кнопка с шевроном (как «< Назад» в iOS),
-                // а не серая плашка-чип.
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Tappable(
@@ -615,9 +577,6 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                             style: TextStyle(fontSize: 16, height: 1.55, letterSpacing: -0.2, color: detailText1(context))),
                       ]),
                     ),
-                  // Тот же сгруппированный список вложений, что на странице
-                  // задания у студента: раньше здесь были свои акцентно-синие
-                  // плашки со своей иконографией.
                   if (submittedFileUrls.isNotEmpty)
                     FileList(
                       files: [
@@ -629,10 +588,6 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 ],
                 if (selectedSub['status'] == 'needs_review') ...[
                   const SizedBox(height: 20),
-                  // Разбор ИИ по спорной работе: заголовок-предупреждение,
-                  // затем сами цифры парами «метка — значение» и критерии
-                  // одним сгруппированным списком (было: карточка в карточке,
-                  // где каждый критерий получал свою рамку).
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -719,9 +674,6 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                             criteriaScores: criteria.isNotEmpty ? criteria : null,
                           );
                           if (!mounted || !ctx.mounted) return;
-                          // Финальную оценку теперь ставит человек — старая уверенность
-                          // ИИ (если сдача была needs_review) больше не относится к делу
-                          // и вводит в заблуждение рядом с новым баллом.
                           setS(() { selectedSub = {...selectedSub, 'grade': updatedGrade, 'status': 'graded', 'ai_confidence': null, 'ai_review_reasons': null}; grading = false; });
                           showToast(context, '${l.t('grade_saved')}: ${updatedGrade['score']} / $assignmentMaxScore');
                         } catch (e) {
@@ -835,9 +787,6 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                 child: Text(l.t('view_works'),
                     style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.5, color: adaptiveText1(context))),
               ),
-              // Сводка одной карточкой с вертикальными волосяными
-              // разделителями (как итоги в Apple Health), а не три отдельные
-              // плитки с рамками, спорящие за внимание.
               Container(
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
@@ -892,8 +841,6 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                   )),
               ],
               const SizedBox(height: 16),
-              // Нативное поле поиска iOS вместо обычного TextField с иконкой:
-              // приходит вместе с кнопкой очистки и правильными метриками.
               CupertinoSearchTextField(
                 placeholder: l.t('search_student'),
                 backgroundColor: adaptiveSurface2(context),
@@ -937,9 +884,6 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                     const SizedBox(width: 8),
                     Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                       if (score != null)
-                        // Знаменатель — максимум ЭТОГО задания, а не жёсткая
-                        // сотня: у задания с max_score 50 список работ показывал
-                        // «45/100», хотя в карточке сдачи рядом стоит «45 / 50».
                         Text('$score/${assignmentMaxScore.toInt()}',
                             style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4, color: primaryColor, fontFeatures: const [FontFeature.tabularFigures()]))
                       else
@@ -954,9 +898,8 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             );
           }));
         });
-    // mounted обязателен: getSubmissions выше — сетевой запрос, и если уйти с
-    // экрана класса, пока он летит, showToast искал бы ScaffoldMessenger по
-    // уже деактивированному контексту.
+    // mounted обязателен: getSubmissions выше — сетевой запрос, и на закрытом
+    // экране showToast искал бы ScaffoldMessenger по мёртвому контексту.
     } catch (_) { if (mounted) showToast(context, l.t('error_loading'), error: true); }
   }
 
@@ -1115,9 +1058,8 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
         );
       }),
     );
-    // showModalBottomSheet завершает await ещё до начала анимации закрытия
-    // (см. TransitionRoute.completed в SDK) — dispose откладываем, иначе ещё
-    // видимый TextField ловит "used after being disposed" во время закрытия.
+    // showModalBottomSheet завершает await до начала анимации закрытия:
+    // dispose откладываем, иначе видимый TextField ловит "used after disposed".
     Future.delayed(const Duration(milliseconds: 400), () {
       scoreC.dispose();
       feedbackC.dispose();

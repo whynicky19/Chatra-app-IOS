@@ -130,11 +130,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     if (_canManageCohorts) _loadCohorts();
   }
 
-  // Обложки теперь кэшируются по самому URL (не по стабильному id-ключу) —
-  // каждая новая загрузка обложки получает свой уникальный URL в облачном
-  // хранилище, поэтому старые байты просто перестают запрашиваться. Явный
-  // evict больше не нужен для попадания в другие вкладки, но подчищаем
-  // live-кэш, чтобы не тянуть старый кадр до следующего кадра рендера.
   void _evictCoverCache() {
     PaintingBinding.instance.imageCache.clearLiveImages();
   }
@@ -177,10 +172,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
   /// Быстрое добавление (учитель) — нативная iOS-кнопка стиля `.bordered`:
   /// серая заливка системного fill, капсула (как сегмент-контрол над ней),
   /// волосяная граница и нейтральная подпись цветом основного текста.
-  /// Раньше кнопка была залита полупрозрачным акцентом, с двумя глифами
-  /// (плюс + предмет) и голубой подписью — три акцентных пятна подряд
-  /// перетягивали внимание с самого списка. Теперь голубого в панели нет
-  /// вовсе (как и на плитках карточек), а «создать» читается по плюсу.
   Widget _quickAddButton({required String label, required VoidCallback onTap}) {
     final labelColor = adaptiveText1(context);
     return Tappable(
@@ -197,8 +188,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           ),
         ),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          // Плюс на тон светлее подписи: он служебный указатель действия,
-          // а не второй по важности элемент строки.
           Icon(CupertinoIcons.plus, size: 13, color: adaptiveText3(context)),
           const SizedBox(width: 6),
           Flexible(child: Text(label,
@@ -376,9 +365,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
           Container(
             decoration: BoxDecoration(
               color: surfaceColor,
-              // Вместо падающей тени — волосяная линия по границе с контентом
-              // (scroll edge в iOS): тень под панелью выглядела как отдельный
-              // «слой Material», наезжающий на список.
               border: Border(bottom: BorderSide(
                 color: isDark ? Colors.white.withValues(alpha: 0.10) : Colors.black.withValues(alpha: 0.07),
                 width: 1 / MediaQuery.devicePixelRatioOf(context),
@@ -421,8 +407,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 if (_tabCtrl.index == 2) return const SizedBox.shrink();
                 return Padding(
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
-                  // Порядок кнопок повторяет порядок вкладок: лекции слева,
-                  // задания справа.
                   child: Row(children: [
                     Expanded(child: _quickAddButton(
                       label: l.t('lecture'),
@@ -763,11 +747,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     final l = context.read<L10n>();
     final meta = _meta;
     final tc = TextEditingController(text: _title), dc = TextEditingController(text: meta['description'] ?? ''), tn = TextEditingController(text: meta['teacher'] ?? '');
-    // Обложка больше не загружается: преподаватель выбирает цвет и предметную
-    // иконку, а картинку рисует бэкенд (POST /classes/{id}/cover/generate).
-    // У предмета, созданного до перехода на новую систему, цвета и иконки нет
-    // — подставляем значения по умолчанию, а его собственная картинка остаётся
-    // на месте, пока преподаватель сам не нажмёт «Сгенерировать».
     String coverImage = (meta['cover_image'] as String?) ?? '';
     String coverColor = (meta['cover_color'] as String?) ?? kFallbackCoverOptions.defaultColor;
     String coverIcon = (meta['cover_icon'] as String?) ?? kFallbackCoverOptions.defaultIcon;
@@ -844,9 +823,6 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 setS(() => saving = true);
                 try {
                   final api = context.read<ApiService>();
-                  // Картинку меняет только генерация; здесь передаём лишь цвет
-                  // с иконкой — если их поменяли без генерации, бэкенд
-                  // перерисует обложку локальным фолбэком, мгновенно и бесплатно.
                   final appearanceChanged = coverColor != meta['cover_color']
                       || coverIcon != meta['cover_icon'];
                   final updated = await api.updateClass(widget.classId,

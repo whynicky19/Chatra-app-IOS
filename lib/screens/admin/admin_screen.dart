@@ -59,10 +59,7 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     await Future.wait([_load(), _loadClasses(), _loadReports()]);
   }
 
-  // ── Очередь модерации ──────────────────────────────────────────────────
-  // Строка 'no_reports' и пуш 'admin_report' в PushService существовали
-  // давно, но экрана к ним не было. Без него нечем закрыть требование
-  // App Store Guideline 1.2 о реакции на жалобы.
+  // ── Очередь модерации (App Store Guideline 1.2) ────────────────────────
   List<dynamic> _reports = [];
   bool _reportsLoading = true;
 
@@ -349,10 +346,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      // bottom: false — та же логика edge-to-edge под навбар, что и на
-      // остальных вкладках шелла (см. home_screen.dart). Клиренс над баром
-      // держат SliverPadding/SizedBox с bottomBarClearance() в каждой вложенной
-      // вкладке (_reportsTab/users/AI/классы) вместо самой SafeArea.
       body: SafeArea(bottom: false, child: NestedScrollView(
         headerSliverBuilder: (ctx, _) => [
           SliverToBoxAdapter(child: Column(children: [
@@ -366,9 +359,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
                   Text(l.t('admin_sub'),
                       style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText3(context))),
                 ])),
-                // Добавление — акцентный глиф в баре, как «+» в системных
-                // приложениях: залитая пилюля со свечением спорила по весу с
-                // самим заголовком экрана.
                 Tappable(
                   onTap: _showCreateDialog,
                   label: l.t('add'),
@@ -458,8 +448,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     return Column(children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 2, 16, 10),
-        // Нативное поле поиска iOS: приходит с кнопкой очистки и правильными
-        // метриками вместо обычного TextField с иконкой-префиксом.
         child: CupertinoSearchTextField(
           placeholder: l.t('search_users'),
           backgroundColor: adaptiveSurface2(context),
@@ -475,8 +463,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
         ),
       ),
 
-      // Фильтры и сортировка одной прокручиваемой строкой — на телефоне они не
-      // помещаются в ряд, а прятать их в меню значит скрыть состояние.
       SizedBox(
         height: 34,
         child: ListView(
@@ -633,8 +619,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
     );
   }
 
-  /// Строка списка: кто это, чем выделяется и сколько тратит — без открытия
-  /// карточки видно главное, а нажатие открывает всё остальное.
   Widget _userRow(L10n l, Map<String, dynamic> u, int maxTokens) {
     final id = (u['id'] as num?)?.toInt() ?? 0;
     final name = (u['full_name'] ?? '').toString().trim().isNotEmpty
@@ -1059,9 +1043,6 @@ class _AdminState extends State<AdminScreen> with SingleTickerProviderStateMixin
   }
 }
 
-/// Сводка одной карточкой с вертикальными волосяными разделителями — как итоги
-/// в Apple Health. Раньше это были три самостоятельные плитки с тенями: три
-/// «объекта» вместо одного факта о системе.
 class _SummaryBar extends StatelessWidget {
   final List<(String value, String label)> cells;
   const _SummaryBar({required this.cells});
@@ -1109,8 +1090,6 @@ class _RoleBadge extends StatelessWidget {
     final l = context.watch<L10n>();
     final primary = Theme.of(context).colorScheme.primary;
     final color = role == 'admin' ? primary : role == 'teacher' ? C.indigo : adaptiveText4(context);
-    // Роль подписана на языке интерфейса: раньше в бейдже стоял сырой ключ с
-    // бэкенда («admin», «teacher») — единственное английское слово на экране.
     final label = role == 'admin'
         ? l.t('role_admin_short')
         : role == 'teacher'

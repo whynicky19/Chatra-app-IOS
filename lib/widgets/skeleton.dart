@@ -43,12 +43,8 @@ class _SkeletonBoxState extends State<SkeletonBox>
     final base = isDark ? C.darkSurface2 : const Color(0xFFE2E9EC);
     final highlight = isDark ? const Color(0xFF1F3540) : Colors.white;
 
-    // Каждый блок мерцает своим контроллером на 60 fps и перекрашивает
-    // градиент каждый кадр. Без своей границы перерисовки эта перекраска
-    // поднималась до ближайшего слоя выше — то есть весь список скелетонов
-    // (а это три карточки по несколько блоков) перерисовывался целиком каждый
-    // кадр ровно в те секунды, когда приложение и так занято ответами сервера
-    // после логина.
+    // Своя граница перерисовки: иначе мерцание каждого блока перекрашивало бы
+    // весь список скелетонов целиком каждый кадр.
     return RepaintBoundary(
       child: AnimatedBuilder(
       animation: _ctrl,
@@ -116,12 +112,6 @@ class SkeletonClassCard extends StatelessWidget {
 }
 
 /// Заглушка ОДНОЙ строки списка уведомлений. Экран уведомлений — не стопка
-/// карточек, а inset-grouped группа, поэтому и заглушка теперь плоская строка
-/// без тени и зазора: с карточным видом список «схлопывался» в сплошную группу
-/// в момент подмены заглушек данными.
-///
-/// Метрики повторяют живую строку (см. `_NotifRowContent`): гуттер 12, колонка
-/// значка 26, отступ 12, ТРИ строки — тип, название задания, предмет.
 class SkeletonNotifCard extends StatelessWidget {
   const SkeletonNotifCard({super.key, this.pos = GroupPos.middle});
 
@@ -139,8 +129,6 @@ class SkeletonNotifCard extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
           child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
             const SizedBox(width: 12),
-            // Заглушка под сам глиф, а не под плитку: подложки у значка больше
-            // нет, и квадрат 38×38 обещал бы то, чего в живой строке не будет.
             const SkeletonBox(width: 22, height: 22, borderRadius: 6),
             const SizedBox(width: 16),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

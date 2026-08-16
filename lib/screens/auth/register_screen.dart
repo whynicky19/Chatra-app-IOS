@@ -34,12 +34,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   /// Проверяем не алфавит, а осмысленность: любые буквы Unicode, пробел, дефис,
   /// апостроф — без цифр и спецсимволов.
-  ///
-  /// Раньше здесь стояло требование «только кириллица». Это блокировало
-  /// регистрацию любому пользователю с латинским именем — в том числе ревьюеру
-  /// App Store, который вводит «John Smith» и получает заблокированную кнопку
-  /// (отклонение по Guideline 2.1 «не удалось завершить регистрацию»).
-  /// Заодно отсекалась казахская латиница.
   bool get _nameIsValid {
     final n = _name.text.trim();
     if (n.isEmpty) return true;
@@ -125,12 +119,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final isDark  = Theme.of(context).brightness == Brightness.dark;
     final primary = org.primaryColor;
 
-    // Подсказки под полями, шкала надёжности пароля и активность кнопки —
-    // единственное, что зависит от набранного текста. Раньше каждое поле на
-    // каждую букву звало setState, и форма перестраивалась целиком: логотип,
-    // заголовки, чекбокс согласия, три ссылки на документы и обёртки анимации
-    // появления. Теперь пересобираются только эти три блока — через подписку
-    // на сами контроллеры.
 
     return Scaffold(
       backgroundColor: isDark ? C.darkBg : C.bg,
@@ -285,21 +273,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  // Политика конфиденциальности обязана быть доступна В МОМЕНТ
-                  // сбора данных, а не только в настройках после входа —
-                  // Apple 5.1.1(i) и требования GDPR об информировании.
-                  // Wrap с явными spacing/runSpacing вместо разделителей,
-                  // "запечённых" внутрь строк текста (" · " как хвост первой
-                  // строки) — раньше при этом реальные промежутки между
-                  // ссылками были неравномерными (то символ пробела внутри
-                  // текста, то вообще без него), а каждая внутренняя Tappable
-                  // без minSize:0 растягивала свою строку до 44pt высоты,
-                  // из-за чего соседний обычный Text(' · ') оказывался
-                  // заметно смещён по вертикали относительно остальных
-                  // ссылок в той же строке. minSize:0 здесь уместен — это
-                  // инлайн-текст внутри абзаца, а не отдельная кнопка, и
-                  // достаточная область нажатия обеспечивается самим текстом
-                  // и spacing вокруг него.
                   Expanded(child: Wrap(
                     spacing: 6, runSpacing: 4,
                     crossAxisAlignment: WrapCrossAlignment.center,
@@ -332,14 +305,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 18),
 
                 _reveal(3, Column(children: [
-                  // Активность кнопки зависит сразу от трёх полей, поэтому
-                  // слушаем их вместе. auth.isLoading/_submitted приходят
-                  // обычной перестройкой сверху и здесь просто читаются.
                   AnimatedBuilder(
                     animation: Listenable.merge([_name, _email, _pw]),
                     builder: (context, _) => AppButton.primary(
                       label: l.t('register_btn'),
-                      // Акцент, как и «Войти» — см. login_screen.
                       color: primary,
                       onPressed: (!auth.isLoading && _isValid && !_submitted) ? _submit : null,
                       loading: auth.isLoading,

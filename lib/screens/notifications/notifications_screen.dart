@@ -13,16 +13,8 @@ import '../../widgets/inset_group.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/tappable.dart';
 
-/// Экран уведомлений в идиоме нативного iOS: полупрозрачный крупный заголовок,
-/// под который уезжает содержимое, и inset-grouped список вместо стопки
-/// плавающих карточек.
-///
-/// Раньше это была лента отдельных карточек с тенями и зазорами — та самая
-/// «карточная» подача iOS 12, от которой системные приложения ушли. Уведомления
-/// внутри одной группы («Сегодня», «Вчера») — не независимые объекты, а строки
-/// одного списка, поэтому теперь у группы одна сплошная подложка, волосяные
-/// разделители между строками и скругление только по краям — как в Почте,
-/// Настройках и Напоминаниях.
+/// Экран уведомлений: полупрозрачный крупный заголовок, под который уезжает
+/// содержимое, и inset-grouped список.
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
   @override State<NotificationsScreen> createState() => _NotificationsScreenState();
@@ -43,9 +35,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   /// Ключи, которые были непрочитанными на момент ОТКРЫТИЯ экрана. Нужны
   /// только для вида: точка и жирный заголовок показывают «вот это новое с
   /// прошлого визита», хотя прочитанными они уже отмечены.
-  ///
-  /// Раньше «новизна» хранилась в самом флаге прочитанности, и получалась
-  /// вилка: список рисовал точки (флаг ещё старый), а счётчик уже считал ноль.
   Set<String> _fresh = {};
 
   late final ClassesProvider _classesProvider;
@@ -53,10 +42,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   void initState() {
     super.initState();
-    // Провайдер берём СРАЗУ, а не лениво при первом обращении: бейдж
-    // синхронизируется после сетевого ожидания, и если пользователь успел
-    // закрыть экран, ленивый `context.read` выполнился бы на уже отсоединённом
-    // элементе («Looking up a deactivated widget's ancestor is unsafe»).
+    // Провайдер берём СРАЗУ, а не лениво: бейдж синхронизируется после сетевого
+    // ожидания, и на закрытом экране `context.read` упал бы на deactivated widget.
     _classesProvider = context.read<ClassesProvider>();
     _load();
   }
@@ -66,7 +53,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     setState(() => _loading = true);
 
     final api = context.read<ApiService>();
-    // Тот же самый расчёт, что и у бейджа: см. loadNotifFeed.
     final feed = await loadNotifFeed(api);
 
     final toMark = feed.items.where((i) => !i.isRead).map((i) => i.key).toList();
@@ -81,9 +67,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         _loading = false;
       });
     }
-    // Не выходим по !mounted: пользователь мог уже нажать «назад», но отметка
-    // прочитанным и синхронизация бейджа обязаны отработать, иначе счётчик на
-    // главном экране зависает на старом значении.
+    // Не выходим по !mounted: отметка прочитанным и синхронизация бейджа
+    // обязаны отработать, даже если экран уже закрыли.
     _syncBadge(items);
 
     if (toMark.isNotEmpty) {
@@ -106,18 +91,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     try { await context.read<ApiService>().setNotifState(key, dismissed: true); } catch (_) {}
   }
 
-  /// Название задания — главная строка. Кавычек нет: заголовок и так выделен
-  /// весом, а в списке из нескольких строк ёлочки читались как шум.
+  /// Название задания — главная строка.
   String _subject(NotifItem n, L10n l) =>
       n.assignmentTitle?.trim().isNotEmpty == true ? n.assignmentTitle! : l.t('assignment');
 
-  /// Короткая акцентная метка в мета-строке: балл или остаток времени. Коротка
-  /// по построению (число + единица), поэтому место под неё предсказуемо.
-  ///
-  /// Название предмета сюда НЕ входит: оно переменной длины и в трёх языках
-  /// доходит до нескольких слов, поэтому живёт отдельной строкой. Раньше и
-  /// предмет, и название задания, и балл жались в одну строку с `maxLines: 1`,
-  /// и предмет обрезался почти всегда.
+  /// Короткая акцентная метка в мета-строке: балл или остаток времени.
   String? _accent(NotifItem n, L10n l) {
     switch (n.kind) {
       case NotifKind.grade:
@@ -147,9 +125,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
     final buckets = <int, List<NotifItem>>{};
     for (final n in _items) {
-      // У дедлайна дата — это САМ срок сдачи, то есть будущее: группировать по
-      // ней нельзя (получилась бы группа «раньше»/будущее), напоминание
-      // актуально сейчас, поэтому оно всегда в «сегодня».
       final at = n.kind == NotifKind.deadline ? now : n.date;
       buckets.putIfAbsent(bucketOf(at), () => []).add(n);
     }
@@ -167,12 +142,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   /// Для дедлайна возвращает пустую строку: его дата в будущем, и «сколько
-  /// назад» для неё смысла не имеет — остаток времени и так стоит в тексте
-  /// уведомления. Раньше такая карточка показывала «только что».
-  ///
-  /// Единицы КОРОТКИЕ («2 ч.», а не «2 ч. назад»): время стоит в одной строке
-  /// с названием задания и отъедает у него ширину, а «назад» в списке, где всё
-  /// про прошлое, ничего не добавляет — так же подписаны письма в Почте.
+  /// назад» для неё смысла не имеет.
   String _timeAgo(NotifItem n, L10n l) {
     if (n.kind == NotifKind.deadline) return '';
     final diff = DateTime.now().difference(n.date);
@@ -196,10 +166,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       // SafeArea тут не нужен: верхний инсет забирает сам навбар, нижний
       // добавлен отступом последнего sliver-а.
       body: CustomScrollView(slivers: [
-        // Крупный заголовок теперь ЧАСТЬ прокрутки: он сжимается в обычный бар
-        // при скролле, а полупрозрачный фон включает под баром блюр — контент
-        // уезжает под него, а не упирается в непрозрачную полосу. Раньше
-        // заголовок стоял неподвижной строкой над списком.
         CupertinoSliverNavigationBar(
           backgroundColor: bg.withValues(alpha: 0.78),
           border: null,
@@ -211,9 +177,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             child: SizedBox(width: 40, height: 40,
               child: Icon(CupertinoIcons.back, size: 26, color: Theme.of(context).colorScheme.primary)),
           ),
-          // Кнопки «отметить все» больше нет: открытие экрана и есть просмотр,
-          // после него отмечать нечего — раньше она оставалась активной и
-          // «отмечала» то, что уже отмечено.
           trailing: Tappable(
             onTap: _loading ? null : () { hapticLight(); _load(); },
             label: 'Обновить',
@@ -305,8 +268,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         hapticMedium();
         _dismiss(n.key);
       },
-      // Подложка повторяет скругление строки по её месту в группе: иначе у
-      // первой/последней строки из-под красного выглядывали прямые углы.
       background: Container(
         decoration: BoxDecoration(color: C.red, borderRadius: radius),
         alignment: Alignment.centerRight,
@@ -319,8 +280,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       ),
       child: GroupRow(
         pos: row.pos,
-        // Разделитель начинается там, где начинается текст, — правило iOS.
-        // 14 (отступ строки) + 12 (гуттер под точку) + 26 (значок) + 12 = 64.
         separatorInset: 64,
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
         onTap: () {
@@ -378,20 +337,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 }
 
-/// Содержимое строки уведомления — ДВА уровня, как в Почте: название задания
-/// главной строкой со временем справа, под ним одна серая мета-строка
-/// «тип события · предмет · балл».
-///
-/// Раньше уровней было три (тип события отдельной цветной подписью, название,
-/// и ещё строка «предмет + балл в цветной пилюле»), и строка занимала до пяти
-/// текстовых строк с тремя цветами и залитой плашкой — список читался как
-/// плотная стопка карточек, а не как перечень. Сейчас цвет несут только значок
-/// и короткий акцент в конце меты, пилюля убрана.
-///
-/// Непрочитанное отмечено точкой в ЛЕВОМ ГУТТЕРЕ, вне значка (так это сделано
-/// в Почте), а не рядом с заголовком: точка у текста конкурировала с самим
-/// заголовком за начало строки и сдвигала его, из-за чего заголовки соседних
-/// строк не выравнивались по левому краю.
+/// Содержимое строки уведомления: название задания со временем справа и серая
+/// мета-строка «тип события · предмет · балл» под ним.
 class _NotifRowContent extends StatelessWidget {
   const _NotifRowContent({
     required this.subject,
@@ -421,28 +368,14 @@ class _NotifRowContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasClass = className != null && className!.trim().isNotEmpty;
 
-    // center: значок и точка стоят по СЕРЕДИНЕ строки — так их ставят строки
-    // Настроек и Почты. Прижимать их к верху имело смысл, пока значок был
-    // плиткой 38×38 высотой в две текстовые строки; голый глиф 22pt на той же
-    // верхней линии выглядит просто съехавшим вверх, потому что текстовый блок
-    // втрое выше него.
     return Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-      // Гуттер занят всегда, даже когда точки нет: иначе прочитанные и
-      // непрочитанные строки начинались бы с разного отступа и левый край
-      // списка «дышал» бы.
       SizedBox(width: 12, child: isFresh
           ? Center(child: Container(width: 8, height: 8,
               decoration: BoxDecoration(color: color, shape: BoxShape.circle)))
           : null),
-      // Значок без подложки: цвет несёт сам глиф. Плитка с тонированным фоном
-      // добавляла в каждую строку второй цветной прямоугольник, и список из
-      // нескольких типов уведомлений читался как набор разноцветных плашек, а
-      // не как текст. Ширина колонки фиксирована, чтобы текст всех строк
-      // начинался по одной линии независимо от глифа.
       SizedBox(width: 26, child: Icon(icon, size: 22, color: color)),
       const SizedBox(width: 12),
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // ── Строка 1: название задания + время ─────────────────────────────
         Row(children: [
           Expanded(child: Text(subject,
             maxLines: 2, overflow: TextOverflow.ellipsis,
@@ -451,8 +384,6 @@ class _NotifRowContent extends StatelessWidget {
               letterSpacing: -0.3, color: adaptiveText1(context), height: 1.25))),
           if (timeAgo.isNotEmpty) ...[
             const SizedBox(width: 8),
-            // Табличные цифры: иначе время в соседних строках «дышит» по
-            // ширине и правый край списка выглядит рваным.
             Text(timeAgo, maxLines: 1,
                 style: TextStyle(
                   fontSize: 12, fontWeight: FontWeight.w500, letterSpacing: -0.1,
@@ -461,12 +392,9 @@ class _NotifRowContent extends StatelessWidget {
           ],
         ]),
 
-        // ── Строка 2: предмет + балл/остаток ───────────────────────────────
         if (hasClass || accent != null) ...[
           const SizedBox(height: 3),
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            // Предмет по-прежнему занимает всю ширину строки: он переменной
-            // длины и в трёх языках доходит до нескольких слов.
             if (hasClass) ...[
               Expanded(child: Text(className!,
                 maxLines: 2, overflow: TextOverflow.ellipsis,
@@ -475,9 +403,6 @@ class _NotifRowContent extends StatelessWidget {
                   letterSpacing: -0.1, height: 1.25, color: adaptiveText3(context)))),
               const SizedBox(width: 8),
             ],
-            // Балл/остаток — просто цветной текст. Пилюля с заливкой давала в
-            // каждой строке второй цветной прямоугольник поверх цветного
-            // значка, и список читался как стопка плашек.
             if (accent != null)
               Text(accent!, maxLines: 1,
                 style: TextStyle(

@@ -14,23 +14,6 @@ import '../../widgets/inset_group.dart';
 import '../../widgets/tappable.dart';
 
 /// Календарь дедлайнов в идиоме нативного Календаря iOS.
-///
-/// Что изменилось по сравнению с прошлой версией и почему:
-///
-///  * **Сетка месяца больше не лежит в карточке.** Она рисуется прямо на фоне
-///    страницы: карточка с тенью вокруг календаря делала его «виджетом внутри
-///    экрана», хотя это и есть главное содержимое экрана.
-///  * **Месяц листается свайпом** ([PageView]), а не только стрелками. Прямая
-///    манипуляция вместо двух кнопок — палец ведёт сетку, а не нажимает
-///    «следующий».
-///  * **Убрана лента «ближайшие 7 дней».** Это был второй выбор дня поверх
-///    первого: та же неделя уже есть в сетке месяца, с теми же точками. Два
-///    механизма для одного действия — ровно то, от чего интерфейс перестаёт
-///    читаться с первого взгляда.
-///  * **Список заданий дня — inset-grouped группа**, как на экране уведомлений,
-///    а не стопка карточек с цветной заливкой всей плашки. Цвет теперь точечный
-///    (значок и время), а не фон: пять заданий на разные дни превращали список
-///    в светофор, а текст на пастельной заливке терял контраст в тёмной теме.
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
   @override
@@ -168,10 +151,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return Scaffold(
       backgroundColor: bg,
       body: CustomScrollView(slivers: [
-        // Полупрозрачный фон бара включает под ним блюр: сетка календаря
-        // уезжает ПОД свёрнутый заголовок, а не упирается в непрозрачную
-        // полосу. Кружок-подложка у «назад» убран — в системных барах iOS
-        // кнопка это одиночный акцентный глиф.
         CupertinoSliverNavigationBar(
           backgroundColor: bg.withValues(alpha: 0.78),
           border: null,
@@ -212,10 +191,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   // ── Шапка ──────────────────────────────────────────────────────────────────
 
-  /// Сводка под заголовком: сколько дедлайнов впереди всего. Когда впереди
-  /// пусто, строки нет совсем: под сеткой в этом случае и так стоит «Сегодня ·
-  /// Дедлайнов нет», и два сообщения об одной и той же пустоте на одном экране
-  /// читались как ошибка вёрстки.
+  /// Сводка под заголовком: сколько дедлайнов впереди. Когда впереди пусто,
+  /// строки нет совсем — под сеткой и так стоит «Дедлайнов нет».
   Widget _summary(L10n l) {
     final total = _deadlineMap.values.fold<int>(0, (n, list) => n + list.length);
     return Padding(
@@ -230,9 +207,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  /// Название месяца — крупным весом слева, стрелки справа: та же композиция,
-  /// что у месячного вида Календаря iOS. Раньше это была мелкая подпись,
-  /// зажатая по центру между двумя кнопками.
   Widget _monthHeader(L10n l) {
     final months = l.t('months_full').split(',');
     return Padding(
@@ -329,9 +303,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
     return Tappable(
       onTap: () => _selectDay(day),
-      // Ячейка дня не «пружинит»: 42 клетки подряд, сжатие каждой по тапу
-      // читалось бы как дребезг сетки, а не как отклик. Отклик несёт заливка
-      // кружка, она появляется мгновенно.
       scale: 1,
       minSize: 0,
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -345,9 +316,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
           ),
           child: Center(child: Text('${day.day}', style: TextStyle(
             fontSize: 16, letterSpacing: -0.4, height: 1,
-            // Выделен только сегодняшний и выбранный день. Раньше здесь стоял
-            // тернарник `w600 : w600` — обе ветки одинаковые, вся сетка была
-            // полужирной, и «сегодня» в ней ничем не читалось.
             fontWeight: isSelected || isToday ? FontWeight.w600 : FontWeight.w400,
             color: isSelected ? Colors.white : (isToday ? primary : adaptiveText1(context)),
             // Табличные цифры: иначе «11» и «18» разной ширины и колонки сетки
@@ -366,11 +334,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  /// Что означают цвета точек. Wrap, а не Row: три подписи в одну строку
-  /// помещаются только по-русски — «бірнеше тапсырма» и «several due» на узком
-  /// экране обрезались многоточием. Теперь лишний пункт целиком переносится
-  /// строкой ниже; Wrap отдаёт детям ширину всей строки, поэтому и одна длинная
-  /// подпись переносится по словам, а не уходит за край.
   Widget _legend(L10n l) => Padding(
     padding: const EdgeInsets.fromLTRB(20, 14, 20, 4),
     child: Wrap(
@@ -415,8 +378,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
       return [SliverToBoxAdapter(child: Padding(
         padding: const EdgeInsets.fromLTRB(40, 26, 40, 20),
         child: Column(children: [
-          // Мягкий ореол вместо голого серого глифа: одинокая блёклая иконка
-          // на пустом фоне читалась как незагрузившаяся картинка.
           Container(
             width: 56, height: 56,
             decoration: BoxDecoration(
@@ -490,9 +451,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final className = classId == null ? '' : (classNames[classId] ?? '');
     final title = (a['title'] ?? '').toString();
 
-    // Цвет — точечный акцент на значке и времени, а не заливка всей строки:
-    // красный на «сегодня», янтарный на «завтра», зелёный на сданном, дальше
-    // фирменный.
     final Color accent;
     if (isSubmitted) {
       accent = C.green;
@@ -515,12 +473,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         guardedPush(context, MaterialPageRoute(
           builder: (_) => ClassDetailScreen(classId: classId, initialTab: 1)));
       },
-      // center: значок и шеврон стоят по середине строки — так же, как в
-      // строке уведомления и в списках Настроек.
       child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-        // Значок без подложки: цвет несёт сам глиф — см. тот же приём в строке
-        // уведомления. Ширина колонки фиксирована, чтобы названия всех заданий
-        // начинались по одной линии.
         SizedBox(width: 26,
           child: Icon(isSubmitted ? CupertinoIcons.checkmark_alt : CupertinoIcons.clock,
               size: 22, color: accent)),
@@ -532,10 +485,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
               fontSize: 16, fontWeight: FontWeight.w600,
               letterSpacing: -0.3, height: 1.25, color: adaptiveText1(context))),
           const SizedBox(height: 5),
-          // Время фиксированной ширины (5 знаков), всё оставшееся место в
-          // строке отдано предмету — и до двух строк. Раньше они делили строку
-          // поровну через Flexible с `maxLines: 1`, и предмет почти всегда
-          // обрывался.
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             if (due != null) ...[
               Padding(

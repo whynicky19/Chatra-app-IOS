@@ -90,8 +90,6 @@ class _MainShellState extends State<MainShell>
       return;
     }
 
-    // Уже офлайн — второй дебаунс заводить не нужно. Раньше он пересоздавался
-    // на каждый тик перепроверки и вхолостую тикал рядом с ней.
     if (!_isOnline || _offlineDebounce?.isActive == true) return;
 
     _offlineDebounce = Timer(const Duration(seconds: 3), () {
@@ -110,10 +108,8 @@ class _MainShellState extends State<MainShell>
   /// поймает возврат сети — это лишь подстраховка.
   void _startRecheck() {
     _recheckTimer?.cancel();
-    // Счётчик ограничен до сдвига, а не после: `2 << 62` переполняет 64-битный
-    // int в отрицательное число, и clamp(2, 60) отдаёт тогда 2 секунды. То есть
-    // примерно через час без сети откат схлопывался обратно в опрос каждые две
-    // секунды — и так до конца сессии (телефон, оставленный офлайн на ночь).
+    // Счётчик ограничен ДО сдвига: `2 << 62` переполняет int64 в минус, и
+    // clamp(2, 60) вернул бы 2 секунды — откат схлопывался бы обратно в опрос.
     final seconds = (2 << _recheckAttempt.clamp(0, 5)).clamp(2, 60);
     _recheckTimer = Timer(Duration(seconds: seconds), () async {
       if (!mounted) return;
@@ -167,21 +163,10 @@ class _MainShellState extends State<MainShell>
     // смениться (админ вышел) и вкладок стало меньше.
     final idx = _idx >= screens.length ? 0 : _idx;
 
-    // Навбар вынесен ИЗ layout-дерева экранов в отдельный слой внешнего
-    // Stack (см. ниже) — стоит на фиксированном месте у истинного низа
-    // экрана и, когда открыта клавиатура, просто перекрывается ею как
-    // системным оверлеем, без анимации показа/скрытия.
-    //
-    // Здесь намеренно НЕ Scaffold, а Material: у каждой вкладки
-    // (HomeScreen/AiScreen/AdminScreen/SettingsScreen) уже есть СВОЙ
-    // Scaffold. Если внешний Scaffold тут ТОЖЕ резайзится под клавиатуру
-    // (resizeToAvoidBottomInset: true), получаются два независимых
-    // "менеджера" клавиатуры на разных уровнях: внешний сжимает body по
-    // живым метрикам клавиатуры кадр-в-кадр, а composer ИИ-чата реагирует
-    // на клавиатуру своим отдельным кодом — рассинхрон между ними и давал
-    // видимый "нырок" поля ввода под навбар при закрытии клавиатуры. Без
-    // внешнего Scaffold единственный источник правды — MediaQuery того
-    // Scaffold, что реально принадлежит открытому экрану.
+    // Навбар вынесен из layout-дерева экранов в отдельный слой Stack: он стоит
+    // у истинного низа и просто перекрывается клавиатурой как оверлеем.
+    // Здесь намеренно Material, а не Scaffold: свой Scaffold есть у каждой
+    // вкладки, и второй давал бы два «менеджера» клавиатуры вразнобой.
     return Stack(children: [
       Material(
         color: Theme.of(context).scaffoldBackgroundColor,
@@ -228,23 +213,10 @@ class _MainShellState extends State<MainShell>
           ),
         ]),
       ),
-      // Тень-градиент под низом контента — как естественная тень от
-      // плавающего таб-бара в Telegram/нативных iOS-приложениях: контент НЕ
-      // прячется под ним (сам бар прозрачный и стеклянный), но у истинного
-      // края экрана чуть темнее, чтобы переход под бар читался как физическая
-      // тень, а не обрывался плоско. IgnorePointer — чисто визуальный слой,
-      // тапы должны доходить до контента под ним. Выше содержимого шелла, но
-      // ниже самого бара (следующий Positioned) — именно в этом порядке.
       const Positioned(left: 0, right: 0, bottom: 0, child: _BottomContentScrim()),
       Positioned(
-        // Снаружи нет Scaffold/SafeArea (см. комментарий выше про клавиатуру) —
-        // отступ снизу отмеряется от истинного края экрана вручную, поэтому
-        // safe-area (Home Indicator, ≈34pt на iPhone с ним) добавляется явно
-        // через MediaQuery, а не зашивается константой. Слегка заходит внутрь
-        // неё (-8pt), как нативный таб-бар в iOS-приложениях Apple, у которого
-        // нижняя граница контента почти сливается с Home Indicator. На
-        // устройствах без выреза (padding.bottom == 0, кнопка Home) отступ
-        // не уходит в минус — max(0, ...) держит бар над истинным краем.
+        // Снаружи нет Scaffold/SafeArea: отступ снизу отмеряется от истинного
+        // края экрана вручную, safe-area добавляется явно через MediaQuery.
         left: 16, right: 16,
         bottom: (MediaQuery.paddingOf(context).bottom - 8).clamp(0.0, double.infinity),
         child: RepaintBoundary(
@@ -257,11 +229,6 @@ class _MainShellState extends State<MainShell>
               position: Tween<Offset>(begin: const Offset(0, 1.2), end: Offset.zero)
                   .animate(CurvedAnimation(parent: _navAnim, curve: Curves.easeOutCubic)),
               child: LayoutBuilder(builder: (context, constraints) {
-                // Мягкая тень под баром — как у плавающих таб-баров в
-                // Telegram/iOS: не заливка, только boxShadow поверх
-                // прозрачного Container той же формы, что и пилюля бара
-                // (cornerRadius: 32 ниже), иначе тень рисовалась бы
-                // прямоугольником и торчала из-под скруглённых углов.
                 return Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(32),
@@ -330,10 +297,6 @@ class _MainShellState extends State<MainShell>
   }
 }
 
-/// См. комментарий в build() у Positioned, где используется. Чисто чёрный
-/// градиент (а не scaffoldBackgroundColor, как у AiScreen._StatusBarScrim) —
-/// под баром бывает любой контент (обложки классов, фото), и именно тень, а
-/// не подложка-в-цвет-фона, одинаково хорошо читается поверх всего.
 class _BottomContentScrim extends StatelessWidget {
   const _BottomContentScrim();
 

@@ -18,25 +18,17 @@ import '../../widgets/network_cover_image.dart';
 import '../../widgets/subject_cover.dart';
 import '../../widgets/toast.dart';
 
-/// Диалог ввода кода приглашения — оформлен в стиле остального приложения
-/// (нейтральные поверхности, акцентный цвет только у кнопки и активной ячейки),
-/// но без синего фона/иконки, как было раньше.
-///
-/// Presentation — через `showAppDialog`/`AppDialogCard` (тот же spring-bounce
-/// вход, тот же `AppRadii.card`, тот же фон), что и у всех остальных диалогов
-/// приложения (`showConfirmDialog`, `showInputDialog`).
+/// Диалог ввода кода приглашения: нейтральные поверхности, акцентный цвет
+/// только у кнопки и активной ячейки.
 Future<void> showJoinClassDialog(BuildContext context) {
   return showAppDialog(context,
     builder: (_) => const AppDialogCard(child: _JoinClassDialogContent()),
   );
 }
 
-/// Что известно про введённый код.
-///
-/// `unavailable` (проверить не удалось — сеть/5xx) намеренно отделён от
-/// `notFound` (сервер ответил «нет такого»): раньше любая ошибка запроса
-/// считалась «предмет не найден» и блокировала кнопку — при моргнувшей сети
-/// пользователь не мог войти по совершенно правильному коду.
+/// Что известно про введённый код. `unavailable` (сеть/5xx) отделён от
+/// `notFound` (сервер ответил «нет такого»): иначе моргнувшая сеть блокирует
+/// вход по совершенно правильному коду.
 enum _Lookup { idle, checking, found, notFound, unavailable }
 
 class _JoinClassDialogContent extends StatefulWidget {
@@ -48,16 +40,8 @@ class _JoinClassDialogContent extends StatefulWidget {
 class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
   static const int _length = 6;
 
-  /// ОДНО поле на весь код, а не шесть.
-  ///
-  /// Раньше здесь было шесть независимых `TextField` с ручным перебросом
-  /// фокуса. Так ломались ровно те вещи, которые пользователь считает
-  /// само собой разумеющимися: backspace на пустой ячейке ловился только
-  /// хардварной клавиатурой (`Focus.onKeyEvent`), вставка из буфера работала
-  /// только в первую ячейку (`maxLength: i == 0 ? 6 : 1`), а выделение
-  /// приходилось чинить руками на каждый тап. Одно поле — один каретка,
-  /// одно выделение, системные backspace/вставка/undo «из коробки»;
-  /// шесть ячеек ниже — просто отрисовка его значения.
+  /// ОДНО поле на весь код: одна каретка, одно выделение, системные
+  /// backspace/вставка/undo из коробки. Шесть ячеек ниже — отрисовка значения.
   final _controller = TextEditingController();
   final _focus = FocusNode();
 
@@ -83,10 +67,8 @@ class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
     _lookupDebounce?.cancel();
     _controller.removeListener(_onCodeChanged);
     _focus.removeListener(_onFocusChanged);
-    // Диалог завершает Future ещё до начала анимации закрытия — если во
-    // время закрытия клавиатура тоже уходит, ещё видимые TextField
-    // перестраиваются с уже задиспоженным контроллером. Даём закрывающей
-    // анимации время закончиться перед dispose().
+    // Диалог завершает Future до начала анимации закрытия: ещё видимый
+    // TextField иначе перестроится с уже задиспоженным контроллером.
     final controller = _controller;
     final focus = _focus;
     Future.delayed(const Duration(milliseconds: 400), () {
@@ -104,9 +86,6 @@ class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
 
   void _onCodeChanged() {
     final code = _code;
-    // Отклик на КАЖДЫЙ символ, а не только на финальный: набор кода — это
-    // ввод вслепую по бумажке, и подтверждение «символ принят» тактильно
-    // считывается быстрее, чем глазами.
     if (code.length > _lastLength) {
       code.length == _length ? hapticLight() : hapticSelection();
     }
@@ -139,8 +118,6 @@ class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
         _found = null;
       });
       if (notFound) {
-        // Как на экране блокировки iOS: неверный код «отряхивает» поле.
-        // Ошибка сообщается там же, где сделана, и не требует читать текст.
         hapticMedium();
         setState(() => _shakeTick++);
       }
@@ -190,13 +167,8 @@ class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
     final l = context.watch<L10n>();
 
     return Column(mainAxisSize: MainAxisSize.min, children: [
-      // Кнопки «закрыть» в углу больше нет: выйти из диалога и так можно
-      // двумя способами (кнопка «Отмена» и тап по затемнению), а третий
-      // крестик только съедал верх карточки и уводил взгляд от заголовка.
       Container(width: 60, height: 60,
         decoration: BoxDecoration(color: adaptiveSurface2(context), shape: BoxShape.circle),
-        // Замок читается как «сюда не пускают»; здесь речь про код —
-        // решётка называет предмет разговора прямо.
         child: Icon(CupertinoIcons.number, color: adaptiveText1(context), size: 26)),
       const SizedBox(height: 16),
       Text(l.t('join_class_title'), textAlign: TextAlign.center,
@@ -214,9 +186,6 @@ class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
         onSubmit: () { if (_canJoin) _join(); },
       )),
 
-      // Высота карточки меняется от состояния (пусто → спиннер → карточка
-      // предмета). Без анимации диалог дёргался скачком; здесь он растёт
-      // непрерывно, а содержимое сменяется кросс-фейдом.
       AnimatedSize(
         duration: const Duration(milliseconds: 260),
         curve: Curves.easeOutCubic,
@@ -235,9 +204,6 @@ class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
         confirmText: l.t('join_enter_class'),
         busy: _busy,
         onCancel: () => Navigator.pop(context),
-        // Кнопка либо доступна, либо нет — раньше она была активна всегда и
-        // на неполный код отвечала тостом «Введите 6 символов». Состояние
-        // самой кнопки честнее ругательства постфактум.
         onConfirm: _canJoin ? _join : null,
       ),
     ]);
@@ -278,8 +244,6 @@ class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
   }
 }
 
-/// Общий отступ сверху у любого состояния под полем — чтобы кросс-фейд между
-/// ними не сдвигал содержимое по вертикали.
 class _StatusLine extends StatelessWidget {
   const _StatusLine({super.key, required this.child});
 
@@ -327,16 +291,13 @@ class _CodeInput extends StatelessWidget {
                 if (i > 0) const SizedBox(width: 8),
                 Expanded(child: _CodeCell(
                   char: i < text.length ? text[i] : '',
-                  // Активна ячейка, в которую сейчас попадёт символ. Когда код
-                  // набран целиком, «следующей» нет — подсвечивать нечего.
                   active: hasFocus && i == activeIndex && text.length < length,
                   error: error,
                 )),
               ],
             ]),
-            // Поле лежит ПОВЕРХ ячеек и занимает всю строку: тап в любое место
-            // ставит курсор, долгое нажатие даёт системную «Вставить» —
-            // код из мессенджера вставляется целиком, а не по одной букве.
+            // Поле лежит поверх ячеек на всю строку: тап ставит курсор,
+            // долгое нажатие даёт системную «Вставить».
             Positioned.fill(child: TextField(
               controller: controller,
               focusNode: focus,
@@ -344,8 +305,6 @@ class _CodeInput extends StatelessWidget {
               textAlignVertical: TextAlignVertical.center,
               showCursor: false,
               cursorColor: Colors.transparent,
-              // Текст невидим — его рисуют ячейки; поле отвечает только за
-              // ввод, буфер обмена и клавиатуру.
               style: const TextStyle(color: Colors.transparent, fontSize: 20, height: 1),
               keyboardType: TextInputType.visiblePassword,
               textCapitalization: TextCapitalization.characters,
@@ -356,8 +315,6 @@ class _CodeInput extends StatelessWidget {
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
                 LengthLimitingTextInputFormatter(length),
-                // Верхний регистр и каретка всегда в конце: код набирают
-                // слева направо, а вставка длиннее шести обрезается выше.
                 TextInputFormatter.withFunction((_, next) => TextEditingValue(
                   text: next.text.toUpperCase(),
                   selection: TextSelection.collapsed(offset: next.text.length),
@@ -404,8 +361,6 @@ class _CodeCell extends StatelessWidget {
     }
 
     return AnimatedContainer(
-      // 140 мс — отклик на нажатие клавиши, а не анимация: подсветка должна
-      // успеть за пальцем, набирающим шесть символов подряд.
       duration: const Duration(milliseconds: 140),
       curve: Curves.easeOut,
       decoration: BoxDecoration(
@@ -422,10 +377,6 @@ class _CodeCell extends StatelessWidget {
   }
 }
 
-/// Символ в ячейке. Появляется с крошечным перелётом — как точка пароля на
-/// экране блокировки: нажатие клавиши это импульс, и отклик на него имеет
-/// право быть чуть «живее» линейного (см. правило про bounce только там, где
-/// был жест).
 class _Glyph extends StatelessWidget {
   const _Glyph({required this.char, required this.color});
 
@@ -437,8 +388,6 @@ class _Glyph extends StatelessWidget {
     final text = Text(char,
         style: TextStyle(
           fontSize: 22, fontWeight: FontWeight.w700, height: 1, color: color,
-          // Моноширинные цифры: иначе «1» уже остальных, и набранный код
-          // выглядит съехавшим по ячейкам.
           fontFeatures: const [FontFeature.tabularFigures()],
         ));
 
@@ -455,9 +404,8 @@ class _Glyph extends StatelessWidget {
   }
 }
 
-/// Мигающая каретка в активной пустой ячейке. Собственный контроллер живёт
-/// внутри листа: он создаётся и уничтожается вместе с самой кареткой и не
-/// может пережить закрытие диалога.
+/// Мигающая каретка в активной пустой ячейке. Контроллер живёт внутри листа,
+/// поэтому не может пережить закрытие диалога.
 class _Caret extends StatefulWidget {
   const _Caret({required this.color});
 
@@ -490,10 +438,8 @@ class _CaretState extends State<_Caret> with SingleTickerProviderStateMixin {
   }
 }
 
-/// Затухающая встряска по горизонтали. Отдельный виджет, чтобы контроллер
-/// анимации не зависел от жизненного цикла диалога, а `child` сохранял
-/// идентичность — иначе перезапуск анимации пересобирал бы поле ввода и
-/// ронял фокус вместе с клавиатурой.
+/// Затухающая встряска по горизонтали. Отдельный виджет, чтобы `child` сохранял
+/// идентичность: иначе перезапуск анимации ронял бы фокус вместе с клавиатурой.
 class _Shaker extends StatefulWidget {
   const _Shaker({required this.tick, required this.child});
 
@@ -523,9 +469,6 @@ class _ShakerState extends State<_Shaker> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _c,
-      // Затухающая синусоида: пять полупериодов с амплитудой, гаснущей к
-      // концу. Ключевое — она возвращается ровно в 0, поле не «остаётся
-      // сдвинутым» ни на кадр.
       builder: (_, child) {
         final t = _c.value;
         final dx = t == 0 ? 0.0 : math.sin(t * math.pi * 5) * 9 * (1 - t);

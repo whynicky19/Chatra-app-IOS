@@ -84,10 +84,8 @@ class _LoginScreenState extends State<LoginScreen> {
       backgroundColor: isDark ? C.darkBg : C.bg,
       body: Stack(children: [
         SafeArea(child: Stack(children: [
-          // Кнопка идёт ПОСЛЕ скролла — см. пояснение в register_screen.dart:
-          // SingleChildScrollView растягивает невидимую зону жестов на весь
-          // экран, и при обратном (Positioned первым) порядке перехватывал
-          // тап по кнопке раньше, чем он до неё доходил.
+          // Кнопка идёт ПОСЛЕ скролла: SingleChildScrollView растягивает свою
+          // невидимую зону жестов на весь экран и иначе перехватывает тап.
           Center(child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 56),
             child: ConstrainedBox(
@@ -113,9 +111,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _email,
                     keyboardType: TextInputType.emailAddress,
                     autocorrect: false,
-                    // autofillHints включают менеджеры паролей и системное
-                    // автозаполнение iOS/Android — без них вход приходится
-                    // набирать руками.
                     autofillHints: const [AutofillHints.username, AutofillHints.email],
                     textInputAction: TextInputAction.next,
                     decoration: const InputDecoration(
@@ -151,14 +146,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     onSubmitted: (_) => _submit(),
                   ),
                   const SizedBox(height: 10),
-                  // ВАЖНО: без widthFactor. Column выше — crossAxisAlignment.start,
-                  // и если Align сжимается widthFactor'ом до размера текста
-                  // ссылки, именно ЭТОТ Column выравнивает уже маленький Align
-                  // по СВОЕМУ crossAxisAlignment (start = слева) — ссылка
-                  // "уезжает" налево. Без widthFactor Align сам заполняет всю
-                  // ширину поля и центрирует текст у правого края — то, что
-                  // нужно (уже было так, но по ошибке "защитно" сломал в
-                  // прошлый раз, добавив widthFactor).
                   Align(
                     alignment: Alignment.centerRight,
                     child: Tappable(
@@ -194,10 +181,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 _reveal(3, Column(children: [
                   AppButton.primary(
                     label: l.t('login'),
-                    // Явный акцент: на экранах входа главная кнопка — лицо
-                    // организации, поэтому она красится акцентом (у школы —
-                    // оранжевым), а не нейтральной заливкой BrandFill, как
-                    // CTA внутри приложения.
                     color: primary,
                     onPressed: _busy ? null : _submit,
                     loading: _busy,

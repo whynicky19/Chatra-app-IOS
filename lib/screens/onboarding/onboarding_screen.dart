@@ -73,10 +73,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     // Вместо иконок — мини-мокапы реального интерфейса приложения.
     // Порядок — от простого к главному: материалы → ИИ знает курс → ИИ
-    // проверяет работу. Ключи в словаре исторически названы по мокапам
-    // (onb_1 — классы, onb_3 — ИИ-чат), а не по порядку страниц — при
-    // добавлении третьей страницы (onb_2, проверка заданий) переименовывать
-    // существующие ключи не стали, чтобы не плодить лишний диф.
     final pages = <(Widget, String, String, String)>[
       (const _ClassMock(), 'onb_1_tag', 'onb_1_title', 'onb_1_body'),
       (const _AiMock(), 'onb_3_tag', 'onb_3_title', 'onb_3_body'),
@@ -86,7 +82,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     return Scaffold(
       body: Stack(children: [
-        // Мягкое фирменное свечение — как на экране входа.
         AmbientGlow(
           alignment: const Alignment(0, -0.7),
           color: primary.withValues(alpha: 0.12),
@@ -94,7 +89,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         ),
         SafeArea(
           child: Column(children: [
-            // «Пропустить» — обязательный выход из интро.
             Align(
               alignment: Alignment.centerRight,
               child: Padding(
@@ -222,8 +216,6 @@ class _Page extends StatelessWidget {
 }
 
 // ── Мини-мокапы интерфейса ────────────────────────────────────────────────────
-// Текст в мокапах — плашки-«скелетоны»: не требуют локализации и читаются как
-// набросок интерфейса, а не как контент.
 
 Color _barColor(BuildContext context) => C.text4.withValues(alpha: 0.22);
 
@@ -312,7 +304,6 @@ class _AiMock extends StatelessWidget {
     return SizedBox(
       width: 280,
       child: Column(children: [
-        // Вопрос студента.
         Align(
           alignment: Alignment.centerRight,
           child: Container(
@@ -338,7 +329,6 @@ class _AiMock extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        // Ответ ассистента.
         Align(
           alignment: Alignment.centerLeft,
           child: Container(
@@ -378,9 +368,6 @@ class _AiMock extends StatelessWidget {
 }
 
 /// Страница 3: сдача проверена ИИ — оценка по критериям и разбор.
-/// Собрана из тех же элементов, что реальная карточка оценки в
-/// class_assignments_tab.dart: крупная оценка "../100", тонкая шкала под
-/// ней, строки критериев с зелёной галочкой и бейдж "проверено ИИ".
 class _CheckMock extends StatelessWidget {
   const _CheckMock();
 

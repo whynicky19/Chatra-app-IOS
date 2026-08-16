@@ -52,13 +52,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       provider.loadJoined();
-      // Бейдж уведомлений — после списка классов, а не параллельно с ним.
-      // loadNotifBadge() внутри поднимает целый фид (сдачи + задания + классы
-      // + состояния прочтения, четыре запроса), и раньше эта пачка приходила
-      // ровно в те же кадры, где строится первый экран после логина: главная
-      // ещё раскладывает карточки с обложками, а изолят уже разбирает чужие
-      // ответы. Число на колокольчике появляется на доли секунды позже —
-      // взамен первый экран доезжает без рывка.
+      // Бейдж уведомлений — после списка классов, а не параллельно: его четыре
+      // запроса иначе приходятся ровно на кадры первого экрана после логина.
       provider.load().whenComplete(() {
         if (mounted) provider.loadNotifBadge();
       });
@@ -138,12 +133,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   void _onReorderItem(int oldIndex, int newIndex) {
     final classes = _sortedClasses;
-    // Считаем закреплённые В ПОКАЗАННОМ списке, а не размер _pinnedIds: там
-    // остаются id классов, которые пользователь покинул или которые ушли в
-    // архив (открепление там не происходит). Из-за этого граница закреплённой
-    // группы уезжала вправо, и проверка ниже путала обычную карточку с
-    // закреплённой — перетаскивание либо молча блокировалось, либо тащило
-    // элемент через границу, ломая порядок.
     final pinnedCount =
         classes.where((c) => _pinnedIds.contains(c['id'] as int)).length;
     final isOldPinned = oldIndex < pinnedCount;
@@ -189,12 +178,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final primary = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
-      // bottom: false — список едет edge-to-edge под плавающий навбар (как в
-      // Telegram/нативных iOS-приложениях), а не упирается в safe-area снизу
-      // отдельным сплошным "коробом". Реальный клиренс над навбаром уже даёт
-      // bottomBarClearance() (см. концевой SliverToBoxAdapter ниже и
-      // SliverPadding у пустого/лоадинг состояний) — он и так учитывает
-      // safe-area, так что убирать его отсюда безопасно.
       body: SafeArea(bottom: false, child: CustomScrollView(slivers: [
           CupertinoSliverRefreshControl(
             onRefresh: () {
@@ -239,11 +222,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   )),
               ] else ...[
                 Tappable(
-                  // Бейдж обновляется изнутри NotificationsScreen (сразу при
-                  // прочтении/дисмиссе), поэтому повторный fetch после
-                  // возврата не нужен — наоборот, он может обогнать серверную
-                  // запись о прочтении и откатить счётчик обратно на старое
-                  // значение.
                   onTap: () => guardedPush(context, MaterialPageRoute(builder: (_) => const NotificationsScreen())),
                   label: 'Открыть уведомления',
                   child: Stack(clipBehavior: Clip.none, children: [
@@ -402,10 +380,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ),
             ),
 
-          // Карточка "Добавить предмет" после списка классов — убрана по
-          // просьбе: у студента и так есть кнопка вступления по коду в шапке
-          // экрана (_showJoinDialog там же), дублировать её отдельной
-          // карточкой снизу не нужно.
           if (!provider.loading)
             SliverToBoxAdapter(child: SizedBox(height: bottomBarClearance(context))),
         ]),
@@ -495,9 +469,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 13, color: adaptiveText3(c), height: 1.45)),
                       const SizedBox(height: 16),
-                      // Здесь нужно ввести название класса символ в символ —
-                      // тем более нельзя прятать начало набранного за левым
-                      // краем поля.
                       WrappingField(
                         controller: nameCtrl,
                         autofocus: true,
@@ -586,9 +557,6 @@ class _ClassContextMenu extends StatelessWidget {
     final primary = Theme.of(context).colorScheme.primary;
     final code = (cls['invite_code'] as String?) ?? '';
     final teacherName = cls['teacher_name'] as String? ?? '';
-    // Кэш-растр должен покрывать физические пиксели карточки (288 логических
-    // × DPR), иначе на retina-экранах картинка декодируется мельче виджета и
-    // растягивается — отсюда размытость.
     final coverCacheWidth = (288 * MediaQuery.devicePixelRatioOf(context)).round();
 
     return Material(
@@ -864,9 +832,6 @@ class _ClassCard extends StatelessWidget {
     final surface  = Theme.of(context).colorScheme.surface;
     final coverImg = cardCoverUrl(cls);
     final teacherName = cls['teacher_name'] ?? '';
-    // Карточка на всю ширину экрана — берём ширину экрана как верхнюю
-    // границу физического размера, чтобы не декодировать мельче виджета
-    // на retina-экранах.
     final coverCacheWidth = (MediaQuery.sizeOf(context).width * MediaQuery.devicePixelRatioOf(context)).round();
 
     return RepaintBoundary(

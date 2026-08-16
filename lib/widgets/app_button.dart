@@ -8,10 +8,7 @@ enum AppButtonVariant {
   /// Главное действие экрана/формы — акцентная заливка (teal/amber), белый текст.
   primary,
 
-  /// "Второй по значимости" выбор рядом с primary (Cancel/Retract) — нейтральная
-  /// заливка `adaptiveSurface2`, обычный текст. Совпадает с тем, что раньше
-  /// было отдельно реализовано в `AppDialogActions.cancel` и
-  /// `_BottomActionBar(secondary: true)`.
+  /// «Второй по значимости» рядом с primary (Отмена) — нейтральная заливка.
   secondary,
 
   /// Необратимое/опасное действие — заливка `C.red`.
@@ -23,19 +20,6 @@ enum AppButtonVariant {
 }
 
 /// Единая кнопка приложения.
-///
-/// До рефакторинга в кодовой базе существовало минимум пять независимых
-/// реализаций "главной кнопки": `ElevatedButtonTheme` из темы, кастомный
-/// `_BottomActionBar` в assignment_detail_screen, инлайн `Tappable` +
-/// `AnimatedContainer` в create_class_screen, `SheetButton` в
-/// settings_shared, и ещё одна инлайн-копия в report_sheet — у каждой свой
-/// радиус/паддинг/цвет disabled-состояния. `AppButton` — единственный новый
-/// источник правды для этого набора паттернов; старые места должны постепенно
-/// переехать на него (см. app_theme.dart AppRadii.button, куда сведены их
-/// прежде разные радиусы).
-///
-/// Построена на [Tappable] — получает мгновенный pressed-feedback, минимум
-/// 44pt интерактивной зоны и `Semantics(button: true)` бесплатно.
 class AppButton extends StatelessWidget {
   const AppButton({
     super.key,
@@ -108,28 +92,22 @@ class AppButton extends StatelessWidget {
   final AppButtonVariant variant;
   final IconData? icon;
 
-  /// Показывает спиннер вместо содержимого и блокирует тап, но НЕ затемняет
-  /// фон (в отличие от истинного disabled) — так уже вело себя
-  /// `AppDialogActions.busy`: кнопка остаётся "живой" по цвету, просто занята.
+  /// Спиннер вместо содержимого; тап заблокирован, но цвет не гаснет.
   final bool loading;
 
-  /// Растянуть на всю доступную ширину (обычная форма для primary/secondary
-  /// full-width CTA) или сжаться по контенту (типично для `.text`).
+  /// Растянуть на всю ширину или сжаться по контенту (типично для `.text`).
   final bool expand;
 
   /// Переопределение акцента — обычно не нужен, вариант уже задаёт цвет.
   final Color? color;
   final double minHeight;
 
-  /// Мягкое цветное свечение под кнопкой (см. `primaryGlow` в app_theme.dart) —
-  /// раньше было у `AppDialogActions`/некоторых CTA. Только для primary/destructive,
-  /// и только пока кнопка действительно интерактивна (не disabled).
+  /// Мягкое цветное свечение под кнопкой. Только primary/destructive и только
+  /// пока кнопка интерактивна.
   final bool glow;
 
-  /// Точечное переопределение заливки — нужно редко: например, экраны
-  /// "detail" (assignment/lecture) живут в своей палитре (`detail_page_theme.dart`,
-  /// не основной `adaptiveSurface2`), и secondary-кнопка там должна остаться
-  /// в этой палитре, а не переехать на общий surface2.
+  /// Точечное переопределение заливки: экраны detail живут в своей палитре
+  /// (detail_page_theme.dart), и secondary-кнопка должна остаться в ней.
   final Color? background;
 
   @override
@@ -193,19 +171,9 @@ class AppButton extends StatelessWidget {
               ? primaryGlow(variant == AppButtonVariant.destructive ? C.red : (color ?? scheme.primary), opacity: 0.30)
               : null,
         ),
-        // НЕ `alignment: Alignment.center` — Container оборачивает контент во
-        // ВНУТРЕННИЙ Align БЕЗ heightFactor (см. flutter/widgets/container.dart),
-        // и когда родитель даёт "щедрую"/неограниченную высоту (например,
-        // Scaffold.bottomNavigationBar), этот Align заполнял её целиком —
-        // кнопка "Отправить работу"/"Просмотр работ" разрасталась на весь
-        // экран, а тело экрана над ней схлопывалось в 0. `Center(heightFactor: 1)`
-        // здесь центрирует контент по ширине (как и раньше), но НЕ разрешает
-        // высоте вылезти за пределы content-height/minHeight.
-        // widthFactor по той же причине, что и heightFactor: без него Center
-        // растягивался на всю доступную ширину, и `expand: false` не работал —
-        // кнопка «по контенту» (Повторить в карточке ошибки) всё равно
-        // получалась во всю карточку. Там, где родитель задаёт ширину жёстко
-        // (Expanded в cupertino_date_sheet), фактор игнорируется.
+        // Факторы обязательны: без них Center заполняет всё, что даёт родитель —
+        // кнопка разрасталась по высоте в bottomNavigationBar, а `expand: false`
+        // не работал совсем. При жёсткой ширине родителя факторы игнорируются.
         child: Center(heightFactor: 1, widthFactor: expand ? null : 1, child: content),
       ),
     );

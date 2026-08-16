@@ -5,14 +5,6 @@
 /// свой список в приложении нельзя: пользователь выбрал бы вариант, которого
 /// сервер не знает. Здесь только кэш ответа, запасной набор на случай
 /// отсутствия сети и SVG-глифы для превью и пикера.
-///
-/// Глифы повторяют пути из composables/useCoverArt.ts (веб), поэтому выбор
-/// иконки выглядит одинаково на обоих клиентах.
-///
-/// Иконка НЕ входит в сохранённую картинку: бэкенд генерирует только фон и
-/// специально оставляет центр кадра пустым. Рисует иконку виджет
-/// widgets/subject_cover.dart — он и есть единственное место, где обложка
-/// собирается для показа.
 library;
 
 import 'package:flutter/material.dart';
@@ -26,8 +18,6 @@ class CoverColorOption {
   /// Основной насыщенный тон композиции — из него строится превью до генерации.
   final Color base;
 
-  /// Тон иконки, когда она рисуется в цвет. На самой обложке глиф белый
-  /// (композиция насыщенная, см. ICON_ON_ARTWORK) — значение нужно пикеру.
   final Color ink;
 
   const CoverColorOption(this.id, this.hex, this.base, this.ink);
@@ -37,8 +27,6 @@ class CoverIconOption {
   final String id;
   final String subject;
 
-  /// Секция пикера (ICON_GROUPS на бэкенде). Пусто у старого ответа — тогда
-  /// список рисуется плоским, как раньше.
   final String group;
   final String groupLabel;
 
@@ -55,7 +43,6 @@ class CoverOptions {
   final List<CoverColorOption> colors;
   final List<CoverIconOption> icons;
 
-  /// Порядок секций пикера. Пусто — плоский список.
   final List<CoverIconGroup> groups;
   final String defaultColor;
   final String defaultIcon;
@@ -93,8 +80,6 @@ class CoverOptions {
       for (final raw in (json['groups'] as List? ?? const []))
         CoverIconGroup((raw as Map)['id'] as String, (raw['label'] as String?) ?? ''),
     ];
-    // Пустой ответ (старый бэкенд, обрезанный прокси) не должен оставить
-    // пикер без единого варианта — тогда предмет вообще нельзя было бы создать.
     if (colors.isEmpty || icons.isEmpty) return kFallbackCoverOptions;
     return CoverOptions(
       colors: colors,
@@ -203,10 +188,6 @@ const kFallbackCoverOptions = CoverOptions(
 
 /// Кэш набора на процесс: он меняется только с деплоем бэкенда, дёргать его
 /// при каждом открытии формы создания предмета незачем.
-///
-/// Живёт здесь, а не в виджете, чтобы пикер не ходил в сеть из initState в
-/// тестах (висящий таймер роняет flutter_test) и чтобы набор переиспользовался
-/// между экраном создания и листом редактирования.
 class CoverOptionsCache {
   CoverOptionsCache._();
 
@@ -221,8 +202,6 @@ class CoverOptionsCache {
   static Future<CoverOptions> load(Future<Map<String, dynamic>> Function() fetch) {
     final cached = _value;
     if (cached != null) return Future.value(cached);
-    // Без сети пикер всё равно обязан открыться — иначе предмет вообще
-    // нельзя создать.
     return _inflight ??= fetch()
         .then(CoverOptions.fromJson)
         .catchError((_) => kFallbackCoverOptions)
@@ -346,8 +325,6 @@ const Map<String, String> kCoverIconPaths = {
 };
 
 /// SVG-документ с глифом — flutter_svg рисует его через SvgPicture.string.
-/// Обводкой (а не заливкой), как и на вебе: у всех иконок одна «весовая»
-/// толщина, поэтому набор выглядит одной системой.
 String coverIconSvg(String? icon, {Color color = Colors.white, double strokeWidth = 1.6}) {
   final path = kCoverIconPaths[icon] ?? kCoverIconPaths['book']!;
   final hex = (color.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0');
@@ -356,8 +333,6 @@ String coverIconSvg(String? icon, {Color color = Colors.white, double strokeWidt
       'stroke-linejoin="round"><path d="$path"/></svg>';
 }
 
-/// Подложка превью — та же светлая пастель, что и фон обложки
-/// (render_background() на бэкенде): выбор цвета не должен обманывать ожидания.
 Color coverPreviewBackground(CoverColorOption color) => color.base;
 
 /// Локализованные подписи иконок — предмет, для которого иконка предлагается.
@@ -409,8 +384,6 @@ const Map<String, Map<String, String>> kCoverIconLabels = {
   'ball': {'RU': 'Физкультура', 'EN': 'Physical Education', 'KZ': 'Дене шынықтыру'},
 };
 
-/// Локализованные подписи секций пикера. С бэкенда приходят английские
-/// (group_label) — их и показываем, если ключ вдруг незнакомый.
 const Map<String, Map<String, String>> kCoverGroupLabels = {
   'exact': {'RU': 'Точные науки', 'EN': 'Exact sciences', 'KZ': 'Нақты ғылымдар'},
   'natural': {'RU': 'Естественные науки', 'EN': 'Natural sciences', 'KZ': 'Жаратылыстану'},

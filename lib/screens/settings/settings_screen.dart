@@ -58,9 +58,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
     return Scaffold(
       // bottom: false — тот же edge-to-edge под навбар, что и на остальных
-      // вкладках шелла (см. home_screen.dart). Было 100 фиксированных px,
-      // рассчитанных В ДОПОЛНЕНИЕ к safe-area инсету, который раньше сама
-      // добавляла SafeArea; теперь весь клиренс — в bottomBarClearance().
+      // вкладках шелла; весь клиренс даёт bottomBarClearance().
       body: SafeArea(bottom: false, child: ListView(padding: EdgeInsets.fromLTRB(16, 20, 16, bottomBarClearance(context)), children: [
 
         _animated(Padding(padding: const EdgeInsets.fromLTRB(4, 0, 4, 26), child: Text(l.t('settings'),
@@ -96,11 +94,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 decoration: const InputDecoration(
                   prefixIcon: Padding(padding: EdgeInsets.only(left: 4),
                     child: Icon(CupertinoIcons.person, size: 18, color: C.text4)))),
-              // Подписка на сам контроллер вместо setState в onChanged: от
-              // одной буквы перестраивался весь экран настроек — обе группы
-              // строк, переключатели и их анимации появления. Здесь же
-              // перерисовывается ровно то, что зависит от текста: плашка
-              // ошибки и кнопка сохранения ниже.
               ValueListenableBuilder<TextEditingValue>(
                 valueListenable: _nameCtrl,
                 builder: (context, value, _) {
@@ -151,8 +144,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                         duration: const Duration(milliseconds: 200),
                         height: 50,
                         decoration: BoxDecoration(
-                          // Плоская акцентная кнопка без цветного свечения — как
-                          // «Готово» в системных формах.
                           color: primary,
                           borderRadius: BorderRadius.circular(AppRadii.button),
                         ),
@@ -264,10 +255,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   TextStyle _captionStyle(BuildContext context) => TextStyle(
     fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.6, color: adaptiveText3(context));
 
-  /// Любые буквы Unicode, пробел, дефис, апостроф — без цифр и спецсимволов.
-  ///
-  /// Здесь была та же кириллица-only проверка, что и на экране регистрации:
-  /// пользователь с латинским именем не мог сохранить профиль.
+  /// Любые буквы Unicode, пробел, дефис, апостроф — без цифр и спецсимволов:
+  /// кириллица-only не давала сохранить профиль с латинским именем.
   bool _isValidName(String name) {
     final n = name.trim();
     if (n.isEmpty) return true;
@@ -317,9 +306,6 @@ class _LanguageSheet extends StatelessWidget {
       title: l.t('language'),
       accent: const Color(0xFFFF9500),
       children: [
-        // Выбор одного из нескольких — сгруппированный список с галочкой у
-        // выбранного (как языки в системных настройках), а не набор
-        // самостоятельных плашек с рамками.
         InsetGroup(children: [
           for (var i = 0; i < _options.length; i++)
             _LanguageOptionRow(
@@ -357,7 +343,6 @@ class _LanguageOptionRow extends StatelessWidget {
     onTap: onTap,
     child: Row(children: [
       Expanded(child: Text(label,
-        // Выбор несёт цвет и галочка, а не вес.
         style: TextStyle(fontSize: 17, letterSpacing: -0.4, fontWeight: FontWeight.w500,
           color: selected ? primary : adaptiveTextSoft(context)))),
       if (selected) Icon(CupertinoIcons.checkmark_alt, size: 20, color: primary),

@@ -11,11 +11,7 @@ import '../../widgets/inset_group.dart';
 import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
 
-/// Секция настроек: капсовая подпись + сгруппированный список строк — ровно
-/// та структура, что во всех системных Settings. Раньше каждый пункт был
-/// самостоятельной карточкой с тенью и отступом 16px: экран читался как лента
-/// не связанных между собой плашек, хотя пункты одной секции — это атрибуты
-/// одного и того же (профиль, предпочтения, разделы).
+/// Секция настроек: капсовая подпись + сгруппированный список строк.
 class SettingsGroup extends StatelessWidget {
   const SettingsGroup({super.key, required this.children, this.caption});
 
@@ -36,9 +32,8 @@ class SettingsGroup extends StatelessWidget {
   }
 }
 
-/// Пояснение ПОД группой — системный footer из iOS Settings. Отвечает на
-/// вопрос «что вообще делают эти пункты и чем я рискую», не занимая места
-/// в самих строках: подписи строк остаются короткими.
+/// Пояснение ПОД группой — системный footer из iOS Settings: цена действий,
+/// не занимающая места в самих строках.
 class SettingsFooter extends StatelessWidget {
   const SettingsFooter(this.text, {super.key});
 
@@ -104,9 +99,6 @@ class SettingsRow extends StatelessWidget {
         const SizedBox(width: 14),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(title,
-              // Плотный список: medium вместо semibold и мягкий цвет вместо
-              // почти чёрного (см. adaptiveTextSoft) — десяток строк подряд
-              // semibold-ом по #1C1C1E читался как «жирная чёрная простыня».
               style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.4,
                   color: titleColor ?? adaptiveTextSoft(context))),
           if (sub != null) ...[
@@ -153,8 +145,6 @@ class SettingsSubScreen extends StatelessWidget {
     return Scaffold(
       body: SafeArea(
         bottom: false,
-        // Структура нативного экрана: сначала бар с кнопкой «назад» одним
-        // акцентным глифом, под ним — крупный заголовок отдельной строкой.
         child: Column(children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 2, 8, 0),
@@ -208,11 +198,6 @@ Future<void> openChangePassword(BuildContext context) async {
 
 Future<void> openDeleteAccount(BuildContext context) async {
   final l = context.read<L10n>();
-  // Само удаление выполняет шторка: ей нужно показать спиннер на кнопке и
-  // оставить неверный пароль исправимым НА МЕСТЕ. Раньше шторка возвращала
-  // пароль и закрывалась, запрос уходил уже без неё — секунду-две ничего не
-  // происходило, а на ошибке пользователь получал тост и пустой экран
-  // настроек, откуда всё надо было начинать заново.
   final deleted = await showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
@@ -273,8 +258,6 @@ class _ChangePasswordSheetState extends State<ChangePasswordSheet> {
           autofillHints: const [AutofillHints.password],
           textInputAction: TextInputAction.next,
           onSubmitted: () => _newFocus.requestFocus(),
-          // Правило «отличается от текущего» зависит и от этого поля тоже,
-          // поэтому перестраиваем на каждую букву, а не только при ошибке.
           onChanged: (_) => setState(() { _error = null; }),
         ),
         const SizedBox(height: 14),
@@ -287,10 +270,8 @@ class _ChangePasswordSheetState extends State<ChangePasswordSheet> {
           onChanged: (_) => setState(() { _error = null; }),
         ),
 
-        // Требования — не статичная подпись «минимум 8 символов» под полем, а
-        // живой список: галочка загорается ровно в тот момент, когда правило
-        // выполнено, поэтому заблокированная кнопка внизу никогда не остаётся
-        // без объяснения (принцип «обратная связь во время ввода, а не после»).
+        // Живой список требований вместо статичной подписи: галочка загорается
+        // ровно тогда, когда правило выполнено.
         const SizedBox(height: 12),
         _RuleRow(ok: _longEnough, text: l.t('pw_rule_length')),
         const SizedBox(height: 7),
@@ -325,9 +306,6 @@ class _ChangePasswordSheetState extends State<ChangePasswordSheet> {
   }
 }
 
-/// Строка требования к паролю: кружок-галочка + текст. Галочка не просто
-/// меняет цвет, а «прилетает» масштабом — так момент выполнения правила
-/// заметен боковым зрением, пока палец на клавиатуре.
 class _RuleRow extends StatelessWidget {
   const _RuleRow({required this.ok, required this.text});
 
@@ -377,9 +355,6 @@ class _RuleRow extends StatelessWidget {
   }
 }
 
-/// Шкала надёжности пароля: та же шкала и те же три подписи, что на
-/// регистрации (см. utils/password_strength.dart) — пользователь не должен
-/// заново угадывать, что для приложения значит «сильный пароль».
 class _StrengthMeter extends StatelessWidget {
   const _StrengthMeter({required this.score});
 
@@ -404,8 +379,6 @@ class _StrengthMeter extends StatelessWidget {
         ),
       ]),
       const SizedBox(height: 7),
-      // Ширина тянется к новому значению, а не перескакивает: шкала читается
-      // как один непрерывный отклик на набор, а не как мигание.
       ClipRRect(
         borderRadius: BorderRadius.circular(AppRadii.chip),
         child: LayoutBuilder(builder: (context, box) => Stack(children: [
@@ -461,16 +434,10 @@ class _DeleteAccountSheetState extends State<DeleteAccountSheet> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return SheetScaffold(
       title: l.t('delete_account'),
-      // Подзаголовок — конкретный адрес аккаунта, а не общая фраза: перед
-      // необратимым действием пользователь обязан видеть, ЧТО именно удаляет
-      // (на устройстве может быть несколько аккаунтов школы/университета).
       subtitle: auth.email.isEmpty ? null : auth.email,
       icon: CupertinoIcons.trash,
       accent: C.red,
       children: [
-        // Вместо одного абзаца «все данные будут удалены» — перечень того, что
-        // реально исчезнет. Абзац читается как формальность, список — как
-        // цена решения.
         Container(
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 13),
@@ -536,8 +503,6 @@ class _ScopeRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 7),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Значки приглушены до 0.75: они помогают сканировать список, но
-        // четыре красных глифа в полную силу превратили бы плашку в сирену.
         Padding(
           padding: const EdgeInsets.only(top: 1),
           child: Icon(icon, size: 14, color: C.red.withValues(alpha: 0.75)),
@@ -646,8 +611,6 @@ class _SheetFieldState extends State<SheetField> {
     final accent = widget.accent ?? Theme.of(context).colorScheme.primary;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Padding(padding: const EdgeInsets.only(bottom: 7, left: 2),
-        // Подпись поля тоже подхватывает фокус: сразу видно, где ты сейчас,
-        // не разглядывая рамку.
         child: AnimatedDefaultTextStyle(
           duration: const Duration(milliseconds: 160),
           style: Theme.of(context).textTheme.titleSmall!
@@ -673,8 +636,6 @@ class _SheetFieldState extends State<SheetField> {
           prefixIcon: Padding(padding: const EdgeInsets.only(left: 4),
             child: Icon(CupertinoIcons.lock, size: 18,
                 color: _focused ? accent : adaptiveText4(context))),
-          // Tappable вместо IconButton: мгновенный отклик на нажатие пальца
-          // (а не material-ripple по отпусканию) и гарантированные 44pt.
           suffixIcon: Tappable(
             onTap: () { hapticSelection(); widget.onToggle(); },
             label: widget.obscure ? 'Показать пароль' : 'Скрыть пароль',

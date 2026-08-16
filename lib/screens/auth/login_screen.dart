@@ -194,6 +194,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 _reveal(3, Column(children: [
                   AppButton.primary(
                     label: l.t('login'),
+                    // Явный акцент: на экранах входа главная кнопка — лицо
+                    // организации, поэтому она красится акцентом (у школы —
+                    // оранжевым), а не нейтральной заливкой BrandFill, как
+                    // CTA внутри приложения.
+                    color: primary,
                     onPressed: _busy ? null : _submit,
                     loading: _busy,
                   ),

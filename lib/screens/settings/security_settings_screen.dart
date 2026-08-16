@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
@@ -12,7 +11,6 @@ class SecuritySettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = context.watch<L10n>();
-    final primary = Theme.of(context).colorScheme.primary;
 
     return SettingsSubScreen(
       title: l.t('security_section'),
@@ -28,7 +26,7 @@ class SecuritySettingsScreen extends StatelessWidget {
           SettingsRow(
             pos: GroupPos.middle,
             icon: CupertinoIcons.lock_rotation,
-            iconBg: primary,
+            iconBg: C.settingsTile,
             title: l.t('change_password'),
             sub: l.t('change_password_sub'),
             onTap: () => openChangePassword(context),

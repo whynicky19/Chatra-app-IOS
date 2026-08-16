@@ -208,7 +208,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             SettingsRow(
               pos: GroupPos.middle,
               icon: CupertinoIcons.shield_lefthalf_fill,
-              iconBg: primary,
+              iconBg: C.settingsTile,
               title: l.t('security_section'),
               sub: l.t('security_section_sub'),
               onTap: () => guardedPush(context,
@@ -217,7 +217,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             SettingsRow(
               pos: GroupPos.middle,
               icon: CupertinoIcons.sparkles,
-              iconBg: primary,
+              iconBg: C.settingsTile,
               title: l.t('ai_limit_section'),
               sub: l.t('ai_limit_section_sub'),
               onTap: () => guardedPush(context,
@@ -226,7 +226,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             SettingsRow(
               pos: GroupPos.last,
               icon: CupertinoIcons.info_circle_fill,
-              iconBg: primary,
+              iconBg: C.settingsTile,
               title: l.t('about_section'),
               sub: l.t('about_section_sub'),
               onTap: () => guardedPush(context,

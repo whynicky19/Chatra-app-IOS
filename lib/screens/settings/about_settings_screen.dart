@@ -22,7 +22,6 @@ class AboutSettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = context.watch<L10n>();
-    final primary = Theme.of(context).colorScheme.primary;
 
     return SettingsSubScreen(
       title: l.t('about_section'),
@@ -33,7 +32,7 @@ class AboutSettingsScreen extends StatelessWidget {
           SettingsRow(
             pos: GroupPos.middle,
             icon: CupertinoIcons.doc_plaintext,
-            iconBg: primary,
+            iconBg: C.settingsTile,
             title: l.t('tos_title'),
             sub: l.t('tos_view'),
             onTap: () => guardedPush(context,
@@ -42,7 +41,7 @@ class AboutSettingsScreen extends StatelessWidget {
           SettingsRow(
             pos: GroupPos.last,
             icon: CupertinoIcons.lock_shield,
-            iconBg: primary,
+            iconBg: C.settingsTile,
             title: l.t('pp_title'),
             sub: l.t('pp_view'),
             onTap: () => guardedPush(context,

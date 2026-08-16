@@ -345,6 +345,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     animation: Listenable.merge([_name, _email, _pw]),
                     builder: (context, _) => AppButton.primary(
                       label: l.t('register_btn'),
+                      // Акцент, как и «Войти» — см. login_screen.
+                      color: primary,
                       onPressed: (!auth.isLoading && _isValid && !_submitted) ? _submit : null,
                       loading: auth.isLoading,
                     ),

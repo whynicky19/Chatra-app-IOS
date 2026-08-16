@@ -23,6 +23,21 @@ class L10n extends ChangeNotifier {
 
   static const _strings = {
     'RU': {
+      // --- Выделения в лекциях ---
+      'hl_section': 'Мои выделения',
+      'hl_page': 'стр.',
+      'hl_note': 'Заметка',
+      'hl_note_edit': 'Изменить заметку',
+      'hl_note_hint': 'Короткая заметка…',
+      'hl_ask_ai': 'Спросить AI',
+      'hl_color': 'Цвет',
+      'hl_color_yellow': 'Жёлтый',
+      'hl_color_green': 'Зелёный',
+      'hl_color_blue': 'Синий',
+      'hl_color_red': 'Красный',
+      'hl_save_failed': 'Не удалось сохранить выделение',
+      'copy': 'Копировать',
+
       // --- Модерация и блокировка ---
       'block': 'Заблокировать',
       'unblock': 'Разблокировать',
@@ -881,6 +896,21 @@ class L10n extends ChangeNotifier {
       'assignments_count': 'заданий',
     },
     'KZ': {
+      // --- Дәрістердегі белгілеулер ---
+      'hl_section': 'Менің белгілеулерім',
+      'hl_page': 'бет',
+      'hl_note': 'Жазба',
+      'hl_note_edit': 'Жазбаны өзгерту',
+      'hl_note_hint': 'Қысқа жазба…',
+      'hl_ask_ai': 'AI-дан сұрау',
+      'hl_color': 'Түс',
+      'hl_color_yellow': 'Сары',
+      'hl_color_green': 'Жасыл',
+      'hl_color_blue': 'Көк',
+      'hl_color_red': 'Қызыл',
+      'hl_save_failed': 'Белгілеуді сақтау мүмкін болмады',
+      'copy': 'Көшіру',
+
       // --- Модерация и блокировка ---
       'block': 'Бұғаттау',
       'unblock': 'Бұғаттан шығару',
@@ -1737,6 +1767,21 @@ class L10n extends ChangeNotifier {
       'assignments_count': 'тапсырма',
     },
     'EN': {
+      // --- Lecture highlights ---
+      'hl_section': 'My highlights',
+      'hl_page': 'p.',
+      'hl_note': 'Note',
+      'hl_note_edit': 'Edit note',
+      'hl_note_hint': 'Short note…',
+      'hl_ask_ai': 'Ask AI',
+      'hl_color': 'Color',
+      'hl_color_yellow': 'Yellow',
+      'hl_color_green': 'Green',
+      'hl_color_blue': 'Blue',
+      'hl_color_red': 'Red',
+      'hl_save_failed': 'Could not save the highlight',
+      'copy': 'Copy',
+
       // --- Moderation and blocking ---
       'block': 'Block',
       'unblock': 'Unblock',

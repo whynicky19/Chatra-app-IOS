@@ -632,7 +632,8 @@ class ApiService {
 
   Future<Map<String, dynamic>> aiChat(List<Map<String, dynamic>> messages,
       {int? classId, int? threadId, int maxTokens = 1500, double temperature = 0.7,
-      CancelToken? cancelToken, String? requestId}) async {
+      CancelToken? cancelToken, String? requestId,
+      int? annotationId, int? lectureId, int? lecturePage, String? quote}) async {
     final data = <String, dynamic>{
       'messages': messages,
       'max_tokens': maxTokens,
@@ -641,6 +642,12 @@ class ApiService {
     if (classId != null) data['class_id'] = classId;
     if (threadId != null) data['thread_id'] = threadId;
     if (requestId != null) data['request_id'] = requestId;
+    // Вопрос по выделенному фрагменту лекции: сервер по этим полям добавляет
+    // в контекст источник (лекция + страница), тексту сообщения он не доверяет.
+    if (annotationId != null) data['annotation_id'] = annotationId;
+    if (lectureId != null) data['lecture_id'] = lectureId;
+    if (lecturePage != null && lecturePage > 0) data['lecture_page'] = lecturePage;
+    if (quote != null && quote.isNotEmpty) data['quote'] = quote;
     final response = await _dio.post('/ai/chat', data: data,
         cancelToken: cancelToken,
         options: Options(receiveTimeout: const Duration(minutes: 2), sendTimeout: const Duration(seconds: 30)));
@@ -685,6 +692,58 @@ class ApiService {
         data: {'class_id': classId, 'thread_id': threadId, 'messages': messages});
     return _asList(response.data);
   }
+
+  // ── Выделения и заметки к лекциям ─────────────────────────────────────
+  // Серверная истина, общая с сайтом: пометка с телефона видна в вебе и наоборот.
+
+  Future<List<dynamic>> getAnnotations({int? lectureId, int? classId}) async {
+    final params = <String, dynamic>{};
+    if (lectureId != null) params['lecture_id'] = lectureId;
+    if (classId != null) params['class_id'] = classId;
+    final response = await _dio.get('/annotations',
+        queryParameters: params.isEmpty ? null : params);
+    return _asList(response.data);
+  }
+
+  Future<Map<String, dynamic>> createAnnotation({
+    required int lectureId,
+    required int classId,
+    required String selectedText,
+    required int startOffset,
+    required int endOffset,
+    String prefix = '',
+    String suffix = '',
+    int fileIndex = -1,
+    int page = 0,
+    String color = 'yellow',
+    String? comment,
+  }) async {
+    final response = await _dio.post('/annotations', data: {
+      'lecture_id': lectureId,
+      'class_id': classId,
+      'file_index': fileIndex,
+      'page': page,
+      'selected_text': selectedText,
+      'prefix': prefix,
+      'suffix': suffix,
+      'start_offset': startOffset,
+      'end_offset': endOffset,
+      'color': color,
+      'comment': comment,
+    });
+    return _asMap(response.data);
+  }
+
+  /// Меняются только цвет и заметка: положение — свойство самого выделения.
+  Future<Map<String, dynamic>> updateAnnotation(int id, {String? color, String? comment}) async {
+    final data = <String, dynamic>{};
+    if (color != null) data['color'] = color;
+    if (comment != null) data['comment'] = comment;
+    final response = await _dio.patch('/annotations/$id', data: data);
+    return _asMap(response.data);
+  }
+
+  Future<void> deleteAnnotation(int id) async => _dio.delete('/annotations/$id');
 
   // ── Модерация UGC (App Store Guideline 1.2 и политика Google Play) ─────
 

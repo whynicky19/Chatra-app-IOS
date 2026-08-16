@@ -24,6 +24,7 @@ import '../../widgets/wrapping_field.dart';
 import 'tabs/class_posts_tab.dart';
 import 'tabs/class_assignments_tab.dart';
 import 'tabs/class_ai_tab.dart';
+import '../../utils/ai_ask.dart';
 import 'rollover_screen.dart';
 import 'class_detail_utils.dart';
 import 'widgets/class_cover_sliver.dart';
@@ -42,6 +43,8 @@ class ClassDetailScreen extends StatefulWidget {
 
 class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProviderStateMixin {
   late TabController _tabCtrl;
+  /// Вопрос по выделенному фрагменту, ждущий отправки во вкладке «ИИ».
+  AiAsk? _pendingAsk;
   List<dynamic> _posts = [];
   List<dynamic> _assignments = [];
   List<dynamic> _mySubs = [];
@@ -569,6 +572,8 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     return ClassAiTab(
       classId: widget.classId, className: _title, isActive: _aiTabActive,
       isTeacher: context.read<AuthProvider>().isTeacher,
+      pendingAsk: _pendingAsk,
+      onAskConsumed: () => setState(() => _pendingAsk = null),
     );
   }
 
@@ -579,13 +584,23 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
     final files = _extractFiles(p);
     final cleanText = cleanContent(content);
 
-    guardedPush(context, MaterialPageRoute(builder: (_) => LectureDetailScreen(
+    guardedPush<Object?>(context, MaterialPageRoute(builder: (_) => LectureDetailScreen(
       title: cleanPostTitle(p['title'] ?? ''),
       dateLabel: fmtDate(p['created_at'] ?? ''),
       content: cleanText,
       files: files,
       onOpenFile: _openFileViewer,
-    )));
+      lectureId: int.tryParse('${p['id']}'),
+      classId: widget.classId,
+    ))).then((result) {
+      // «Спросить AI» с экрана лекции: переключаемся на вкладку «ИИ» этого же
+      // класса и отдаём вопрос в существующий тред — отдельного чата под
+      // выделения нет.
+      if (result is AiAsk && mounted) {
+        setState(() { _pendingAsk = result; _aiTabActive = true; });
+        _tabCtrl.animateTo(2);
+      }
+    });
   }
 
   void _showAddMenu() async {

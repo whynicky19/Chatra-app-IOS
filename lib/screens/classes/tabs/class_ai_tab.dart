@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/l10n_provider.dart';
 import '../../../services/api_service.dart';
+import '../../../utils/ai_ask.dart';
 import '../../../utils/ai_context.dart';
 import '../../../utils/ai_quota.dart';
 import '../../../theme/app_theme.dart';
@@ -25,12 +26,20 @@ class ClassAiTab extends StatefulWidget {
   final String className;
   final bool isActive;
   final bool isTeacher;
+
+  /// Вопрос по выделенному фрагменту лекции («Спросить AI»): отправляется в
+  /// этот же тред класса, как обычное сообщение.
+  final AiAsk? pendingAsk;
+  final VoidCallback? onAskConsumed;
+
   const ClassAiTab({
     super.key,
     required this.classId,
     required this.className,
     this.isActive = true,
     this.isTeacher = false,
+    this.pendingAsk,
+    this.onAskConsumed,
   });
   @override State<ClassAiTab> createState() => _ClassAiTabState();
 }
@@ -53,8 +62,29 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
     _fadeCtrl  = AnimationController(vsync: this, duration: const Duration(milliseconds: 600))..forward();
     final uid = context.read<AuthProvider>().userId?.toString() ?? 'anon';
     _historyKey = 'ai_chat_history_${widget.classId}_$uid';
-    _loadHistory();
+    _historyReady;
     _loadQuota();
+    if (widget.pendingAsk != null) _consumeAsk();
+  }
+
+  @override
+  void didUpdateWidget(ClassAiTab old) {
+    super.didUpdateWidget(old);
+    // Вопрос приходит уже после того, как вкладка построена (пользователь
+    // возвращается с экрана лекции), поэтому ловим его и здесь.
+    if (widget.pendingAsk != null && widget.pendingAsk != old.pendingAsk) _consumeAsk();
+  }
+
+  /// Ждём синхронизацию истории: она перезаписывает _msgs целиком, и отправленный
+  /// раньше вопрос просто исчез бы из переписки.
+  void _consumeAsk() {
+    final ask = widget.pendingAsk;
+    if (ask == null) return;
+    widget.onAskConsumed?.call();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _historyReady;
+      if (mounted) await _send(ask.text, ask);
+    });
   }
 
   /// Свайп сверху вниз: подтягиваем тред этого класса и квоту с сервера —
@@ -76,6 +106,8 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
 
   @override
   void dispose() { _scrollCtrl.dispose(); _fadeCtrl.dispose(); _ctrl.dispose(); super.dispose(); }
+
+  late final Future<void> _historyReady = _loadHistory();
 
   Future<void> _loadHistory() async {
     final local = await _loadLocal();
@@ -157,7 +189,7 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
 
   // Future<void>, а не async void: из async void исключения не всплывают
   // к вызывающему коду и теряются.
-  Future<void> _send([String? override]) async {
+  Future<void> _send([String? override, AiAsk? ask]) async {
     final text = override ?? _ctrl.text.trim();
     if (text.isEmpty || _loading) return;
     if (_quota?.exhausted == true) {
@@ -179,6 +211,12 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
       final data = await api.aiChat(
         apiMsgs,
         classId: widget.classId,
+        // По этим полям сервер сам определяет, из какой лекции и страницы взят
+        // фрагмент, и добавляет это в контекст (routers/ai.py).
+        annotationId: ask?.annotationId,
+        lectureId: ask?.lectureId,
+        lecturePage: ask?.page,
+        quote: ask?.quote,
       );
       if (mounted) {
         setState(() {

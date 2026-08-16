@@ -1,19 +1,36 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../../models/annotation.dart';
 import '../../providers/l10n_provider.dart';
+import '../../services/api_service.dart';
+import '../../utils/ai_ask.dart';
+import '../../utils/haptics.dart';
+import '../../widgets/toast.dart';
 import 'widgets/detail_page_theme.dart';
 import 'widgets/file_card.dart';
+import 'widgets/highlight_menu.dart';
+import 'widgets/highlights_section.dart';
 
 /// Полноэкранная страница лекции (замена модального bottom sheet).
 /// Открывается через Navigator.push с нативным iOS push-переходом
 /// (обеспечивается CupertinoPageTransitionsBuilder в AppTheme).
-class LectureDetailScreen extends StatelessWidget {
+///
+/// Текст лекции можно выделять: цвет, заметка и «Спросить AI». Выделения живут
+/// на сервере (см. ApiService.getAnnotations) — те же, что на сайте.
+class LectureDetailScreen extends StatefulWidget {
   final String title;
   final String dateLabel;
   final String content;
   final List<String> files;
   final void Function(BuildContext context, String url, String name) onOpenFile;
+
+  /// Без id лекции/класса выделения выключены (страницу открывают и из мест,
+  /// где поста как такового нет).
+  final int? lectureId;
+  final int? classId;
 
   const LectureDetailScreen({
     super.key,
@@ -22,7 +39,333 @@ class LectureDetailScreen extends StatelessWidget {
     required this.content,
     required this.files,
     required this.onOpenFile,
+    this.lectureId,
+    this.classId,
   });
+
+  @override
+  State<LectureDetailScreen> createState() => _LectureDetailScreenState();
+}
+
+class _LectureDetailScreenState extends State<LectureDetailScreen> {
+  /// Все выделения этой лекции — включая сделанные на сайте внутри PDF: они
+  /// показываются в списке «Мои выделения», хотя в тексте их места нет.
+  List<Annotation> _annotations = [];
+  final _bodyKey = GlobalKey();
+  final _scrollCtrl = ScrollController();
+  // Смещения выделения относительно текста лекции даёт SelectionListener —
+  // сам SelectableRegionState отдаёт только готовую строку, без позиции.
+  final _selectionNotifier = SelectionListenerNotifier();
+  int? _flashId;
+
+  bool get _canAnnotate => widget.lectureId != null && widget.classId != null;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_canAnnotate) _loadAnnotations();
+  }
+
+  @override
+  void dispose() {
+    _scrollCtrl.dispose();
+    _selectionNotifier.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadAnnotations() async {
+    try {
+      final rows = await context.read<ApiService>().getAnnotations(lectureId: widget.lectureId);
+      if (!mounted) return;
+      setState(() => _annotations = rows
+          .map((e) => Annotation.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList());
+    } catch (_) {
+      // Офлайн — страница остаётся читаемой, просто без пометок.
+    }
+  }
+
+  /// Пометки, которые реально лежат в тексте лекции (в списке показываем все).
+  List<Annotation> get _textAnnotations => _annotations
+      .where((a) => a.isLectureText && a.endOffset <= widget.content.length && a.endOffset > a.startOffset)
+      .toList()
+    ..sort((a, b) => a.startOffset.compareTo(b.startOffset));
+
+  // ── Создание и правка ──────────────────────────────────────────────────
+
+  Future<Annotation?> _create(TextSelection sel, String color, {String? comment}) async {
+    final text = widget.content.substring(sel.start, sel.end);
+    try {
+      final row = await context.read<ApiService>().createAnnotation(
+        lectureId: widget.lectureId!,
+        classId: widget.classId!,
+        selectedText: text,
+        startOffset: sel.start,
+        endOffset: sel.end,
+        // Якорь по соседнему тексту: по нему выделение находится на другом
+        // клиенте, где смещения могут не совпасть (см. backend).
+        prefix: widget.content.substring((sel.start - 60).clamp(0, sel.start), sel.start),
+        suffix: widget.content.substring(sel.end, (sel.end + 60).clamp(sel.end, widget.content.length)),
+        color: color,
+        comment: comment,
+      );
+      final created = Annotation.fromJson(row);
+      if (mounted) setState(() => _annotations = [..._annotations, created]);
+      return created;
+    } catch (_) {
+      if (mounted) showToast(context, context.read<L10n>().t('hl_save_failed'), error: true);
+      return null;
+    }
+  }
+
+  Future<void> _patch(Annotation a, {String? color, String? comment}) async {
+    // Оптимистично: цвет и заметка меняются сразу, ошибка откатывает.
+    final before = _annotations;
+    setState(() => _annotations = _annotations
+        .map((x) => x.id == a.id ? x.copyWith(color: color, comment: comment) : x)
+        .toList());
+    try {
+      final row = await context.read<ApiService>().updateAnnotation(a.id, color: color, comment: comment);
+      final updated = Annotation.fromJson(row);
+      if (mounted) setState(() => _annotations = _annotations.map((x) => x.id == a.id ? updated : x).toList());
+    } catch (_) {
+      if (mounted) {
+        setState(() => _annotations = before);
+        showToast(context, context.read<L10n>().t('hl_save_failed'), error: true);
+      }
+    }
+  }
+
+  Future<void> _delete(Annotation a) async {
+    final before = _annotations;
+    setState(() => _annotations = _annotations.where((x) => x.id != a.id).toList());
+    try {
+      await context.read<ApiService>().deleteAnnotation(a.id);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _annotations = before);
+        showToast(context, context.read<L10n>().t('hl_save_failed'), error: true);
+      }
+    }
+  }
+
+  Future<String?> _askNote(String? initial) async {
+    final ctrl = TextEditingController(text: initial ?? '');
+    final l = context.read<L10n>();
+    return showCupertinoDialog<String>(
+      context: context,
+      builder: (ctx) => CupertinoAlertDialog(
+        title: Text(l.t('hl_note')),
+        content: Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: CupertinoTextField(
+            controller: ctrl,
+            autofocus: true,
+            maxLines: 3,
+            minLines: 2,
+            placeholder: l.t('hl_note_hint'),
+            style: const TextStyle(fontSize: 15),
+          ),
+        ),
+        actions: [
+          CupertinoDialogAction(onPressed: () => Navigator.pop(ctx), child: Text(l.t('cancel'))),
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: Text(l.t('save')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── «Спросить AI» ──────────────────────────────────────────────────────
+  // Отдельного ИИ-экрана здесь нет: возвращаем вопрос на экран класса, он
+  // переключается на свою вкладку «ИИ» и отправляет его в существующий тред.
+
+  void _askAi({Annotation? saved, String? rawText, int page = 0}) {
+    final text = (saved?.selectedText ?? rawText ?? '').trim();
+    if (text.isEmpty) return;
+    Navigator.pop(context, AiAsk(
+      text: buildQuotePrompt(
+        lang: context.read<L10n>().lang,
+        text: text,
+        lectureTitle: widget.title,
+        page: saved?.page ?? page,
+      ),
+      annotationId: saved?.id,
+      lectureId: widget.lectureId!,
+      page: saved?.page ?? page,
+      quote: saved == null ? text : null,
+    ));
+  }
+
+  // ── Меню выделения ─────────────────────────────────────────────────────
+
+  Widget _selectionMenu(BuildContext context, SelectableRegionState state) {
+    final l = context.read<L10n>();
+    final sel = _currentSelection();
+    if (sel == null) return const SizedBox.shrink();
+    final selectedText = widget.content.substring(sel.start, sel.end);
+
+    void done() => state.hideToolbar(true);
+
+    return _MenuLayout(
+      anchor: state.contextMenuAnchors,
+      child: HighlightMenu(
+        t: l.t,
+        onColor: (c) async { done(); hapticLight(); await _create(sel, c); },
+        onNote: () async {
+          done();
+          final note = await _askNote(null);
+          if (note == null) return;
+          await _create(sel, 'yellow', comment: note.isEmpty ? null : note);
+        },
+        onAskAi: () { done(); _askAi(rawText: selectedText); },
+        onCopy: () { done(); Clipboard.setData(ClipboardData(text: selectedText)); },
+      ),
+    );
+  }
+
+  /// Диапазон текущего выделения в координатах widget.content: под
+  /// SelectionListener лежит только текст лекции, поэтому его смещения и есть
+  /// индексы в content.
+  TextSelection? _currentSelection() {
+    if (!_selectionNotifier.registered) return null;
+    final range = _selectionNotifier.selection.range;
+    if (range == null) return null;
+    final start = range.startOffset.clamp(0, widget.content.length);
+    final end = range.endOffset.clamp(0, widget.content.length);
+    if (end <= start) return null;
+    return TextSelection(baseOffset: start, extentOffset: end);
+  }
+
+  /// Карточка действий по уже сохранённому выделению (тап по пометке/строке).
+  Future<void> _openSaved(Annotation a) async {
+    final l = context.read<L10n>();
+    hapticSelection();
+    await showCupertinoModalPopup<void>(
+      context: context,
+      builder: (ctx) => CupertinoActionSheet(
+        title: Text(a.selectedText.trim(), maxLines: 3, overflow: TextOverflow.ellipsis),
+        message: a.comment != null ? Text(a.comment!) : null,
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () { Navigator.pop(ctx); _askAi(saved: a); },
+            child: Text(l.t('hl_ask_ai')),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final note = await _askNote(a.comment);
+              if (note != null) await _patch(a, comment: note);
+            },
+            child: Text(a.comment == null ? l.t('hl_note') : l.t('hl_note_edit')),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final color = await _pickColor(a.color);
+              if (color != null) await _patch(a, color: color);
+            },
+            child: Text(l.t('hl_color')),
+          ),
+          CupertinoActionSheetAction(
+            isDestructiveAction: true,
+            onPressed: () { Navigator.pop(ctx); _delete(a); },
+            child: Text(l.t('delete')),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(ctx),
+          child: Text(l.t('cancel')),
+        ),
+      ),
+    );
+  }
+
+  Future<String?> _pickColor(String current) => showCupertinoModalPopup<String>(
+        context: context,
+        builder: (ctx) => CupertinoActionSheet(
+          actions: [
+            for (final c in highlightColors)
+              CupertinoActionSheetAction(
+                onPressed: () => Navigator.pop(ctx, c),
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Container(width: 18, height: 18, decoration: BoxDecoration(
+                    color: highlightSwatch(c), shape: BoxShape.circle,
+                    border: c == current
+                        ? Border.all(color: CupertinoColors.label.resolveFrom(ctx), width: 2)
+                        : null,
+                  )),
+                  const SizedBox(width: 10),
+                  Text(context.read<L10n>().t('hl_color_$c')),
+                ]),
+              ),
+          ],
+          cancelButton: CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(context.read<L10n>().t('cancel')),
+          ),
+        ),
+      );
+
+  /// Прокрутка к фрагменту в тексте + короткая подсветка, чтобы глаз нашёл
+  /// место (тап по строке списка «Мои выделения»).
+  Future<void> _jumpTo(Annotation a) async {
+    if (!a.isLectureText) {
+      await _openSaved(a);
+      return;
+    }
+    final ctx = _bodyKey.currentContext;
+    if (ctx != null) {
+      await Scrollable.ensureVisible(ctx,
+          alignment: 0.1,
+          duration: const Duration(milliseconds: 320),
+          curve: Curves.easeOutCubic);
+    }
+    if (!mounted) return;
+    setState(() => _flashId = a.id);
+    await Future.delayed(const Duration(milliseconds: 1200));
+    if (mounted) setState(() => _flashId = null);
+  }
+
+  // ── Текст лекции с пометками ───────────────────────────────────────────
+
+  TextSpan _bodySpan(BuildContext context) {
+    final base = detailBodyStyle(context);
+    final brightness = Theme.of(context).brightness;
+    final spans = <TextSpan>[];
+    var cursor = 0;
+
+    for (final a in _textAnnotations) {
+      // Пересекающиеся пометки: следующая начинается раньше конца предыдущей —
+      // рисуем только видимый хвост, иначе куски текста задвоились бы.
+      final start = a.startOffset < cursor ? cursor : a.startOffset;
+      if (start >= a.endOffset) continue;
+      if (start > cursor) {
+        spans.add(TextSpan(text: widget.content.substring(cursor, start)));
+      }
+      spans.add(TextSpan(
+        text: widget.content.substring(start, a.endOffset),
+        style: base.copyWith(
+          backgroundColor: _flashId == a.id
+              ? highlightSwatch(a.color)
+              : highlightFill(a.color, brightness),
+          // Заметка обозначается подчёркиванием — как и на сайте.
+          decoration: a.comment != null ? TextDecoration.underline : null,
+          decorationColor: highlightSwatch(a.color).withValues(alpha: 0.9),
+          decorationThickness: 2,
+        ),
+        recognizer: TapGestureRecognizer()..onTap = () => _openSaved(a),
+      ));
+      cursor = a.endOffset;
+    }
+    if (cursor < widget.content.length) {
+      spans.add(TextSpan(text: widget.content.substring(cursor)));
+    }
+    return TextSpan(style: base, children: spans);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +373,8 @@ class LectureDetailScreen extends StatelessWidget {
     final bg = detailBg(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = detailAccent(context);
+
+    final body = Text.rich(_bodySpan(context), key: _bodyKey, textAlign: TextAlign.left);
 
     return CupertinoTheme(
       data: CupertinoThemeData(
@@ -53,6 +398,7 @@ class LectureDetailScreen extends StatelessWidget {
       child: Scaffold(
         backgroundColor: bg,
         body: CustomScrollView(
+          controller: _scrollCtrl,
           physics: const BouncingScrollPhysics(),
           slivers: [
             CupertinoSliverNavigationBar(
@@ -62,14 +408,14 @@ class LectureDetailScreen extends StatelessWidget {
               backgroundColor: bg.withValues(alpha: 0.82),
               border: null,
               stretch: true,
-              largeTitle: Text(title, maxLines: 2, overflow: TextOverflow.ellipsis),
+              largeTitle: Text(widget.title, maxLines: 2, overflow: TextOverflow.ellipsis),
             ),
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 56),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  _MetaRow(dateLabel: dateLabel, fileCount: files.length, l: l),
-                  if (content.isNotEmpty) ...[
+                  _MetaRow(dateLabel: widget.dateLabel, fileCount: widget.files.length, l: l),
+                  if (widget.content.isNotEmpty) ...[
                     const SizedBox(height: 26),
                     Padding(
                       padding: const EdgeInsets.only(left: 2, bottom: 8),
@@ -78,22 +424,40 @@ class LectureDetailScreen extends StatelessWidget {
                     // Тело лекции — обычный текст на фоне страницы, как в Apple
                     // Notes: раньше он лежал в серой карточке, которая на
                     // длинном конспекте читалась как бесконечная плашка.
-                    Text(content, textAlign: TextAlign.left, style: detailBodyStyle(context)),
+                    if (_canAnnotate)
+                      SelectionArea(
+                        contextMenuBuilder: _selectionMenu,
+                        child: SelectionListener(
+                          selectionNotifier: _selectionNotifier,
+                          child: body,
+                        ),
+                      )
+                    else
+                      body,
                   ],
-                  if (files.isNotEmpty) ...[
-                    SizedBox(height: content.isNotEmpty ? 30 : 26),
+                  if (widget.files.isNotEmpty) ...[
+                    SizedBox(height: widget.content.isNotEmpty ? 30 : 26),
                     Padding(
                       padding: const EdgeInsets.only(left: 2, bottom: 8),
                       child: Text(l.t('attached_files_edit').toUpperCase(), style: sectionCaptionStyle(context)),
                     ),
                     FileList(
                       files: [
-                        for (final f in files) FileEntry(name: _fileDisplayName(f), url: f, previewUrl: f),
+                        for (final f in widget.files) FileEntry(name: _fileDisplayName(f), url: f, previewUrl: f),
                       ],
-                      onOpen: (f) => onOpenFile(context, f.url, f.name),
+                      onOpen: (f) => widget.onOpenFile(context, f.url, f.name),
                     ),
                   ],
-                  if (content.isEmpty && files.isEmpty)
+                  if (_annotations.isNotEmpty) ...[
+                    const SizedBox(height: 30),
+                    HighlightsSection(
+                      items: _annotations,
+                      t: l.t,
+                      onTap: _jumpTo,
+                      onDelete: _delete,
+                    ),
+                  ],
+                  if (widget.content.isEmpty && widget.files.isEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 56),
                       child: Center(
@@ -112,6 +476,39 @@ class LectureDetailScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Ставит меню над выделением (или под ним, если сверху не помещается) и не
+/// даёт ему уехать за края экрана — та же логика, что у системной панели iOS.
+class _MenuLayout extends StatelessWidget {
+  final TextSelectionToolbarAnchors anchor;
+  final Widget child;
+  const _MenuLayout({required this.anchor, required this.child});
+
+  static const _menuWidth = 320.0;
+  static const _menuHeight = 54.0;
+  static const _gap = 8.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final padding = MediaQuery.paddingOf(context);
+    final above = anchor.primaryAnchor.dy - _menuHeight - _gap;
+    final fitsAbove = above > padding.top + 8;
+    final top = fitsAbove
+        ? above
+        : (anchor.secondaryAnchor?.dy ?? anchor.primaryAnchor.dy) + _gap;
+    final left = (anchor.primaryAnchor.dx - _menuWidth / 2)
+        .clamp(8.0, (size.width - _menuWidth - 8).clamp(8.0, double.infinity));
+
+    return Stack(children: [
+      Positioned(
+        left: left,
+        top: top.clamp(padding.top + 8, size.height - _menuHeight - 8),
+        child: child,
+      ),
+    ]);
   }
 }
 

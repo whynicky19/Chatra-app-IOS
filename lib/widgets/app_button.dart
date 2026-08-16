@@ -201,7 +201,12 @@ class AppButton extends StatelessWidget {
         // экран, а тело экрана над ней схлопывалось в 0. `Center(heightFactor: 1)`
         // здесь центрирует контент по ширине (как и раньше), но НЕ разрешает
         // высоте вылезти за пределы content-height/minHeight.
-        child: Center(heightFactor: 1, child: content),
+        // widthFactor по той же причине, что и heightFactor: без него Center
+        // растягивался на всю доступную ширину, и `expand: false` не работал —
+        // кнопка «по контенту» (Повторить в карточке ошибки) всё равно
+        // получалась во всю карточку. Там, где родитель задаёт ширину жёстко
+        // (Expanded в cupertino_date_sheet), фактор игнорируется.
+        child: Center(heightFactor: 1, widthFactor: expand ? null : 1, child: content),
       ),
     );
   }

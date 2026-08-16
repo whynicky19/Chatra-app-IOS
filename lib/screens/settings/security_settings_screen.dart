@@ -41,6 +41,11 @@ class SecuritySettingsScreen extends StatelessWidget {
             onTap: () => openDeleteAccount(context),
           ),
         ]),
+        // Системный footer под группой: две строки списка отвечают «что тут
+        // можно сделать», а цену этих действий раньше объясняла только
+        // подпись «Безвозвратно удалить аккаунт и данные» внутри самой
+        // красной строки — то есть уже после того, как взгляд на неё упал.
+        SettingsFooter(l.t('security_footer')),
       ],
     );
   }

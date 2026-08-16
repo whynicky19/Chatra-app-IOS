@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../providers/org_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/password_strength.dart';
 import '../../widgets/app_logo.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/tappable.dart';
@@ -55,15 +56,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _agreedTerms;
   }
 
-  int get _pwScore {
-    final p = _pw.text; if (p.isEmpty) return 0; int s = 0;
-    if (p.length >= 6)  s += 20;
-    if (p.length >= 10) s += 20;
-    if (RegExp(r'[A-Z]').hasMatch(p)) s += 20;
-    if (RegExp(r'[0-9]').hasMatch(p)) s += 20;
-    if (RegExp(r'[^A-Za-z0-9]').hasMatch(p)) s += 20;
-    return s;
-  }
+  // Общая с шторкой смены пароля шкала — см. utils/password_strength.dart.
+  int get _pwScore => passwordScore(_pw.text);
 
   Future<void> _submit() async {
     final org = context.read<OrgProvider>();

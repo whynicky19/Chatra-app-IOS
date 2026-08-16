@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -6,9 +7,18 @@ import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/ai_quota.dart';
+import '../../widgets/app_button.dart';
+import '../../widgets/inset_group.dart';
+import '../../widgets/tappable.dart';
+import '../../widgets/toast.dart';
 import 'settings_shared.dart';
 
-/// Экран «AI лимит»: сколько сообщений израсходовано за сутки и когда сброс.
+/// Экран «AI лимит»: сколько сообщений осталось на сегодня и когда сброс.
+///
+/// Главный вопрос экрана — «сколько я ещё могу спросить», поэтому герой экрана
+/// это ОСТАТОК, а не расход: раньше в глаза бросалась строка «12 / 30
+/// использовано», и остаток приходилось вычитать в уме. Кольцо пустеет по мере
+/// расхода — та же метафора, что у заряда батареи.
 class AiLimitsScreen extends StatefulWidget {
   const AiLimitsScreen({super.key});
   @override State<AiLimitsScreen> createState() => _AiLimitsScreenState();
@@ -17,7 +27,7 @@ class AiLimitsScreen extends StatefulWidget {
 class _AiLimitsScreenState extends State<AiLimitsScreen> {
   AiQuota? _quota;
   bool _loading = true;
-  bool _failed = false;
+  bool _refreshing = false;
   Timer? _ticker;
 
   @override
@@ -37,180 +47,488 @@ class _AiLimitsScreenState extends State<AiLimitsScreen> {
     try {
       final q = AiQuota.fromJson(await context.read<ApiService>().getAiLimits());
       if (!mounted) return;
-      setState(() { _quota = q; _loading = false; _failed = q == null; });
+      if (q == null) { _fail(); return; }
+      setState(() { _quota = q; _loading = false; _refreshing = false; });
     } catch (_) {
-      if (mounted) setState(() { _loading = false; _failed = true; });
+      if (mounted) _fail();
     }
+  }
+
+  void _fail() {
+    final hadData = _quota != null;
+    setState(() { _loading = false; _refreshing = false; });
+    // Если цифры на экране уже были, они остаются — но молча оставить их
+    // значит соврать, что обновление прошло. Тост сообщает, что показано
+    // старое значение.
+    if (hadData) showToast(context, context.read<L10n>().t('connection_error'), error: true);
+  }
+
+  Future<void> _refresh() async {
+    if (_refreshing) return;
+    setState(() => _refreshing = true);
+    await _load();
   }
 
   @override
   Widget build(BuildContext context) {
     final l = context.watch<L10n>();
+    final quota = _quota;
+
     return SettingsSubScreen(
       title: l.t('ai_limit_section'),
       subtitle: l.t('ai_limit_section_sub'),
+      // Обновление — единственное действие этого экрана, и раньше его не было
+      // вовсе: цифры замирали на момент открытия, а сброс квоты приходилось
+      // ловить перезаходом.
+      action: _RefreshAction(busy: _refreshing || _loading, onTap: _refresh),
       children: [
         if (_loading)
-          const Padding(padding: EdgeInsets.only(top: 60),
-            child: Center(child: CupertinoActivityIndicator(radius: 12)))
-        else if (_failed || _quota == null)
-          _InfoCard(icon: CupertinoIcons.wifi_slash, text: l.t('connection_error'))
-        else
-          _QuotaCard(quota: _quota!),
+          const _QuotaSkeleton()
+        else if (quota == null)
+          _ErrorCard(text: l.t('connection_error'), onRetry: _refresh)
+        else ...[
+          _QuotaHero(quota: quota),
+          const SizedBox(height: 22),
+          _StatGroup(quota: quota),
+          SettingsFooter(l.t('ai_limit_footer')),
+        ],
       ],
     );
   }
 }
 
-class _QuotaCard extends StatelessWidget {
+class _RefreshAction extends StatelessWidget {
+  const _RefreshAction({required this.busy, required this.onTap});
+
+  final bool busy;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final l = context.watch<L10n>();
+    return Tappable(
+      onTap: busy ? null : onTap,
+      label: l.t('refresh'),
+      child: SizedBox(
+        width: 44, height: 44,
+        child: Center(
+          child: busy
+              ? CupertinoActivityIndicator(radius: 9, color: primary)
+              : Icon(CupertinoIcons.arrow_clockwise, size: 20, color: primary),
+        ),
+      ),
+    );
+  }
+}
+
+/// Карточка-герой: кольцо остатка и, если остаток на исходе, строка-предупреждение.
+class _QuotaHero extends StatelessWidget {
+  const _QuotaHero({required this.quota});
+
   final AiQuota quota;
-  const _QuotaCard({required this.quota});
 
   @override
   Widget build(BuildContext context) {
     final l = context.watch<L10n>();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface = Theme.of(context).colorScheme.surface;
     final primary = Theme.of(context).colorScheme.primary;
     final secondary = Theme.of(context).colorScheme.secondary;
 
     final exhausted = quota.exhausted;
-    final low = !exhausted && quota.left <= 5;
+    final low = !exhausted && !quota.unlimited &&
+        (quota.left <= 5 || (quota.limit > 0 && quota.left / quota.limit <= 0.15));
     final accent = exhausted ? C.red : low ? C.amberDk : primary;
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
-      decoration: BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(AppRadii.card),
-        boxShadow: cardShadow(isDark),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Container(
-            width: 32, height: 32,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [secondary, primary],
-                begin: Alignment.topLeft, end: Alignment.bottomRight),
-              borderRadius: BorderRadius.circular(AppRadii.chip),
+    return _Card(
+      child: Column(children: [
+        if (quota.unlimited)
+          _RingFrame(
+            painter: _RingPainter(
+              value: 1,
+              track: adaptiveSurface2(context),
+              gradient: [secondary, primary],
+              full: true,
             ),
-            child: const Icon(CupertinoIcons.sparkles, size: 17, color: Colors.white),
-          ),
-          const SizedBox(width: 12),
-          Expanded(child: Text(l.t('ai_limit_section'),
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveTextSoft(context)))),
-          if (quota.unlimited)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-              decoration: BoxDecoration(
-                color: primary.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(AppRadii.card)),
-              child: Text(l.t('ai_unlimited_badge'),
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: primary)),
-            ),
-        ]),
+            child: _UnlimitedCenter(accent: primary),
+          )
+        else
+          _AnimatedRing(quota: quota, accent: accent, gradient: [secondary, primary], flat: exhausted || low),
 
         if (quota.unlimited) ...[
-          const SizedBox(height: 16),
-          Text(l.t('ai_unlimited_note'),
-            style: TextStyle(fontSize: 13, color: adaptiveText3(context), height: 1.45)),
-        ] else ...[
-          const SizedBox(height: 20),
-
-          // Шкала расхода
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: quota.progress),
-            duration: const Duration(milliseconds: 700),
-            curve: Curves.easeOutCubic,
-            builder: (context, value, _) => LayoutBuilder(builder: (context, box) {
-              return Stack(children: [
-                Container(
-                  height: 10, width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: adaptiveSurface2(context),
-                    borderRadius: BorderRadius.circular(AppRadii.chip),
-                  ),
-                ),
-                Container(
-                  height: 10,
-                  width: (box.maxWidth * value).clamp(value > 0 ? 10.0 : 0.0, box.maxWidth),
-                  decoration: BoxDecoration(
-                    gradient: exhausted || low
-                      ? null
-                      : LinearGradient(colors: [secondary, primary]),
-                    color: exhausted || low ? accent : null,
-                    borderRadius: BorderRadius.circular(AppRadii.chip),
-                  ),
-                ),
-              ]);
-            }),
-          ),
-
-          const SizedBox(height: 14),
-
-          Row(crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic, children: [
-            Text('${quota.used} / ${quota.limit}',
-              style: Theme.of(context).textTheme.headlineLarge!.copyWith(
-                letterSpacing: -0.6, color: adaptiveTextSoft(context))),
-            const SizedBox(width: 7),
-            Text(l.t('ai_used_suffix'),
-              style: TextStyle(fontSize: 13, color: adaptiveText3(context), fontWeight: FontWeight.w500)),
-          ]),
-
-          const SizedBox(height: 3),
-          Text('${l.t('ai_messages_left')}: ${quota.left}',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
-              color: exhausted || low ? accent : C.text3)),
-
-          const SizedBox(height: 16),
-          Divider(height: 1, thickness: 0.5, color: adaptiveBorder(context).withValues(alpha: 0.6)),
-          const SizedBox(height: 14),
-
-          Row(children: [
-            const Icon(CupertinoIcons.clock, size: 15, color: C.text4),
-            const SizedBox(width: 8),
-            Expanded(child: Text(
-              _resetLabel(l),
-              style: TextStyle(fontSize: 13, color: adaptiveText3(context), fontWeight: FontWeight.w500),
-            )),
-          ]),
+          const SizedBox(height: 18),
+          _Note(text: l.t('ai_unlimited_note'), color: primary, icon: CupertinoIcons.sparkles),
+        ] else if (exhausted) ...[
+          const SizedBox(height: 18),
+          _Note(text: l.t('ai_exhausted_note'), color: C.red, icon: CupertinoIcons.exclamationmark_circle_fill),
+        ] else if (low) ...[
+          const SizedBox(height: 18),
+          _Note(text: l.t('ai_low_note'), color: C.amberDk, icon: CupertinoIcons.exclamationmark_triangle_fill),
         ],
       ]),
     );
   }
+}
 
-  String _resetLabel(L10n l) {
-    final d = quota.untilReset;
-    if (d == null) return l.t('ai_reset_daily');
-    final h = d.inHours;
-    final m = d.inMinutes % 60;
-    final left = h > 0 ? '$h${l.t('hour_short')} $m${l.t('minute_short')}' : '$m${l.t('minute_short')}';
-    return '${l.t('ai_reset_in')} $left';
+/// Кольцо + центр, оживающие при открытии экрана: дуга вырастает от нуля, а
+/// число досчитывает вместе с ней. Один общий прогресс `t` на обе величины —
+/// иначе цифра и дуга приходят к финалу вразнобой.
+class _AnimatedRing extends StatelessWidget {
+  const _AnimatedRing({required this.quota, required this.accent, required this.gradient, required this.flat});
+
+  final AiQuota quota;
+  final Color accent;
+  final List<Color> gradient;
+  final bool flat;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.watch<L10n>();
+    final fraction = quota.limit > 0 ? (quota.left / quota.limit).clamp(0.0, 1.0) : 0.0;
+    final track = quota.exhausted
+        ? C.red.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.20 : 0.12)
+        : adaptiveSurface2(context);
+
+    Widget ring(double t) => _RingFrame(
+      painter: _RingPainter(
+        value: fraction * t,
+        track: track,
+        gradient: flat ? null : gradient,
+        solid: flat ? accent : null,
+      ),
+      child: _RingCenter(
+        value: (quota.left * t).round(),
+        label: l.t('ai_messages_left'),
+        color: flat ? accent : adaptiveText1(context),
+      ),
+    );
+
+    if (MediaQuery.disableAnimationsOf(context)) return ring(1);
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 850),
+      curve: Curves.easeOutCubic,
+      builder: (context, t, _) => ring(t),
+    );
   }
 }
 
-class _InfoCard extends StatelessWidget {
-  final IconData icon;
+class _RingFrame extends StatelessWidget {
+  const _RingFrame({required this.painter, required this.child});
+
+  final CustomPainter painter;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 178, height: 178,
+      child: CustomPaint(
+        painter: painter,
+        child: Center(child: child),
+      ),
+    );
+  }
+}
+
+class _RingCenter extends StatelessWidget {
+  const _RingCenter({required this.value, required this.label, required this.color});
+
+  final int value;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      Text('$value',
+          // Крупный кегль — отрицательный трекинг: с ростом размера цифры
+          // читаются «разъехавшимися».
+          style: TextStyle(fontSize: 48, fontWeight: FontWeight.w700, letterSpacing: -1.6, height: 1, color: color)),
+      const SizedBox(height: 4),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Text(label, textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 13, height: 1.25, fontWeight: FontWeight.w500, color: adaptiveText3(context))),
+      ),
+    ]);
+  }
+}
+
+class _UnlimitedCenter extends StatelessWidget {
+  const _UnlimitedCenter({required this.accent});
+
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.watch<L10n>();
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      Text('∞', style: TextStyle(fontSize: 56, fontWeight: FontWeight.w700, height: 1, color: accent)),
+      const SizedBox(height: 6),
+      Text(l.t('ai_unlimited_badge'),
+          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: adaptiveText3(context))),
+    ]);
+  }
+}
+
+/// Кольцо остатка: серая дорожка на весь круг и поверх неё дуга остатка.
+class _RingPainter extends CustomPainter {
+  _RingPainter({
+    required this.value,
+    required this.track,
+    this.gradient,
+    this.solid,
+    this.full = false,
+  });
+
+  /// Доля ОСТАТКА, 0..1.
+  final double value;
+  final Color track;
+  final List<Color>? gradient;
+  final Color? solid;
+
+  /// Замкнутое кольцо (безлимит) — рисуется целиком, без скруглённых торцов.
+  final bool full;
+
+  static const double _stroke = 13;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final radius = (size.shortestSide - _stroke) / 2;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
+    canvas.drawCircle(center, radius, Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = _stroke
+      ..color = track);
+
+    if (value <= 0) return;
+
+    final sweep = 2 * math.pi * value.clamp(0.0, 1.0);
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = _stroke
+      ..strokeCap = full ? StrokeCap.butt : StrokeCap.round;
+
+    final g = gradient;
+    if (g != null) {
+      // Градиент растянут ровно по нарисованной дуге (endAngle: sweep), а не
+      // по всему кругу: иначе при малом остатке видна только первая, почти
+      // одноцветная его часть.
+      paint.shader = SweepGradient(
+        startAngle: 0,
+        endAngle: math.max(sweep, 0.001),
+        // У замкнутого кольца начало и конец градиента встречаются в одной
+        // точке: несимметричные цвета дали бы видимый стык на 12 часах.
+        colors: full ? [g.first, g.last, g.first] : g,
+        transform: const GradientRotation(-math.pi / 2),
+      ).createShader(rect);
+    } else {
+      paint.color = solid ?? track;
+    }
+
+    canvas.drawArc(rect, -math.pi / 2, sweep, false, paint);
+  }
+
+  @override
+  bool shouldRepaint(_RingPainter old) =>
+      old.value != value || old.track != track || old.solid != solid || old.gradient != gradient;
+}
+
+/// Цифры под кольцом: расход, потолок и время сброса — по строке на факт.
+class _StatGroup extends StatelessWidget {
+  const _StatGroup({required this.quota});
+
+  final AiQuota quota;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.watch<L10n>();
+    final rows = <({String label, String value})>[
+      (label: l.t('ai_used_label'), value: '${quota.used}'),
+      // Потолок и время сброса имеют смысл только там, где лимит есть:
+      // безлимитному аккаунту «Сброс через 6ч» ничего не сообщает.
+      if (!quota.unlimited) ...[
+        (label: l.t('ai_daily_limit_label'), value: '${quota.limit}'),
+        _resetRow(l),
+      ],
+    ];
+
+    return InsetGroup(children: [
+      for (var i = 0; i < rows.length; i++)
+        _StatRow(
+          pos: innerPos(i, rows.length),
+          label: rows[i].label,
+          value: rows[i].value,
+        ),
+    ]);
+  }
+
+  ({String label, String value}) _resetRow(L10n l) {
+    final d = quota.untilReset;
+    if (d == null) {
+      return (label: l.t('ai_reset_label'), value: l.t('ai_reset_daily_short'));
+    }
+    final h = d.inHours;
+    final m = d.inMinutes % 60;
+    if (h == 0 && m == 0) {
+      return (label: l.t('ai_reset_row'), value: l.t('ai_reset_less_minute'));
+    }
+    final value = h > 0
+        ? '$h${l.t('hour_short')} $m${l.t('minute_short')}'
+        : '$m${l.t('minute_short')}';
+    return (label: l.t('ai_reset_row'), value: value);
+  }
+}
+
+class _StatRow extends StatelessWidget {
+  const _StatRow({required this.pos, required this.label, required this.value});
+
+  final GroupPos pos;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return GroupRow(
+      pos: pos,
+      color: Colors.transparent,
+      separatorInset: 16,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Row(children: [
+        Expanded(child: Text(label,
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.4,
+                color: adaptiveTextSoft(context)))),
+        const SizedBox(width: 12),
+        Text(value,
+            style: TextStyle(fontSize: 17, letterSpacing: -0.4, color: adaptiveText3(context))),
+      ]),
+    );
+  }
+}
+
+/// Строка-статус под кольцом (кончается лимит / исчерпан / безлимит).
+class _Note extends StatelessWidget {
+  const _Note({required this.text, required this.color, required this.icon});
+
   final String text;
-  const _InfoCard({required this.icon, required this.text});
+  final Color color;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.16 : 0.08),
+        borderRadius: BorderRadius.circular(AppRadii.tile),
+      ),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(padding: const EdgeInsets.only(top: 1), child: Icon(icon, size: 15, color: color)),
+        const SizedBox(width: 9),
+        Expanded(child: Text(text,
+            style: TextStyle(fontSize: 13, height: 1.4, fontWeight: FontWeight.w500, color: color))),
+      ]),
+    );
+  }
+}
+
+/// Заглушка на время первой загрузки: та же геометрия, что у настоящей
+/// карточки. Спиннер по центру пустого экрана менял высоту содержимого при
+/// появлении данных — экран «прыгал».
+class _QuotaSkeleton extends StatefulWidget {
+  const _QuotaSkeleton();
+  @override State<_QuotaSkeleton> createState() => _QuotaSkeletonState();
+}
+
+class _QuotaSkeletonState extends State<_QuotaSkeleton> with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse = AnimationController(
+    vsync: this, duration: const Duration(milliseconds: 900))..repeat(reverse: true);
+
+  @override
+  void dispose() { _pulse.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    final fill = adaptiveSurface2(context);
+    final content = Column(children: [
+      _Card(child: SizedBox(
+        width: 178, height: 178,
+        child: CustomPaint(painter: _RingPainter(value: 0, track: fill)),
+      )),
+      const SizedBox(height: 22),
+      InsetGroup(children: [
+        for (var i = 0; i < 3; i++)
+          GroupRow(
+            pos: innerPos(i, 3),
+            color: Colors.transparent,
+            separatorInset: 16,
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+            child: Row(children: [
+              Container(width: 120, height: 12,
+                  decoration: BoxDecoration(color: fill, borderRadius: BorderRadius.circular(AppRadii.chip))),
+              const Spacer(),
+              Container(width: 34, height: 12,
+                  decoration: BoxDecoration(color: fill, borderRadius: BorderRadius.circular(AppRadii.chip))),
+            ]),
+          ),
+      ]),
+    ]);
+
+    if (MediaQuery.disableAnimationsOf(context)) return content;
+    return FadeTransition(
+      opacity: Tween<double>(begin: 0.45, end: 0.8)
+          .animate(CurvedAnimation(parent: _pulse, curve: Curves.easeInOut)),
+      child: content,
+    );
+  }
+}
+
+class _ErrorCard extends StatelessWidget {
+  const _ErrorCard({required this.text, required this.onRetry});
+
+  final String text;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.watch<L10n>();
+    return _Card(
+      child: Column(children: [
+        Icon(CupertinoIcons.wifi_slash, size: 30, color: adaptiveText4(context)),
+        const SizedBox(height: 12),
+        Text(text, textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveTextSoft(context))),
+        const SizedBox(height: 16),
+        AppButton.secondary(label: l.t('retry'), expand: false, onPressed: onRetry),
+      ]),
+    );
+  }
+}
+
+/// Контейнер карточки этого экрана: заливка + волосяная рамка, как у групп
+/// настроек рядом. Раньше карточка лимита была единственной на всём экране с
+/// мягкой тенью — она «висела» на другой высоте, чем соседние блоки.
+class _Card extends StatelessWidget {
+  const _Card({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppRadii.card),
-        boxShadow: cardShadow(isDark),
+        border: Border.all(color: groupSeparator(context), width: hairline(context)),
       ),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Icon(icon, size: 16, color: C.text4),
-        const SizedBox(width: 10),
-        Expanded(child: Text(text,
-          style: TextStyle(fontSize: 13, color: adaptiveText3(context), height: 1.45))),
-      ]),
+      child: Column(children: [child]),
     );
   }
 }

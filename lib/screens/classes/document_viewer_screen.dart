@@ -289,6 +289,18 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
   List<Annotation> _onPage(int pageNumber) =>
       _annotations.where((a) => a.page == pageNumber).toList();
 
+  /// Пометки, которые стоит попробовать найти на этой странице.
+  ///
+  /// Номер страницы — свойство пагинации клиента, а не документа: docx здесь
+  /// открывается как PDF (бэкенд конвертирует его LibreOffice), а на сайте тот
+  /// же docx рисуется сплошным потоком без страниц и пометка сохраняется с
+  /// page = 0. Такие пометки ищем на каждой странице по тексту и якорю —
+  /// locateAnnotation вернёт null там, где фрагмента нет, и лишнего не
+  /// закрасится.
+  List<Annotation> _paintableOn(int pageNumber) => _annotations
+      .where((a) => a.page == pageNumber || a.page == 0)
+      .toList();
+
   // ── Текст страницы и геометрия пометок ─────────────────────────────────
 
   /// Просит текст страницы, если его ещё нет. Загрузка запускается ПОСЛЕ
@@ -373,11 +385,11 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
   List<({Annotation a, List<PdfRect> rects})> _geometryFor(int pageNumber) {
     final text = _pageTexts[pageNumber];
     if (text == null) {
-      if (_onPage(pageNumber).isNotEmpty) _ensureText(pageNumber);
+      if (_paintableOn(pageNumber).isNotEmpty) _ensureText(pageNumber);
       return const [];
     }
     final out = <({Annotation a, List<PdfRect> rects})>[];
-    for (final a in _onPage(pageNumber)) {
+    for (final a in _paintableOn(pageNumber)) {
       final rects = highlightRects(text, a);
       if (rects.isNotEmpty) out.add((a: a, rects: rects));
     }
@@ -1005,11 +1017,31 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
 
   // ── Переходы и списки ──────────────────────────────────────────────────
 
+  /// Страница, на которой лежит фрагмент пометки без номера страницы (её
+  /// сделали на сайте в docx — там документ сплошной и страниц нет).
+  Future<int?> _findPage(Annotation a) async {
+    if (!_controller.isReady) return null;
+    final pages = _controller.document.pages;
+    for (var i = 0; i < pages.length; i++) {
+      final n = i + 1;
+      var text = _pageTexts[n];
+      if (text == null) {
+        text = await pages[i].loadStructuredText();
+        if (!mounted) return null;
+        setState(() => _rememberPageText(text!));
+      }
+      if (locateAnnotation(text.fullText, a) != null) return n;
+    }
+    return null;
+  }
+
   Future<void> _goToAnnotation(int id) async {
     final a = _annotations.where((x) => x.id == id).firstOrNull;
     if (a == null) return;
-    if (_controller.isReady && a.page > 0) {
-      await _controller.goToPage(pageNumber: a.page);
+    final page = a.page > 0 ? a.page : await _findPage(a);
+    if (!mounted) return;
+    if (_controller.isReady && page != null && page > 0) {
+      await _controller.goToPage(pageNumber: page);
     }
     if (!mounted) return;
     setState(() => _flashId = a.id);

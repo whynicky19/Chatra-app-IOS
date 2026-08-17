@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:ui' as ui;
 import 'dart:ui' show ImageFilter;
 
+import 'package:dio/dio.dart' show DioException;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -19,6 +21,7 @@ import '../../widgets/toast.dart';
 import 'widgets/detail_page_theme.dart';
 import 'widgets/highlight_menu.dart';
 import 'widgets/highlights_section.dart';
+import 'widgets/selection_handle.dart';
 
 /// Просмотрщик материала лекции внутри приложения: PDF, Word и презентации.
 ///
@@ -70,6 +73,11 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
   int _page = 1;
   int _pageCount = 0;
   int? _flashId;
+
+  /// Чип с номером страницы — подсказка при перелистывании, а не постоянный
+  /// элемент: иначе он висит поверх первой строки документа.
+  bool _pageChipVisible = false;
+  Timer? _pageChipTimer;
 
   /// Текущее выделение — по нему показывается нижняя панель действий.
   PdfPageTextRange? _selection;
@@ -152,6 +160,7 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
   @override
   void dispose() {
     _controller.removeListener(_onControllerChange);
+    _pageChipTimer?.cancel();
     _dockEntry?.remove();
     _dockEntry = null;
     super.dispose();
@@ -162,11 +171,22 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
     final p = _controller.pageNumber ?? 1;
     final total = _controller.document.pages.length;
     if (p != _page || total != _pageCount) {
+      final pageChanged = p != _page || _pageCount == 0;
       setState(() {
         _page = p;
         _pageCount = total;
       });
+      if (pageChanged) _flashPageChip();
     }
+  }
+
+  /// Показать чип и убрать его через полторы секунды.
+  void _flashPageChip() {
+    _pageChipTimer?.cancel();
+    if (!_pageChipVisible) setState(() => _pageChipVisible = true);
+    _pageChipTimer = Timer(const Duration(milliseconds: 1600), () {
+      if (mounted) setState(() => _pageChipVisible = false);
+    });
   }
 
   /// Word и презентации бэкенд отдаёт в виде PDF. Конвертация кэшируется, но
@@ -180,8 +200,21 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
       } else {
         _pdfUrl = widget.url.split('#').first;
       }
-    } catch (_) {
-      if (mounted) _error = context.read<L10n>().t('preview_failed');
+    } catch (e) {
+      if (mounted) {
+        // Показываем ЧТО именно не так (истёкшая ссылка, нет конвертера на
+        // сервере, старая версия API) — иначе на экране безликое «не удалось»,
+        // по которому непонятно, чинить сервер или просто открыть заново.
+        final detail = e is DioException && e.response?.data is Map
+            ? (e.response!.data as Map)['detail']?.toString()
+            : null;
+        final code = e is DioException ? e.response?.statusCode : null;
+        _error = [
+          context.read<L10n>().t('preview_failed'),
+          if (detail != null && detail.isNotEmpty) detail,
+          if (detail == null && code != null) 'HTTP $code',
+        ].join('\n');
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -296,24 +329,21 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
   Future<void> _onSelectionChange(PdfTextSelection selection) async {
     if (!selection.hasSelectedText) {
       if (_menuTouched) return; // это касание самой панели, фрагмент помним
-      if (_selection != null && mounted) {
-        setState(() {
-          _selection = null;
-          _selectionText = '';
-        });
-      }
+      _selection = null;
+      _selectionText = '';
       return;
     }
     final ranges = await selection.getSelectedTextRanges();
     final text = await selection.getSelectedText();
     if (!mounted || ranges.isEmpty || text.trim().isEmpty) return;
-    setState(() {
-      // Выделение может пересечь границу страниц; пометка живёт на одной
-      // странице, поэтому берём ту, где выделение началось.
-      _selection = ranges.first;
-      _selectionText = text;
-      _selectedSaved = null;
-    });
+    // Намеренно без setState: перерисовка всего экрана на каждое движение
+    // пальца рвала перетаскивание маркеров. Панель действий строит сам
+    // просмотрщик, ей наше состояние не нужно.
+    _selection = ranges.first;
+    _selectionText = text;
+    if (_selectedSaved != null) {
+      setState(() => _selectedSaved = null);
+    }
   }
 
   void _selectSaved(Annotation a) {
@@ -340,45 +370,71 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
 
   // ── Создание и правка ──────────────────────────────────────────────────
 
-  /// Панель действий для нового выделения — пришвартована к низу экрана: у
-  /// самого выделения она перекрывала бы выделенный текст.
+  /// Доводит выделение до целых слов, когда палец отпустил маркер.
+  ///
+  /// Просмотрщик выделяет ровно те символы, до которых дотянулся палец, и
+  /// выделение застывало на половине слова. В приложениях Apple оно всегда
+  /// прилипает к словам — здесь то же самое, но в момент отпускания: делать
+  /// это на каждое движение нельзя, перетаскивание сбивалось бы.
+  Future<void> _snapSelectionToWords() async {
+    final delegate = _controller.textSelectionDelegate;
+    if (!delegate.hasSelectedText) return;
+    final ranges = await delegate.getSelectedTextRanges();
+    if (ranges.isEmpty) return;
+
+    final first = ranges.first;
+    final last = ranges.last;
+    final start = snapToWords(first.pageText.fullText, first.start, first.end).start;
+    // Конечная граница считается по своей странице (выделение может идти через
+    // разворот), индекс у точки конца включительный — отсюда -1.
+    final end = snapToWords(last.pageText.fullText, last.start, last.end).end;
+    if (start == first.start && end == last.end) return;
+
+    await delegate.setTextSelectionPointRange(PdfTextSelectionRange.fromPoints(
+      PdfTextSelectionPoint(first.pageText, start),
+      PdfTextSelectionPoint(last.pageText, (end - 1).clamp(0, last.pageText.charRects.length - 1)),
+    ));
+  }
+
+  /// Высота строки, к которой прицеплен маркер, в экранных пикселях.
+  double _anchorLineHeight(PdfTextSelectionAnchor anchor) {
+    final zoom = _controller.isReady ? _controller.currentZoom : 1.0;
+    return (anchor.rect.height * zoom).clamp(14.0, 30.0);
+  }
+
+  /// Маркер выделения (см. SelectionHandle): маленький шарик с широкой
+  /// зоной захвата — просмотрщик вешает pan-жест на сам виджет.
   Widget _buildSelectionHandle(
     BuildContext context,
     PdfTextSelectionAnchor anchor,
     PdfViewerTextSelectionAnchorHandleState state,
+  ) =>
+      SelectionHandle(
+        isStart: anchor.type == PdfTextSelectionAnchorType.a,
+        lineHeight: _anchorLineHeight(anchor),
+        color: detailAccent(context),
+        dragging: state == PdfViewerTextSelectionAnchorHandleState.dragging,
+      );
+
+  /// Сдвиг зоны захвата: шарик стоит в её центре, поэтому виджет двигаем так,
+  /// чтобы шарик оказался у самого края выделения, а запас под палец ушёл
+  /// вокруг него, а не на текст.
+  Offset _handleOffset(
+    BuildContext context,
+    PdfTextSelectionAnchor anchor,
+    PdfViewerTextSelectionAnchorHandleState state,
   ) {
-    final accent = detailAccent(context);
-    final isStart = anchor.type == PdfTextSelectionAnchorType.a;
-    final scale =
-        state == PdfViewerTextSelectionAnchorHandleState.dragging ? 1.15 : 1.0;
-    return SizedBox(
-      width: 14,
-      height: 26,
-      child: Stack(
-          alignment: isStart ? Alignment.bottomRight : Alignment.topLeft,
-          children: [
-            // Ножка вдоль края выделения.
-            Align(
-              alignment: isStart ? Alignment.bottomRight : Alignment.topLeft,
-              child: Container(width: 2, height: 20, color: accent),
-            ),
-            Align(
-              alignment: isStart ? Alignment.topRight : Alignment.bottomLeft,
-              child: Transform.scale(
-                scale: scale,
-                child: Container(
-                  width: 11,
-                  height: 11,
-                  margin: const EdgeInsets.only(right: -4.5, left: -4.5),
-                  decoration:
-                      BoxDecoration(color: accent, shape: BoxShape.circle),
-                ),
-              ),
-            ),
-          ]),
-    );
+    const half = SelectionHandle.defaultTouchSize / 2;
+    final lineHeight = _anchorLineHeight(anchor);
+    // Начальный маркер прицеплен правым нижним углом к началу выделения,
+    // конечный — левым верхним к его концу (см. pdfrx).
+    return anchor.type == PdfTextSelectionAnchorType.a
+        ? Offset(half, half - (lineHeight / 2 + SelectionHandle.ballSize / 2) + lineHeight)
+        : Offset(-half, -half + (lineHeight / 2 + SelectionHandle.ballSize / 2) - lineHeight);
   }
 
+  /// Панель действий для нового выделения — пришвартована к низу экрана: у
+  /// самого выделения она перекрывала бы выделенный текст.
   Widget? _buildSelectionMenu(
       BuildContext context, PdfViewerContextMenuBuilderParams params) {
     final delegate = params.textSelectionDelegate;
@@ -805,7 +861,15 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
               left: 0,
               right: 0,
               child: Center(
-                  child: _PageChip(text: '$_page ${l.t('of')} $_pageCount')),
+                child: IgnorePointer(
+                  child: AnimatedOpacity(
+                    opacity: _pageChipVisible ? 1 : 0,
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    child: _PageChip(text: '$_page ${l.t('of')} $_pageCount'),
+                  ),
+                ),
+              ),
             ),
         ]),
       ),
@@ -880,8 +944,14 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
           showContextMenuAutomatically: true,
           onTextSelectionChange: _onSelectionChange,
           // Свои маркеры вместо стандартных синих треугольников 30×30: как в
-          // iOS — тонкая ножка и небольшой шарик.
+          // iOS — тонкая ножка и небольшой шарик с большой зоной захвата.
           buildSelectionHandle: _buildSelectionHandle,
+          calcSelectionHandleOffset: _handleOffset,
+          onSelectionHandlePanStart: (_) => hapticSelection(),
+          onSelectionHandlePanEnd: (_) {
+            hapticLight();
+            _snapSelectionToWords();
+          },
         ),
         // Панель действий отдаём просмотрщику как его контекстное меню: свой
         // слой выделения он держит поверх содержимого, и панель, положенная

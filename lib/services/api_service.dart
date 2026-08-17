@@ -693,6 +693,15 @@ class ApiService {
     return _asList(response.data);
   }
 
+  /// PDF-версия office-файла (.ppt/.pptx/.doc/.docx/.rtf) — конвертирует
+  /// бэкенд (LibreOffice) и кэширует, чтобы материал открывался во встроенном
+  /// просмотрщике с выделениями, а не системным вьюером.
+  Future<Map<String, dynamic>> previewPdf(String url) async {
+    final response = await _dio.get('/upload/utils/preview-pdf',
+        queryParameters: {'url': url});
+    return _asMap(response.data);
+  }
+
   // ── Выделения и заметки к лекциям ─────────────────────────────────────
   // Серверная истина, общая с сайтом: пометка с телефона видна в вебе и наоборот.
 

@@ -15,12 +15,16 @@ class HighlightsSection extends StatelessWidget {
   final ValueChanged<Annotation> onTap;
   final ValueChanged<Annotation> onDelete;
 
+  /// В шторке просмотрщика заголовок уже есть у самой шторки.
+  final bool hideHeader;
+
   const HighlightsSection({
     super.key,
     required this.items,
     required this.t,
     required this.onTap,
     required this.onDelete,
+    this.hideHeader = false,
   });
 
   @override
@@ -30,7 +34,7 @@ class HighlightsSection extends StatelessWidget {
     final hair = 1 / MediaQuery.devicePixelRatioOf(context);
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Padding(
+      if (!hideHeader) Padding(
         padding: const EdgeInsets.only(left: 2, bottom: 8),
         child: Row(children: [
           Text(t('hl_section').toUpperCase(), style: sectionCaptionStyle(context)),

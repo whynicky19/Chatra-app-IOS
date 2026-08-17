@@ -33,6 +33,10 @@ dependencies:
   firebase_crashlytics: ^5.2.6
   package_info_plus: ^9.0.1
   flutter_math_fork: ^0.7.3
+  # Просмотрщик PDF внутри приложения (MIT; движок PDFium — BSD-3-Clause):
+  # без него выделять текст в материалах нельзя — системный вьюер iOS не даёт
+  # ни текстового слоя, ни событий выделения.
+  pdfrx: ^2.4.7
 dev_dependencies:
   flutter_test:
     sdk: flutter

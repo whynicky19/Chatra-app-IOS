@@ -36,6 +36,14 @@ class L10n extends ChangeNotifier {
       'hl_color_blue': 'Синий',
       'hl_color_red': 'Красный',
       'hl_save_failed': 'Не удалось сохранить выделение',
+      'hl_empty': 'Выделите текст в материале — он появится здесь.',
+      'preview_failed': 'Не удалось открыть предпросмотр файла',
+      'preview_preparing': 'Готовим предпросмотр…',
+      'open_in_system_viewer': 'Открыть в просмотрщике',
+      'loading': 'Загрузка…',
+      'pages': 'Страницы',
+      'of': 'из',
+      'hl_more': 'Ещё',
       'copy': 'Копировать',
 
       // --- Модерация и блокировка ---
@@ -909,6 +917,14 @@ class L10n extends ChangeNotifier {
       'hl_color_blue': 'Көк',
       'hl_color_red': 'Қызыл',
       'hl_save_failed': 'Белгілеуді сақтау мүмкін болмады',
+      'hl_empty': 'Материалдағы мәтінді белгілеңіз — ол осында шығады.',
+      'preview_failed': 'Файлды алдын ала қарау мүмкін болмады',
+      'preview_preparing': 'Алдын ала қарауды дайындаудамыз…',
+      'open_in_system_viewer': 'Қарау бағдарламасында ашу',
+      'loading': 'Жүктелуде…',
+      'pages': 'Беттер',
+      'of': '/',
+      'hl_more': 'Тағы',
       'copy': 'Көшіру',
 
       // --- Модерация и блокировка ---
@@ -1780,6 +1796,14 @@ class L10n extends ChangeNotifier {
       'hl_color_blue': 'Blue',
       'hl_color_red': 'Red',
       'hl_save_failed': 'Could not save the highlight',
+      'hl_empty': 'Select text in a material — it will show up here.',
+      'preview_failed': 'Could not open the file preview',
+      'preview_preparing': 'Preparing preview…',
+      'open_in_system_viewer': 'Open in system viewer',
+      'loading': 'Loading…',
+      'pages': 'Pages',
+      'of': 'of',
+      'hl_more': 'More',
       'copy': 'Copy',
 
       // --- Moderation and blocking ---

@@ -9,6 +9,7 @@ import '../../services/api_service.dart';
 import '../../utils/ai_ask.dart';
 import '../../utils/haptics.dart';
 import '../../widgets/toast.dart';
+import 'document_viewer_screen.dart';
 import 'widgets/detail_page_theme.dart';
 import 'widgets/file_card.dart';
 import 'widgets/highlight_menu.dart';
@@ -179,6 +180,37 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
     );
   }
 
+  /// Материалы с текстовым слоем открываем своим просмотрщиком — там работают
+  /// выделения и заметки. Остальное (таблицы, архивы, картинки) по-прежнему
+  /// уходит в системный вьюер.
+  static const _viewerExts = {'pdf', 'ppt', 'pptx', 'doc', 'docx', 'rtf'};
+
+  Future<void> _openFile(int index, String url, String name) async {
+    final ext = name.split('.').last.toLowerCase();
+    if (!_canAnnotate || index < 0 || !_viewerExts.contains(ext)) {
+      widget.onOpenFile(context, url, name);
+      return;
+    }
+    final result = await Navigator.push<Object?>(context, MaterialPageRoute(
+      builder: (_) => DocumentViewerScreen(
+        url: url,
+        name: name,
+        lectureId: widget.lectureId!,
+        classId: widget.classId!,
+        fileIndex: index,
+        lectureTitle: widget.title,
+      ),
+    ));
+    // Вопрос из просмотрщика прокидываем дальше — на экран класса, который
+    // переключится на вкладку «ИИ».
+    if (result is AiAsk && mounted) {
+      Navigator.pop(context, result);
+      return;
+    }
+    // Вернулись обратно: в материале могли появиться новые пометки.
+    if (mounted) await _loadAnnotations();
+  }
+
   // ── «Спросить AI» ──────────────────────────────────────────────────────
   // Отдельного ИИ-экрана здесь нет: возвращаем вопрос на экран класса, он
   // переключается на свою вкладку «ИИ» и отправляет его в существующий тред.
@@ -210,19 +242,26 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
 
     void done() => state.hideToolbar(true);
 
-    return _MenuLayout(
-      anchor: state.contextMenuAnchors,
-      child: HighlightMenu(
-        t: l.t,
-        onColor: (c) async { done(); hapticLight(); await _create(sel, c); },
-        onNote: () async {
-          done();
-          final note = await _askNote(null);
-          if (note == null) return;
-          await _create(sel, 'yellow', comment: note.isEmpty ? null : note);
-        },
-        onAskAi: () { done(); _askAi(rawText: selectedText); },
-        onCopy: () { done(); Clipboard.setData(ClipboardData(text: selectedText)); },
+    // Панель пришвартована к низу экрана, а не висит у выделения: всплывающее
+    // меню перекрывает как раз выделенный текст (см. HighlightMenu).
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: SafeArea(
+        child: HighlightMenuDock(
+          visible: true,
+          child: HighlightMenu(
+            t: l.t,
+            onColor: (c) async { done(); await _create(sel, c); },
+            onNote: () async {
+              done();
+              final note = await _askNote(null);
+              if (note == null) return;
+              await _create(sel, 'yellow', comment: note.isEmpty ? null : note);
+            },
+            onAskAi: () { done(); _askAi(rawText: selectedText); },
+            onCopy: () { done(); Clipboard.setData(ClipboardData(text: selectedText)); },
+          ),
+        ),
       ),
     );
   }
@@ -314,7 +353,24 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
   /// место (тап по строке списка «Мои выделения»).
   Future<void> _jumpTo(Annotation a) async {
     if (!a.isLectureText) {
-      await _openSaved(a);
+      // Пометка внутри материала: открываем файл и сразу подсвечиваем место.
+      final file = a.fileIndex >= 0 && a.fileIndex < widget.files.length
+          ? widget.files[a.fileIndex]
+          : null;
+      if (file == null) { await _openSaved(a); return; }
+      final result = await Navigator.push<Object?>(context, MaterialPageRoute(
+        builder: (_) => DocumentViewerScreen(
+          url: file,
+          name: _fileDisplayName(file),
+          lectureId: widget.lectureId!,
+          classId: widget.classId!,
+          fileIndex: a.fileIndex,
+          lectureTitle: widget.title,
+          focusAnnotationId: a.id,
+        ),
+      ));
+      if (result is AiAsk && mounted) { Navigator.pop(context, result); return; }
+      if (mounted) await _loadAnnotations();
       return;
     }
     final ctx = _bodyKey.currentContext;
@@ -348,14 +404,13 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
       }
       spans.add(TextSpan(
         text: widget.content.substring(start, a.endOffset),
+        // Только заливка, без подчёркиваний: на многострочном фрагменте линии
+        // читались как жирные полосы под текстом. Заметка видна по тапу и в
+        // списке «Мои выделения».
         style: base.copyWith(
           backgroundColor: _flashId == a.id
               ? highlightSwatch(a.color)
               : highlightFill(a.color, brightness),
-          // Заметка обозначается подчёркиванием — как и на сайте.
-          decoration: a.comment != null ? TextDecoration.underline : null,
-          decorationColor: highlightSwatch(a.color).withValues(alpha: 0.9),
-          decorationThickness: 2,
         ),
         recognizer: TapGestureRecognizer()..onTap = () => _openSaved(a),
       ));
@@ -445,7 +500,7 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
                       files: [
                         for (final f in widget.files) FileEntry(name: _fileDisplayName(f), url: f, previewUrl: f),
                       ],
-                      onOpen: (f) => widget.onOpenFile(context, f.url, f.name),
+                      onOpen: (f) => _openFile(widget.files.indexOf(f.url), f.url, f.name),
                     ),
                   ],
                   if (_annotations.isNotEmpty) ...[
@@ -476,39 +531,6 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
         ),
       ),
     );
-  }
-}
-
-/// Ставит меню над выделением (или под ним, если сверху не помещается) и не
-/// даёт ему уехать за края экрана — та же логика, что у системной панели iOS.
-class _MenuLayout extends StatelessWidget {
-  final TextSelectionToolbarAnchors anchor;
-  final Widget child;
-  const _MenuLayout({required this.anchor, required this.child});
-
-  static const _menuWidth = 320.0;
-  static const _menuHeight = 54.0;
-  static const _gap = 8.0;
-
-  @override
-  Widget build(BuildContext context) {
-    final size = MediaQuery.sizeOf(context);
-    final padding = MediaQuery.paddingOf(context);
-    final above = anchor.primaryAnchor.dy - _menuHeight - _gap;
-    final fitsAbove = above > padding.top + 8;
-    final top = fitsAbove
-        ? above
-        : (anchor.secondaryAnchor?.dy ?? anchor.primaryAnchor.dy) + _gap;
-    final left = (anchor.primaryAnchor.dx - _menuWidth / 2)
-        .clamp(8.0, (size.width - _menuWidth - 8).clamp(8.0, double.infinity));
-
-    return Stack(children: [
-      Positioned(
-        left: left,
-        top: top.clamp(padding.top + 8, size.height - _menuHeight - 8),
-        child: child,
-      ),
-    ]);
   }
 }
 

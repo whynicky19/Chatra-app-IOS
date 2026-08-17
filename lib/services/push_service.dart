@@ -72,8 +72,14 @@ class PushService {
     });
   }
 
+  /// Автотестовые прогоны (flutter drive) идут без запроса разрешения: системный
+  /// диалог перехватывает ввод и делает прогон бессмысленным. В обычных сборках
+  /// флага нет, поведение прежнее.
+  static const _skipPermission = bool.fromEnvironment('NO_PUSH_PROMPT');
+
   Future<void> onAuthenticated() async {
     _isAuthed = true;
+    if (_skipPermission) return;
     try {
       await _fm.requestPermission(alert: true, badge: true, sound: true);
       final token = await _fm.getToken();

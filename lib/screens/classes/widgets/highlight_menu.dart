@@ -4,15 +4,18 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../../models/annotation.dart';
+import '../../../utils/haptics.dart';
 
-/// Компактное плавающее меню над выделенным фрагментом: цвета, «Заметка»,
-/// «Спросить AI» и «Ещё».
+/// Панель действий над выделенным фрагментом: цвета, «Заметка», «Спросить AI»,
+/// «Ещё».
 ///
-/// Своё, а не системное меню выделения: системное умеет только текстовые
-/// кнопки, а здесь нужны цветные точки. Форма повторяет нативную панель iOS —
-/// матовая капсула со скруглением 14, волосяная рамка и мягкая тень.
+/// Она пришвартована к низу экрана, а не висит у самого выделения: на телефоне
+/// всплывающее меню перекрывает как раз тот текст, который человек выделил, и
+/// уезжает за край у нижних строк. Тёмная карточка поверх светлой страницы
+/// читается как отдельный слой управления — так же, как панель разметки в
+/// Books и Files.
 class HighlightMenu extends StatelessWidget {
-  /// Уже сохранённое выделение: тогда доступны удаление и текущий цвет.
+  /// Уже сохранённое выделение: тогда виден текущий цвет и доступно удаление.
   final Annotation? existing;
   final ValueChanged<String> onColor;
   final VoidCallback onNote;
@@ -34,48 +37,84 @@ class HighlightMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = (isDark ? const Color(0xFF2C2C2E) : CupertinoColors.systemBackground)
-        .withValues(alpha: 0.92);
-    final divider = (isDark ? CupertinoColors.systemGrey : CupertinoColors.systemGrey4)
-        .withValues(alpha: isDark ? 0.35 : 0.9);
+    const surface = Color(0xFF2A2A2E);
+    final divider = CupertinoColors.white.withValues(alpha: 0.12);
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(22),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
         child: Container(
           decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: divider, width: 1 / MediaQuery.devicePixelRatioOf(context)),
+            color: surface.withValues(alpha: 0.96),
+            borderRadius: BorderRadius.circular(22),
             boxShadow: [
               BoxShadow(
-                color: CupertinoColors.black.withValues(alpha: isDark ? 0.5 : 0.16),
-                blurRadius: 22,
-                offset: const Offset(0, 8),
+                color: CupertinoColors.black.withValues(alpha: 0.28),
+                blurRadius: 28,
+                offset: const Offset(0, 10),
               ),
             ],
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            for (final c in highlightColors)
-              _Dot(
-                color: highlightSwatch(c),
-                selected: existing?.color == c,
-                onTap: () => onColor(c),
-              ),
-            _Divider(color: divider),
-            _Action(
-              icon: CupertinoIcons.pencil,
-              label: t('hl_note'),
-              active: existing?.comment != null,
-              onTap: onNote,
-            ),
-            _Action(icon: CupertinoIcons.sparkles, label: t('hl_ask_ai'), onTap: onAskAi),
-            _Divider(color: divider),
-            _More(t: t, onCopy: onCopy, onDelete: onDelete),
+          padding: const EdgeInsets.fromLTRB(10, 12, 10, 8),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+              for (final c in highlightColors)
+                _Dot(
+                  key: ValueKey('hl-color-$c'),
+                  color: highlightSwatch(c),
+                  selected: existing?.color == c,
+                  onTap: () { hapticLight(); onColor(c); },
+                ),
+            ]),
+            const SizedBox(height: 10),
+            Container(height: 1, color: divider),
+            const SizedBox(height: 4),
+            Row(children: [
+              Expanded(child: _Action(
+                icon: CupertinoIcons.text_bubble,
+                label: t('hl_note'),
+                active: existing?.comment != null,
+                onTap: onNote,
+              )),
+              Container(width: 1, height: 30, color: divider),
+              Expanded(child: _Action(
+                icon: CupertinoIcons.sparkles,
+                label: t('hl_ask_ai'),
+                onTap: onAskAi,
+              )),
+              Container(width: 1, height: 30, color: divider),
+              Expanded(child: _Action(
+                icon: CupertinoIcons.ellipsis,
+                label: t('hl_more'),
+                onTap: () => _showMore(context),
+              )),
+            ]),
           ]),
+        ),
+      ),
+    );
+  }
+
+  void _showMore(BuildContext context) {
+    showCupertinoModalPopup<void>(
+      context: context,
+      builder: (ctx) => CupertinoActionSheet(
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () { Navigator.pop(ctx); onCopy(); },
+            child: Text(t('copy')),
+          ),
+          if (onDelete != null)
+            CupertinoActionSheetAction(
+              isDestructiveAction: true,
+              onPressed: () { Navigator.pop(ctx); onDelete!(); },
+              child: Text(t('delete')),
+            ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(ctx),
+          child: Text(t('cancel')),
         ),
       ),
     );
@@ -86,7 +125,7 @@ class _Dot extends StatelessWidget {
   final Color color;
   final bool selected;
   final VoidCallback onTap;
-  const _Dot({required this.color, required this.selected, required this.onTap});
+  const _Dot({super.key, required this.color, required this.selected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -95,20 +134,23 @@ class _Dot extends StatelessWidget {
       onTap: onTap,
       // 44×44 по HIG — цель нажатия, а не размер самой точки.
       child: SizedBox(
-        width: 44,
+        width: 52,
         height: 44,
         child: Center(
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 140),
+            duration: const Duration(milliseconds: 160),
             curve: Curves.easeOutCubic,
-            width: selected ? 22 : 19,
-            height: selected ? 22 : 19,
+            width: 28,
+            height: 28,
             decoration: BoxDecoration(
               color: color,
               shape: BoxShape.circle,
               border: selected
-                  ? Border.all(color: CupertinoColors.label.resolveFrom(context), width: 2)
-                  : Border.all(color: CupertinoColors.black.withValues(alpha: 0.08), width: 1),
+                  ? Border.all(color: CupertinoColors.white, width: 2.5)
+                  : null,
+              boxShadow: selected
+                  ? [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 10)]
+                  : null,
             ),
           ),
         ),
@@ -126,21 +168,21 @@ class _Action extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = active
-        ? CupertinoTheme.of(context).primaryColor
-        : CupertinoColors.label.resolveFrom(context);
+    final color = active ? const Color(0xFF7CC5F5) : CupertinoColors.white;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Container(
-        height: 44,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 5),
+      onTap: () { hapticSelection(); onTap(); },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 20, color: color),
+          const SizedBox(height: 5),
           Text(label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: color,
+                fontSize: 12.5, fontWeight: FontWeight.w500,
+                letterSpacing: -0.2, color: color,
               )),
         ]),
       ),
@@ -148,56 +190,33 @@ class _Action extends StatelessWidget {
   }
 }
 
-class _More extends StatelessWidget {
-  final String Function(String) t;
-  final VoidCallback onCopy;
-  final VoidCallback? onDelete;
-  const _More({required this.t, required this.onCopy, this.onDelete});
+/// Обёртка, которая показывает панель снизу с плавным появлением.
+class HighlightMenuDock extends StatelessWidget {
+  final Widget child;
+  final bool visible;
+  final EdgeInsets padding;
+
+  const HighlightMenuDock({
+    super.key,
+    required this.child,
+    required this.visible,
+    this.padding = const EdgeInsets.fromLTRB(16, 0, 16, 12),
+  });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => showCupertinoModalPopup<void>(
-        context: context,
-        builder: (ctx) => CupertinoActionSheet(
-          actions: [
-            CupertinoActionSheetAction(
-              onPressed: () { Navigator.pop(ctx); onCopy(); },
-              child: Text(t('copy')),
-            ),
-            if (onDelete != null)
-              CupertinoActionSheetAction(
-                isDestructiveAction: true,
-                onPressed: () { Navigator.pop(ctx); onDelete!(); },
-                child: Text(t('delete')),
-              ),
-          ],
-          cancelButton: CupertinoActionSheetAction(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(t('cancel')),
-          ),
+    return AnimatedSlide(
+      duration: const Duration(milliseconds: 240),
+      curve: Curves.easeOutCubic,
+      offset: visible ? Offset.zero : const Offset(0, 0.35),
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 180),
+        opacity: visible ? 1 : 0,
+        child: IgnorePointer(
+          ignoring: !visible,
+          child: Padding(padding: padding, child: child),
         ),
-      ),
-      child: SizedBox(
-        width: 44,
-        height: 44,
-        child: Icon(CupertinoIcons.ellipsis,
-            size: 17, color: CupertinoColors.label.resolveFrom(context)),
       ),
     );
   }
-}
-
-class _Divider extends StatelessWidget {
-  final Color color;
-  const _Divider({required this.color});
-
-  @override
-  Widget build(BuildContext context) => Container(
-        width: 1 / MediaQuery.devicePixelRatioOf(context),
-        height: 20,
-        margin: const EdgeInsets.symmetric(horizontal: 3),
-        color: color,
-      );
 }

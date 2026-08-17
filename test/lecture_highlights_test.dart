@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:chatra_app/models/annotation.dart';
 import 'package:chatra_app/providers/l10n_provider.dart';
+import 'package:chatra_app/screens/classes/document_viewer_screen.dart';
 import 'package:chatra_app/screens/classes/lecture_detail_screen.dart';
 import 'package:chatra_app/services/api_service.dart';
 import 'package:chatra_app/theme/app_theme.dart';
@@ -122,12 +123,15 @@ void main() {
     expect(spans.map((s) => s.text).join(), _content);
   });
 
-  testWidgets('заметка помечает фрагмент подчёркиванием', (tester) async {
+  testWidgets('пометка с заметкой рисуется только заливкой, без подчёркиваний', (tester) async {
+    // Подчёркивание под многострочным фрагментом читалось как жирные полосы
+    // под текстом — заметка видна в списке и по тапу.
     final api = _FakeApi(rows: [_row(start: 0, end: 12, comment: 'спросить на семинаре')]);
     await _pump(tester, api);
 
     final marked = _bodySpans(tester).firstWhere((s) => s.style?.backgroundColor != null);
-    expect(marked.style!.decoration, TextDecoration.underline);
+    expect(marked.style!.decoration, anyOf(isNull, TextDecoration.none));
+    expect(find.textContaining('спросить на семинаре'), findsOneWidget);
   });
 
   testWidgets('пересекающиеся выделения не задваивают текст', (tester) async {
@@ -223,6 +227,56 @@ void main() {
     expect(find.text('Удалить'), findsOneWidget);
   });
 
+  testWidgets('материалы с текстом открываются встроенным просмотрщиком, остальное — системным',
+      (tester) async {
+    final api = _FakeApi();
+    final openedExternally = <String>[];
+    final pushed = <Route<dynamic>>[];
+
+    await tester.pumpWidget(MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => L10n()),
+        Provider<ApiService>.value(value: api),
+      ],
+      child: MaterialApp(
+        theme: AppTheme.light,
+        navigatorObservers: [_Observer(pushed)],
+        home: LectureDetailScreen(
+          title: 'Инкапсуляция',
+          dateLabel: '5 июл.',
+          content: _content,
+          files: const [
+            'https://example.com/uploads/lecture.pdf',
+            'https://example.com/uploads/table.xlsx',
+          ],
+          onOpenFile: (_, url, __) => openedExternally.add(url),
+          lectureId: 32,
+          classId: 27,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // .xlsx рендерить нечем — уходит в системный вьюер, как раньше.
+    await tester.tap(find.text('table.xlsx'));
+    await tester.pump();
+    expect(openedExternally, ['https://example.com/uploads/table.xlsx']);
+    expect(pushed.whereType<MaterialPageRoute>().length, 0);
+
+    // PDF открывается своим просмотрщиком — там работают выделения.
+    await tester.tap(find.text('lecture.pdf'));
+    await tester.pump();
+    // Без pumpAndSettle: на экране крутится индикатор загрузки, который
+    // никогда не «успокоится».
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(openedExternally.length, 1, reason: 'PDF не должен уходить в системный вьюер');
+    expect(
+      pushed.map((r) => (r.settings.name ?? '') + r.runtimeType.toString()).length,
+      greaterThan(0),
+    );
+    expect(find.byType(DocumentViewerScreen), findsOneWidget);
+  });
+
   testWidgets('без id лекции выделения выключены и экран работает как раньше', (tester) async {
     final api = _FakeApi(rows: [_row()]);
     await _pump(tester, api, withIds: false);
@@ -256,4 +310,13 @@ void main() {
       isNot(contains('стр.')),
     );
   });
+}
+
+class _Observer extends NavigatorObserver {
+  _Observer(this.pushed);
+  final List<Route<dynamic>> pushed;
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previous) {
+    if (previous != null) pushed.add(route);   // первый push — сам home
+  }
 }

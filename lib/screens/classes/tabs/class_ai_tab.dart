@@ -19,6 +19,7 @@ import '../../../widgets/inset_group.dart';
 import '../../../widgets/tappable.dart';
 import '../../../widgets/toast.dart';
 import '../../ai/widgets/ai_message_content.dart';
+import '../widgets/quoted_fragment.dart';
 import '../../../utils/haptics.dart';
 
 class ClassAiTab extends StatefulWidget {
@@ -460,21 +461,30 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
   }
 
   Widget _userBubble(String text) {
+    // Вопрос по выделенному фрагменту показываем цитатой из материала:
+    // подсветка + карточка источника (см. QuotedFragment).
+    final quoted = QuotedFragment.tryParse(text);
     return Padding(
       padding: const EdgeInsets.only(bottom: 16, left: 48),
       child: Align(
         alignment: Alignment.centerRight,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20), topRight: Radius.circular(20),
-              bottomLeft: Radius.circular(20), bottomRight: Radius.circular(6),
-            ),
-          ),
-          child: Text(text, style: const TextStyle(fontSize: 16.5, color: Colors.white, height: 1.35, letterSpacing: -0.3)),
-        ),
+        child: quoted != null
+            ? QuotedFragmentBubble(
+                fragment: quoted,
+                bubbleColor: Theme.of(context).colorScheme.primary,
+                pageLabel: context.read<L10n>().t('hl_page'),
+              )
+            : Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20), topRight: Radius.circular(20),
+                    bottomLeft: Radius.circular(20), bottomRight: Radius.circular(6),
+                  ),
+                ),
+                child: Text(text, style: const TextStyle(fontSize: 16.5, color: Colors.white, height: 1.35, letterSpacing: -0.3)),
+              ),
       ),
     );
   }

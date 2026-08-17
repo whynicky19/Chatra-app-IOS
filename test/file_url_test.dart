@@ -71,6 +71,30 @@ void main() {
     });
   });
 
+  group('ссылка на предпросмотр Word и презентаций', () {
+    // Сервер строит её из своего APP_BASE_URL — в разработке это localhost,
+    // то есть сам телефон. Без подмены хоста Word не открывался нигде, кроме
+    // симулятора, где localhost совпадает с адресом машины.
+    test('хост подменяется на адрес, по которому сервер виден с устройства', () {
+      const pdf = 'http://localhost:8000/api/uploads/r2/previews/abc.pdf'
+          '?exp=1787048135&sig=cedccec';
+      expect(
+        api.fixUrl(pdf),
+        'http://192.168.10.13:8000/api/uploads/r2/previews/abc.pdf'
+            '?exp=1787048135&sig=cedccec',
+      );
+    });
+
+    test('чужой (уже доступный) хост остаётся как есть', () {
+      const pdf = 'https://api.chatra.app/api/uploads/r2/previews/abc.pdf?sig=1';
+      expect(api.fixUrl(pdf), pdf);
+    });
+
+    test('пустой ответ сервера не превращается в ссылку на baseUrl', () {
+      expect(api.fixUrl(''), '');
+    });
+  });
+
   group('toRelativeUploadUrl', () {
     test('срезает origin', () {
       expect(

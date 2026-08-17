@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../models/annotation.dart';
 import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/errors.dart';
@@ -72,9 +73,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final primary = Theme.of(context).colorScheme.primary;
 
     // Вместо иконок — мини-мокапы реального интерфейса приложения.
-    // Порядок — от простого к главному: материалы → ИИ знает курс → ИИ
+    // Порядок — от простого к главному: материалы → чтение с выделениями →
+    // ИИ знает курс → проверка работ.
     final pages = <(Widget, String, String, String)>[
       (const _ClassMock(), 'onb_1_tag', 'onb_1_title', 'onb_1_body'),
+      (const _ReaderMock(), 'onb_4_tag', 'onb_4_title', 'onb_4_body'),
       (const _AiMock(), 'onb_3_tag', 'onb_3_title', 'onb_3_body'),
       (const _CheckMock(), 'onb_2_tag', 'onb_2_title', 'onb_2_body'),
     ];
@@ -291,7 +294,136 @@ class _ClassMock extends StatelessWidget {
   }
 }
 
-/// Страница 2: диалог с Chatra AI.
+/// Страница 2: материал открыт в приложении — выделенные строки и панель
+/// действий над фрагментом (цвета, «Заметка», «Спросить AI»).
+class _ReaderMock extends StatelessWidget {
+  const _ReaderMock();
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+
+    Widget line(double w) => Padding(
+          padding: const EdgeInsets.only(bottom: 9),
+          child: Align(
+              alignment: Alignment.centerLeft, child: _bar(context, w, h: 7)),
+        );
+
+    // Строка с пометкой: тот же тон, что и в самом просмотрщике.
+    Widget marked(double w, String color) => Padding(
+          padding: const EdgeInsets.only(bottom: 9),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
+              decoration: BoxDecoration(
+                color: highlightFill(color, Theme.of(context).brightness),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: _bar(context, w, h: 7),
+            ),
+          ),
+        );
+
+    return SizedBox(
+      width: 280,
+      child: Stack(alignment: Alignment.bottomCenter, children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 30),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(18, 16, 18, 22),
+            decoration: _cardDecoration(context),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Icon(CupertinoIcons.doc_text, size: 13, color: primary),
+                const SizedBox(width: 6),
+                _bar(context, 104, h: 7),
+              ]),
+              const SizedBox(height: 16),
+              line(228),
+              marked(196, 'yellow'),
+              line(210),
+              marked(152, 'green'),
+              line(174),
+            ]),
+          ),
+        ),
+        const _HighlightMenuMock(),
+      ]),
+    );
+  }
+}
+
+/// Панель действий над выделенным фрагментом — как она выглядит в лекции.
+class _HighlightMenuMock extends StatelessWidget {
+  const _HighlightMenuMock();
+
+  @override
+  Widget build(BuildContext context) {
+    const surface = Color(0xFF2A2A2E);
+    final divider = Colors.white.withValues(alpha: 0.14);
+
+    Widget action(IconData icon, String label) => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: Colors.white),
+            const SizedBox(width: 5),
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: -0.1,
+                    color: Colors.white)),
+          ],
+        );
+
+    final l = context.watch<L10n>();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.28),
+            blurRadius: 22,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Row(mainAxisSize: MainAxisSize.min, children: [
+          for (final c in highlightColors) ...[
+            Container(
+              width: 18,
+              height: 18,
+              decoration: BoxDecoration(
+                color: highlightSwatch(c),
+                shape: BoxShape.circle,
+                border: c == 'yellow'
+                    ? Border.all(color: Colors.white, width: 2)
+                    : null,
+              ),
+            ),
+            if (c != highlightColors.last) const SizedBox(width: 12),
+          ],
+        ]),
+        const SizedBox(height: 9),
+        Container(height: 1, width: 150, color: divider),
+        const SizedBox(height: 9),
+        Row(mainAxisSize: MainAxisSize.min, children: [
+          action(CupertinoIcons.text_bubble, l.t('hl_note')),
+          const SizedBox(width: 16),
+          action(CupertinoIcons.sparkles, l.t('hl_ask_ai')),
+        ]),
+      ]),
+    );
+  }
+}
+
+/// Страница 3: диалог с Chatra AI.
 class _AiMock extends StatelessWidget {
   const _AiMock();
 
@@ -367,7 +499,7 @@ class _AiMock extends StatelessWidget {
   }
 }
 
-/// Страница 3: сдача проверена ИИ — оценка по критериям и разбор.
+/// Страница 4: сдача проверена ИИ — оценка по критериям и разбор.
 class _CheckMock extends StatelessWidget {
   const _CheckMock();
 

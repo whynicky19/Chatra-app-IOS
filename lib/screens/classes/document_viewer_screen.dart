@@ -5,6 +5,7 @@ import 'dart:ui' show ImageFilter;
 import 'package:dio/dio.dart' show DioException;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart' show Ticker;
 import 'package:flutter/services.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:provider/provider.dart';
@@ -17,6 +18,7 @@ import '../../utils/file_opener.dart';
 import '../../utils/haptics.dart';
 import '../../utils/highlight_anchor.dart';
 import '../../utils/pdf_highlight_geometry.dart';
+import '../../utils/pdf_text_hit.dart';
 import '../../widgets/toast.dart';
 import 'widgets/detail_page_theme.dart';
 import 'widgets/highlight_menu.dart';
@@ -56,8 +58,10 @@ class DocumentViewerScreen extends StatefulWidget {
   State<DocumentViewerScreen> createState() => _DocumentViewerScreenState();
 }
 
-class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
+class _DocumentViewerScreenState extends State<DocumentViewerScreen>
+    with SingleTickerProviderStateMixin {
   final _controller = PdfViewerController();
+  final _viewerKey = GlobalKey();
   List<Annotation> _annotations = [];
 
   /// Текст страниц, уже полученный от PDFium. Догружается ВНЕ кадра отрисовки
@@ -66,6 +70,13 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
   /// с пометками.
   final Map<int, PdfPageText> _pageTexts = {};
   final Set<int> _textLoading = {};
+
+  /// Прямоугольники символов страниц в координатах документа: по ним палец
+  /// находит своё место в тексте (см. utils/pdf_text_hit.dart). Считаются один
+  /// раз на страницу — от зума они не зависят. Вместе с ними храним раскладку,
+  /// для которой они посчитаны: при повороте экрана страницы встают иначе.
+  final Map<int, List<Rect>> _charRects = {};
+  final Map<int, Rect> _charRectsLayout = {};
 
   String? _pdfUrl;
   String? _error;
@@ -88,6 +99,35 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
   /// касанию вне страницы, и без этого флага цвет/заметка применялись бы уже
   /// к пустому выделению — то есть ни к чему.
   bool _menuTouched = false;
+
+  // ── Ведение выделения пальцем ──────────────────────────────────────────
+  // Границы выделения ведём сами, а не отдаём просмотрщику: ему нужно движение
+  // пальца, чтобы пересчитать край, и он не знает про слова. Нам нужно и то,
+  // что палец стоит у края экрана (автопрокрутка), и прилипание к словам.
+
+  Offset? _pointer;
+  Offset? _pointerDownAt;
+  int _pointers = 0;
+
+  /// Маркер (кружок на краю выделения) сейчас под пальцем.
+  bool _handleDragging = false;
+
+  /// Выделение ведётся прямо из долгого нажатия — палец не отрывался.
+  bool _longPressDragging = false;
+  bool _longPressMoved = false;
+  Timer? _longPressTimer;
+
+  bool get _selecting => _handleDragging || _longPressDragging;
+
+  /// Неподвижный край выделения: второй край идёт за пальцем.
+  PdfTextSelectionPoint? _fixedPoint;
+
+  /// Где палец взял маркер относительно края выделения — край едет с тем же
+  /// отступом, а не прыгает под палец.
+  Offset _grabOffset = Offset.zero;
+
+  Ticker? _edgeTicker;
+  Duration _lastTick = Duration.zero;
 
   bool get _isOffice {
     final ext = widget.name.split('.').last.toLowerCase();
@@ -161,6 +201,8 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
   void dispose() {
     _controller.removeListener(_onControllerChange);
     _pageChipTimer?.cancel();
+    _longPressTimer?.cancel();
+    _edgeTicker?.dispose();
     _dockEntry?.remove();
     _dockEntry = null;
     super.dispose();
@@ -194,8 +236,14 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
   Future<void> _prepare() async {
     try {
       if (_isOffice) {
-        final res = await context.read<ApiService>().previewPdf(widget.url);
-        _pdfUrl = (res['pdf_url'] ?? '').toString();
+        final api = context.read<ApiService>();
+        final res = await api.previewPdf(widget.url);
+        // Ссылку на готовый PDF сервер строит из своего APP_BASE_URL — в
+        // разработке это localhost, то есть сам телефон. Через тот же fixUrl,
+        // что и все файлы, она превращается в адрес, по которому сервер виден
+        // с устройства; без этого Word и презентации не открывались нигде,
+        // кроме симулятора.
+        _pdfUrl = api.fixUrl((res['pdf_url'] ?? '').toString());
         if (_pdfUrl!.isEmpty) throw StateError('empty pdf_url');
       } else {
         _pdfUrl = widget.url.split('#').first;
@@ -258,11 +306,68 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
       try {
         final text = await pages[pageNumber - 1].loadStructuredText();
         if (!mounted) return;
-        setState(() => _pageTexts[pageNumber] = text);
+        setState(() => _rememberPageText(text));
       } finally {
         _textLoading.remove(pageNumber);
       }
     });
+  }
+
+  /// Запоминает текст страницы, который отдал сам просмотрщик (в событиях
+  /// выделения он приходит бесплатно и раньше, чем успела бы загрузка).
+  void _rememberPageText(PdfPageText text) {
+    if (identical(_pageTexts[text.pageNumber], text)) return;
+    _pageTexts[text.pageNumber] = text;
+    _charRects.remove(text.pageNumber);
+    _charRectsLayout.remove(text.pageNumber);
+  }
+
+  /// Символ страницы под точкой [documentPoint] — с какой буквы (или до какой)
+  /// идёт выделение. null — если текст этой страницы ещё не загружен.
+  PdfTextSelectionPoint? _textPointAt(Offset documentPoint) {
+    if (!_controller.isReady) return null;
+    final pages = _controller.layout.pageLayouts;
+    if (pages.isEmpty) return null;
+
+    // Палец может уйти на поля и в промежуток между страницами — берём
+    // ближайшую по вертикали, а не «никакую».
+    var index = 0;
+    var best = double.infinity;
+    for (var i = 0; i < pages.length; i++) {
+      final r = pages[i];
+      final d = documentPoint.dy < r.top
+          ? r.top - documentPoint.dy
+          : documentPoint.dy > r.bottom
+              ? documentPoint.dy - r.bottom
+              : 0.0;
+      if (d < best) {
+        best = d;
+        index = i;
+      }
+      if (d == 0) break;
+    }
+
+    final pageNumber = index + 1;
+    final text = _pageTexts[pageNumber];
+    if (text == null) {
+      _ensureText(pageNumber);
+      return null;
+    }
+    if (_charRects[pageNumber] == null ||
+        _charRectsLayout[pageNumber] != pages[index]) {
+      _charRects[pageNumber] = charRectsInDocument(
+          text, _controller.document.pages[index], pages[index]);
+      _charRectsLayout[pageNumber] = pages[index];
+    }
+    final i = charIndexAtPoint(_charRects[pageNumber]!, documentPoint);
+    return i == null ? null : PdfTextSelectionPoint(text, i);
+  }
+
+  /// Текст соседних страниц — чтобы выделение не спотыкалось на развороте.
+  void _prefetchTextAround(int pageNumber) {
+    _ensureText(pageNumber - 1);
+    _ensureText(pageNumber);
+    _ensureText(pageNumber + 1);
   }
 
   List<({Annotation a, List<PdfRect> rects})> _geometryFor(int pageNumber) {
@@ -327,6 +432,16 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
   // ── Выделение ──────────────────────────────────────────────────────────
 
   Future<void> _onSelectionChange(PdfTextSelection selection) async {
+    final range = selection.textSelectionPointRange;
+    if (range != null) {
+      _rememberPageText(range.start.text);
+      _rememberPageText(range.end.text);
+    }
+    // Пока палец ведёт границу, тяжёлую работу не делаем: собрать текст
+    // выделения — это обход страниц, а на каждое движение он превращал ведение
+    // в рывки. Всё нужное соберём, когда палец отпустит.
+    if (_selecting) return;
+
     if (!selection.hasSelectedText) {
       if (_menuTouched) return; // это касание самой панели, фрагмент помним
       _selection = null;
@@ -370,30 +485,228 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
 
   // ── Создание и правка ──────────────────────────────────────────────────
 
-  /// Доводит выделение до целых слов, когда палец отпустил маркер.
+  // ── Ведение границ выделения ───────────────────────────────────────────
+
+  /// Тянет подвижную границу выделения к пальцу и прилипает к словам.
   ///
-  /// Просмотрщик выделяет ровно те символы, до которых дотянулся палец, и
-  /// выделение застывало на половине слова. В приложениях Apple оно всегда
-  /// прилипает к словам — здесь то же самое, но в момент отпускания: делать
-  /// это на каждое движение нельзя, перетаскивание сбивалось бы.
-  Future<void> _snapSelectionToWords() async {
+  /// Считается от текущего положения пальца, а не от его смещения: пока идёт
+  /// автопрокрутка, палец стоит на месте, а текст под ним уезжает — и граница
+  /// обязана ехать вместе с текстом.
+  void _extendSelectionToPointer() {
+    final ctx = _viewerKey.currentContext;
+    final pointer = _pointer;
+    final fixed = _fixedPoint;
+    if (!_selecting || ctx == null || pointer == null || fixed == null) return;
+    if (!_controller.isReady) return;
+
     final delegate = _controller.textSelectionDelegate;
-    if (!delegate.hasSelectedText) return;
+    final target = delegate.doc2local.offsetToDocument(ctx, pointer + _grabOffset);
+    if (target == null) return;
+    final moved = _textPointAt(target);
+    if (moved == null) return;
+
+    final a = moved < fixed ? moved : fixed;
+    final b = moved < fixed ? fixed : moved;
+    final snapped = PdfTextSelectionRange.fromPoints(
+      PdfTextSelectionPoint(a.text, wordStart(a.text.fullText, a.index)),
+      PdfTextSelectionPoint(b.text, wordEnd(b.text.fullText, b.index)),
+    );
+    // Прилипание не должно съесть выделение целиком (палец на пробеле между
+    // словами) — тогда ведём как есть.
+    final range = snapped.start <= snapped.end
+        ? snapped
+        : PdfTextSelectionRange.fromPoints(a, b);
+    delegate.setTextSelectionPointRange(range);
+  }
+
+  /// Палец взялся за маркер: запоминаем неподвижный край и хват.
+  void _beginHandleDrag(PdfTextSelectionAnchor anchor) {
+    final delegate = _controller.textSelectionDelegate;
+    final range = delegate.textSelectionPointRange;
+    if (range == null) return;
+    _rememberPageText(anchor.page);
+    _prefetchTextAround(anchor.page.pageNumber);
+    _handleDragging = true;
+    _fixedPoint =
+        anchor.type == PdfTextSelectionAnchorType.a ? range.end : range.start;
+    _grabOffset = Offset.zero;
+
+    final ctx = _viewerKey.currentContext;
+    final pointer = _pointer;
+    if (ctx != null && pointer != null) {
+      final edge = delegate.doc2local.offsetToLocal(
+        ctx,
+        anchor.type == PdfTextSelectionAnchorType.a
+            ? Offset(anchor.rect.left, anchor.rect.center.dy)
+            : Offset(anchor.rect.right, anchor.rect.center.dy),
+      );
+      // Зона захвата шире самого маркера, и палец почти никогда не стоит ровно
+      // на границе выделения: держим тот отступ, с которым его взяли. Слишком
+      // большой — значит взялись не за маркер, тогда ведём прямо по пальцу.
+      final grab = edge == null ? null : edge - pointer;
+      if (grab != null && grab.distance <= 64) _grabOffset = grab;
+    }
+
+    hapticSelection();
+    _startEdgeScroll();
+    setState(() {}); // панель действий уходит на время ведения
+  }
+
+  /// Долгое нажатие выделило слово — и палец остался на экране: дальше он ведёт
+  /// выделение сам, как в Заметках, без отрыва и повторного прицеливания.
+  void _armLongPressDrag() {
+    _longPressTimer = null;
+    if (_selecting || _selectedSaved != null || _pointers != 1) return;
+    final range = _controller.textSelectionDelegate.textSelectionPointRange;
+    if (range == null) return; // под пальцем не текст — это обычный жест
+    _rememberPageText(range.start.text);
+    _prefetchTextAround(range.start.text.pageNumber);
+    _longPressDragging = true;
+    _longPressMoved = false;
+    _fixedPoint = range.start;
+    _grabOffset = Offset.zero;
+    _startEdgeScroll();
+    setState(() {});
+  }
+
+  /// Палец отпустил границу: собираем выделение и показываем панель.
+  void _endSelectionDrag() {
+    if (!_selecting) return;
+    // Последнее движение просмотрщик считает сам и по символам — переставляем
+    // границы по словам ещё раз, иначе выделение замирало на полуслове ровно
+    // в момент отпускания.
+    _extendSelectionToPointer();
+    _stopEdgeScroll();
+    _handleDragging = false;
+    _longPressDragging = false;
+    _longPressMoved = false;
+    _fixedPoint = null;
+    _grabOffset = Offset.zero;
+    hapticLight();
+    unawaited(_syncSelection());
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _syncSelection() async {
+    final delegate = _controller.textSelectionDelegate;
+    if (!delegate.hasSelectedText) {
+      _selection = null;
+      _selectionText = '';
+      return;
+    }
     final ranges = await delegate.getSelectedTextRanges();
-    if (ranges.isEmpty) return;
+    final text = await delegate.getSelectedText();
+    if (!mounted || ranges.isEmpty) return;
+    _selection = ranges.first;
+    _selectionText = text;
+  }
 
-    final first = ranges.first;
-    final last = ranges.last;
-    final start = snapToWords(first.pageText.fullText, first.start, first.end).start;
-    // Конечная граница считается по своей странице (выделение может идти через
-    // разворот), индекс у точки конца включительный — отсюда -1.
-    final end = snapToWords(last.pageText.fullText, last.start, last.end).end;
-    if (start == first.start && end == last.end) return;
+  // ── Пальцы ─────────────────────────────────────────────────────────────
 
-    await delegate.setTextSelectionPointRange(PdfTextSelectionRange.fromPoints(
-      PdfTextSelectionPoint(first.pageText, start),
-      PdfTextSelectionPoint(last.pageText, (end - 1).clamp(0, last.pageText.charRects.length - 1)),
-    ));
+  void _onPointerDown(PointerDownEvent e) {
+    _pointers++;
+    _pointer = e.localPosition;
+    _pointerDownAt = e.localPosition;
+    _longPressTimer?.cancel();
+    _longPressTimer = null;
+    if (_pointers > 1) return;
+    // Ведение из долгого нажатия начинаем, только если выделения ещё не было:
+    // иначе этим же таймером мы перехватывали бы неподвижно зажатый маркер.
+    if (_controller.isReady &&
+        _controller.textSelectionDelegate.textSelectionPointRange == null) {
+      // Чуть позже, чем срабатывает долгое нажатие самого просмотрщика (500 мс):
+      // к этому моменту слово уже выделено, и есть от чего вести.
+      _longPressTimer =
+          Timer(const Duration(milliseconds: 580), _armLongPressDrag);
+    }
+  }
+
+  void _onPointerMove(PointerMoveEvent e) {
+    _pointer = e.localPosition;
+    final down = _pointerDownAt;
+    if (_longPressTimer != null &&
+        down != null &&
+        (e.localPosition - down).distance > 12) {
+      _longPressTimer!.cancel();
+      _longPressTimer = null;
+    }
+    if (_longPressDragging) {
+      _longPressMoved = true;
+      _extendSelectionToPointer();
+    }
+  }
+
+  void _onPointerUp(PointerEvent e) {
+    _pointers = (_pointers - 1).clamp(0, 10);
+    _longPressTimer?.cancel();
+    _longPressTimer = null;
+    if (_pointers > 0) return;
+    if (_longPressDragging) {
+      _endSelectionDrag();
+      return;
+    }
+    // Маркер заканчивает вести сам просмотрщик (он же дотягивает границу до
+    // места отпускания), но если жест отменили, конца можно и не дождаться —
+    // тогда выделение осталось бы «в движении» и панель не появилась бы.
+    if (_handleDragging) {
+      Future.delayed(const Duration(milliseconds: 120), () {
+        if (mounted && _handleDragging && _pointers == 0) _endSelectionDrag();
+      });
+    }
+  }
+
+  // ── Автопрокрутка у краёв экрана ───────────────────────────────────────
+
+  void _startEdgeScroll() {
+    _lastTick = Duration.zero;
+    _edgeTicker ??= createTicker(_onEdgeTick);
+    if (!_edgeTicker!.isActive) _edgeTicker!.start();
+  }
+
+  void _stopEdgeScroll() => _edgeTicker?.stop();
+
+  void _onEdgeTick(Duration elapsed) {
+    final dt = _lastTick == Duration.zero
+        ? 0.0
+        : (elapsed - _lastTick).inMicroseconds / 1000000;
+    _lastTick = elapsed;
+    if (dt <= 0) return;
+    final v = _edgeScrollVelocity();
+    if (v == 0) return;
+    _scrollBy(v * dt);
+    _extendSelectionToPointer();
+  }
+
+  /// Скорость автопрокрутки, пикселей в секунду: 0 — палец далеко от краёв.
+  ///
+  /// У самой границы полосы страница трогается почти незаметно и разгоняется по
+  /// мере того, как палец идёт к краю: резкий старт «на всю скорость»
+  /// проскакивает нужное место, и человек теряет то, что выделял.
+  double _edgeScrollVelocity() {
+    final pointer = _pointer;
+    final box = _viewerKey.currentContext?.findRenderObject() as RenderBox?;
+    if (pointer == null || box == null || !box.hasSize) return 0;
+
+    const band = 96.0;
+    const maxSpeed = 1100.0;
+    final padding = MediaQuery.paddingOf(context);
+    final top = padding.top + 48; // под матовой шапкой
+    final bottom = box.size.height - padding.bottom - 16;
+    double ramp(double depth) {
+      final t = (depth / band).clamp(0.0, 1.0);
+      return maxSpeed * t * t;
+    }
+
+    if (pointer.dy < top + band) return -ramp(top + band - pointer.dy);
+    if (pointer.dy > bottom - band) return ramp(pointer.dy - (bottom - band));
+    return 0;
+  }
+
+  void _scrollBy(double dy) {
+    if (!_controller.isReady) return;
+    final m = _controller.value.clone();
+    m.yZoomed -= dy;
+    _controller.value = m; // сам обрежет по границам документа
   }
 
   /// Высота строки, к которой прицеплен маркер, в экранных пикселях.
@@ -416,21 +729,24 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
         dragging: state == PdfViewerTextSelectionAnchorHandleState.dragging,
       );
 
-  /// Сдвиг зоны захвата: шарик стоит в её центре, поэтому виджет двигаем так,
-  /// чтобы шарик оказался у самого края выделения, а запас под палец ушёл
-  /// вокруг него, а не на текст.
+  /// Сдвиг зоны захвата: шарик внутри неё стоит не по центру (см.
+  /// SelectionHandle), поэтому виджет двигаем так, чтобы шарик оказался у
+  /// самого края выделения, а запас под палец ушёл наружу, а не на текст.
+  ///
+  /// Просмотрщик цепляет начальный маркер правым нижним углом к началу
+  /// выделения, а конечный — левым верхним к его концу.
   Offset _handleOffset(
     BuildContext context,
     PdfTextSelectionAnchor anchor,
     PdfViewerTextSelectionAnchorHandleState state,
   ) {
-    const half = SelectionHandle.defaultTouchSize / 2;
-    final lineHeight = _anchorLineHeight(anchor);
-    // Начальный маркер прицеплен правым нижним углом к началу выделения,
-    // конечный — левым верхним к его концу (см. pdfrx).
-    return anchor.type == PdfTextSelectionAnchorType.a
-        ? Offset(half, half - (lineHeight / 2 + SelectionHandle.ballSize / 2) + lineHeight)
-        : Offset(-half, -half + (lineHeight / 2 + SelectionHandle.ballSize / 2) - lineHeight);
+    const size = SelectionHandle.defaultTouchSize;
+    const ball = SelectionHandle.ballSize;
+    final isStart = anchor.type == PdfTextSelectionAnchorType.a;
+    final center = SelectionHandle.ballCenter(isStart);
+    return isStart
+        ? Offset(size - center.dx, size - center.dy - ball / 2)
+        : Offset(-center.dx, ball / 2 - center.dy);
   }
 
   /// Панель действий для нового выделения — пришвартована к низу экрана: у
@@ -441,6 +757,9 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
     if (!params.isTextSelectionEnabled || !delegate.hasSelectedText) {
       return null;
     }
+    // Пока палец ведёт границу, панель не показываем: она перекрывает то самое
+    // место, куда человек целится, и мешает увидеть, что выделяется.
+    if (_selecting) return null;
     final l = context.read<L10n>();
 
     Future<PdfPageTextRange?> firstRange() async {
@@ -912,6 +1231,20 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
 
     // Шапка (48) + чип страницы (26) + просветы: страница начинается ниже.
     final topInset = MediaQuery.paddingOf(context).top + 96;
+    // Палец нужен нам целиком, от касания до отпускания: по нему ведётся
+    // выделение и решается, пора ли подкручивать страницу. Listener берёт
+    // события, ни с кем не споря за жест, — просмотрщик работает как работал.
+    return Listener(
+      key: _viewerKey,
+      onPointerDown: _onPointerDown,
+      onPointerMove: _onPointerMove,
+      onPointerUp: _onPointerUp,
+      onPointerCancel: _onPointerUp,
+      child: _pdfViewer(l, topInset),
+    );
+  }
+
+  Widget _pdfViewer(L10n l, double topInset) {
     return PdfViewer.uri(
       Uri.parse(_pdfUrl!),
       controller: _controller,
@@ -947,11 +1280,15 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
           // iOS — тонкая ножка и небольшой шарик с большой зоной захвата.
           buildSelectionHandle: _buildSelectionHandle,
           calcSelectionHandleOffset: _handleOffset,
-          onSelectionHandlePanStart: (_) => hapticSelection(),
-          onSelectionHandlePanEnd: (_) {
-            hapticLight();
-            _snapSelectionToWords();
-          },
+          onSelectionHandlePanStart: _beginHandleDrag,
+          onSelectionHandlePanUpdate: (_, __) => _extendSelectionToPointer(),
+          onSelectionHandlePanEnd: (_) => _endSelectionDrag(),
+          // Лупа — как в iOS: пока палец ведёт границу, под ним видно место,
+          // которое он же и закрывает.
+          magnifier: PdfViewerSelectionMagnifierParams(
+            shouldShowMagnifier: () =>
+                _handleDragging || (_longPressDragging && _longPressMoved),
+          ),
         ),
         // Панель действий отдаём просмотрщику как его контекстное меню: свой
         // слой выделения он держит поверх содержимого, и панель, положенная
@@ -961,13 +1298,27 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
         pageOverlaysBuilder: _pageOverlays,
         loadingBannerBuilder: (context, downloaded, total) =>
             const Center(child: CupertinoActivityIndicator(radius: 14)),
+        // Сюда попадаем, если PDF не скачался или не разобрался. Показываем
+        // саму причину: без неё «не удалось открыть» ничего не объясняет — а
+        // чаще всего это недоступный с телефона адрес файла.
         errorBannerBuilder: (context, error, stack, docRef) =>
             _Centered(children: [
           Icon(CupertinoIcons.doc_text, size: 34, color: detailText2(context)),
           const SizedBox(height: 14),
-          Text(l.t('preview_failed'),
+          Text('${l.t('preview_failed')}\n$error',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 15, color: detailText2(context))),
+          const SizedBox(height: 18),
+          CupertinoButton(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+            color: detailAccent(context),
+            borderRadius: BorderRadius.circular(100),
+            onPressed: () => openRemoteFile(
+                context, context.read<ApiService>(), widget.url, widget.name),
+            child: Text(l.t('open_in_system_viewer'),
+                style:
+                    const TextStyle(fontSize: 15, color: CupertinoColors.white)),
+          ),
         ]),
       ),
     );

@@ -8,6 +8,7 @@ import '../../providers/l10n_provider.dart';
 import '../../services/api_service.dart';
 import '../../utils/ai_ask.dart';
 import '../../utils/haptics.dart';
+import '../../utils/highlight_anchor.dart';
 import '../../widgets/toast.dart';
 import 'document_viewer_screen.dart';
 import 'widgets/detail_page_theme.dart';
@@ -276,7 +277,11 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
     final start = range.startOffset.clamp(0, widget.content.length);
     final end = range.endOffset.clamp(0, widget.content.length);
     if (end <= start) return null;
-    return TextSelection(baseOffset: start, extentOffset: end);
+    // Пометка всегда ложится на целые слова: палец останавливает выделение там,
+    // где остановился, и в тексте оставались обрубки вроде «Инкапсуля».
+    final w = snapToWords(widget.content, start, end);
+    if (w.end <= w.start) return TextSelection(baseOffset: start, extentOffset: end);
+    return TextSelection(baseOffset: w.start, extentOffset: w.end);
   }
 
   /// Карточка действий по уже сохранённому выделению (тап по пометке/строке).

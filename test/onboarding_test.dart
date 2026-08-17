@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -45,13 +46,15 @@ void main() {
     await tester.tap(find.text('Далее'));
     await tester.pumpAndSettle();
 
-    // Страница 2 (ИИ знает курс) — тоже «Далее», ещё не последняя.
-    expect(find.text('Далее'), findsOneWidget);
-    expect(find.text('Начать'), findsNothing);
-    await tester.tap(find.text('Далее'));
-    await tester.pumpAndSettle();
+    // Страницы 2 и 3 (выделения в лекции, ИИ знает курс) — тоже «Далее».
+    for (var i = 0; i < 2; i++) {
+      expect(find.text('Далее'), findsOneWidget);
+      expect(find.text('Начать'), findsNothing);
+      await tester.tap(find.text('Далее'));
+      await tester.pumpAndSettle();
+    }
 
-    // Страница 3 (проверка ИИ) — последняя.
+    // Страница 4 (проверка ИИ) — последняя.
     expect(find.text('Начать'), findsOneWidget);
     expect(done, isFalse, reason: 'до нажатия «Начать» интро не закрывается');
 
@@ -59,6 +62,20 @@ void main() {
     await tester.pumpAndSettle();
     expect(done, isTrue);
     expect(await OnboardingScreen.isSeen(), isTrue);
+  });
+
+  testWidgets('страница про выделения показывает цвета и действия',
+      (tester) async {
+    await tester.pumpWidget(wrap(() {}));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Далее'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Выделяйте прямо в лекции'), findsOneWidget);
+    // На мокапе — та же панель, что и в просмотрщике: цвета и два действия.
+    expect(find.text('Заметка'), findsOneWidget);
+    expect(find.text('Спросить AI'), findsOneWidget);
+    expect(find.byIcon(CupertinoIcons.sparkles), findsOneWidget);
   });
 
   testWidgets('вёрстка интро переживает крупный системный шрифт',

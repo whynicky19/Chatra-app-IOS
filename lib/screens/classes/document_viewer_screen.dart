@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 
 import '../../models/annotation.dart';
 import '../../providers/l10n_provider.dart';
+import '../../theme/app_theme.dart';
 import '../../services/api_service.dart';
 import '../../utils/ai_ask.dart';
 import '../../utils/file_opener.dart';
@@ -22,6 +23,7 @@ import '../../utils/pdf_text_hit.dart';
 import '../../widgets/toast.dart';
 import 'widgets/detail_page_theme.dart';
 import 'widgets/highlight_menu.dart';
+import 'widgets/highlight_note_dialog.dart';
 import 'widgets/highlights_section.dart';
 import 'widgets/selection_handle.dart';
 
@@ -797,13 +799,19 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
             onColor: (c) async {
               final range = await firstRange();
               dismiss();
-              if (range != null) await _create(range, c);
+              if (range == null) return;
+              final created = await _create(range, c);
+              // Панель не исчезает, а переезжает на созданную пометку: следом
+              // за цветом чаще всего пишут заметку, и раньше ради неё
+              // приходилось выделять текст заново.
+              if (created != null && mounted) _selectSaved(created);
             },
             onNote: () async {
               final range = await firstRange();
+              final text = await delegate.getSelectedText();
               dismiss();
               if (range == null) return;
-              final note = await _askNote(null);
+              final note = await _askNote(null, quote: text);
               if (note == null) return;
               await _create(range, 'yellow',
                   comment: note.isEmpty ? null : note);
@@ -888,10 +896,22 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
 
   Future<void> _patch(Annotation a, {String? color, String? comment}) async {
     final before = _annotations;
-    setState(() => _annotations = _annotations
-        .map((x) =>
-            x.id == a.id ? x.copyWith(color: color, comment: comment) : x)
-        .toList());
+    final saved = _selectedSaved;
+    // Пустая заметка — это «убрать заметку» (кнопка в окне заметки).
+    final clear = comment != null && comment.isEmpty;
+    setState(() {
+      _annotations = _annotations
+          .map((x) => x.id == a.id
+              ? x.copyWith(color: color, comment: comment, clearComment: clear)
+              : x)
+          .toList();
+      // Панель остаётся открытой после смены цвета — выбранный кружок должен
+      // переехать сразу, не дожидаясь ответа сервера.
+      if (saved?.id == a.id) {
+        _selectedSaved =
+            saved!.copyWith(color: color, comment: comment, clearComment: clear);
+      }
+    });
     try {
       final row = await context
           .read<ApiService>()
@@ -906,7 +926,10 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
       }
     } catch (_) {
       if (mounted) {
-        setState(() => _annotations = before);
+        setState(() {
+          _annotations = before;
+          if (saved != null && _selectedSaved?.id == a.id) _selectedSaved = saved;
+        });
         showToast(context, context.read<L10n>().t('hl_save_failed'),
             error: true);
       }
@@ -930,34 +953,14 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
     }
   }
 
-  Future<String?> _askNote(String? initial) async {
-    final ctrl = TextEditingController(text: initial ?? '');
+  Future<String?> _askNote(String? initial, {required String quote, String color = 'yellow'}) {
     final l = context.read<L10n>();
-    return showCupertinoDialog<String>(
-      context: context,
-      builder: (ctx) => CupertinoAlertDialog(
-        title: Text(l.t('hl_note')),
-        content: Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: CupertinoTextField(
-            controller: ctrl,
-            autofocus: true,
-            maxLines: 3,
-            minLines: 2,
-            placeholder: l.t('hl_note_hint'),
-            style: const TextStyle(fontSize: 15),
-          ),
-        ),
-        actions: [
-          CupertinoDialogAction(
-              onPressed: () => Navigator.pop(ctx), child: Text(l.t('cancel'))),
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-            child: Text(l.t('save')),
-          ),
-        ],
-      ),
+    return showHighlightNoteDialog(
+      context,
+      quote: quote,
+      color: color,
+      initial: initial,
+      t: l.t,
     );
   }
 
@@ -984,22 +987,30 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
         ));
   }
 
+  /// Цвет НЕ закрывает панель: цвет и заметка — части одного действия, и
+  /// раньше после выбора цвета выделение приходилось делать заново, чтобы
+  /// дописать комментарий. Панель остаётся, но уже на созданной пометке.
   Future<void> _onColor(String color) async {
     final saved = _selectedSaved;
     if (saved != null) {
-      _closeMenu();
       await _patch(saved, color: color);
       return;
     }
     final range = _selection;
-    _closeMenu();
-    if (range != null) await _create(range, color);
+    if (range == null) return;
+    _controller.textSelectionDelegate.clearTextSelection();
+    final created = await _create(range, color);
+    if (created != null && mounted) _selectSaved(created);
   }
 
   Future<void> _onNote() async {
     final saved = _selectedSaved;
     final range = _selection;
-    final note = await _askNote(saved?.comment);
+    final note = await _askNote(
+      saved?.comment,
+      quote: saved?.selectedText ?? _selectionText,
+      color: saved?.color ?? 'yellow',
+    );
     if (note == null) return;
     _closeMenu();
     if (saved != null) {
@@ -1056,15 +1067,21 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
       context: context,
       builder: (ctx) => _Sheet(
         title: l.t('hl_section'),
+        count: _annotations.length,
         child: _annotations.isEmpty
             ? Padding(
-                padding: const EdgeInsets.fromLTRB(32, 30, 32, 40),
-                child: Text(l.t('hl_empty'),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        fontSize: 15,
-                        height: 1.4,
-                        color: detailText2(context))),
+                padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
+                child: Column(children: [
+                  Icon(CupertinoIcons.bookmark,
+                      size: 34, color: detailText2(context).withValues(alpha: 0.5)),
+                  const SizedBox(height: 12),
+                  Text(l.t('hl_empty'),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontSize: 15,
+                          height: 1.4,
+                          color: detailText2(context))),
+                ]),
               )
             : ListView(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
@@ -1092,6 +1109,7 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
       context: context,
       builder: (ctx) => _Sheet(
         title: l.t('pages'),
+        count: _pageCount,
         child: GridView.builder(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -1486,43 +1504,86 @@ class _PageChip extends StatelessWidget {
   }
 }
 
-/// Шторка в стиле iOS: ручка, заголовок, содержимое.
+/// Шторка просмотрщика: ручка, заголовок со счётчиком, кнопка закрытия.
+///
+/// Material обязателен: showCupertinoModalPopup кладёт содержимое прямо в
+/// Overlay, а в MaterialApp текст без Material-предка рисуется «отладочным»
+/// стилем — с двойным жёлтым подчёркиванием под каждой строкой. Из-за этого
+/// список «Мои выделения» и выглядел подчёркнутым.
 class _Sheet extends StatelessWidget {
   final String title;
+
+  /// Число справа от заголовка (сколько пометок/страниц) — 0 прячет счётчик.
+  final int count;
   final Widget child;
-  const _Sheet({required this.title, required this.child});
+  const _Sheet({required this.title, required this.child, this.count = 0});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.sizeOf(context).height * 0.62,
-      decoration: BoxDecoration(
-        color: detailBg(context),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(children: [
-        Container(
-          width: 36,
-          height: 5,
-          margin: const EdgeInsets.symmetric(vertical: 9),
-          decoration: BoxDecoration(
-            color: detailText2(context).withValues(alpha: 0.32),
-            borderRadius: BorderRadius.circular(3),
+    final accent = detailAccent(context);
+    return Material(
+      type: MaterialType.transparency,
+      child: Container(
+        height: MediaQuery.sizeOf(context).height * 0.62,
+        decoration: BoxDecoration(
+          color: detailBg(context),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadii.sheet)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(children: [
+          Container(
+            width: 36,
+            height: 5,
+            margin: const EdgeInsets.only(top: 8, bottom: 6),
+            decoration: BoxDecoration(
+              color: detailText2(context).withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(3),
+            ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Text(title,
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-                letterSpacing: -0.3,
-                color: detailText1(context),
-              )),
-        ),
-        Expanded(child: child),
-      ]),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 2, 8, 10),
+            child: Row(children: [
+              Text(title,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.4,
+                    color: detailText1(context),
+                  )),
+              if (count > 0) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(AppRadii.chip),
+                  ),
+                  child: Text('$count',
+                      style: TextStyle(
+                        fontSize: 12, fontWeight: FontWeight.w600, color: accent,
+                      )),
+                ),
+              ],
+              const Spacer(),
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: detailSurface(context),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(CupertinoIcons.xmark,
+                      size: 14, color: detailText2(context)),
+                ),
+              ),
+            ]),
+          ),
+          Expanded(child: child),
+        ]),
+      ),
     );
   }
 }

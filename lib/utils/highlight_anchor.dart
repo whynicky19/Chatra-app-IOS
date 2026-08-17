@@ -15,8 +15,39 @@ class TextMatch {
 
 String _squash(String s) => s.replaceAll(RegExp(r'\s+'), '');
 
-String _looseEscape(String s) =>
-    s.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).map(RegExp.escape).join(r'\s*');
+final _space = RegExp(r'\s');
+
+/// Текст без пробелов + карта «символ → его индекс в исходном тексте».
+///
+/// Весь поиск идёт по сжатому тексту: пробелы — единственное, в чём рендереры
+/// расходятся всегда (PDFium ставит перенос там, где текстовый слой pdf.js на
+/// сайте не ставит ничего, и наоборот), а карта возвращает найденное обратно в
+/// смещения исходного текста страницы.
+class _Squashed {
+  final String text;
+  final List<int> map;
+  const _Squashed(this.text, this.map);
+}
+
+_Squashed _squashIndexed(String s) {
+  final buf = StringBuffer();
+  final map = <int>[];
+  for (var i = 0; i < s.length; i++) {
+    if (_space.hasMatch(s[i])) continue;
+    buf.write(s[i]);
+    map.add(i);
+  }
+  return _Squashed(buf.toString(), map);
+}
+
+List<int> _hitsOf(String haystack, String needle) {
+  final out = <int>[];
+  if (needle.isEmpty) return out;
+  for (var i = haystack.indexOf(needle); i != -1; i = haystack.indexOf(needle, i + 1)) {
+    out.add(i);
+  }
+  return out;
+}
 
 /// Находит фрагмент [a] в [text]. null — если не нашёлся вовсе (тогда пометку
 /// просто не рисуем, а не ставим наугад в чужое место).
@@ -32,34 +63,31 @@ TextMatch? locateAnnotation(String text, Annotation a) {
     }
   }
 
-  final body = _looseEscape(expected);
+  final body = _squash(expected);
   if (body.isEmpty) return null;
+  final hay = _squashIndexed(text);
+  TextMatch back(int from, int to) =>
+      TextMatch(hay.map[from], hay.map[to - 1] + 1);
 
-  // 2. По якорю: соседний текст отличает одинаковые фразы друг от друга.
-  final prefix = a.prefix.trim();
-  final suffix = a.suffix.trim();
-  if (prefix.isNotEmpty || suffix.isNotEmpty) {
-    final head = prefix.isNotEmpty ? '(${_looseEscape(prefix)}\\s*)' : '';
-    final tail = suffix.isNotEmpty ? '(?:\\s*${_looseEscape(suffix)})' : '';
-    final pattern = '$head($body)$tail';
-    final m = RegExp(pattern).firstMatch(text);
-    if (m != null) {
-      final skip = prefix.isNotEmpty ? m.group(1)!.length : 0;
-      final matched = prefix.isNotEmpty ? m.group(2)! : m.group(1)!;
-      return TextMatch(m.start + skip, m.start + skip + matched.length);
-    }
+  // 2. По якорю: соседний текст отличает одинаковые фразы друг от друга. Если
+  // якорь целиком не сошёлся (фрагмент у края страницы, сосед перерисован
+  // иначе) — пробуем половинками, это точнее, чем один голый текст.
+  final prefix = _squash(a.prefix);
+  final suffix = _squash(a.suffix);
+  for (final pair in [[prefix, suffix], [prefix, ''], ['', suffix]]) {
+    final head = pair[0], tail = pair[1];
+    if (head.isEmpty && tail.isEmpty) continue;
+    final hits = _hitsOf(hay.text, '$head$body$tail');
+    if (hits.isEmpty) continue;
+    return back(hits.first + head.length, hits.first + head.length + body.length);
   }
 
   // 3. Просто по тексту — ближайшее к исходному месту вхождение.
-  TextMatch? best;
-  for (final m in RegExp(body).allMatches(text)) {
-    final candidate = TextMatch(m.start, m.end);
-    if (best == null ||
-        (candidate.start - a.startOffset).abs() < (best.start - a.startOffset).abs()) {
-      best = candidate;
-    }
-  }
-  return best;
+  final hits = _hitsOf(hay.text, body);
+  if (hits.isEmpty) return null;
+  final best = hits.reduce((b, i) =>
+      (hay.map[i] - a.startOffset).abs() < (hay.map[b] - a.startOffset).abs() ? i : b);
+  return back(best, best + body.length);
 }
 
 /// Текст вокруг выделения — сохраняется вместе с ним как якорь.
@@ -100,4 +128,3 @@ TextMatch? locateAnnotation(String text, Annotation a) {
 }
 
 final _wordChar = RegExp(r'[\p{L}\p{N}_]', unicode: true);
-final _space = RegExp(r'\s');

@@ -1,11 +1,18 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 import '../../../models/annotation.dart';
+import '../../../theme/app_theme.dart';
 import 'detail_page_theme.dart';
 
-/// Раздел «Мои выделения» на странице лекции: цвет, короткий текст, заметка и
-/// откуда фрагмент (лекция/страница). Показывает и пометки, сделанные на сайте
-/// внутри PDF, — они приходят с сервера с номером страницы.
+/// Раздел «Мои выделения»: цвет, сам фрагмент, заметка и откуда он (лекция/
+/// страница). Показывает и пометки, сделанные на сайте, — они приходят с
+/// сервера теми же полями.
+///
+/// Строка — отдельная карточка, а не ряд сгруппированного iOS-списка: у
+/// пометки переменная высота (две строки текста + заметка + подпись), и в
+/// сплошном списке с волосяными линиями они сливались в стену текста. Цвет
+/// пометки — кромка слева, как в самом документе.
 class HighlightsSection extends StatelessWidget {
   final List<Annotation> items;
   final String Function(String) t;
@@ -30,38 +37,22 @@ class HighlightsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) return const SizedBox.shrink();
-    final border = detailBorder(context);
-    final hair = 1 / MediaQuery.devicePixelRatioOf(context);
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      if (!hideHeader) Padding(
-        padding: const EdgeInsets.only(left: 2, bottom: 8),
-        child: Row(children: [
-          Text(t('hl_section').toUpperCase(), style: sectionCaptionStyle(context)),
-          const SizedBox(width: 6),
-          Text('${items.length}',
-              style: sectionCaptionStyle(context).copyWith(color: detailText2(context))),
-        ]),
-      ),
-      // Сгруппированный список iOS: одна карточка, строки разделены волосяной
-      // линией с отступом под текст.
-      Container(
-        decoration: BoxDecoration(
-          color: detailSurface(context),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: border, width: hair),
+      if (!hideHeader)
+        Padding(
+          padding: const EdgeInsets.only(left: 2, bottom: 8),
+          child: Row(children: [
+            Text(t('hl_section').toUpperCase(), style: sectionCaptionStyle(context)),
+            const SizedBox(width: 6),
+            Text('${items.length}',
+                style: sectionCaptionStyle(context).copyWith(color: detailText2(context))),
+          ]),
         ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(children: [
-          for (var i = 0; i < items.length; i++) ...[
-            if (i > 0) Padding(
-              padding: const EdgeInsets.only(left: 16),
-              child: Container(height: hair, color: border),
-            ),
-            _Row(item: items[i], t: t, onTap: onTap, onDelete: onDelete),
-          ],
-        ]),
-      ),
+      for (var i = 0; i < items.length; i++) ...[
+        if (i > 0) const SizedBox(height: 8),
+        _Row(item: items[i], t: t, onTap: onTap, onDelete: onDelete),
+      ],
     ]);
   }
 }
@@ -75,64 +66,116 @@ class _Row extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final swatch = highlightSwatch(item.color);
     final meta = <String>[
       if (item.lectureTitle != null && item.lectureTitle!.isNotEmpty) item.lectureTitle!,
       if (item.page > 0) '${t('hl_page')} ${item.page}',
     ].join(' · ');
+    final hasNote = item.comment != null && item.comment!.trim().isNotEmpty;
 
     return Dismissible(
       key: ValueKey(item.id),
       direction: DismissDirection.endToStart,
       // Свайп влево — привычный для iOS способ удалить строку списка.
       background: Container(
-        color: CupertinoColors.systemRed,
+        decoration: BoxDecoration(
+          color: C.red,
+          borderRadius: BorderRadius.circular(AppRadii.tile),
+        ),
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
-        child: const Icon(CupertinoIcons.delete, color: CupertinoColors.white, size: 20),
+        child: const Icon(CupertinoIcons.delete, color: Colors.white, size: 19),
       ),
       onDismissed: (_) => onDelete(item),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => onTap(item),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(0, 11, 14, 11),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Container(
-              width: 3,
-              height: 34,
-              margin: const EdgeInsets.only(right: 13),
-              decoration: BoxDecoration(
-                color: highlightSwatch(item.color),
-                borderRadius: const BorderRadius.horizontal(right: Radius.circular(3)),
-              ),
+        child: Container(
+          decoration: BoxDecoration(
+            color: detailSurface(context),
+            borderRadius: BorderRadius.circular(AppRadii.tile),
+            border: Border.all(
+              color: detailBorder(context),
+              width: 1 / MediaQuery.devicePixelRatioOf(context),
             ),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(
-                item.selectedText.trim(),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 15, height: 1.35, letterSpacing: -0.2, color: detailText1(context),
+          ),
+          clipBehavior: Clip.antiAlias,
+          // Кромка цвета — Positioned на всю высоту карточки: высоту задаёт
+          // содержимое строки, а не наоборот.
+          child: Stack(children: [
+            Row(children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 11, 10, 11),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Expanded(
+                        child: Text(
+                          item.selectedText.trim(),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 15,
+                            height: 1.35,
+                            letterSpacing: -0.2,
+                            color: detailText1(context),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Icon(CupertinoIcons.chevron_right,
+                            size: 13,
+                            color: detailText2(context).withValues(alpha: 0.55)),
+                      ),
+                    ]),
+                    if (hasNote) ...[
+                      const SizedBox(height: 7),
+                      // Заметка — отдельной плашкой: это уже слова студента, а
+                      // не текст документа, и мешать их в один абзац нельзя.
+                      Container(
+                        padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+                        decoration: BoxDecoration(
+                          color: swatch.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(AppRadii.chip),
+                        ),
+                        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Icon(CupertinoIcons.text_bubble,
+                              size: 12, color: detailText2(context)),
+                          const SizedBox(width: 5),
+                          Expanded(
+                            child: Text(item.comment!.trim(),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  height: 1.3,
+                                  color: detailText1(context).withValues(alpha: 0.85),
+                                )),
+                          ),
+                        ]),
+                      ),
+                    ],
+                    if (meta.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(meta,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            letterSpacing: -0.1,
+                            color: detailText2(context),
+                          )),
+                    ],
+                  ]),
                 ),
               ),
-              if (item.comment != null) Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Icon(CupertinoIcons.pencil, size: 11, color: detailText2(context)),
-                  const SizedBox(width: 4),
-                  Expanded(child: Text(item.comment!,
-                      maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 13, color: detailText2(context)))),
-                ]),
-              ),
-              if (meta.isNotEmpty) Padding(
-                padding: const EdgeInsets.only(top: 3),
-                child: Text(meta,
-                    maxLines: 1, overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 12.5, color: detailText2(context))),
-              ),
-            ])),
-            Icon(CupertinoIcons.chevron_right, size: 14, color: detailText2(context).withValues(alpha: 0.6)),
+            ]),
+            Positioned(
+              left: 0, top: 0, bottom: 0, width: 4,
+              child: ColoredBox(color: swatch),
+            ),
           ]),
         ),
       ),

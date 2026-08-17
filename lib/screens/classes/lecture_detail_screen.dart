@@ -13,7 +13,9 @@ import '../../widgets/toast.dart';
 import 'document_viewer_screen.dart';
 import 'widgets/detail_page_theme.dart';
 import 'widgets/file_card.dart';
+import 'widgets/highlight_actions_sheet.dart';
 import 'widgets/highlight_menu.dart';
+import 'widgets/highlight_note_dialog.dart';
 import 'widgets/highlights_section.dart';
 
 /// Полноэкранная страница лекции (замена модального bottom sheet).
@@ -151,33 +153,13 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
     }
   }
 
-  Future<String?> _askNote(String? initial) async {
-    final ctrl = TextEditingController(text: initial ?? '');
-    final l = context.read<L10n>();
-    return showCupertinoDialog<String>(
-      context: context,
-      builder: (ctx) => CupertinoAlertDialog(
-        title: Text(l.t('hl_note')),
-        content: Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: CupertinoTextField(
-            controller: ctrl,
-            autofocus: true,
-            maxLines: 3,
-            minLines: 2,
-            placeholder: l.t('hl_note_hint'),
-            style: const TextStyle(fontSize: 15),
-          ),
-        ),
-        actions: [
-          CupertinoDialogAction(onPressed: () => Navigator.pop(ctx), child: Text(l.t('cancel'))),
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-            child: Text(l.t('save')),
-          ),
-        ],
-      ),
+  Future<String?> _askNote(String? initial, {required String quote, String color = 'yellow'}) {
+    return showHighlightNoteDialog(
+      context,
+      quote: quote,
+      color: color,
+      initial: initial,
+      t: context.read<L10n>().t,
     );
   }
 
@@ -252,10 +234,17 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
           visible: true,
           child: HighlightMenu(
             t: l.t,
-            onColor: (c) async { done(); await _create(sel, c); },
+            // Цвет не заканчивает работу с фрагментом: сразу после него
+            // открываем действия по созданной пометке, чтобы заметку можно
+            // было дописать, не выделяя текст заново.
+            onColor: (c) async {
+              done();
+              final created = await _create(sel, c);
+              if (created != null && mounted) await _openSaved(created);
+            },
             onNote: () async {
               done();
-              final note = await _askNote(null);
+              final note = await _askNote(null, quote: selectedText);
               if (note == null) return;
               await _create(sel, 'yellow', comment: note.isEmpty ? null : note);
             },
@@ -285,74 +274,26 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
   }
 
   /// Карточка действий по уже сохранённому выделению (тап по пометке/строке).
+  ///
+  /// Цвет меняется прямо здесь, не закрывая шторку: раньше за ним открывалась
+  /// вторая шторка, а после выбора закрывались обе — и чтобы дописать заметку,
+  /// приходилось начинать сначала.
   Future<void> _openSaved(Annotation a) async {
     final l = context.read<L10n>();
     hapticSelection();
-    await showCupertinoModalPopup<void>(
-      context: context,
-      builder: (ctx) => CupertinoActionSheet(
-        title: Text(a.selectedText.trim(), maxLines: 3, overflow: TextOverflow.ellipsis),
-        message: a.comment != null ? Text(a.comment!) : null,
-        actions: [
-          CupertinoActionSheetAction(
-            onPressed: () { Navigator.pop(ctx); _askAi(saved: a); },
-            child: Text(l.t('hl_ask_ai')),
-          ),
-          CupertinoActionSheetAction(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              final note = await _askNote(a.comment);
-              if (note != null) await _patch(a, comment: note);
-            },
-            child: Text(a.comment == null ? l.t('hl_note') : l.t('hl_note_edit')),
-          ),
-          CupertinoActionSheetAction(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              final color = await _pickColor(a.color);
-              if (color != null) await _patch(a, color: color);
-            },
-            child: Text(l.t('hl_color')),
-          ),
-          CupertinoActionSheetAction(
-            isDestructiveAction: true,
-            onPressed: () { Navigator.pop(ctx); _delete(a); },
-            child: Text(l.t('delete')),
-          ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.pop(ctx),
-          child: Text(l.t('cancel')),
-        ),
-      ),
+    await showHighlightActionsSheet(
+      context,
+      item: a,
+      t: l.t,
+      onColor: (color) => _patch(a, color: color),
+      onNote: () async {
+        final note = await _askNote(a.comment, quote: a.selectedText, color: a.color);
+        if (note != null) await _patch(a, comment: note);
+      },
+      onAskAi: () => _askAi(saved: a),
+      onDelete: () => _delete(a),
     );
   }
-
-  Future<String?> _pickColor(String current) => showCupertinoModalPopup<String>(
-        context: context,
-        builder: (ctx) => CupertinoActionSheet(
-          actions: [
-            for (final c in highlightColors)
-              CupertinoActionSheetAction(
-                onPressed: () => Navigator.pop(ctx, c),
-                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Container(width: 18, height: 18, decoration: BoxDecoration(
-                    color: highlightSwatch(c), shape: BoxShape.circle,
-                    border: c == current
-                        ? Border.all(color: CupertinoColors.label.resolveFrom(ctx), width: 2)
-                        : null,
-                  )),
-                  const SizedBox(width: 10),
-                  Text(context.read<L10n>().t('hl_color_$c')),
-                ]),
-              ),
-          ],
-          cancelButton: CupertinoActionSheetAction(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(context.read<L10n>().t('cancel')),
-          ),
-        ),
-      );
 
   /// Прокрутка к фрагменту в тексте + короткая подсветка, чтобы глаз нашёл
   /// место (тап по строке списка «Мои выделения»).

@@ -107,7 +107,9 @@ Future<void> _start() async {
     return;
   }
 
-  final api = ApiService(baseUrl: resolvedBaseUrl);
+  final api = ApiService(
+  baseUrl: 'https://chatra-backend-new.onrender.com/api',
+  );
   final auth = AuthProvider(api);
   final org = OrgProvider();
   final theme = ThemeProvider();

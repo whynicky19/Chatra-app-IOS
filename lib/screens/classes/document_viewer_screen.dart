@@ -142,12 +142,17 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
 
   OverlayEntry? _dockEntry;
 
+  /// Пока открыта шторка «Ещё», панель убрана с экрана: иначе
+  /// CupertinoActionSheet вставляется в overlay ниже уже существующей панели
+  /// и её кнопки остаются за панелью.
+  bool _actionsSheetOpen = false;
+
   /// Панель действий показываем через Overlay: свой слой выделения просмотрщик
   /// держит поверх содержимого экрана, и панель, положенная рядом в Stack,
   /// просто не получала бы касаний.
   void _syncDock() {
     if (!mounted) return;
-    if (!_menuVisible) {
+    if (!_menuVisible || _actionsSheetOpen) {
       _dockEntry?.remove();
       _dockEntry = null;
       return;
@@ -166,22 +171,29 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
           top: false,
           child: Listener(
             onPointerDown: (_) => _menuTouched = true,
-            child: HighlightMenuDock(
-              visible: true,
-              child: HighlightMenu(
-                t: l.t,
-                existing: _selectedSaved,
-                onColor: _onColor,
-                onNote: _onNote,
-                onAskAi: _askAi,
-                onCopy: _onCopy,
-                onDelete: _selectedSaved != null
-                    ? () {
-                        final a = _selectedSaved!;
-                        _closeMenu();
-                        _delete(a);
-                      }
-                    : null,
+            // Material обязателен: OverlayEntry живёт вне CupertinoPageScaffold,
+            // и без него Text рисуется «отладочным» стилем — с жёлтыми
+            // подчёркиваниями под каждой подписью кнопки.
+            child: Material(
+              type: MaterialType.transparency,
+              child: HighlightMenuDock(
+                visible: true,
+                child: HighlightMenu(
+                  t: l.t,
+                  existing: _selectedSaved,
+                  onColor: _onColor,
+                  onNote: _onNote,
+                  onAskAi: _askAi,
+                  onCopy: _onCopy,
+                  onMore: _showSavedActions,
+                  onDelete: _selectedSaved != null
+                      ? () {
+                          final a = _selectedSaved!;
+                          _closeMenu();
+                          _delete(a);
+                        }
+                      : null,
+                ),
               ),
             ),
           ),
@@ -299,9 +311,8 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
   /// page = 0. Такие пометки ищем на каждой странице по тексту и якорю —
   /// locateAnnotation вернёт null там, где фрагмента нет, и лишнего не
   /// закрасится.
-  List<Annotation> _paintableOn(int pageNumber) => _annotations
-      .where((a) => a.page == pageNumber || a.page == 0)
-      .toList();
+  List<Annotation> _paintableOn(int pageNumber) =>
+      _annotations.where((a) => a.page == pageNumber || a.page == 0).toList();
 
   // ── Текст страницы и геометрия пометок ─────────────────────────────────
 
@@ -309,7 +320,8 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
   /// текущего кадра — _paintPage и pageOverlaysBuilder вызываются во время
   /// отрисовки.
   void _ensureText(int pageNumber) {
-    if (_pageTexts.containsKey(pageNumber) || _textLoading.contains(pageNumber)) {
+    if (_pageTexts.containsKey(pageNumber) ||
+        _textLoading.contains(pageNumber)) {
       return;
     }
     if (!_controller.isReady) return;
@@ -514,7 +526,8 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
     if (!_controller.isReady) return;
 
     final delegate = _controller.textSelectionDelegate;
-    final target = delegate.doc2local.offsetToDocument(ctx, pointer + _grabOffset);
+    final target =
+        delegate.doc2local.offsetToDocument(ctx, pointer + _grabOffset);
     if (target == null) return;
     final moved = _textPointAt(target);
     if (moved == null) return;
@@ -792,43 +805,48 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
       alignment: Alignment.bottomCenter,
       child: SafeArea(
         top: false,
-        child: HighlightMenuDock(
-          visible: true,
-          child: HighlightMenu(
-            t: l.t,
-            onColor: (c) async {
-              final range = await firstRange();
-              dismiss();
-              if (range == null) return;
-              final created = await _create(range, c);
-              // Панель не исчезает, а переезжает на созданную пометку: следом
-              // за цветом чаще всего пишут заметку, и раньше ради неё
-              // приходилось выделять текст заново.
-              if (created != null && mounted) _selectSaved(created);
-            },
-            onNote: () async {
-              final range = await firstRange();
-              final text = await delegate.getSelectedText();
-              dismiss();
-              if (range == null) return;
-              final note = await _askNote(null, quote: text);
-              if (note == null) return;
-              await _create(range, 'yellow',
-                  comment: note.isEmpty ? null : note);
-            },
-            onAskAi: () async {
-              final text = await delegate.getSelectedText();
-              final range = await firstRange();
-              dismiss();
-              if (mounted) _askAiWith(text, range?.pageNumber);
-            },
-            onCopy: () async {
-              final text = await delegate.getSelectedText();
-              dismiss();
-              if (text.isNotEmpty) {
-                await Clipboard.setData(ClipboardData(text: text));
-              }
-            },
+        // Material — см. комментарий в _syncDock: без него подписи кнопок
+        // рисуются с жёлтыми debug-подчёркиваниями.
+        child: Material(
+          type: MaterialType.transparency,
+          child: HighlightMenuDock(
+            visible: true,
+            child: HighlightMenu(
+              t: l.t,
+              onColor: (c) async {
+                final range = await firstRange();
+                dismiss();
+                if (range == null) return;
+                final created = await _create(range, c);
+                // Панель не исчезает, а переезжает на созданную пометку: следом
+                // за цветом чаще всего пишут заметку, и раньше ради неё
+                // приходилось выделять текст заново.
+                if (created != null && mounted) _selectSaved(created);
+              },
+              onNote: () async {
+                final range = await firstRange();
+                final text = await delegate.getSelectedText();
+                dismiss();
+                if (range == null) return;
+                final note = await _askNote(null, quote: text);
+                if (note == null) return;
+                await _create(range, 'yellow',
+                    comment: note.isEmpty ? null : note);
+              },
+              onAskAi: () async {
+                final text = await delegate.getSelectedText();
+                final range = await firstRange();
+                dismiss();
+                if (mounted) _askAiWith(text, range?.pageNumber);
+              },
+              onCopy: () async {
+                final text = await delegate.getSelectedText();
+                dismiss();
+                if (text.isNotEmpty) {
+                  await Clipboard.setData(ClipboardData(text: text));
+                }
+              },
+            ),
           ),
         ),
       ),
@@ -908,8 +926,8 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
       // Панель остаётся открытой после смены цвета — выбранный кружок должен
       // переехать сразу, не дожидаясь ответа сервера.
       if (saved?.id == a.id) {
-        _selectedSaved =
-            saved!.copyWith(color: color, comment: comment, clearComment: clear);
+        _selectedSaved = saved!
+            .copyWith(color: color, comment: comment, clearComment: clear);
       }
     });
     try {
@@ -928,7 +946,8 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
       if (mounted) {
         setState(() {
           _annotations = before;
-          if (saved != null && _selectedSaved?.id == a.id) _selectedSaved = saved;
+          if (saved != null && _selectedSaved?.id == a.id)
+            _selectedSaved = saved;
         });
         showToast(context, context.read<L10n>().t('hl_save_failed'),
             error: true);
@@ -953,7 +972,8 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
     }
   }
 
-  Future<String?> _askNote(String? initial, {required String quote, String color = 'yellow'}) {
+  Future<String?> _askNote(String? initial,
+      {required String quote, String color = 'yellow'}) {
     final l = context.read<L10n>();
     return showHighlightNoteDialog(
       context,
@@ -1026,6 +1046,48 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
     if (text.isNotEmpty) await Clipboard.setData(ClipboardData(text: text));
   }
 
+  /// «Ещё» у панели сохранённой пометки. Панель на время шторки снимаем с
+  /// экрана — шторка иначе открывается позади неё, и кнопки не видно.
+  void _showSavedActions() {
+    final l = context.read<L10n>();
+    hapticSelection();
+    _dockEntry?.remove();
+    _dockEntry = null;
+    _actionsSheetOpen = true;
+    showCupertinoModalPopup<void>(
+      context: context,
+      builder: (ctx) => CupertinoActionSheet(
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _onCopy();
+            },
+            child: Text(l.t('copy')),
+          ),
+          if (_selectedSaved != null)
+            CupertinoActionSheetAction(
+              isDestructiveAction: true,
+              onPressed: () {
+                final a = _selectedSaved!;
+                Navigator.pop(ctx);
+                _closeMenu();
+                _delete(a);
+              },
+              child: Text(l.t('delete')),
+            ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(ctx),
+          child: Text(l.t('cancel')),
+        ),
+      ),
+    ).whenComplete(() {
+      _actionsSheetOpen = false;
+      if (mounted) setState(() {});
+    });
+  }
+
   // ── Переходы и списки ──────────────────────────────────────────────────
 
   /// Страница, на которой лежит фрагмент пометки без номера страницы (её
@@ -1073,7 +1135,8 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
                 padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
                 child: Column(children: [
                   Icon(CupertinoIcons.bookmark,
-                      size: 34, color: detailText2(context).withValues(alpha: 0.5)),
+                      size: 34,
+                      color: detailText2(context).withValues(alpha: 0.5)),
                   const SizedBox(height: 12),
                   Text(l.t('hl_empty'),
                       textAlign: TextAlign.center,
@@ -1274,7 +1337,8 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
           onPressed: () => openRemoteFile(
               context, context.read<ApiService>(), widget.url, widget.name),
           child: Text(l.t('open_in_system_viewer'),
-              style: const TextStyle(fontSize: 15, color: CupertinoColors.white)),
+              style:
+                  const TextStyle(fontSize: 15, color: CupertinoColors.white)),
         ),
       ]);
     }
@@ -1344,6 +1408,16 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
         // слой выделения он держит поверх содержимого, и панель, положенная
         // рядом в Stack, касаний бы не получала.
         buildContextMenu: _buildSelectionMenu,
+        // Тап мимо панели и мимо выделенного фрагмента закрывает меню пометки;
+        // false — не съедаем тап, просмотрщик сам снимет выделение.
+        onGeneralTap: (context, controller, details) {
+          if (details.type == PdfViewerGeneralTapType.tap &&
+              details.tapOn != PdfViewerPart.selectedText &&
+              (_menuVisible || _selection != null || _selectedSaved != null)) {
+            _closeMenu();
+          }
+          return false;
+        },
         pagePaintCallbacks: [_paintPage],
         pageOverlaysBuilder: _pageOverlays,
         loadingBannerBuilder: (context, downloaded, total) =>
@@ -1366,8 +1440,8 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
             onPressed: () => openRemoteFile(
                 context, context.read<ApiService>(), widget.url, widget.name),
             child: Text(l.t('open_in_system_viewer'),
-                style:
-                    const TextStyle(fontSize: 15, color: CupertinoColors.white)),
+                style: const TextStyle(
+                    fontSize: 15, color: CupertinoColors.white)),
           ),
         ]),
       ),
@@ -1527,7 +1601,8 @@ class _Sheet extends StatelessWidget {
         height: MediaQuery.sizeOf(context).height * 0.62,
         decoration: BoxDecoration(
           color: detailBg(context),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadii.sheet)),
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(AppRadii.sheet)),
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(children: [
@@ -1553,14 +1628,17 @@ class _Sheet extends StatelessWidget {
               if (count > 0) ...[
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                   decoration: BoxDecoration(
                     color: accent.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(AppRadii.chip),
                   ),
                   child: Text('$count',
                       style: TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w600, color: accent,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: accent,
                       )),
                 ),
               ],

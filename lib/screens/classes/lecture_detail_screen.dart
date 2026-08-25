@@ -79,7 +79,9 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
 
   Future<void> _loadAnnotations() async {
     try {
-      final rows = await context.read<ApiService>().getAnnotations(lectureId: widget.lectureId);
+      final rows = await context
+          .read<ApiService>()
+          .getAnnotations(lectureId: widget.lectureId);
       if (!mounted) return;
       setState(() => _annotations = rows
           .map((e) => Annotation.fromJson(Map<String, dynamic>.from(e as Map)))
@@ -91,33 +93,41 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
 
   /// Пометки, которые реально лежат в тексте лекции (в списке показываем все).
   List<Annotation> get _textAnnotations => _annotations
-      .where((a) => a.isLectureText && a.endOffset <= widget.content.length && a.endOffset > a.startOffset)
+      .where((a) =>
+          a.isLectureText &&
+          a.endOffset <= widget.content.length &&
+          a.endOffset > a.startOffset)
       .toList()
     ..sort((a, b) => a.startOffset.compareTo(b.startOffset));
 
   // ── Создание и правка ──────────────────────────────────────────────────
 
-  Future<Annotation?> _create(TextSelection sel, String color, {String? comment}) async {
+  Future<Annotation?> _create(TextSelection sel, String color,
+      {String? comment}) async {
     final text = widget.content.substring(sel.start, sel.end);
     try {
       final row = await context.read<ApiService>().createAnnotation(
-        lectureId: widget.lectureId!,
-        classId: widget.classId!,
-        selectedText: text,
-        startOffset: sel.start,
-        endOffset: sel.end,
-        // Якорь по соседнему тексту: по нему выделение находится на другом
-        // клиенте, где смещения могут не совпасть (см. backend).
-        prefix: widget.content.substring((sel.start - 60).clamp(0, sel.start), sel.start),
-        suffix: widget.content.substring(sel.end, (sel.end + 60).clamp(sel.end, widget.content.length)),
-        color: color,
-        comment: comment,
-      );
+            lectureId: widget.lectureId!,
+            classId: widget.classId!,
+            selectedText: text,
+            startOffset: sel.start,
+            endOffset: sel.end,
+            // Якорь по соседнему тексту: по нему выделение находится на другом
+            // клиенте, где смещения могут не совпасть (см. backend).
+            prefix: widget.content
+                .substring((sel.start - 60).clamp(0, sel.start), sel.start),
+            suffix: widget.content.substring(
+                sel.end, (sel.end + 60).clamp(sel.end, widget.content.length)),
+            color: color,
+            comment: comment,
+          );
       final created = Annotation.fromJson(row);
       if (mounted) setState(() => _annotations = [..._annotations, created]);
       return created;
     } catch (_) {
-      if (mounted) showToast(context, context.read<L10n>().t('hl_save_failed'), error: true);
+      if (mounted)
+        showToast(context, context.read<L10n>().t('hl_save_failed'),
+            error: true);
       return null;
     }
   }
@@ -126,34 +136,43 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
     // Оптимистично: цвет и заметка меняются сразу, ошибка откатывает.
     final before = _annotations;
     setState(() => _annotations = _annotations
-        .map((x) => x.id == a.id ? x.copyWith(color: color, comment: comment) : x)
+        .map((x) =>
+            x.id == a.id ? x.copyWith(color: color, comment: comment) : x)
         .toList());
     try {
-      final row = await context.read<ApiService>().updateAnnotation(a.id, color: color, comment: comment);
+      final row = await context
+          .read<ApiService>()
+          .updateAnnotation(a.id, color: color, comment: comment);
       final updated = Annotation.fromJson(row);
-      if (mounted) setState(() => _annotations = _annotations.map((x) => x.id == a.id ? updated : x).toList());
+      if (mounted)
+        setState(() => _annotations =
+            _annotations.map((x) => x.id == a.id ? updated : x).toList());
     } catch (_) {
       if (mounted) {
         setState(() => _annotations = before);
-        showToast(context, context.read<L10n>().t('hl_save_failed'), error: true);
+        showToast(context, context.read<L10n>().t('hl_save_failed'),
+            error: true);
       }
     }
   }
 
   Future<void> _delete(Annotation a) async {
     final before = _annotations;
-    setState(() => _annotations = _annotations.where((x) => x.id != a.id).toList());
+    setState(
+        () => _annotations = _annotations.where((x) => x.id != a.id).toList());
     try {
       await context.read<ApiService>().deleteAnnotation(a.id);
     } catch (_) {
       if (mounted) {
         setState(() => _annotations = before);
-        showToast(context, context.read<L10n>().t('hl_save_failed'), error: true);
+        showToast(context, context.read<L10n>().t('hl_save_failed'),
+            error: true);
       }
     }
   }
 
-  Future<String?> _askNote(String? initial, {required String quote, String color = 'yellow'}) {
+  Future<String?> _askNote(String? initial,
+      {required String quote, String color = 'yellow'}) {
     return showHighlightNoteDialog(
       context,
       quote: quote,
@@ -174,16 +193,18 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
       widget.onOpenFile(context, url, name);
       return;
     }
-    final result = await Navigator.push<Object?>(context, MaterialPageRoute(
-      builder: (_) => DocumentViewerScreen(
-        url: url,
-        name: name,
-        lectureId: widget.lectureId!,
-        classId: widget.classId!,
-        fileIndex: index,
-        lectureTitle: widget.title,
-      ),
-    ));
+    final result = await Navigator.push<Object?>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DocumentViewerScreen(
+            url: url,
+            name: name,
+            lectureId: widget.lectureId!,
+            classId: widget.classId!,
+            fileIndex: index,
+            lectureTitle: widget.title,
+          ),
+        ));
     // Вопрос из просмотрщика прокидываем дальше — на экран класса, который
     // переключится на вкладку «ИИ».
     if (result is AiAsk && mounted) {
@@ -201,18 +222,20 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
   void _askAi({Annotation? saved, String? rawText, int page = 0}) {
     final text = (saved?.selectedText ?? rawText ?? '').trim();
     if (text.isEmpty) return;
-    Navigator.pop(context, AiAsk(
-      text: buildQuotePrompt(
-        lang: context.read<L10n>().lang,
-        text: text,
-        lectureTitle: widget.title,
-        page: saved?.page ?? page,
-      ),
-      annotationId: saved?.id,
-      lectureId: widget.lectureId!,
-      page: saved?.page ?? page,
-      quote: saved == null ? text : null,
-    ));
+    Navigator.pop(
+        context,
+        AiAsk(
+          text: buildQuotePrompt(
+            lang: context.read<L10n>().lang,
+            text: text,
+            lectureTitle: widget.title,
+            page: saved?.page ?? page,
+          ),
+          annotationId: saved?.id,
+          lectureId: widget.lectureId!,
+          page: saved?.page ?? page,
+          quote: saved == null ? text : null,
+        ));
   }
 
   // ── Меню выделения ─────────────────────────────────────────────────────
@@ -227,29 +250,42 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
 
     // Панель пришвартована к низу экрана, а не висит у выделения: всплывающее
     // меню перекрывает как раз выделенный текст (см. HighlightMenu).
+    // Material обязателен: contextMenuBuilder живёт в OverlayPortal вне
+    // CupertinoPageScaffold, и без него Text рисуется «отладочным» стилем —
+    // с жёлтыми подчёркиваниями под подписями кнопок.
     return Align(
       alignment: Alignment.bottomCenter,
       child: SafeArea(
-        child: HighlightMenuDock(
-          visible: true,
-          child: HighlightMenu(
-            t: l.t,
-            // Цвет не заканчивает работу с фрагментом: сразу после него
-            // открываем действия по созданной пометке, чтобы заметку можно
-            // было дописать, не выделяя текст заново.
-            onColor: (c) async {
-              done();
-              final created = await _create(sel, c);
-              if (created != null && mounted) await _openSaved(created);
-            },
-            onNote: () async {
-              done();
-              final note = await _askNote(null, quote: selectedText);
-              if (note == null) return;
-              await _create(sel, 'yellow', comment: note.isEmpty ? null : note);
-            },
-            onAskAi: () { done(); _askAi(rawText: selectedText); },
-            onCopy: () { done(); Clipboard.setData(ClipboardData(text: selectedText)); },
+        child: Material(
+          type: MaterialType.transparency,
+          child: HighlightMenuDock(
+            visible: true,
+            child: HighlightMenu(
+              t: l.t,
+              // Цвет не заканчивает работу с фрагментом: сразу после него
+              // открываем действия по созданной пометке, чтобы заметку можно
+              // было дописать, не выделяя текст заново.
+              onColor: (c) async {
+                done();
+                final created = await _create(sel, c);
+                if (created != null && mounted) await _openSaved(created);
+              },
+              onNote: () async {
+                done();
+                final note = await _askNote(null, quote: selectedText);
+                if (note == null) return;
+                await _create(sel, 'yellow',
+                    comment: note.isEmpty ? null : note);
+              },
+              onAskAi: () {
+                done();
+                _askAi(rawText: selectedText);
+              },
+              onCopy: () {
+                done();
+                Clipboard.setData(ClipboardData(text: selectedText));
+              },
+            ),
           ),
         ),
       ),
@@ -269,7 +305,8 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
     // Пометка всегда ложится на целые слова: палец останавливает выделение там,
     // где остановился, и в тексте оставались обрубки вроде «Инкапсуля».
     final w = snapToWords(widget.content, start, end);
-    if (w.end <= w.start) return TextSelection(baseOffset: start, extentOffset: end);
+    if (w.end <= w.start)
+      return TextSelection(baseOffset: start, extentOffset: end);
     return TextSelection(baseOffset: w.start, extentOffset: w.end);
   }
 
@@ -287,7 +324,8 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
       t: l.t,
       onColor: (color) => _patch(a, color: color),
       onNote: () async {
-        final note = await _askNote(a.comment, quote: a.selectedText, color: a.color);
+        final note =
+            await _askNote(a.comment, quote: a.selectedText, color: a.color);
         if (note != null) await _patch(a, comment: note);
       },
       onAskAi: () => _askAi(saved: a),
@@ -303,19 +341,27 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
       final file = a.fileIndex >= 0 && a.fileIndex < widget.files.length
           ? widget.files[a.fileIndex]
           : null;
-      if (file == null) { await _openSaved(a); return; }
-      final result = await Navigator.push<Object?>(context, MaterialPageRoute(
-        builder: (_) => DocumentViewerScreen(
-          url: file,
-          name: _fileDisplayName(file),
-          lectureId: widget.lectureId!,
-          classId: widget.classId!,
-          fileIndex: a.fileIndex,
-          lectureTitle: widget.title,
-          focusAnnotationId: a.id,
-        ),
-      ));
-      if (result is AiAsk && mounted) { Navigator.pop(context, result); return; }
+      if (file == null) {
+        await _openSaved(a);
+        return;
+      }
+      final result = await Navigator.push<Object?>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => DocumentViewerScreen(
+              url: file,
+              name: _fileDisplayName(file),
+              lectureId: widget.lectureId!,
+              classId: widget.classId!,
+              fileIndex: a.fileIndex,
+              lectureTitle: widget.title,
+              focusAnnotationId: a.id,
+            ),
+          ));
+      if (result is AiAsk && mounted) {
+        Navigator.pop(context, result);
+        return;
+      }
       if (mounted) await _loadAnnotations();
       return;
     }
@@ -375,7 +421,8 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = detailAccent(context);
 
-    final body = Text.rich(_bodySpan(context), key: _bodyKey, textAlign: TextAlign.left);
+    final body =
+        Text.rich(_bodySpan(context), key: _bodyKey, textAlign: TextAlign.left);
 
     return CupertinoTheme(
       data: CupertinoThemeData(
@@ -388,11 +435,15 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
           navLargeTitleTextStyle: TextStyle(
             // Крупный кегль — отрицательный трекинг и плотный интерлиньяж:
             // заголовок из двух строк иначе «разъезжается».
-            fontSize: 34, fontWeight: FontWeight.w700, letterSpacing: -0.8, height: 1.1,
+            fontSize: 34, fontWeight: FontWeight.w700, letterSpacing: -0.8,
+            height: 1.1,
             color: detailText1(context),
           ),
           navTitleTextStyle: TextStyle(
-            fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: detailText1(context),
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.2,
+            color: detailText1(context),
           ),
         ),
       ),
@@ -409,68 +460,90 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
               backgroundColor: bg.withValues(alpha: 0.82),
               border: null,
               stretch: true,
-              largeTitle: Text(widget.title, maxLines: 2, overflow: TextOverflow.ellipsis),
+              largeTitle: Text(widget.title,
+                  maxLines: 2, overflow: TextOverflow.ellipsis),
             ),
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 56),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  _MetaRow(dateLabel: widget.dateLabel, fileCount: widget.files.length, l: l),
-                  if (widget.content.isNotEmpty) ...[
-                    const SizedBox(height: 26),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 2, bottom: 8),
-                      child: Text(l.t('description').toUpperCase(), style: sectionCaptionStyle(context)),
-                    ),
-                    // Тело лекции — обычный текст на фоне страницы, как в Apple
-                    // Notes: раньше он лежал в серой карточке, которая на
-                    // длинном конспекте читалась как бесконечная плашка.
-                    if (_canAnnotate)
-                      SelectionArea(
-                        contextMenuBuilder: _selectionMenu,
-                        child: SelectionListener(
-                          selectionNotifier: _selectionNotifier,
-                          child: body,
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _MetaRow(
+                          dateLabel: widget.dateLabel,
+                          fileCount: widget.files.length,
+                          l: l),
+                      if (widget.content.isNotEmpty) ...[
+                        const SizedBox(height: 26),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 2, bottom: 8),
+                          child: Text(l.t('description').toUpperCase(),
+                              style: sectionCaptionStyle(context)),
                         ),
-                      )
-                    else
-                      body,
-                  ],
-                  if (widget.files.isNotEmpty) ...[
-                    SizedBox(height: widget.content.isNotEmpty ? 30 : 26),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 2, bottom: 8),
-                      child: Text(l.t('attached_files_edit').toUpperCase(), style: sectionCaptionStyle(context)),
-                    ),
-                    FileList(
-                      files: [
-                        for (final f in widget.files) FileEntry(name: _fileDisplayName(f), url: f, previewUrl: f),
+                        // Тело лекции — обычный текст на фоне страницы, как в Apple
+                        // Notes: раньше он лежал в серой карточке, которая на
+                        // длинном конспекте читалась как бесконечная плашка.
+                        if (_canAnnotate)
+                          SelectionArea(
+                            contextMenuBuilder: _selectionMenu,
+                            child: SelectionListener(
+                              selectionNotifier: _selectionNotifier,
+                              child: body,
+                            ),
+                          )
+                        else
+                          body,
                       ],
-                      onOpen: (f) => _openFile(widget.files.indexOf(f.url), f.url, f.name),
-                    ),
-                  ],
-                  if (_annotations.isNotEmpty) ...[
-                    const SizedBox(height: 30),
-                    HighlightsSection(
-                      items: _annotations,
-                      t: l.t,
-                      onTap: _jumpTo,
-                      onDelete: _delete,
-                    ),
-                  ],
-                  if (widget.content.isEmpty && widget.files.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 56),
-                      child: Center(
-                        child: Column(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(CupertinoIcons.book, size: 32, color: detailText2(context).withValues(alpha: 0.6)),
-                          const SizedBox(height: 14),
-                          Text(l.t('content_empty'),
-                              style: TextStyle(fontSize: 16, color: detailText2(context), fontWeight: FontWeight.w500, letterSpacing: -0.2)),
-                        ]),
-                      ),
-                    ),
-                ]),
+                      if (widget.files.isNotEmpty) ...[
+                        SizedBox(height: widget.content.isNotEmpty ? 30 : 26),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 2, bottom: 8),
+                          child: Text(l.t('attached_files_edit').toUpperCase(),
+                              style: sectionCaptionStyle(context)),
+                        ),
+                        FileList(
+                          files: [
+                            for (final f in widget.files)
+                              FileEntry(
+                                  name: _fileDisplayName(f),
+                                  url: f,
+                                  previewUrl: f),
+                          ],
+                          onOpen: (f) => _openFile(
+                              widget.files.indexOf(f.url), f.url, f.name),
+                        ),
+                      ],
+                      if (_annotations.isNotEmpty) ...[
+                        const SizedBox(height: 30),
+                        HighlightsSection(
+                          items: _annotations,
+                          t: l.t,
+                          onTap: _jumpTo,
+                          onDelete: _delete,
+                        ),
+                      ],
+                      if (widget.content.isEmpty && widget.files.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 56),
+                          child: Center(
+                            child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(CupertinoIcons.book,
+                                      size: 32,
+                                      color: detailText2(context)
+                                          .withValues(alpha: 0.6)),
+                                  const SizedBox(height: 14),
+                                  Text(l.t('content_empty'),
+                                      style: TextStyle(
+                                          fontSize: 16,
+                                          color: detailText2(context),
+                                          fontWeight: FontWeight.w500,
+                                          letterSpacing: -0.2)),
+                                ]),
+                          ),
+                        ),
+                    ]),
               ),
             ),
           ],
@@ -484,7 +557,8 @@ class _MetaRow extends StatelessWidget {
   final String dateLabel;
   final int fileCount;
   final L10n l;
-  const _MetaRow({required this.dateLabel, required this.fileCount, required this.l});
+  const _MetaRow(
+      {required this.dateLabel, required this.fileCount, required this.l});
 
   @override
   Widget build(BuildContext context) {
@@ -506,12 +580,19 @@ class _MetaRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: detailSurface(context),
         borderRadius: BorderRadius.circular(100),
-        border: Border.all(color: detailBorder(context), width: 1 / MediaQuery.devicePixelRatioOf(context)),
+        border: Border.all(
+            color: detailBorder(context),
+            width: 1 / MediaQuery.devicePixelRatioOf(context)),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(icon, size: 13, color: text2),
         const SizedBox(width: 5),
-        Text(text, style: TextStyle(fontSize: 14, color: text2, fontWeight: FontWeight.w500, letterSpacing: -0.2)),
+        Text(text,
+            style: TextStyle(
+                fontSize: 14,
+                color: text2,
+                fontWeight: FontWeight.w500,
+                letterSpacing: -0.2)),
       ]),
     );
   }

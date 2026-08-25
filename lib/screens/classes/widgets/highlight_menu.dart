@@ -23,6 +23,10 @@ class HighlightMenu extends StatelessWidget {
   final VoidCallback? onDelete;
   final String Function(String) t;
 
+  /// Своя обработка «Ещё» у панели сохранённой пометки: экран прячет панель
+  /// на время шторки, иначе CupertinoActionSheet открывается под ней.
+  final VoidCallback? onMore;
+
   const HighlightMenu({
     super.key,
     required this.onColor,
@@ -32,6 +36,7 @@ class HighlightMenu extends StatelessWidget {
     required this.t,
     this.existing,
     this.onDelete,
+    this.onMore,
   });
 
   @override
@@ -39,13 +44,17 @@ class HighlightMenu extends StatelessWidget {
     const surface = Color(0xFF2A2A2E);
     final divider = CupertinoColors.white.withValues(alpha: 0.12);
 
+    // Поверхность непрозрачная намеренно: сквозь полупрозрачную панель с
+    // blur просвечивала жёлтая подсветка только что созданной пометки, если
+    // выделение лежало у нижнего края страницы — под подписями кнопок
+    // проступали жёлтые полосы.
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
         child: Container(
           decoration: BoxDecoration(
-            color: surface.withValues(alpha: 0.96),
+            color: surface,
             borderRadius: BorderRadius.circular(22),
             boxShadow: [
               BoxShadow(
@@ -86,7 +95,7 @@ class HighlightMenu extends StatelessWidget {
               Expanded(child: _Action(
                 icon: CupertinoIcons.ellipsis,
                 label: t('hl_more'),
-                onTap: () => _showMore(context),
+                onTap: () => (onMore ?? () => _showMore(context))(),
               )),
             ]),
           ]),

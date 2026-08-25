@@ -166,13 +166,15 @@ class FloatingNavBarScope extends InheritedWidget {
 }
 
 /// Нижний отступ для панели, приклеенной к низу вкладки: с открытой
-/// клавиатурой — её высота, иначе место под таб-бар.
+/// клавиатурой — её высота, иначе 6px зазора над верхней кромкой плавающего
+/// навбара (safeArea + 56). Clamp не даёт панели уехать под навбар, пока
+/// клавиатура анимированно скрывается.
 ///
 /// main_shell.dart намеренно НЕ оборачивает вкладки в свой Scaffold: иначе
 /// получились бы два «менеджера» клавиатуры вразнобой и поле ввода дёргалось бы.
 double bottomBarInset(BuildContext context) =>
     (MediaQuery.viewInsetsOf(context).bottom + 8)
-        .clamp(bottomBarClearance(context), double.infinity);
+        .clamp(MediaQuery.paddingOf(context).bottom + 62, double.infinity);
 
 Color adaptiveBorder(BuildContext context) {
   final isDark = Theme.of(context).brightness == Brightness.dark;

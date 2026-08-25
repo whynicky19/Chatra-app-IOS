@@ -692,15 +692,9 @@ class _AiInputBar extends StatelessWidget {
       child: Container(
       // Ближе к плавающему навбару: его верхняя кромка на safeArea + 56
       // (высота бара 64, снизу safeArea − 8), оставляем 6px зазора. С открытой
-      // клавиатурой отступ считается от неё, как и раньше.
-      padding: EdgeInsets.fromLTRB(
-          14,
-          10,
-          14,
-          MediaQuery.viewInsetsOf(context).bottom > 0
-              ? MediaQuery.viewInsetsOf(context).bottom + 8
-              : MediaQuery.paddingOf(context).bottom + 62,
-      ),
+      // клавиатурой отступ считается от неё. Clamp не даёт панели уехать под
+      // навбар во время анимации скрытия клавиатуры и убирает рывок в конце.
+      padding: EdgeInsets.fromLTRB(14, 10, 14, bottomBarInset(context)),
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.80),
         border: Border(top: BorderSide(color: adaptiveBorder(context).withValues(alpha: 0.5), width: hairline(context))),

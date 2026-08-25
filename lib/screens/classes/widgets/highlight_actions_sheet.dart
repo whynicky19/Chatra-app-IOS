@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../models/annotation.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/haptics.dart';
+import '../../../utils/pdf_text_sanitize.dart';
 
 /// Шторка действий по уже сохранённой пометке — в стиле приложения.
 ///
@@ -126,7 +127,7 @@ class _BodyState extends State<_Body> {
           ),
           Expanded(
             child: Text(
-              widget.item.selectedText.trim(),
+              sanitizePdfSymbols(widget.item.selectedText).trim(),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(

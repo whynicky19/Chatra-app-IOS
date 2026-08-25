@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../models/annotation.dart';
 import '../../../theme/app_theme.dart';
+import '../../../utils/pdf_text_sanitize.dart';
 import 'detail_page_theme.dart';
 
 /// Раздел «Мои выделения»: цвет, сам фрагмент, заметка и откуда он (лекция/
@@ -38,6 +39,21 @@ class HighlightsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     if (items.isEmpty) return const SizedBox.shrink();
 
+    // Новые пометки сверху: сортировка только для показа, порядок в хранилище
+    // не трогаем. Вторичный ключ — id: сервер может отдать одинаковый updatedAt.
+    final sorted = [...items]..sort((a, b) {
+        final at = a.updatedAt, bt = b.updatedAt;
+        if (at != null && bt != null) {
+          final c = bt.compareTo(at);
+          if (c != 0) return c;
+        } else if (at != null) {
+          return -1;
+        } else if (bt != null) {
+          return 1;
+        }
+        return b.id.compareTo(a.id);
+      });
+
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       if (!hideHeader)
         Padding(
@@ -49,9 +65,9 @@ class HighlightsSection extends StatelessWidget {
                 style: sectionCaptionStyle(context).copyWith(color: detailText2(context))),
           ]),
         ),
-      for (var i = 0; i < items.length; i++) ...[
+      for (var i = 0; i < sorted.length; i++) ...[
         if (i > 0) const SizedBox(height: 8),
-        _Row(item: items[i], t: t, onTap: onTap, onDelete: onDelete),
+        _Row(item: sorted[i], t: t, onTap: onTap, onDelete: onDelete),
       ],
     ]);
   }
@@ -111,7 +127,9 @@ class _Row extends StatelessWidget {
                     Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Expanded(
                         child: Text(
-                          item.selectedText.trim(),
+                          // Чистим U+FFFD от PDFium: в старых пометках на месте
+                          // бюллетеней из Word сохранились «ромбы-вопросы».
+                          sanitizePdfSymbols(item.selectedText).trim(),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(

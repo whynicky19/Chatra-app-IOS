@@ -20,6 +20,7 @@ import '../../utils/haptics.dart';
 import '../../utils/highlight_anchor.dart';
 import '../../utils/pdf_highlight_geometry.dart';
 import '../../utils/pdf_text_hit.dart';
+import '../../utils/pdf_text_sanitize.dart';
 import '../../widgets/toast.dart';
 import 'widgets/detail_page_theme.dart';
 import 'widgets/highlight_menu.dart';
@@ -482,7 +483,7 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
     // пальца рвала перетаскивание маркеров. Панель действий строит сам
     // просмотрщик, ей наше состояние не нужно.
     _selection = ranges.first;
-    _selectionText = text;
+    _selectionText = sanitizePdfSymbols(text);
     if (_selectedSaved != null) {
       setState(() => _selectedSaved = null);
     }
@@ -623,10 +624,10 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
       return;
     }
     final ranges = await delegate.getSelectedTextRanges();
-    final text = await delegate.getSelectedText();
+    final text = sanitizePdfSymbols(await delegate.getSelectedText());
     if (!mounted || ranges.isEmpty) return;
     _selection = ranges.first;
-    _selectionText = text;
+    _selectionText = sanitizePdfSymbols(text);
   }
 
   // ── Пальцы ─────────────────────────────────────────────────────────────
@@ -826,7 +827,7 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
               },
               onNote: () async {
                 final range = await firstRange();
-                final text = await delegate.getSelectedText();
+                final text = sanitizePdfSymbols(await delegate.getSelectedText());
                 dismiss();
                 if (range == null) return;
                 final note = await _askNote(null, quote: text);
@@ -835,13 +836,13 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
                     comment: note.isEmpty ? null : note);
               },
               onAskAi: () async {
-                final text = await delegate.getSelectedText();
+                final text = sanitizePdfSymbols(await delegate.getSelectedText());
                 final range = await firstRange();
                 dismiss();
                 if (mounted) _askAiWith(text, range?.pageNumber);
               },
               onCopy: () async {
-                final text = await delegate.getSelectedText();
+                final text = sanitizePdfSymbols(await delegate.getSelectedText());
                 dismiss();
                 if (text.isNotEmpty) {
                   await Clipboard.setData(ClipboardData(text: text));
@@ -893,11 +894,12 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
             classId: widget.classId,
             fileIndex: widget.fileIndex,
             page: pageNumber,
-            selectedText: text.substring(snapped.start, snapped.end),
+            selectedText:
+                sanitizePdfSymbols(text.substring(snapped.start, snapped.end)),
             startOffset: snapped.start,
             endOffset: snapped.end,
-            prefix: anchor.prefix,
-            suffix: anchor.suffix,
+            prefix: sanitizePdfSymbols(anchor.prefix),
+            suffix: sanitizePdfSymbols(anchor.suffix),
             color: color,
             comment: comment,
           );
@@ -987,7 +989,7 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
 
   void _askAi() {
     final saved = _selectedSaved;
-    final text = (saved?.selectedText ?? _selectionText).trim();
+    final text = sanitizePdfSymbols(saved?.selectedText ?? _selectionText).trim();
     if (text.isEmpty) return;
     final page = saved?.page ?? _selection?.pageNumber ?? _page;
     // Отдельного ИИ-экрана нет: вопрос возвращается на экран класса и уходит
@@ -1042,7 +1044,8 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
   }
 
   Future<void> _onCopy() async {
-    final text = _selectedSaved?.selectedText ?? _selectionText;
+    final text =
+        sanitizePdfSymbols(_selectedSaved?.selectedText ?? _selectionText);
     _closeMenu();
     if (text.isNotEmpty) await Clipboard.setData(ClipboardData(text: text));
   }

@@ -1,4 +1,5 @@
 import '../models/annotation.dart';
+import 'pdf_text_sanitize.dart';
 
 /// Поиск сохранённого выделения в тексте, который сейчас на экране.
 ///
@@ -52,7 +53,11 @@ List<int> _hitsOf(String haystack, String needle) {
 /// Находит фрагмент [a] в [text]. null — если не нашёлся вовсе (тогда пометку
 /// просто не рисуем, а не ставим наугад в чужое место).
 TextMatch? locateAnnotation(String text, Annotation a) {
-  final expected = a.selectedText;
+  // PDFium отдаёт символы без Unicode-маппинга (бюллетени из Word и т.п.) как
+  // U+FFFD. Старые пометки сохранены с «ромбами», новые — с чисткой; заменяем
+  // 1:1 с обеих сторон сравнения, чтобы сходились и те, и другие.
+  text = sanitizePdfSymbols(text);
+  final expected = sanitizePdfSymbols(a.selectedText);
   if (expected.isEmpty || text.isEmpty) return null;
 
   // 1. По смещениям — если там ровно тот же текст (с точностью до пробелов).
@@ -72,8 +77,8 @@ TextMatch? locateAnnotation(String text, Annotation a) {
   // 2. По якорю: соседний текст отличает одинаковые фразы друг от друга. Если
   // якорь целиком не сошёлся (фрагмент у края страницы, сосед перерисован
   // иначе) — пробуем половинками, это точнее, чем один голый текст.
-  final prefix = _squash(a.prefix);
-  final suffix = _squash(a.suffix);
+  final prefix = _squash(sanitizePdfSymbols(a.prefix));
+  final suffix = _squash(sanitizePdfSymbols(a.suffix));
   for (final pair in [[prefix, suffix], [prefix, ''], ['', suffix]]) {
     final head = pair[0], tail = pair[1];
     if (head.isEmpty && tail.isEmpty) continue;

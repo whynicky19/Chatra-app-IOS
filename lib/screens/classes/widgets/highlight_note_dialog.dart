@@ -11,7 +11,26 @@ import '../../../widgets/app_dialog.dart';
 /// заметка — а её пишут как раз глядя на текст.
 ///
 /// Возвращает текст заметки, пустую строку — «убрать заметку», null — отмена.
+
+/// Уже открыто окно заметки: повторный тап по «Заметка» (панель не закрывает
+/// подсветку кнопки мгновенно, двойной тап успевает сработать) не должен
+/// наслаивать второе окно на первое.
+bool _noteDialogOpen = false;
+
 Future<String?> showHighlightNoteDialog(
+  BuildContext context, {
+  required String quote,
+  required String color,
+  required String Function(String) t,
+  String? initial,
+}) {
+  if (_noteDialogOpen) return Future.value(null);
+  _noteDialogOpen = true;
+  return _show(context, quote: quote, color: color, t: t, initial: initial)
+      .whenComplete(() => _noteDialogOpen = false);
+}
+
+Future<String?> _show(
   BuildContext context, {
   required String quote,
   required String color,

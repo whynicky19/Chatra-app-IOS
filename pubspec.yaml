@@ -37,6 +37,7 @@ dependencies:
   # без него выделять текст в материалах нельзя — системный вьюер iOS не даёт
   # ни текстового слоя, ни событий выделения.
   pdfrx: ^2.4.7
+  sentry_flutter: 9.7.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 
 import '../../../models/annotation.dart';
 import '../../../utils/haptics.dart';
+import 'viewer_action_sheet.dart';
 
 /// Панель действий над выделенным фрагментом: цвета, «Заметка», «Спросить AI»,
 /// «Ещё».
@@ -105,26 +106,23 @@ class HighlightMenu extends StatelessWidget {
   }
 
   void _showMore(BuildContext context) {
-    showCupertinoModalPopup<void>(
-      context: context,
-      builder: (ctx) => CupertinoActionSheet(
-        actions: [
-          CupertinoActionSheetAction(
-            onPressed: () { Navigator.pop(ctx); onCopy(); },
-            child: Text(t('copy')),
-          ),
-          if (onDelete != null)
-            CupertinoActionSheetAction(
-              isDestructiveAction: true,
-              onPressed: () { Navigator.pop(ctx); onDelete!(); },
-              child: Text(t('delete')),
-            ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.pop(ctx),
-          child: Text(t('cancel')),
+    showAppActionSheet(
+      context,
+      cancelLabel: t('cancel'),
+      actions: [
+        AppActionSheetAction(
+          icon: CupertinoIcons.doc_on_doc,
+          label: t('copy'),
+          onTap: onCopy,
         ),
-      ),
+        if (onDelete != null)
+          AppActionSheetAction(
+            icon: CupertinoIcons.delete,
+            label: t('delete'),
+            destructive: true,
+            onTap: onDelete!,
+          ),
+      ],
     );
   }
 }

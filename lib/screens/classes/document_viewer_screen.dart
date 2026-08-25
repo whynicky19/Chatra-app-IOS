@@ -26,6 +26,7 @@ import 'widgets/highlight_menu.dart';
 import 'widgets/highlight_note_dialog.dart';
 import 'widgets/highlights_section.dart';
 import 'widgets/selection_handle.dart';
+import 'widgets/viewer_action_sheet.dart';
 
 /// Просмотрщик материала лекции внутри приложения: PDF, Word и презентации.
 ///
@@ -1054,34 +1055,27 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
     _dockEntry?.remove();
     _dockEntry = null;
     _actionsSheetOpen = true;
-    showCupertinoModalPopup<void>(
-      context: context,
-      builder: (ctx) => CupertinoActionSheet(
-        actions: [
-          CupertinoActionSheetAction(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _onCopy();
-            },
-            child: Text(l.t('copy')),
-          ),
-          if (_selectedSaved != null)
-            CupertinoActionSheetAction(
-              isDestructiveAction: true,
-              onPressed: () {
-                final a = _selectedSaved!;
-                Navigator.pop(ctx);
-                _closeMenu();
-                _delete(a);
-              },
-              child: Text(l.t('delete')),
-            ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.pop(ctx),
-          child: Text(l.t('cancel')),
+    showAppActionSheet(
+      context,
+      cancelLabel: l.t('cancel'),
+      actions: [
+        AppActionSheetAction(
+          icon: CupertinoIcons.doc_on_doc,
+          label: l.t('copy'),
+          onTap: _onCopy,
         ),
-      ),
+        if (_selectedSaved != null)
+          AppActionSheetAction(
+            icon: CupertinoIcons.delete,
+            label: l.t('delete'),
+            destructive: true,
+            onTap: () {
+              final a = _selectedSaved!;
+              _closeMenu();
+              _delete(a);
+            },
+          ),
+      ],
     ).whenComplete(() {
       _actionsSheetOpen = false;
       if (mounted) setState(() {});
@@ -1227,32 +1221,24 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
 
   void _showMore() {
     final l = context.read<L10n>();
-    showCupertinoModalPopup<void>(
-      context: context,
-      builder: (ctx) => CupertinoActionSheet(
-        title: Text(widget.name),
-        actions: [
-          CupertinoActionSheetAction(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _showHighlights();
-            },
-            child: Text(l.t('hl_section')),
-          ),
-          if (_pageCount > 1)
-            CupertinoActionSheetAction(
-              onPressed: () {
-                Navigator.pop(ctx);
-                _showPages();
-              },
-              child: Text(l.t('pages')),
-            ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.pop(ctx),
-          child: Text(l.t('cancel')),
+    hapticSelection();
+    showAppActionSheet(
+      context,
+      title: widget.name,
+      cancelLabel: l.t('cancel'),
+      actions: [
+        AppActionSheetAction(
+          icon: CupertinoIcons.bookmark,
+          label: l.t('hl_section'),
+          onTap: _showHighlights,
         ),
-      ),
+        if (_pageCount > 1)
+          AppActionSheetAction(
+            icon: CupertinoIcons.square_grid_2x2,
+            label: l.t('pages'),
+            onTap: _showPages,
+          ),
+      ],
     );
   }
 

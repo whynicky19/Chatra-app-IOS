@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/ai_thread.dart';
-import 'crash_reporting.dart';
 
 final _localhostRe = RegExp(r'https?://localhost:\d+');
 final _loopbackRe = RegExp(r'https?://127\.0\.0\.1:\d+');
@@ -170,25 +169,6 @@ class ApiService {
           }
         }
 
-        return handler.next(error);
-      },
-    ));
-
-    // Мониторинг (должен идти ПОСЛЕ retry-интерцептора выше): репортим только
-    // окончательные серверные сбои — 5xx и обрывы сети. 4xx не отправляем:
-    // это штатные сценарии (валидация, права, 401 после refresh).
-    _dio.interceptors.add(InterceptorsWrapper(
-      onError: (error, handler) {
-        final status = error.response?.statusCode;
-        final isServerError = status == null || (status >= 500 && status < 600);
-        if (isServerError && !kDebugMode) {
-          CrashReporting.recordApiError(
-            method: error.requestOptions.method,
-            path: error.requestOptions.path,
-            statusCode: status,
-            error: error,
-          );
-        }
         return handler.next(error);
       },
     ));

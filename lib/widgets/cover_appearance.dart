@@ -169,6 +169,18 @@ class _CoverAppearanceState extends State<CoverAppearance> {
                 Text(l.t('cover_generating'),
                     style: const TextStyle(
                         color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                // Генерация занимает до пары минут — без объяснения долгий
+                // спиннер выглядит как зависание.
+                const SizedBox(height: 6),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(l.t('cover_generating_hint'),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.75),
+                          fontSize: 12,
+                          height: 1.35)),
+                ),
               ]),
             ),
         ]),

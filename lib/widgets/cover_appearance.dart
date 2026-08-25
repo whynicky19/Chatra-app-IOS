@@ -114,10 +114,6 @@ class _CoverAppearanceState extends State<CoverAppearance> {
         if (widget.error != null) ...[
           const SizedBox(height: 8),
           Text(widget.error!, style: const TextStyle(fontSize: 12, color: C.red)),
-        ] else if (widget.coverSource == 'fallback' && widget.coverUrl != null) ...[
-          const SizedBox(height: 8),
-          Text(l.t('cover_fallback_note'),
-              style: TextStyle(fontSize: 12, color: adaptiveText3(context))),
         ],
         const SizedBox(height: 18),
         _label(context, l.t('cover_color')),

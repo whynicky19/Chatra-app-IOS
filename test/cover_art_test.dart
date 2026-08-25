@@ -315,7 +315,7 @@ void main() {
       expect(find.text('Не удалось сгенерировать обложку.'), findsOneWidget);
     });
 
-    testWidgets('предупреждает, когда обложка собрана без ИИ', (tester) async {
+    testWidgets('фолбэк-обложка без ИИ не показывает никаких предупреждений', (tester) async {
       await tester.pumpWidget(wrap(CoverAppearance(
         color: 'blue',
         icon: 'sigma',
@@ -328,7 +328,9 @@ void main() {
       )));
       await tester.pump();
 
-      expect(find.textContaining('без ИИ'), findsOneWidget);
+      // Подсказку «создана без ИИ» убрали: она сбивала с толку, а статус
+      // обложки виден по кнопке «Перегенерировать».
+      expect(find.textContaining('без ИИ'), findsNothing);
     });
 
     testWidgets('по умолчанию показывает одну полоску символов', (tester) async {

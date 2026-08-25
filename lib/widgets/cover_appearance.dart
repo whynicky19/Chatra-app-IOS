@@ -308,19 +308,38 @@ class _CoverAppearanceState extends State<CoverAppearance> {
 
   Widget _generateButton(BuildContext context, L10n l, CoverColorOption selected) {
     final hasCover = widget.coverUrl != null && widget.coverUrl!.isNotEmpty;
-    return OutlinedButton.icon(
+    return OutlinedButton(
       onPressed: widget.generating ? null : widget.onGenerate,
       style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 13),
+        // Ровная кнопка на всю ширину с фиксированной высотой и радиусом
+        // кнопок приложения: OutlinedButton.icon до этого жил своей жизнью —
+        // сжимался под контент и разъезжался по вертикали.
+        minimumSize: const Size.fromHeight(48),
+        fixedSize: const Size.fromHeight(48),
+        padding: EdgeInsets.zero,
+        backgroundColor: selected.hex.withValues(alpha: 0.08),
         side: BorderSide(color: selected.hex.withValues(alpha: 0.5), width: 1.4),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadii.button)),
       ),
-      icon: widget.generating
-          ? const SizedBox(
-              width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2))
-          : Icon(CupertinoIcons.sparkles, size: 17, color: selected.hex),
-      label: Text(widget.generating
-          ? l.t('cover_generating')
-          : (hasCover ? l.t('cover_regenerate') : l.t('cover_generate'))),
+      child: widget.generating
+          ? Row(mainAxisSize: MainAxisSize.min, children: [
+              const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2.2)),
+              const SizedBox(width: 10),
+              Text(l.t('cover_generating'),
+                  style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: selected.hex)),
+            ])
+          : Text(
+              hasCover ? l.t('cover_regenerate') : l.t('cover_generate'),
+              style: TextStyle(
+                  fontSize: 15, fontWeight: FontWeight.w600, color: selected.hex),
+            ),
     );
   }
 }

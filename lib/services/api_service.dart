@@ -487,7 +487,11 @@ class ApiService {
     final response = await _dio.post('/classes/$classId/cover/generate', data: {
       if (color != null) 'color': color,
       if (icon != null) 'icon': icon,
-    });
+      // Генерация фона у OpenAI занимает до 120 секунд (REQUEST_TIMEOUT на
+      // бэкенде). Базовый receiveTimeout dio — 15 секунд: клиент отваливался
+      // с «не удалось создать обложку», пока сервер спокойно дорисовывал и
+      // сохранял — обложка «сама появлялась» при следующем открытии класса.
+    }, options: Options(receiveTimeout: const Duration(minutes: 3)));
     return _asMap(response.data);
   }
 

@@ -8,16 +8,16 @@ import '../widgets/toast.dart';
 const int kMaxUploadBytes = 25 * 1024 * 1024; // 25 МБ
 const int kMaxFilesPerPost = 10;
 
-/// Расширения, которые имеют смысл в учебной платформе. Исполняемые файлы и
-/// архивы с кодом сюда сознательно не входят.
+/// Расширения, которые имеют смысл в учебной платформе И РАЗРЕШЕНЫ БЭКЕНДОМ
+/// (routers/uploads.py ALLOWED_EXTENSIONS — там zip/rar/odt/ods/odp отклоняются
+/// с 415: раньше клиент их разрешал, а сервер отвергал уже после долгой
+/// загрузки). Исполняемые файлы и архивы сюда сознательно не входят.
 const List<String> kAllowedExtensions = <String>[
   // Документы
   'pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx',
-  'txt', 'md', 'rtf', 'csv', 'odt', 'ods', 'odp',
+  'txt', 'md', 'rtf', 'csv',
   // Изображения
-  'png', 'jpg', 'jpeg', 'webp', 'heic', 'gif',
-  // Архивы
-  'zip',
+  'png', 'jpg', 'jpeg', 'webp', 'heic', 'heif', 'gif',
 ];
 
 /// Возвращает ключ локализации ошибки либо null, если всё в порядке.

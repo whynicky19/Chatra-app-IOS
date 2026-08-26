@@ -243,8 +243,9 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
       }
       if (!mounted) return;
       _dirty = false;
-      Navigator.pop(context, true);
+      // Тост до pop: после pop контекст деактивирован (см. assignment_detail).
       showToast(context, l.t(_isEdit ? 'updated' : 'assignment_created'));
+      Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
         showToast(context, '${l.t('error_generic')}: $e', error: true);

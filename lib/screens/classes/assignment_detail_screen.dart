@@ -93,8 +93,14 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
     super.initState();
     _assignmentFuture = context.read<ApiService>().getAssignment((a['id'] as num).toInt());
     if (sub != null && sub['status'] == 'grading') {
-      _checkStepTimer = Timer.periodic(const Duration(milliseconds: 3500), (_) {
-        if (_checkStepIdx < _checkSteps.length - 1) setState(() => _checkStepIdx++);
+      _checkStepTimer = Timer.periodic(const Duration(milliseconds: 3500), (t) {
+        // Достигли последней стадии — таймер больше не нужен: раньше он тикал
+        // до самого dispose, симулируя «проверку» даже после её завершения.
+        if (_checkStepIdx >= _checkSteps.length - 1) {
+          t.cancel();
+          return;
+        }
+        setState(() => _checkStepIdx++);
       });
     }
   }
@@ -211,8 +217,10 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
         if (fileUrls.isNotEmpty) 'file_urls': fileUrls,
       });
       if (mounted) {
-        Navigator.pop(context);
+        // Тост показываем ДО pop: после pop контекст этого State деактивирован,
+        // и ScaffoldMessenger.of(context) мог бросить "deactivated widget's ancestor".
         showToast(context, l.t('work_submitted'));
+        Navigator.pop(context);
         widget.onRefresh();
       }
     } catch (e) {
@@ -227,8 +235,8 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
     try {
       await context.read<ApiService>().retractSubmission(sub['id']);
       if (mounted) {
-        Navigator.pop(context);
         showToast(context, l.t('submission_retracted'));
+        Navigator.pop(context);
         widget.onRefresh();
       }
     } catch (_) {
@@ -539,8 +547,14 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                   ),
                   child: Tappable(
                     onTap: () async {
-                      final picked = await pickUploadFiles(context);
-                      if (picked != null) setState(() => _pickedFiles = picked);
+                    final picked = await pickUploadFiles(context, alreadyPicked: _pickedFiles.length);
+                    if (picked != null && mounted) {
+                      setState(() {
+                        // Дополняем список, а не заменяем: раньше повторное
+                        // открытие пикера молча стирало уже выбранные файлы.
+                        _pickedFiles = [..._pickedFiles, ...picked];
+                      });
+                    }
                     },
                     child: Row(children: [
                       Icon(CupertinoIcons.paperclip, color: accent, size: 19),

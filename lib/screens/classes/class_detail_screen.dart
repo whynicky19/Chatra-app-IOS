@@ -267,8 +267,21 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       final filePath = '${cacheDir.path}/$safeFileName';
       final file = File(filePath);
 
+      void abortSilently() {
+        // Экран размонтировался/пользователь отменил: гасим диалог и загрузку,
+        // иначе немодальный «Открытие файла…» оставался висеть навсегда
+        // (barrierDismissible: false), а CancelToken не отменялся.
+        cancelled = true;
+        dialogClosed = true;
+        if (!cancelToken.isCancelled) cancelToken.cancel('aborted');
+        try { Navigator.of(ctx, rootNavigator: true).pop(); } catch (_) {}
+      }
+
       if (!await file.exists()) {
-        if (!mounted || cancelled) return;
+        if (!mounted || cancelled) {
+          abortSilently();
+          return;
+        }
         final api = context.read<ApiService>();
         // clientForUrl, а не api.dio: файлы лежат в R2, и на чужой хост
         // Authorization отправлять нельзя — иначе access-токен утекает в
@@ -287,7 +300,10 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
         );
       }
 
-      if (!mounted || cancelled) return;
+      if (!mounted || cancelled) {
+        abortSilently();
+        return;
+      }
       dialogClosed = true;
       Navigator.pop(context);
 
@@ -296,7 +312,13 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
         await launchUrl(Uri.parse(cleanUrl), mode: LaunchMode.externalApplication);
       }
     } on DioException catch (e) {
-      if (!mounted || cancelled) return;
+      if (!mounted || cancelled) {
+        // Диалог мог остаться открытым, если экран размонтировался посреди
+        // скачивания — закрываем через корневой навигатор.
+        dialogClosed = true;
+        try { Navigator.of(ctx, rootNavigator: true).pop(); } catch (_) {}
+        return;
+      }
       dialogClosed = true;
       Navigator.pop(context);
       final code = e.response?.statusCode;
@@ -311,7 +333,11 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
       }
       try { await launchUrl(Uri.parse(cleanUrl), mode: LaunchMode.externalApplication); } catch (_) {}
     } catch (_) {
-      if (!mounted || cancelled) return;
+      if (!mounted || cancelled) {
+        dialogClosed = true;
+        try { Navigator.of(ctx, rootNavigator: true).pop(); } catch (_) {}
+        return;
+      }
       dialogClosed = true;
       Navigator.pop(context);
       try { await launchUrl(Uri.parse(cleanUrl), mode: LaunchMode.externalApplication); } catch (_) {}

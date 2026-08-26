@@ -29,8 +29,11 @@ String fmtDate(String? d) {
 }
 
 // Обязана понимать подпись ?exp=&sig= — иначе подписанные ссылки не видны как вложения.
+// Список расширений синхронизирован с kAllowedExtensions (upload_limits.dart) и
+// ALLOWED_EXTENSIONS бэкенда: раньше heic/heif/bmp/svg не распознавались как
+// вложения и оставались видимым текстом в описании задания.
 final RegExp fileUrlRe = RegExp(
-    r'https?://[^\s/]+/[^\n"<>]*?\.(pdf|docx?|pptx?|xlsx?|txt|md|csv|rtf|png|jpe?g|gif|webp|mp3|wav|m4a|webm|ogg|mp4)'
+    r'https?://[^\s/]+/[^\n"<>]*?\.(pdf|docx?|pptx?|xlsx?|txt|md|csv|rtf|png|jpe?g|gif|webp|bmp|svg|heic|heif|mp3|wav|m4a|webm|ogg|mp4)'
     r'(\?[^\s"<>]*)?(#[^\s"<>]*)?',
     caseSensitive: false);
 final RegExp mdFileRe = RegExp(r'📎\s*\[([^\]\n]+)\]\((https?://[^)\n]+)\)');

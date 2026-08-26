@@ -141,8 +141,9 @@ class _LectureEditorScreenState extends State<LectureEditorScreen> {
       }
       if (!mounted) return;
       _dirty = false;
-      Navigator.pop(context, true);
+      // Тост до pop: после pop контекст деактивирован (см. assignment_detail).
       showToast(context, l.t(_isEdit ? 'save_ok' : 'published'));
+      Navigator.pop(context, true);
     } catch (_) {
       if (mounted) {
         showToast(context, l.t('error_generic'), error: true);

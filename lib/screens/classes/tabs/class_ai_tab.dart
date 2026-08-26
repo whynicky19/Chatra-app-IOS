@@ -154,7 +154,8 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
     // Снапшот до асинхронного разрыва: _msgs может измениться (новый ответ ИИ,
     // очистка чата), пока мы ждём SharedPreferences — тогда jsonEncode сериализует
     // промежуточное состояние или упадёт на конкурентной модификации.
-    final snapshot = List<Map<String, String>>.from(_msgs);
+    // Эфемерные (ошибочные) сообщения в историю не попадают.
+    final snapshot = _msgs.where((m) => m['ephemeral'] != '1').toList();
     SharedPreferences.getInstance().then((prefs) {
       try { prefs.setString(_historyKey, jsonEncode(snapshot)); } catch (_) {}
     }).catchError((_) {});
@@ -203,9 +204,17 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
     _saveHistory();
     try {
       final api = context.read<ApiService>();
+      final l10n = context.read<L10n>();
+      // Промпт на языке интерфейса: раньше «Отвечай на русском» был
+      // захардкожен при наличии EN/KZ локалей.
+      final langInstruction = switch (l10n.lang) {
+        'en' => 'Respond in English.',
+        'kz' => 'Жауапты қазақ тілінде бер.',
+        _ => 'Отвечай на русском.',
+      };
       final apiMsgs = <Map<String, dynamic>>[
         {'role': 'system', 'content':
-            'Ты AI-ассистент курса "${widget.className}". Отвечай на русском.'},
+            'You are the AI assistant for the course "${widget.className}". $langInstruction'},
         // Только хвост переписки — см. utils/ai_context.dart.
         ...aiContextWindow(_msgs),
       ];
@@ -235,8 +244,13 @@ class _ClassAiTabState extends State<ClassAiTab> with TickerProviderStateMixin {
           'text': resp?.statusCode == 429
               ? (detail ?? context.read<L10n>().t('ai_daily_exhausted'))
               : context.read<L10n>().t('connection_error'),
+          // Эфемерное сообщение об ошибке: показываем в переписке, но НЕ
+          // сохраняем в историю (SharedPreferences/импорт на сервер) — иначе
+          // мусорные «assistant: Ошибка соединения» навсегда попадали и в
+          // серверный тред при первом импорте локальной истории.
+          'ephemeral': '1',
         }));
-        _saveHistory(); _scrollToBottom();
+        _scrollToBottom();
         if (resp?.statusCode == 429) _loadQuota();
       }
     }

@@ -74,6 +74,7 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
   void dispose() {
     _scrollCtrl.dispose();
     _selectionNotifier.dispose();
+    _disposeRecognizers();
     super.dispose();
   }
 
@@ -380,11 +381,24 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
 
   // ── Текст лекции с пометками ───────────────────────────────────────────
 
+  // Распознаватели тапов по выделениям: Text.rich перестраивается на каждом
+  // build, и recognizer, созданный прямо в _bodySpan, никогда не диспозился —
+  // каждый скролл/перезагрузка экрана плодили новые утечные объекты.
+  final List<TapGestureRecognizer> _recognizers = [];
+
+  void _disposeRecognizers() {
+    for (final r in _recognizers) {
+      r.dispose();
+    }
+    _recognizers.clear();
+  }
+
   TextSpan _bodySpan(BuildContext context) {
     final base = detailBodyStyle(context);
     final brightness = Theme.of(context).brightness;
     final spans = <TextSpan>[];
     var cursor = 0;
+    _disposeRecognizers();
 
     for (final a in _textAnnotations) {
       // Пересекающиеся пометки: следующая начинается раньше конца предыдущей —
@@ -394,6 +408,8 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
       if (start > cursor) {
         spans.add(TextSpan(text: widget.content.substring(cursor, start)));
       }
+      final recognizer = TapGestureRecognizer()..onTap = () => _openSaved(a);
+      _recognizers.add(recognizer);
       spans.add(TextSpan(
         text: widget.content.substring(start, a.endOffset),
         // Только заливка, без подчёркиваний: на многострочном фрагменте линии
@@ -404,7 +420,7 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
               ? highlightSwatch(a.color)
               : highlightFill(a.color, brightness),
         ),
-        recognizer: TapGestureRecognizer()..onTap = () => _openSaved(a),
+        recognizer: recognizer,
       ));
       cursor = a.endOffset;
     }

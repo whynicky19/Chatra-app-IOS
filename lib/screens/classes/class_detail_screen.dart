@@ -820,9 +820,14 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             onIconChanged: (v) => setS(() => coverIcon = v),
             onGenerate: () async {
               if (generatingCover) return;   // защита от двойного нажатия
+              final api = context.read<ApiService>();
+              // Базлайн ДО запроса: по нему узнаём результат, если сам
+              // POST упал, а серверная генерация при этом продолжилась.
+              final prevImage = coverImage;
+              final prevSource = coverSource;
               setS(() { generatingCover = true; coverError = null; });
               try {
-                final res = await context.read<ApiService>().generateClassCover(
+                final res = await api.generateClassCover(
                   widget.classId, color: coverColor, icon: coverIcon);
                 if (!ctx.mounted) return;
                 // Обложку на сервере уже заменили — сбрасываем кэш картинки,
@@ -835,11 +840,37 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 if (mounted) _applyClassUpdate({..._meta, ...res});
               } catch (e) {
                 if (!ctx.mounted) return;
-                final detail = (e is DioException && e.response?.data is Map)
-                    ? e.response?.data['detail'] : null;
-                setS(() => coverError = detail == 'too_many_cover_generations'
-                    ? l.t('cover_rate_limited')
-                    : l.t('cover_generate_failed'));
+                final dioE = e is DioException ? e : null;
+                final detail = (dioE?.response?.data is Map)
+                    ? dioE?.response?.data['detail'] : null;
+                if (detail == 'too_many_cover_generations') {
+                  setS(() => coverError = l.t('cover_rate_limited'));
+                  return;
+                }
+                // 409 «генерация уже идёт» (например, её запустило создание
+                // класса) или обрыв связи/таймаут прокси: сервер ВСЁ РАВНО
+                // дорисует и сохранит — ждём результат, а не показываем
+                // ложную ошибку «преждняя обложка сохранена».
+                final recoverable = detail == 'cover_generation_in_progress'
+                    || dioE?.response == null
+                    || (dioE?.response?.statusCode ?? 0) >= 500;
+                if (!recoverable) {
+                  setS(() => coverError = l.t('cover_generate_failed'));
+                  return;
+                }
+                final recovered = await api.awaitPendingCover(widget.classId,
+                    prevImage: prevImage, prevSource: prevSource);
+                if (!ctx.mounted) return;
+                if (recovered != null) {
+                  _evictCoverCache();
+                  setS(() {
+                    coverImage = (recovered['cover_image'] as String?) ?? coverImage;
+                    coverSource = recovered['cover_source'] as String?;
+                  });
+                  if (mounted) _applyClassUpdate({..._meta, ...recovered});
+                } else {
+                  setS(() => coverError = l.t('cover_generate_failed'));
+                }
               } finally {
                 if (ctx.mounted) setS(() => generatingCover = false);
               }
@@ -860,7 +891,9 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
             const SizedBox(width: 12),
             Expanded(child: ElevatedButton(
               style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-              onPressed: (saving || generatingCover) ? null : () async {
+              // Сохранение НЕ блокируем ожиданием генерации обложки: она
+              // живёт своей жизнью на сервере, а поля формы независимы.
+              onPressed: saving ? null : () async {
                 setS(() => saving = true);
                 try {
                   final api = context.read<ApiService>();

@@ -55,7 +55,9 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
   Future<bool> _confirmDiscard() async {
     // Предмет уже сохранён на сервере (вместе с обложкой) — терять нечего,
     // спрашивать «отменить изменения?» на этом шаге было бы враньём.
-    if (_created != null) return !_generating;
+    // Долгая генерация обложки не удерживает экран: она продолжается на
+    // сервере, и результат просто подхватится при следующем открытии.
+    if (_created != null) return true;
     if (!_dirty) return true;
     final l = context.read<L10n>();
     final ok = await showConfirmDialog(
@@ -105,6 +107,11 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
     if (created == null || _generating) return;   // защита от двойного нажатия
     final l = context.read<L10n>();
     final api = context.read<ApiService>();
+    // Базлайн до запроса: по нему узнаём результат, если POST упал
+    // (обрыв связи, гонка с генерацией из другого экрана), а серверная
+    // генерация при этом продолжилась.
+    final prevImage = (created['cover_image'] as String?) ?? '';
+    final prevSource = (created['cover_source'] as String?) ?? '';
     setState(() {
       _generating = true;
       _coverError = null;
@@ -119,10 +126,29 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
       setState(() => _created = {...created, ...res});
     } catch (e) {
       if (!mounted) return;
-      final detail = (e is DioException && e.response?.data is Map) ? e.response?.data['detail'] : null;
-      setState(() => _coverError = detail == 'too_many_cover_generations'
-          ? l.t('cover_rate_limited')
-          : l.t('cover_generate_failed'));
+      final dioE = e is DioException ? e : null;
+      final detail = (dioE?.response?.data is Map) ? dioE?.response?.data['detail'] : null;
+      if (detail == 'too_many_cover_generations') {
+        setState(() => _coverError = l.t('cover_rate_limited'));
+        return;
+      }
+      // Генерация уже идёт или связь оборвалась: сервер допишет результат
+      // сам — ждём его вместо ложной ошибки.
+      final recoverable = detail == 'cover_generation_in_progress'
+          || dioE?.response == null
+          || (dioE?.response?.statusCode ?? 0) >= 500;
+      if (!recoverable) {
+        setState(() => _coverError = l.t('cover_generate_failed'));
+        return;
+      }
+      final recovered = await api.awaitPendingCover((created['id'] as num).toInt(),
+          prevImage: prevImage, prevSource: prevSource);
+      if (!mounted) return;
+      if (recovered != null) {
+        setState(() => _created = {...created, ...recovered});
+      } else {
+        setState(() => _coverError = l.t('cover_generate_failed'));
+      }
     } finally {
       if (mounted) setState(() => _generating = false);
     }
@@ -197,7 +223,7 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
                         label: l.t('done'),
                         icon: CupertinoIcons.check_mark,
                         color: primary,
-                        onPressed: _generating ? null : () => Navigator.pop(context, _created),
+                        onPressed: () => Navigator.pop(context, _created),
                         glow: true,
                         minHeight: 52,
                       ),

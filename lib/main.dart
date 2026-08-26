@@ -108,10 +108,7 @@ Future<void> _start() async {
   }
 
   final api = ApiService(
-    // Фикс: раньше resolvedBaseUrl вычислялся, но игнорировался — здесь был
-    // захардкожен прод, из-за чего dev-запуск (localhost) и кастомный
-    // --dart-define=API_URL не работали вовсе.
-    baseUrl: resolvedBaseUrl,
+  baseUrl: 'https://api.chatra.aican.cloud/api',
   );
   final auth = AuthProvider(api);
   final org = OrgProvider();

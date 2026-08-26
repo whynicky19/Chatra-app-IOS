@@ -30,6 +30,12 @@ class ApiService {
   VoidCallback? onAccountBlocked;
   Future<String?>? _refreshing;
 
+  /// True, если последняя попытка refresh получила ответ сервера 401/403 —
+  /// refresh-токен реально невалиден. Сетевые сбои (таймаут, обрыв, 5xx)
+  /// сюда не попадают: по ним сессию рвать нельзя, иначе мобильная сеть с
+  /// её микрофризами выкидывала бы из аккаунта каждые пару часов.
+  bool _refreshRejectedByServer = false;
+
   // Дефолта baseUrl тут нет намеренно: иначе release без --dart-define уйдёт на localhost.
   static const _tokenKey = '_tk';
   static const _refreshKey = '_rtk';
@@ -132,8 +138,13 @@ class ApiService {
               return handler.next(e);
             }
           }
-          await clearToken();
-          onUnauthorized?.call();
+          // Разлогин только по вердикту сервера (401/403 на сам refresh).
+          // Иначе (сеть, таймаут, 5xx, ngrok-заглушка) токены сохраняем —
+          // следующий запрос попробует обновиться ещё раз.
+          if (_refreshRejectedByServer) {
+            await clearToken();
+            onUnauthorized?.call();
+          }
           return handler.next(error);
         }
 
@@ -194,6 +205,7 @@ class ApiService {
   }
 
   Future<String?> _performRefresh() async {
+    _refreshRejectedByServer = false;
     final rt = await loadRefreshToken();
     if (rt == null) return null;
     try {
@@ -205,6 +217,11 @@ class ApiService {
       await saveToken(newAccess);
       if (newRefresh != null) await saveRefreshToken(newRefresh);
       return newAccess;
+    } on DioException catch (e) {
+      final code = e.response?.statusCode ?? 0;
+      // Только внятный отказ сервера означает «токен отозван/протух».
+      if (code == 401 || code == 403) _refreshRejectedByServer = true;
+      return null;
     } catch (_) {
       return null;
     }
@@ -484,15 +501,48 @@ class ApiService {
 
   Future<Map<String, dynamic>> generateClassCover(int classId,
       {String? color, String? icon}) async {
-    final response = await _dio.post('/classes/$classId/cover/generate', data: {
-      if (color != null) 'color': color,
-      if (icon != null) 'icon': icon,
-      // Генерация фона у OpenAI занимает до 120 секунд (REQUEST_TIMEOUT на
-      // бэкенде). Базовый receiveTimeout dio — 15 секунд: клиент отваливался
-      // с «не удалось создать обложку», пока сервер спокойно дорисовывал и
-      // сохранял — обложка «сама появлялась» при следующем открытии класса.
-    }, options: Options(receiveTimeout: const Duration(minutes: 3)));
+    final response = await _dio.post('/classes/$classId/cover/generate',
+        data: {
+          if (color != null) 'color': color,
+          if (icon != null) 'icon': icon,
+        },
+        options: Options(receiveTimeout: const Duration(minutes: 3)));
     return _asMap(response.data);
+  }
+
+  /// Ждёт завершения УЖЕ ИДУЩЕЙ генерации обложки: опрашивает класс, пока не
+  /// придёт новая картинка или пока не выйдет [maxAttempts] попыток.
+  ///
+  /// Нужен потому, что сервер при повторном запросе отвечает
+  /// 409 cover_generation_in_progress (а при обрыве соединения вообще
+  /// продолжает дорисовывать сам) — в обоих случаях результат появится в БД,
+  /// хотя запрос клиента упал. Возвращает свежие поля обложки либо null.
+  Future<Map<String, dynamic>?> awaitPendingCover(int classId,
+      {String? prevImage, String? prevSource,
+      Duration interval = const Duration(seconds: 4),
+      int maxAttempts = 40}) async {
+    for (var i = 0; i < maxAttempts; i++) {
+      await Future.delayed(interval);
+      try {
+        final cls = await getClass(classId);
+        final img = (cls['cover_image'] as String?) ?? '';
+        final src = (cls['cover_source'] as String?) ?? '';
+        final done = src.isNotEmpty && img.isNotEmpty &&
+            (img != (prevImage ?? '') || src != (prevSource ?? ''));
+        if (done) {
+          return {
+            'cover_image': cls['cover_image'],
+            'cover_thumbnail': cls['cover_thumbnail'],
+            'cover_color': cls['cover_color'],
+            'cover_icon': cls['cover_icon'],
+            'cover_source': cls['cover_source'],
+          };
+        }
+      } catch (_) {
+        // Одиночный сбой опроса не повод бросать ожидание.
+      }
+    }
+    return null;
   }
 
   Future<void> deleteClass(int classId) async => _dio.delete('/classes/$classId');

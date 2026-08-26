@@ -108,7 +108,7 @@ Future<void> _start() async {
   }
 
   final api = ApiService(
-  baseUrl: 'https://chatra-backend-new.onrender.com/api',
+  baseUrl: 'https://api.chatra.aican.cloud/api',
   );
   final auth = AuthProvider(api);
   final org = OrgProvider();

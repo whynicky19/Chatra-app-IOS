@@ -123,9 +123,13 @@ const kFallbackCoverOptions = CoverOptions(
     CoverColorOption('slate', Color(0xFF7C8BA5), Color(0xFF64748B), Color(0xFF334155)),
   ],
   icons: [
+    // Точные науки
     CoverIconOption('sigma', 'Mathematics', group: 'exact'),
     CoverIconOption('cube', 'Geometry', group: 'exact'),
-    CoverIconOption('dice', 'Statistics', group: 'exact'),
+    CoverIconOption('dice', 'Probability', group: 'exact'),
+    CoverIconOption('algebra', 'Algebra', group: 'exact'),
+    CoverIconOption('prob', 'Statistics', group: 'exact'),
+    // Естественные науки
     CoverIconOption('atom', 'Physics', group: 'natural'),
     CoverIconOption('flask', 'Chemistry', group: 'natural'),
     CoverIconOption('dna', 'Biology', group: 'natural'),
@@ -133,53 +137,57 @@ const kFallbackCoverOptions = CoverOptions(
     CoverIconOption('leaf', 'Ecology', group: 'natural'),
     CoverIconOption('telescope', 'Astronomy', group: 'natural'),
     CoverIconOption('globe', 'Geography', group: 'natural'),
+    CoverIconOption('anatomy', 'Anatomy', group: 'natural'),
+    // IT и инженерия
     CoverIconOption('code', 'Programming', group: 'tech'),
     CoverIconOption('browser', 'Web Development', group: 'tech'),
     CoverIconOption('database', 'Databases', group: 'tech'),
     CoverIconOption('network', 'Networks', group: 'tech'),
     CoverIconOption('shield', 'Cybersecurity', group: 'tech'),
+    CoverIconOption('lock', 'Info Security', group: 'tech'),
     CoverIconOption('chip', 'Electronics', group: 'tech'),
     CoverIconOption('gear', 'Mechanical Engineering', group: 'tech'),
     CoverIconOption('compass', 'Architecture', group: 'tech'),
     CoverIconOption('building', 'Construction', group: 'tech'),
+    CoverIconOption('ruler', 'Drafting', group: 'tech'),
+    CoverIconOption('ai', 'AI & Machine Learning', group: 'tech'),
+    CoverIconOption('mobile', 'Mobile Development', group: 'tech'),
+    CoverIconOption('cloud', 'Cloud Computing', group: 'tech'),
+    CoverIconOption('terminal', 'Scripting & DevOps', group: 'tech'),
+    // Гуманитарные
     CoverIconOption('column', 'History', group: 'humanities'),
     CoverIconOption('scroll', 'Philosophy', group: 'humanities'),
     CoverIconOption('book', 'Literature', group: 'humanities'),
     CoverIconOption('brain', 'Psychology', group: 'humanities'),
     CoverIconOption('people', 'Social Studies', group: 'humanities'),
-    CoverIconOption('letter', 'English', group: 'language'),
+    CoverIconOption('podium', 'Law & Politics', group: 'humanities'),
+    CoverIconOption('gavel', 'Law & Courts', group: 'humanities'),
+    // Языки
+    CoverIconOption('letter', 'Foreign Language', group: 'language'),
     CoverIconOption('chat', 'Communication', group: 'language'),
+    CoverIconOption('flag', 'Native Language', group: 'language'),
+    CoverIconOption('translation', 'Translation', group: 'language'),
+    // Экономика и право
     CoverIconOption('chart', 'Economics', group: 'business'),
     CoverIconOption('coins', 'Finance', group: 'business'),
     CoverIconOption('briefcase', 'Management', group: 'business'),
     CoverIconOption('scale', 'Law', group: 'business'),
-    CoverIconOption('palette', 'Art', group: 'arts'),
-    CoverIconOption('pen', 'Graphic Design', group: 'arts'),
-    CoverIconOption('note', 'Music', group: 'arts'),
-    CoverIconOption('camera', 'Photography', group: 'arts'),
-    CoverIconOption('mic', 'Journalism', group: 'arts'),
+    CoverIconOption('trending', 'Marketing & Growth', group: 'business'),
+    CoverIconOption('calculator', 'Accounting', group: 'business'),
+    CoverIconOption('bank', 'Banking', group: 'business'),
+    // Медицина и здоровье
     CoverIconOption('pulse', 'Medicine', group: 'health'),
     CoverIconOption('stethoscope', 'Nursing', group: 'health'),
     CoverIconOption('pill', 'Pharmacy', group: 'health'),
-    CoverIconOption('wrench', 'Technology & Crafts', group: 'applied'),
-    CoverIconOption('chef', 'Culinary Arts', group: 'applied'),
-    CoverIconOption('scissors', 'Fashion & Sewing', group: 'applied'),
-    CoverIconOption('car', 'Automotive', group: 'applied'),
-    CoverIconOption('plane', 'Aviation', group: 'applied'),
-    CoverIconOption('sprout', 'Agriculture', group: 'applied'),
-    CoverIconOption('ball', 'Physical Education', group: 'sport'),
   ],
   groups: [
     CoverIconGroup('exact', 'Exact sciences'),
     CoverIconGroup('natural', 'Natural sciences'),
-    CoverIconGroup('tech', 'Technology & engineering'),
+    CoverIconGroup('tech', 'IT & engineering'),
     CoverIconGroup('humanities', 'Humanities'),
     CoverIconGroup('language', 'Languages'),
     CoverIconGroup('business', 'Business & law'),
-    CoverIconGroup('arts', 'Arts & media'),
     CoverIconGroup('health', 'Health & medicine'),
-    CoverIconGroup('applied', 'Applied & vocational'),
-    CoverIconGroup('sport', 'Sport'),
   ],
   defaultColor: 'teal',
   defaultIcon: 'book',
@@ -225,6 +233,8 @@ const Map<String, String> kCoverIconPaths = {
   'sigma': 'M18.5 4.5H6l7 7.5-7 7.5h12.5',
   'cube': 'M12 2.5 21 7.5v9L12 21.5 3 16.5v-9zM3 7.5l9 5 9-5M12 12.5v9',
   'dice': 'M4.5 4.5h15v15h-15zM9 9h.01M15 9h.01M9 15h.01M15 15h.01M12 12h.01',
+  'algebra': 'M3.5 5l5 14M20.5 5l-5 14M13 6h-7M18 6h-7M7 18h10M11 9.5h4a2 2 0 0 1 0 4h-4z',
+  'prob': 'M3 5h12a3 3 0 0 1 0 6H6a3 3 0 0 0 0 6h12M19 8.5l3 3.5-3 3.5M22 12H12',
   // Естественные науки
   'atom': 'M12 12m-1.6 0a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0 -3.2 0 M12 12m-10.5 0'
       'a10.5 4.6 0 1 0 21 0a10.5 4.6 0 1 0 -21 0',
@@ -237,6 +247,7 @@ const Map<String, String> kCoverIconPaths = {
   'telescope': 'M3.5 13.5 14.5 4.5l3.5 4-11 9zM7 17l-2.5 4.5M12.5 12.5 16 21.5M2.5 11.5l2 2.5',
   'globe': 'M12 2.5a9.5 9.5 0 1 0 0 19 9.5 9.5 0 1 0 0-19M12 2.5'
       'a5 9.5 0 1 0 0 19 5 9.5 0 1 0 0-19M2.5 12h19M4.4 7h15.2M4.4 17h15.2',
+  'anatomy': 'M12 21.5c-4.5 0-8-3.5-8-7.5a5 5 0 0 1 4-4.9 4.5 4.5 0 0 1 8 0 5 5 0 0 1 4 4.9c0 4-3.5 7.5-8 7.5zM9 12.5a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 1 0 0 2.4M15 12.5a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 1 0 0 2.4M10 16.5h4',
   // IT и инженерия
   'code': 'M8.5 6.5 3 12l5.5 5.5M15.5 6.5 21 12l-5.5 5.5M13.6 4.2l-3.2 15.6',
   'browser': 'M3 5.5h18v13H3zM3 9.5h18M6 7.5h.01M8.5 7.5h.01M11 7.5h.01',
@@ -249,6 +260,7 @@ const Map<String, String> kCoverIconPaths = {
       'l2.8 7.2M8 18h8',
   'shield': 'M12 2.5 4.5 5.5v6c0 4.6 3.1 8.3 7.5 10 4.4-1.7 7.5-5.4 7.5-10v-6z'
       'M9.3 12.2l1.9 1.9 3.5-3.9',
+  'lock': 'M5 11.5h14v10H5zM8 11.5V8a4 4 0 0 1 8 0v3.5M10 16.5h.01M14 16.5h.01',
   'chip': 'M4.5 4.5h15v15h-15zM8.5 8.5h7v7h-7zM9.5 4.5V2M14.5 4.5V2M9.5 22v-2.5'
       'M14.5 22v-2.5M4.5 9.5H2M4.5 14.5H2M22 9.5h-2.5M22 14.5h-2.5',
   'gear': 'M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 1 0 0-7M12 5.5'
@@ -260,6 +272,15 @@ const Map<String, String> kCoverIconPaths = {
       'a9.5 9.5 0 0 0 9.2 0',
   'building': 'M4 21.5V7.5l8-5 8 5v14M3 21.5h18M9.5 21.5v-5h5v5M7.5 10.5h2M14.5 10.5'
       'h2M7.5 14h2M14.5 14h2',
+  'ruler': 'M3 14.5l11.5-11.5 6.5 6.5L9.5 21M7 11l1.5 1.5M10 8l1.5 1.5M13 11'
+      'l1.5 1.5M10 14l1.5 1.5M13 17l1.5 1.5',
+  'ai': 'M9 4.5h6M10 4.5v-1.5h4v1.5M10 4.5v3l-4.5 6.5a1.5 1.5 0 0 0 1.3 2.3'
+      'h10.4a1.5 1.5 0 0 0 1.3-2.3L14 7.5v-3M7 17.5a1.5 1.5 0 0 1 3 0'
+      '1.5 1.5 0 0 1-3 0M14 17.5a1.5 1.5 0 0 1 3 0 1.5 1.5 0 0 1-3 0',
+  'mobile': 'M7 3.5h10v17H7zM7 6.5h10M7 17.5h10M10 19.5h4',
+  'cloud': 'M7 18.5a4.5 4.5 0 0 1-.6-8.9A6.5 6.5 0 0 1 19.4 11a4 4 0 0 1-1 7.5H7z'
+      'M9 13.5l3-3M12 10.5v6M9 16.5l3-3',
+  'terminal': 'M3.5 5.5h17v13h-17zM7 9.5l3 2-3 2M12.5 14h4.5',
   // Гуманитарные
   'column': 'M12 2.5 22 8H2zM3.5 10.5h17M7 10.5v9M12 10.5v9M17 10.5v9M2.5 21.5h19',
   'scroll': 'M8 3.5h9.5a2 2 0 0 1 2 2v12.5a2.5 2.5 0 0 1-2.5 2.5H7'
@@ -273,10 +294,15 @@ const Map<String, String> kCoverIconPaths = {
   'people': 'M9 11a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 1 0 0 6.4M2.5 20.5v-1.2'
       'c0-2.9 2.9-5.3 6.5-5.3s6.5 2.4 6.5 5.3v1.2M16.3 5.3a3.2 3.2 0 0 1 0 6'
       'M18 14.4c2 .8 3.5 2.6 3.5 4.9v1.2',
+  'podium': 'M4 20.5h16M5 20.5V10h14v10.5M9 14.5h6M8 10l4-6 4 6M11 17.5h2',
+  'gavel': 'M11 4.5l8.5 8.5M3.5 12.5l8-8 4 4-8 8zM14 5.5l4.5 4.5M3 17.5l3 3',
   // Языки
   'letter': 'M3.5 20.5 12 3l8.5 17.5M7 14.5h10',
   'chat': 'M20.5 15.5a1.5 1.5 0 0 1-1.5 1.5H8l-4 3.5V6.5A1.5 1.5 0 0 1 5.5 5H19'
       'a1.5 1.5 0 0 1 1.5 1.5zM8 9h8M8 12.5h5',
+  'flag': 'M5 21.5V3.5M5 3.5h12l-2 4 2 4H5',
+  'translation': 'M3 5h8M7 3v2M4.5 5c0 4 3 7 6.5 8M9 9c-.5 2-2 3.5-3.5 4'
+      'M12 21l3-7 3 7M14 19h4M16.5 11l1.5 3M11 12c0 3 2 5 4 6',
   // Экономика и право
   'chart': 'M4 3v17.5h17M8 20.5v-6M12.5 20.5V10M17 20.5V6',
   'coins': 'M9 4.5a5 5 0 1 0 0 10 5 5 0 1 0 0-10M15 9.5'
@@ -285,17 +311,11 @@ const Map<String, String> kCoverIconPaths = {
       'A1.6 1.6 0 0 1 15 6.2v2.3M3.5 13.5h17M10.5 13.5h3',
   'scale': 'M12 3.5v17M7.5 20.5h9M4.5 7.5h15M12 7.5V4.8M6.5 7.5 3.5 14h6z'
       'M17.5 7.5 14.5 14h6z',
-  // Искусство и медиа
-  'palette': 'M12 3.5a8.5 8.5 0 1 0 0 17'
-      'c1.2 0 2.1-.9 2.1-2 0-.5-.2-1-.5-1.4-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2'
-      'h2A4.4 4.4 0 0 0 21.5 9c-.6-3.2-4.4-5.5-9.5-5.5zM7.6 8.6h.01M11.6 6.6'
-      'h.01M15.6 8.1h.01M6.6 12.6h.01',
-  'pen': 'M3 21l1-3.7L15.5 5.8l2.7 2.7L6.7 20zM14 7.3l2.7 2.7M18.2 3.1'
-      'l2.7 2.7-2.4 2.4-2.7-2.7z',
-  'note': 'M8 19.5a3 2.4 0 1 0 0-4.8 3 2.4 0 1 0 0 4.8M11 17V3.5M11 3.5c3 1 5 2.5 5 5.5',
-  'camera': 'M3.5 7.5H7l1.8-2.5h6.4L17 7.5h3.5v12h-17zM12 17a4 4 0 1 0 0-8 4 4 0 1 0 0 8',
-  'mic': 'M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3M6 11v1'
-      'a6 6 0 0 0 12 0v-1M12 18v3M9 21.5h6',
+  'trending': 'M3 17l6-6 4 4 8-8M14 7h7v7',
+  'calculator': 'M5 4.5h14v15H5zM8 8h8M8 12.5h2M12 12.5h2M16 12.5h0M8 16h2M12 16h2'
+      'M16 16h0M14 16h2',
+  'bank': 'M3 10.5h18M5 10.5v9M9 10.5v9M15 10.5v9M19 10.5v9M3 19.5h18'
+      'M12 3.5 21 9.5H3z',
   // Медицина
   'pulse': 'M12 20.5S3.5 15.2 3.5 9.4A4.7 4.7 0 0 1 12 6.6a4.7 4.7 0 0 1 8.5 2.8'
       'c0 5.8-8.5 11.1-8.5 11.1zM6.6 11.4h2.6l1.4-2.6 2 4.6 1.4-2h3.4',
@@ -303,25 +323,6 @@ const Map<String, String> kCoverIconPaths = {
       'a4.3 4.3 0 0 0 8.6 0v-1.4M19.1 8.4'
       'a2.2 2.2 0 1 0 0 4.4 2.2 2.2 0 1 0 0-4.4',
   'pill': 'M8.5 5.5h7a5.5 5.5 0 0 1 0 11h-7a5.5 5.5 0 0 1 0-11M12 5.5v11',
-  // Прикладные
-  'wrench': 'M15.5 3.5a5 5 0 0 0-6.3 6.3L3.6 15.4a2.1 2.1 0 0 0 3 3l5.6-5.6'
-      'a5 5 0 0 0 6.3-6.3l-2.9 2.9-2.9-.7-.7-2.9z',
-  'chef': 'M6.5 16.5h11v4h-11zM6.5 16.5a4 4 0 1 1 1.7-7.6A4.2 4.2 0 0 1 12 5.5'
-      'a4.2 4.2 0 0 1 3.8 3.4 4 4 0 1 1 1.7 7.6M9.5 16.5v-4M14.5 16.5v-4',
-  'scissors': 'M6 4.5 18 17M18 4.5 6 17M6.5 20.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 1 0 0 5'
-      'M17.5 20.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 1 0 0 5',
-  'car': 'M2.5 16.5h19v-4l-2-.6-2.2-4.1a2 2 0 0 0-1.8-1.1h-7a2 2 0 0 0-1.8 1.1'
-      'L4.5 11.9l-2 .6zM7 11.9h10M4.5 16.5v3h3v-3M16.5 16.5v3h3v-3M6.5 14.2'
-      'h.01M17.5 14.2h.01',
-  'plane': 'M12 2.5c1.1 0 1.9 1.2 1.9 2.8v3.9l7.6 4.4v2.4l-7.6-2.2v3.8l2.4 1.8v1.6'
-      'L12 20l-4.3 1v-1.6l2.4-1.8v-3.8L2.5 16v-2.4l7.6-4.4V5.3'
-      'c0-1.6.8-2.8 1.9-2.8z',
-  'sprout': 'M12 20.5v-8M12 12.5c0-3.6-2.6-6.2-6.2-6.2 0 3.6 2.6 6.2 6.2 6.2'
-      'M12 12.5c0-3 2.2-5.5 5.2-5.5 0 3-2.2 5.5-5.2 5.5M8 20.5h8',
-  // Спорт
-  'ball': 'M12 2.5a9.5 9.5 0 1 0 0 19 9.5 9.5 0 1 0 0-19M12 7.4l4.4 3.2-1.7 5.2'
-      'H9.3l-1.7-5.2zM12 2.5v4.9M16.4 10.6 21 9.1M14.7 15.8l2.9 3.9M9.3 15.8'
-      'l-2.9 3.9M7.6 10.6 3 9.1',
 };
 
 /// SVG-документ с глифом — flutter_svg рисует его через SvgPicture.string.
@@ -339,7 +340,9 @@ Color coverPreviewBackground(CoverColorOption color) => color.base;
 const Map<String, Map<String, String>> kCoverIconLabels = {
   'sigma': {'RU': 'Математика', 'EN': 'Mathematics', 'KZ': 'Математика'},
   'cube': {'RU': 'Геометрия', 'EN': 'Geometry', 'KZ': 'Геометрия'},
-  'dice': {'RU': 'Статистика', 'EN': 'Statistics', 'KZ': 'Статистика'},
+  'dice': {'RU': 'Теория вероятностей', 'EN': 'Probability', 'KZ': 'Ықтималдық теориясы'},
+  'algebra': {'RU': 'Алгебра', 'EN': 'Algebra', 'KZ': 'Алгебра'},
+  'prob': {'RU': 'Статистика', 'EN': 'Statistics', 'KZ': 'Статистика'},
   'atom': {'RU': 'Физика', 'EN': 'Physics', 'KZ': 'Физика'},
   'flask': {'RU': 'Химия', 'EN': 'Chemistry', 'KZ': 'Химия'},
   'dna': {'RU': 'Биология', 'EN': 'Biology', 'KZ': 'Биология'},
@@ -347,54 +350,53 @@ const Map<String, Map<String, String>> kCoverIconLabels = {
   'leaf': {'RU': 'Экология', 'EN': 'Ecology', 'KZ': 'Экология'},
   'telescope': {'RU': 'Астрономия', 'EN': 'Astronomy', 'KZ': 'Астрономия'},
   'globe': {'RU': 'География', 'EN': 'Geography', 'KZ': 'География'},
+  'anatomy': {'RU': 'Анатомия', 'EN': 'Anatomy', 'KZ': 'Анатомия'},
   'code': {'RU': 'Программирование', 'EN': 'Programming', 'KZ': 'Бағдарламалау'},
   'browser': {'RU': 'Веб-разработка', 'EN': 'Web Development', 'KZ': 'Веб-әзірлеу'},
   'database': {'RU': 'Базы данных', 'EN': 'Databases', 'KZ': 'Дерекқорлар'},
   'network': {'RU': 'Сети', 'EN': 'Networks', 'KZ': 'Желілер'},
   'shield': {'RU': 'Кибербезопасность', 'EN': 'Cybersecurity', 'KZ': 'Киберқауіпсіздік'},
+  'lock': {'RU': 'Информационная безопасность', 'EN': 'Info Security', 'KZ': 'Ақпараттық қауіпсіздік'},
   'chip': {'RU': 'Электроника', 'EN': 'Electronics', 'KZ': 'Электроника'},
   'gear': {'RU': 'Механика', 'EN': 'Mechanical Eng.', 'KZ': 'Механика'},
   'compass': {'RU': 'Архитектура', 'EN': 'Architecture', 'KZ': 'Сәулет'},
   'building': {'RU': 'Строительство', 'EN': 'Construction', 'KZ': 'Құрылыс'},
+  'ruler': {'RU': 'Черчение', 'EN': 'Drafting', 'KZ': 'Сызу'},
+  'ai': {'RU': 'ИИ и машинное обучение', 'EN': 'AI & Machine Learning', 'KZ': 'ЖИ және машиналық оқыту'},
+  'mobile': {'RU': 'Мобильная разработка', 'EN': 'Mobile Development', 'KZ': 'Мобильді әзірлеу'},
+  'cloud': {'RU': 'Облачные технологии', 'EN': 'Cloud Computing', 'KZ': 'Бұлттық технологиялар'},
+  'terminal': {'RU': 'Программирование (CLI)', 'EN': 'Scripting & DevOps', 'KZ': 'Скрипт жазу'},
   'column': {'RU': 'История', 'EN': 'History', 'KZ': 'Тарих'},
   'scroll': {'RU': 'Философия', 'EN': 'Philosophy', 'KZ': 'Философия'},
   'book': {'RU': 'Литература', 'EN': 'Literature', 'KZ': 'Әдебиет'},
   'brain': {'RU': 'Психология', 'EN': 'Psychology', 'KZ': 'Психология'},
   'people': {'RU': 'Обществознание', 'EN': 'Social Studies', 'KZ': 'Қоғамтану'},
-  'letter': {'RU': 'Языки', 'EN': 'Languages', 'KZ': 'Тілдер'},
+  'podium': {'RU': 'Право и политика', 'EN': 'Law & Politics', 'KZ': 'Құқық және саясат'},
+  'gavel': {'RU': 'Суд и право', 'EN': 'Law & Courts', 'KZ': 'Сот және құқық'},
+  'letter': {'RU': 'Иностранный язык', 'EN': 'Foreign Language', 'KZ': 'Шет тілі'},
   'chat': {'RU': 'Речь и общение', 'EN': 'Communication', 'KZ': 'Сөйлеу мәдениеті'},
+  'flag': {'RU': 'Родной язык', 'EN': 'Native Language', 'KZ': 'Ана тілі'},
+  'translation': {'RU': 'Перевод', 'EN': 'Translation', 'KZ': 'Аударма'},
   'chart': {'RU': 'Экономика', 'EN': 'Economics', 'KZ': 'Экономика'},
   'coins': {'RU': 'Финансы', 'EN': 'Finance', 'KZ': 'Қаржы'},
   'briefcase': {'RU': 'Менеджмент', 'EN': 'Management', 'KZ': 'Менеджмент'},
   'scale': {'RU': 'Право', 'EN': 'Law', 'KZ': 'Құқық'},
-  'palette': {'RU': 'Искусство', 'EN': 'Art', 'KZ': 'Өнер'},
-  'pen': {'RU': 'Графический дизайн', 'EN': 'Graphic Design', 'KZ': 'Графикалық дизайн'},
-  'note': {'RU': 'Музыка', 'EN': 'Music', 'KZ': 'Музыка'},
-  'camera': {'RU': 'Фотография', 'EN': 'Photography', 'KZ': 'Фотография'},
-  'mic': {'RU': 'Журналистика', 'EN': 'Journalism', 'KZ': 'Журналистика'},
+  'trending': {'RU': 'Маркетинг и рост', 'EN': 'Marketing & Growth', 'KZ': 'Маркетинг'},
+  'calculator': {'RU': 'Бухгалтерия', 'EN': 'Accounting', 'KZ': 'Бухгалтерия'},
+  'bank': {'RU': 'Банковское дело', 'EN': 'Banking', 'KZ': 'Банк ісі'},
   'pulse': {'RU': 'Медицина', 'EN': 'Medicine', 'KZ': 'Медицина'},
   'stethoscope': {'RU': 'Сестринское дело', 'EN': 'Nursing', 'KZ': 'Мейіргер ісі'},
   'pill': {'RU': 'Фармация', 'EN': 'Pharmacy', 'KZ': 'Фармация'},
-  'wrench': {'RU': 'Технология', 'EN': 'Technology', 'KZ': 'Технология'},
-  'chef': {'RU': 'Кулинария', 'EN': 'Culinary Arts', 'KZ': 'Аспаздық'},
-  'scissors': {'RU': 'Швейное дело', 'EN': 'Fashion & Sewing', 'KZ': 'Тігін ісі'},
-  'car': {'RU': 'Автодело', 'EN': 'Automotive', 'KZ': 'Автоісі'},
-  'plane': {'RU': 'Авиация', 'EN': 'Aviation', 'KZ': 'Авиация'},
-  'sprout': {'RU': 'Агрономия', 'EN': 'Agriculture', 'KZ': 'Агрономия'},
-  'ball': {'RU': 'Физкультура', 'EN': 'Physical Education', 'KZ': 'Дене шынықтыру'},
 };
 
 const Map<String, Map<String, String>> kCoverGroupLabels = {
   'exact': {'RU': 'Точные науки', 'EN': 'Exact sciences', 'KZ': 'Нақты ғылымдар'},
   'natural': {'RU': 'Естественные науки', 'EN': 'Natural sciences', 'KZ': 'Жаратылыстану'},
-  'tech': {'RU': 'IT и инженерия', 'EN': 'Technology', 'KZ': 'IT және инженерия'},
+  'tech': {'RU': 'IT и инженерия', 'EN': 'IT & engineering', 'KZ': 'IT және инженерия'},
   'humanities': {'RU': 'Гуманитарные', 'EN': 'Humanities', 'KZ': 'Гуманитарлық'},
   'language': {'RU': 'Языки', 'EN': 'Languages', 'KZ': 'Тілдер'},
   'business': {'RU': 'Экономика и право', 'EN': 'Business & law', 'KZ': 'Экономика және құқық'},
-  'arts': {'RU': 'Искусство и медиа', 'EN': 'Arts & media', 'KZ': 'Өнер және медиа'},
-  'health': {'RU': 'Медицина', 'EN': 'Health', 'KZ': 'Медицина'},
-  'applied': {'RU': 'Прикладные', 'EN': 'Applied', 'KZ': 'Қолданбалы'},
-  'sport': {'RU': 'Спорт', 'EN': 'Sport', 'KZ': 'Спорт'},
+  'health': {'RU': 'Медицина и здоровье', 'EN': 'Health & medicine', 'KZ': 'Медицина және денсаулық'},
 };
 
 String coverGroupLabel(String group, String lang, [String fallback = '']) =>

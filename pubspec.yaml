@@ -29,7 +29,7 @@ dependencies:
   firebase_core: ^4.12.1
   firebase_messaging: ^16.4.3
   flutter_local_notifications: ^22.1.0
-  liquid_glass_easy: ^3.3.1
+  liquid_glass_easy: ^4.2.0
   firebase_crashlytics: ^5.2.6
   package_info_plus: ^9.0.1
   flutter_math_fork: ^0.7.3

@@ -235,76 +235,92 @@ class _MainShellState extends State<MainShell>
       // (наш teal/orange) и tint-индикатор — это и давало
       // «тёмные голубые кнопки». Принудительно задаём чёрный в
       // светлой теме и белый в тёмной через NavigationBarTheme.
+      //
+      // Оборачиваем в Scaffold, чтобы M3 сам обрезал body по
+      // верху навбара — иначе поверх стека остаётся «полоса»
+      // (запас bottomBarClearance + сама высота навбара). Сейчас
+      // навбар лежит в самом низу, а body идёт ровно до его
+      // верха — без зазора.
       final androidNeutralFg = isDark
           ? Colors.white.withValues(alpha: 0.92)
           : const Color(0xFF1C1C1E);
       final androidDimFg = isDark
           ? Colors.white.withValues(alpha: 0.55)
           : const Color(0xFF1C1C1E).withValues(alpha: 0.55);
-      return Stack(children: [
-        body,
-        Positioned(
-          left: 0, right: 0, bottom: 0,
-          child: RepaintBoundary(
-            child: FadeTransition(
-              opacity: CurvedAnimation(
-                parent: _navAnim,
-                curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
-              ),
-              child: SlideTransition(
-                position: Tween<Offset>(begin: const Offset(0, 1.2), end: Offset.zero)
-                    .animate(CurvedAnimation(parent: _navAnim, curve: Curves.easeOutCubic)),
-                child: NavigationBarTheme(
-                  data: NavigationBarThemeData(
-                    // Чистый selected-цвет (без «голубоватого» accent).
-                    // Индикатор — прозрачный, чтобы не было
-                    // tinted-капсулы под selected.
-                    indicatorColor: Colors.transparent,
-                    backgroundColor: Theme.of(context).colorScheme.surface,
-                    surfaceTintColor: Colors.transparent,
-                    // Иконки: selected = полный, unselected = тот же
-                    // цвет с alpha 0.55. Как в iOS-варианте, только
-                    // через M3-атрибут.
-                    iconTheme: WidgetStateProperty.resolveWith((s) {
-                      if (s.contains(WidgetState.selected)) {
-                        return IconThemeData(color: androidNeutralFg, size: 26);
-                      }
-                      return IconThemeData(color: androidDimFg, size: 24);
-                    }),
-                    // Лейблы: тот же подход, font-weight меняется.
-                    labelTextStyle: WidgetStateProperty.resolveWith((s) {
-                      if (s.contains(WidgetState.selected)) {
-                        return TextStyle(
-                          color: androidNeutralFg,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        );
-                      }
+      final mq = MediaQuery.of(context);
+      return Scaffold(
+        // body обрезается по верху bottomNavigationBar, без
+        // двойной вставки safe-area.
+        extendBody: false,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: MediaQuery(
+          // Убираем нижний safe-area, который Scaffold уже учёл в
+          // навбаре — иначе вкладки внутри получают лишний padding
+          // снизу и появляется «полоса воздуха» под контентом.
+          data: mq.copyWith(
+            padding: mq.padding.copyWith(bottom: 0),
+          ),
+          child: body,
+        ),
+        bottomNavigationBar: RepaintBoundary(
+          child: FadeTransition(
+            opacity: CurvedAnimation(
+              parent: _navAnim,
+              curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
+            ),
+            child: SlideTransition(
+              position: Tween<Offset>(begin: const Offset(0, 1.2), end: Offset.zero)
+                  .animate(CurvedAnimation(parent: _navAnim, curve: Curves.easeOutCubic)),
+              child: NavigationBarTheme(
+                data: NavigationBarThemeData(
+                  // Чистый selected-цвет (без «голубоватого» accent).
+                  // Индикатор — прозрачный, чтобы не было
+                  // tinted-капсулы под selected.
+                  indicatorColor: Colors.transparent,
+                  backgroundColor: Theme.of(context).colorScheme.surface,
+                  surfaceTintColor: Colors.transparent,
+                  // Иконки: selected = полный, unselected = тот же
+                  // цвет с alpha 0.55. Как в iOS-варианте, только
+                  // через M3-атрибут.
+                  iconTheme: WidgetStateProperty.resolveWith((s) {
+                    if (s.contains(WidgetState.selected)) {
+                      return IconThemeData(color: androidNeutralFg, size: 26);
+                    }
+                    return IconThemeData(color: androidDimFg, size: 24);
+                  }),
+                  // Лейблы: тот же подход, font-weight меняется.
+                  labelTextStyle: WidgetStateProperty.resolveWith((s) {
+                    if (s.contains(WidgetState.selected)) {
                       return TextStyle(
-                        color: androidDimFg,
+                        color: androidNeutralFg,
                         fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                       );
-                    }),
-                  ),
-                  child: NavigationBar(
-                    selectedIndex: idx,
-                    onDestinationSelected: _onTap,
-                    destinations: [
-                      for (final it in items)
-                        NavigationDestination(
-                          icon: Icon(it.inactive),
-                          selectedIcon: Icon(it.active),
-                          label: it.label,
-                        ),
-                    ],
-                  ),
+                    }
+                    return TextStyle(
+                      color: androidDimFg,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    );
+                  }),
+                ),
+                child: NavigationBar(
+                  selectedIndex: idx,
+                  onDestinationSelected: _onTap,
+                  destinations: [
+                    for (final it in items)
+                      NavigationDestination(
+                        icon: Icon(it.inactive),
+                        selectedIcon: Icon(it.active),
+                        label: it.label,
+                      ),
+                  ],
                 ),
               ),
             ),
           ),
         ),
-      ]);
+      );
     }
 
     // iOS / iPadOS / macOS: native iOS 26 Liquid Glass.

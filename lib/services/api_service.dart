@@ -579,10 +579,11 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> updateDeadline(int deadlineId,
-      {String? dueDate, bool? isPublished}) async {
+      {String? dueDate, bool? isPublished, bool? noDeadline}) async {
     final response = await _dio.patch('/deadlines/$deadlineId', data: {
       if (dueDate != null) 'due_date': dueDate,
       if (isPublished != null) 'is_published': isPublished,
+      if (noDeadline != null) 'no_deadline': noDeadline,
     });
     return _asMap(response.data);
   }

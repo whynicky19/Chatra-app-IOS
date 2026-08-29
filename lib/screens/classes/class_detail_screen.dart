@@ -21,6 +21,7 @@ import '../../widgets/skeleton.dart';
 import '../../widgets/toast.dart';
 import '../../widgets/tappable.dart';
 import '../../widgets/wrapping_field.dart';
+import 'cohort_deadlines_screen.dart';
 import 'tabs/class_posts_tab.dart';
 import 'tabs/class_assignments_tab.dart';
 import 'tabs/class_ai_tab.dart';
@@ -1037,6 +1038,53 @@ class _ClassDetailState extends State<ClassDetailScreen> with SingleTickerProvid
                 ),
               ),
             ],
+          ],
+          if (_canManageCohorts && _cohorts.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Tappable(
+              onTap: () async {
+                Navigator.pop(ctx);
+                // Открываем экран дедлайнов для текущего выбранного потока
+                // (или активного, если учитель не переключал).
+                final initialId = _selectedCohortId ??
+                    _cohorts.firstWhere(
+                      (c) => c['status'] == 'active',
+                      orElse: () => _cohorts.first,
+                    )['id'] as int;
+                await guardedPush(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CohortDeadlinesScreen(
+                      classId: widget.classId,
+                      cohorts: _cohorts,
+                      initialCohortId: initialId,
+                    ),
+                  ),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: adaptiveSurface2(context),
+                  borderRadius: BorderRadius.circular(AppRadii.tile),
+                ),
+                child: Row(children: [
+                  Icon(CupertinoIcons.calendar_today,
+                      size: 19, color: adaptiveText1(context)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(l.t('cd_title'),
+                        style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: adaptiveText1(context))),
+                  ),
+                  Icon(CupertinoIcons.chevron_right,
+                      size: 15,
+                      color: adaptiveText3(context).withValues(alpha: 0.6)),
+                ]),
+              ),
+            ),
           ],
           const SizedBox(height: 16),
         ])))).then((_) {});

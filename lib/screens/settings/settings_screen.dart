@@ -1,12 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_dialog.dart';
-import '../../widgets/cupertino_liquid_switch.dart';
 import '../../widgets/inset_group.dart';
 import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
@@ -172,10 +172,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               iconBg: const Color(0xFF5856D6),
               title: l.t('dark_mode'),
               sub: l.t('dark_sub'),
-              trailing: CupertinoLiquidSwitch(
+              trailing: LiquidGlassSwitch(
                 value: themeProv.isDark,
                 onChanged: (_) => themeProv.toggle(),
-                accent: primary,
+                // Зелёный по умолчанию как в системных настройках iOS.
+                activeColor: const Color(0xFF34C759),
               ),
             ),
             SettingsRow(

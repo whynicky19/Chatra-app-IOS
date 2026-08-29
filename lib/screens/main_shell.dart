@@ -229,12 +229,20 @@ class _MainShellState extends State<MainShell>
     ]);
 
     if (useMaterial) {
-      // Android: нативный M3 NavigationBar — собственная surface-tint, ripple,
-      // индикатор selected через colorScheme. Никакого ручного стека, M3 сам
-      // кладёт бар поверх safe-area. Анимация всплытия остаётся для консистентности.
+      // Android: нативный M3 NavigationBar, но с нейтральной
+      // палитрой как на iOS — никакого «голубоватого» selected
+      // accent. M3 по умолчанию использует colorScheme.primary
+      // (наш teal/orange) и tint-индикатор — это и давало
+      // «тёмные голубые кнопки». Принудительно задаём чёрный в
+      // светлой теме и белый в тёмной через NavigationBarTheme.
+      final androidNeutralFg = isDark
+          ? Colors.white.withValues(alpha: 0.92)
+          : const Color(0xFF1C1C1E);
+      final androidDimFg = isDark
+          ? Colors.white.withValues(alpha: 0.55)
+          : const Color(0xFF1C1C1E).withValues(alpha: 0.55);
       return Stack(children: [
         body,
-        const Positioned(left: 0, right: 0, bottom: 0, child: _BottomContentScrim()),
         Positioned(
           left: 0, right: 0, bottom: 0,
           child: RepaintBoundary(
@@ -246,17 +254,51 @@ class _MainShellState extends State<MainShell>
               child: SlideTransition(
                 position: Tween<Offset>(begin: const Offset(0, 1.2), end: Offset.zero)
                     .animate(CurvedAnimation(parent: _navAnim, curve: Curves.easeOutCubic)),
-                child: NavigationBar(
-                  selectedIndex: idx,
-                  onDestinationSelected: _onTap,
-                  destinations: [
-                    for (final it in items)
-                      NavigationDestination(
-                        icon: Icon(it.inactive),
-                        selectedIcon: Icon(it.active),
-                        label: it.label,
-                      ),
-                  ],
+                child: NavigationBarTheme(
+                  data: NavigationBarThemeData(
+                    // Чистый selected-цвет (без «голубоватого» accent).
+                    // Индикатор — прозрачный, чтобы не было
+                    // tinted-капсулы под selected.
+                    indicatorColor: Colors.transparent,
+                    backgroundColor: Theme.of(context).colorScheme.surface,
+                    surfaceTintColor: Colors.transparent,
+                    // Иконки: selected = полный, unselected = тот же
+                    // цвет с alpha 0.55. Как в iOS-варианте, только
+                    // через M3-атрибут.
+                    iconTheme: WidgetStateProperty.resolveWith((s) {
+                      if (s.contains(WidgetState.selected)) {
+                        return IconThemeData(color: androidNeutralFg, size: 26);
+                      }
+                      return IconThemeData(color: androidDimFg, size: 24);
+                    }),
+                    // Лейблы: тот же подход, font-weight меняется.
+                    labelTextStyle: WidgetStateProperty.resolveWith((s) {
+                      if (s.contains(WidgetState.selected)) {
+                        return TextStyle(
+                          color: androidNeutralFg,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        );
+                      }
+                      return TextStyle(
+                        color: androidDimFg,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      );
+                    }),
+                  ),
+                  child: NavigationBar(
+                    selectedIndex: idx,
+                    onDestinationSelected: _onTap,
+                    destinations: [
+                      for (final it in items)
+                        NavigationDestination(
+                          icon: Icon(it.inactive),
+                          selectedIcon: Icon(it.active),
+                          label: it.label,
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -285,7 +327,13 @@ class _MainShellState extends State<MainShell>
     // палитру: glassColorOnDark 0x33000000 + contentColorOnDark white →
     // glassColorOnLight 0x66FFFFFF + contentColorOnLight 0xFF1C1C1E.
     // Это "визуально реагирует на фон" в буквальном смысле.
-    final accent = Theme.of(context).colorScheme.primary;
+    // iOS 26 стиль: в нативном Tab Bar Apple цвет иконок одинаковый
+    // для selected и unselected, отличается только весом/заполненностью.
+    // Никакого «голубого акцента» — нейтральный чёрный в светлой
+    // теме и белый в тёмной.
+    final neutralFg = isDark
+        ? Colors.white.withValues(alpha: 0.92)
+        : const Color(0xFF1C1C1E);
     final screenWidth = MediaQuery.sizeOf(context).width;
     final barWidth = (screenWidth - 16 * 2).clamp(280.0, 560.0);
 
@@ -297,14 +345,6 @@ class _MainShellState extends State<MainShell>
                     i.selected ? it.active : it.inactive,
                     size: i.underGlass ? 27 : 24,
                     color: i.color,
-                    shadows: i.selected
-                        ? [
-                            Shadow(
-                              color: i.color.withValues(alpha: 0.55),
-                              blurRadius: 10,
-                            ),
-                          ]
-                        : null,
                   ),
                 ))
             .toList(),
@@ -313,24 +353,36 @@ class _MainShellState extends State<MainShell>
         width: barWidth,
         height: 60,
         itemPadding: 3,
-        margin: const EdgeInsets.only(bottom: 8),
-        style: const LiquidGlassStyle(
+        // Дистанция от низа. LiquidGlassScaffold сам добавляет
+        // safe-area inset. Отрицательные значения сдвигают бар
+        // ближе к нижнему краю экрана (залезают под safe-area).
+        // Текущее значение -12: на iPhone с safe-area 34 итог
+        // расстояние от низа = 34 - 12 = 22px — бар сидит ниже
+        // iOS-дефолта, ближе к home indicator.
+        margin: const EdgeInsets.only(bottom: -12),
+        style: LiquidGlassStyle(
           shape: LiquidGlassShape.continuousRoundedRectangle(
             cornerRadius: 30,
             clipQuality: LiquidGlassClipQuality.exact,
-            // Тонкий optical rim: ярче на светлой стороне, чуть темнее
-            // на теневой. Толщина 0.7 — еле заметная, но формирует
-            // «мокрый» контур стекла, как на референсе.
-            borderWidth: 0.7,
-            lightIntensity: 1.2,
+            // В тёмной теме: реально тонкий, серый ободок. Без
+            // borderColor OpticalBorder тянет дефолтный
+            // lightColor 0xB2FFFFFF — это и даёт «жирный белый
+            // rim» в тёмной. Задаём явный borderColor 0x1FFFFFFF
+            // (12% белого) + borderWidth 0.3 — еле заметный контур.
+            // В светлой теме: тонкий серый 0x1F000000 (12% чёрного).
+            borderWidth: isDark ? 0.3 : 0.5,
+            borderColor: isDark
+                ? const Color(0x1FFFFFFF)
+                : const Color(0x1F000000),
+            lightIntensity: isDark ? 0.4 : 0.8,
             lightDirection: 62,
             borderType: OpticalBorder(
-              borderSaturation: 1.4,
-              ambientIntensity: 1.0,
-              borderSolidity: 0.95,
+              borderSaturation: isDark ? 0.6 : 1.0,
+              ambientIntensity: isDark ? 0.3 : 0.7,
+              borderSolidity: isDark ? 0.2 : 0.5,
             ),
           ),
-          appearance: LiquidGlassAppearance(
+          appearance: const LiquidGlassAppearance(
             // ПОЛНОСТЬЮ ПРОЗРАЧНОЕ стекло — это и есть ключ к
             // iOS 26: фон виден СКВОЗЬ, а не окрашен полупрозрачной
             // белой заливкой. Adaptivity добавит лёгкий тинт
@@ -344,7 +396,7 @@ class _MainShellState extends State<MainShell>
             // а не парит.
             shadow: LiquidGlassShadow(blur: 22, opacity: 0.14),
           ),
-          refraction: LiquidGlassRefraction(
+          refraction: const LiquidGlassRefraction(
             // Сильная рефракция — по краям капсулы фон явно гнётся,
             // как в iOS 26. На референсе это видно по изгибу зелёной
             // плашки позади бара.
@@ -357,10 +409,10 @@ class _MainShellState extends State<MainShell>
           ),
         ),
         itemStyle: LiquidGlassTabItemStyle(
-          selectedColor: accent,
-          unselectedColor: isDark
-              ? Colors.white.withValues(alpha: 0.85)
-              : const Color(0xFF3C4043),
+          // Один нейтральный цвет для selected и unselected — как в
+          // iOS 26. Отличается только вес/заполненность иконки.
+          selectedColor: neutralFg,
+          unselectedColor: neutralFg,
           iconSize: 24,
           labelFontSize: 10.5,
           iconLabelGap: 2,
@@ -369,14 +421,14 @@ class _MainShellState extends State<MainShell>
           selectedFontWeight: FontWeight.w700,
           unselectedFontWeight: FontWeight.w500,
         ),
-        pillStyle: const LiquidGlassTabPillStyle(
+        pillStyle: LiquidGlassTabPillStyle(
           // Glass-refracting morphing pill.
           mode: LiquidGlassPillMode.both,
           show: true,
           // Пилюля — почти бесцветная линза: 0x06FFFFFF даёт
           // минимальный намёк, рефракция делает остальное. Именно
           // так на референсе активная «капля» выглядит как стекло.
-          glassStyle: LiquidGlassStyle(
+          glassStyle: const LiquidGlassStyle(
             appearance: LiquidGlassAppearance(color: Color(0x06FFFFFF)),
             refraction: LiquidGlassRefraction(
               distortion: 0.16,
@@ -384,10 +436,16 @@ class _MainShellState extends State<MainShell>
               chromaticAberration: 0.008,
             ),
           ),
-          // Rest-подсветка в покое: чуть ярче, чтобы выделять
-          // выбранный таб, когда морф-пилюля не движется.
+          // Rest-подсветка в покое: ЛЁГКОЕ белое сияние, как на
+          // iOS 26. Раньше было 12% чёрного — именно это делало
+          // кнопки «темными при нажатии»: пилюля затемняла
+          // выбранный таб.
           rest: LiquidGlassStyle(
-            appearance: LiquidGlassAppearance(color: Color(0x1F000000)),
+            appearance: LiquidGlassAppearance(
+              color: isDark
+                  ? const Color(0x26FFFFFF)
+                  : const Color(0x1FFFFFFF),
+            ),
           ),
           // Spring-перенос: чуть-чуть овершут, пилюля «перелетает»
           // таб и садится.
@@ -395,18 +453,18 @@ class _MainShellState extends State<MainShell>
           travelDamping: 26,
           // Вырастает на 10px в движении.
           growHeight: 10,
-          motion: LiquidGlassLensMotionSpec(
+          motion: const LiquidGlassLensMotionSpec(
             sampleWindow: 0.3,
             sensitivity: 0.00007,
             maxDeformation: 0.12,
             responseTime: 0.18,
           ),
-          magnifierPill: LiquidGlassTabMagnifierPillStyle(
+          magnifierPill: const LiquidGlassTabMagnifierPillStyle(
             enabled: true,
             magnification: 0.86,
           ),
           animated: true,
-          animationDuration: Duration(milliseconds: 280),
+          animationDuration: const Duration(milliseconds: 280),
           animationCurve: Curves.easeOutCubic,
         ),
     );
@@ -437,30 +495,6 @@ class _MainShellState extends State<MainShell>
       ),
       body: body,
       bottomNavigationBar: bar,
-    );
-  }
-}
-
-class _BottomContentScrim extends StatelessWidget {
-  const _BottomContentScrim();
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return IgnorePointer(
-      child: Container(
-        height: bottomBarClearance(context) + 40,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.black.withValues(alpha: 0),
-              Colors.black.withValues(alpha: isDark ? 0.30 : 0.14),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

@@ -5,16 +5,23 @@ class L10n extends ChangeNotifier {
   String _lang = 'RU';
   String get lang => _lang;
 
+  // Монотонный счётчик notifyListeners(): используется в Provider.select как
+  // лёгкий «tick» для инвалидации кэшей, подписанных только на смену локали.
+  int _version = 0;
+  int get version => _version;
+
   Future<void> init() async {
     try {
       final p = await SharedPreferences.getInstance();
       _lang = p.getString('lang') ?? 'RU';
+      _version++;
       notifyListeners();
     } catch (_) {}
   }
 
   void setLang(String l) {
     _lang = l;
+    _version++;
     notifyListeners();
     SharedPreferences.getInstance().then((p) => p.setString('lang', l));
   }

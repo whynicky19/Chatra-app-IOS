@@ -36,6 +36,104 @@ class _MainShellState extends State<MainShell>
   Timer? _recheckTimer;
   int _recheckAttempt = 0;
 
+  // ── Кэш статических nav-items: пересоздаются только при реальной смене
+  // (локали, роли, платформы), а не на каждом rebuild. Без этого build()
+  // каждый раз аллоцирует ~10 объектов LiquidGlassStyle + список с
+  // closure-builder'ами — LiquidGlassTabBar не может сравнить их по == и
+  // уходит в полный diff поддерева линзы. ──
+  List<_NavItem> _navItemsCache = const [];
+  String _navItemsKey = '';
+
+  // ── Кэш тяжёлых LiquidGlassStyle'ов. Стили — const-объекты, но
+  // зависимы от темы: пересоздаются при смене isDark, и в build() кладутся
+  // уже готовые по тому же ключу. ──
+  static const _DarkLightStyles _lightStyles = _DarkLightStyles._(
+    shape: LiquidGlassShape.continuousRoundedRectangle(
+      cornerRadius: 30,
+      clipQuality: LiquidGlassClipQuality.exact,
+      borderWidth: 0.5,
+      borderColor: Color(0x1F000000),
+      lightIntensity: 0.8,
+      lightDirection: 62,
+      borderType: OpticalBorder(
+        borderSaturation: 1.0,
+        ambientIntensity: 0.7,
+        borderSolidity: 0.5,
+      ),
+    ),
+    restColor: Color(0x1FFFFFFF),
+    neutralFg: Color(0xFF1C1C1E),
+    adaptivityColorOnDark: Color(0x14000000),
+    adaptivityColorOnLight: Color(0x14FFFFFF),
+  );
+  static const _DarkLightStyles _darkStyles = _DarkLightStyles._(
+    shape: LiquidGlassShape.continuousRoundedRectangle(
+      cornerRadius: 30,
+      clipQuality: LiquidGlassClipQuality.exact,
+      borderWidth: 0.3,
+      borderColor: Color(0x1FFFFFFF),
+      lightIntensity: 0.4,
+      lightDirection: 62,
+      borderType: OpticalBorder(
+        borderSaturation: 0.6,
+        ambientIntensity: 0.3,
+        borderSolidity: 0.2,
+      ),
+    ),
+    restColor: Color(0x26FFFFFF),
+    neutralFg: Color(0xEBFFFFFF), // 0.92 alpha
+    adaptivityColorOnDark: Color(0x14000000),
+    adaptivityColorOnLight: Color(0x14FFFFFF),
+  );
+
+  static const LiquidGlassAppearance _barAppearance = LiquidGlassAppearance(
+    color: Color(0x0FFFFFFF),
+    blur: LiquidGlassBlur(sigmaX: 2, sigmaY: 2),
+    shadow: LiquidGlassShadow(blur: 22, opacity: 0.14),
+  );
+
+  static const LiquidGlassRefraction _barRefraction = LiquidGlassRefraction(
+    distortion: 0.13,
+    distortionWidth: 34,
+    chromaticAberration: 0.006,
+    magnification: 1.0,
+  );
+
+  static const LiquidGlassStyle _glassPillGlass = LiquidGlassStyle(
+    appearance: LiquidGlassAppearance(color: Color(0x06FFFFFF)),
+    refraction: LiquidGlassRefraction(
+      distortion: 0.16,
+      distortionWidth: 26,
+      chromaticAberration: 0.008,
+    ),
+  );
+
+  static const LiquidGlassTabMagnifierPillStyle _magnifierOff =
+      LiquidGlassTabMagnifierPillStyle(enabled: false, magnification: 0.86);
+
+  static const LiquidGlassLensMotionSpec _motionSpec = LiquidGlassLensMotionSpec(
+    sampleWindow: 0.3,
+    sensitivity: 0.00007,
+    maxDeformation: 0.12,
+    responseTime: 0.18,
+  );
+
+  static const LiquidGlassAdaptivity _adaptivity = LiquidGlassAdaptivity(
+    glassColorOnDark: Color(0x14000000),
+    contentColorOnDark: Color(0xFFFFFFFF),
+    glassColorOnLight: Color(0x14FFFFFF),
+    contentColorOnLight: Color(0xFF1C1C1E),
+    duration: Duration(milliseconds: 320),
+    darkBelow: 0.50,
+    lightAbove: 0.55,
+  );
+
+  static const LiquidGlassScaffoldAdaptivity _scaffoldAdaptivity =
+      LiquidGlassScaffoldAdaptivity(
+    _adaptivity,
+    systemChrome: LiquidGlassSystemChrome.statusBar,
+  );
+
   @override
   void initState() {
     super.initState();
@@ -140,10 +238,21 @@ class _MainShellState extends State<MainShell>
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
-    final l = context.watch<L10n>();
-    final isAdmin = auth.isAdmin;
+    // context.select вместо context.watch: build() ребилдится ТОЛЬКО при
+    // смене нужного поля (роль), а не при ЛЮБОМ notifyListeners() от
+    // AuthProvider/L10n. AuthProvider дёргает notifyListeners() при
+    // refresh-токена, сетевых ошибках, логине/логауте — watch на нём
+    // раньше ребилдил весь шелл на каждый чих, и в нём пересоздавались
+    // тяжёлые LiquidGlassStyle, которые потом не diff'ились по ==.
+    final isAdmin = context.select<AuthProvider, bool>((a) => a.isAdmin);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final useMaterial = Theme.of(context).platform == TargetPlatform.android;
+
+    // Локализованные подписи — отдельный select, чтобы перерисовка
+    // навбара случалась только при СМЕНЕ самих строк, а не на каждый
+    // notifyListeners() от L10n (он шлёт их при инициализации/смене
+    // языка, не при горячих апдейтах).
+    final l10nTick = context.select<L10n, int>((l) => l.version);
 
     final screens = <Widget>[
       const HomeScreen(), const AiScreen(),
@@ -151,30 +260,38 @@ class _MainShellState extends State<MainShell>
       const SettingsScreen(),
     ];
 
-    final useMaterial = Theme.of(context).platform == TargetPlatform.android;
-    final items = <_NavItem>[
-      _NavItem(
-        useMaterial ? Icons.menu_book_outlined : CupertinoIcons.book,
-        useMaterial ? Icons.menu_book : CupertinoIcons.book_fill,
-        l.t('nav_classes'),
-      ),
-      _NavItem(
-        useMaterial ? Icons.auto_awesome_outlined : CupertinoIcons.sparkles,
-        useMaterial ? Icons.auto_awesome : CupertinoIcons.sparkles,
-        l.t('nav_ai'),
-      ),
-      if (isAdmin)
+    // ── Кэш nav-items: пересоздаём список только при смене зависимостей. ──
+    final itemsKey = '$l10nTick|${isAdmin ? 1 : 0}|${useMaterial ? 1 : 0}';
+    if (itemsKey != _navItemsKey) {
+      _navItemsKey = itemsKey;
+      // Читаем L10n напрямую для сборки подписей (select выше даёт только
+      // tick для инвалидации кэша).
+      final l = context.read<L10n>();
+      _navItemsCache = <_NavItem>[
         _NavItem(
-          useMaterial ? Icons.shield_outlined : CupertinoIcons.shield,
-          useMaterial ? Icons.shield : CupertinoIcons.shield_fill,
-          l.t('nav_admin'),
+          useMaterial ? Icons.menu_book_outlined : CupertinoIcons.book,
+          useMaterial ? Icons.menu_book : CupertinoIcons.book_fill,
+          l.t('nav_classes'),
         ),
-      _NavItem(
-        useMaterial ? Icons.settings_outlined : CupertinoIcons.gear,
-        useMaterial ? Icons.settings : CupertinoIcons.gear_alt_fill,
-        l.t('nav_settings'),
-      ),
-    ];
+        _NavItem(
+          useMaterial ? Icons.auto_awesome_outlined : CupertinoIcons.sparkles,
+          useMaterial ? Icons.auto_awesome : CupertinoIcons.sparkles,
+          l.t('nav_ai'),
+        ),
+        if (isAdmin)
+          _NavItem(
+            useMaterial ? Icons.shield_outlined : CupertinoIcons.shield,
+            useMaterial ? Icons.shield : CupertinoIcons.shield_fill,
+            l.t('nav_admin'),
+          ),
+        _NavItem(
+          useMaterial ? Icons.settings_outlined : CupertinoIcons.gear,
+          useMaterial ? Icons.settings : CupertinoIcons.gear_alt_fill,
+          l.t('nav_settings'),
+        ),
+      ];
+    }
+    final items = _navItemsCache;
 
     // Локальная переменная вместо мутации поля прямо в build(): роль могла
     // смениться (админ вышел) и вкладок стало меньше.
@@ -185,48 +302,54 @@ class _MainShellState extends State<MainShell>
     // БЕЗ собственного `color` — иначе линза навбара рефрагирует наш
     // плоский scaffoldBackgroundColor, а не живой контент вкладки. Цвет
     // фона страницы рисует сама вкладка.
-    final body = Stack(children: [
-      Positioned.fill(
-        child: FloatingNavBarScope(
-          child: _LazyIndexedStack(
-            index: idx,
-            children: screens,
+    final body = RepaintBoundary(
+      // Изолируем скролл внутри вкладок от навбара: пока пользователь
+      // крутит ListView, LiquidGlass-капсула и пилюля не перерисовываются.
+      // Особенно важно для стека двух линз: capture-pipeline бара не
+      // триггерится репейнтом scrollable.
+      child: Stack(children: [
+        Positioned.fill(
+          child: FloatingNavBarScope(
+            child: _LazyIndexedStack(
+              index: idx,
+              children: screens,
+            ),
           ),
         ),
-      ),
-        Positioned(
-          top: 0, left: 0, right: 0,
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 340),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeInCubic,
-            layoutBuilder: (currentChild, previousChildren) => Stack(
-              alignment: Alignment.topCenter,
-              children: [
-                ...previousChildren,
-                if (currentChild != null) currentChild,
-              ],
-            ),
-            transitionBuilder: (child, anim) => FadeTransition(
-              opacity: anim,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, -1),
-                  end: Offset.zero,
-                ).animate(anim),
-                child: child,
+          Positioned(
+            top: 0, left: 0, right: 0,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 340),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              layoutBuilder: (currentChild, previousChildren) => Stack(
+                alignment: Alignment.topCenter,
+                children: [
+                  ...previousChildren,
+                  if (currentChild != null) currentChild,
+                ],
               ),
+              transitionBuilder: (child, anim) => FadeTransition(
+                opacity: anim,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, -1),
+                    end: Offset.zero,
+                  ).animate(anim),
+                  child: child,
+                ),
+              ),
+              child: (_isOnline || _bannerDismissed)
+                  ? const SizedBox.shrink(key: ValueKey('online'))
+                  : _OfflineBanner(
+                      key: const ValueKey('offline'),
+                      title: context.read<L10n>().t('no_connection'),
+                      onDismiss: () => setState(() => _bannerDismissed = true),
+                    ),
             ),
-            child: (_isOnline || _bannerDismissed)
-                ? const SizedBox.shrink(key: ValueKey('online'))
-                : _OfflineBanner(
-                    key: const ValueKey('offline'),
-                    title: l.t('no_connection'),
-                    onDismiss: () => setState(() => _bannerDismissed = true),
-                  ),
           ),
-        ),
-    ]);
+      ]),
+    );
 
     if (useMaterial) {
       // Android: нативный M3 NavigationBar, но с нейтральной
@@ -326,30 +449,27 @@ class _MainShellState extends State<MainShell>
     // iOS / iPadOS / macOS: native iOS 26 Liquid Glass.
     //
     // Архитектура: LiquidGlassScaffold владеет capture-pipeline (sampler
-    // 8 fps, pixelRatio 0.05) и настраивает OS chrome. На iOS по
-    // умолчанию Impeller — линзы читают живой backdrop, рефракция
-    // работает напрямую без view. Scaffold наследует adaptivity на бар.
+    // 8 fps) и настраивает OS chrome. На iOS по умолчанию Impeller —
+    // линзы читают живой backdrop, рефракция работает напрямую без view.
+    // Scaffold наследует adaptivity на бар.
     //
     // Стеклянный pill (mode: both) сам себе LiquidGlass-линза: при
-    // переключении вкладки вырастает (growHeight 10), скользит по
-    // spring (280/30 ≈ критично-демпфированный, без овершута), squash
-    // по ускорению (±12%), а на Impeller в него ВЛОЖЕН magnifier-pill
-    // (magnification 0.86) — стек двух линз, рефракция бара сквозь
-    // пилюлю в реальном времени. Это и есть "iOS 26 morphing glass
-    // pill".
+    // переключении вкладки вырастает (growHeight 10), скользит по spring
+    // (300/26 ≈ критично-демпфированный, без овершута), squash по
+    // ускорению (±12%).
     //
-    // Adaptivity: scaffold.adaptivity открывает sampler; на каждом
-    // кадре (8 fps) решается тёмный/светлый фон, и навбар инвертирует
-    // палитру: glassColorOnDark 0x33000000 + contentColorOnDark white →
-    // glassColorOnLight 0x66FFFFFF + contentColorOnLight 0xFF1C1C1E.
-    // Это "визуально реагирует на фон" в буквальном смысле.
-    // iOS 26 стиль: в нативном Tab Bar Apple цвет иконок одинаковый
-    // для selected и unselected, отличается только весом/заполненностью.
-    // Никакого «голубого акцента» — нейтральный чёрный в светлой
-    // теме и белый в тёмной.
-    final neutralFg = isDark
-        ? Colors.white.withValues(alpha: 0.92)
-        : const Color(0xFF1C1C1E);
+    // Magnifier-pill ОТКЛЮЧЁН: его эффект (доп. «выпуклость» под
+    // пилюлей) был ничтожен, а стек двух линз под капсулой бара удваивал
+    // стоимость каждого shader-прохода при движении пилюли и при живом
+    // скролле рядом. На статичной пилюле бар по-прежнему стеклянный —
+    // без второй рефракции внутри неё.
+    //
+    // pixelRatio 0.05 (8×40 px sampler) + realTimeCapture: false +
+    // useSync: false — capture-pipeline спит большую часть времени
+    // (включается ровно на 280 ms движения пилюли при тапе) и кладётся в
+    // крошечный 8×40 px буфер вместо full-screen.
+    final styles = isDark ? _darkStyles : _lightStyles;
+    final neutralFg = styles.neutralFg;
     final screenWidth = MediaQuery.sizeOf(context).width;
     final barWidth = (screenWidth - 16 * 2).clamp(280.0, 560.0);
 
@@ -372,57 +492,11 @@ class _MainShellState extends State<MainShell>
         // Дистанция от низа. LiquidGlassScaffold сам добавляет
         // safe-area inset. Отрицательные значения сдвигают бар
         // ближе к нижнему краю экрана (залезают под safe-area).
-        // Текущее значение -12: на iPhone с safe-area 34 итог
-        // расстояние от низа = 34 - 12 = 22px — бар сидит ниже
-        // iOS-дефолта, ближе к home indicator.
         margin: const EdgeInsets.only(bottom: -12),
         style: LiquidGlassStyle(
-          shape: LiquidGlassShape.continuousRoundedRectangle(
-            cornerRadius: 30,
-            clipQuality: LiquidGlassClipQuality.exact,
-            // В тёмной теме: реально тонкий, серый ободок. Без
-            // borderColor OpticalBorder тянет дефолтный
-            // lightColor 0xB2FFFFFF — это и даёт «жирный белый
-            // rim» в тёмной. Задаём явный borderColor 0x1FFFFFFF
-            // (12% белого) + borderWidth 0.3 — еле заметный контур.
-            // В светлой теме: тонкий серый 0x1F000000 (12% чёрного).
-            borderWidth: isDark ? 0.3 : 0.5,
-            borderColor: isDark
-                ? const Color(0x1FFFFFFF)
-                : const Color(0x1F000000),
-            lightIntensity: isDark ? 0.4 : 0.8,
-            lightDirection: 62,
-            borderType: OpticalBorder(
-              borderSaturation: isDark ? 0.6 : 1.0,
-              ambientIntensity: isDark ? 0.3 : 0.7,
-              borderSolidity: isDark ? 0.2 : 0.5,
-            ),
-          ),
-          appearance: const LiquidGlassAppearance(
-            // ПОЛНОСТЬЮ ПРОЗРАЧНОЕ стекло — это и есть ключ к
-            // iOS 26: фон виден СКВОЗЬ, а не окрашен полупрозрачной
-            // белой заливкой. Adaptivity добавит лёгкий тинт
-            // (0x14000000 / 0x14FFFFFF), когда поймёт, тёмный фон
-            // или светлый — но на старте не рисуем ничего.
-            color: Color(0x0FFFFFFF),
-            // Лёгкий blur 2 — оставляет контент читаемым, не
-            // «съедает» рефракцию как sigma 5+.
-            blur: LiquidGlassBlur(sigmaX: 2, sigmaY: 2),
-            // Тонкая контактная тень — стекло «лежит» над контентом,
-            // а не парит.
-            shadow: LiquidGlassShadow(blur: 22, opacity: 0.14),
-          ),
-          refraction: const LiquidGlassRefraction(
-            // Сильная рефракция — по краям капсулы фон явно гнётся,
-            // как в iOS 26. На референсе это видно по изгибу зелёной
-            // плашки позади бара.
-            distortion: 0.13,
-            distortionWidth: 34,
-            // Цветная aberrация — даёт радужный fringe по краям,
-            // характерный для iOS 26.
-            chromaticAberration: 0.006,
-            magnification: 1.0,
-          ),
+          shape: styles.shape,
+          appearance: _barAppearance,
+          refraction: _barRefraction,
         ),
         itemStyle: LiquidGlassTabItemStyle(
           // Один нейтральный цвет для selected и unselected — как в
@@ -441,27 +515,9 @@ class _MainShellState extends State<MainShell>
           // Glass-refracting morphing pill.
           mode: LiquidGlassPillMode.both,
           show: true,
-          // Пилюля — почти бесцветная линза: 0x06FFFFFF даёт
-          // минимальный намёк, рефракция делает остальное. Именно
-          // так на референсе активная «капля» выглядит как стекло.
-          glassStyle: const LiquidGlassStyle(
-            appearance: LiquidGlassAppearance(color: Color(0x06FFFFFF)),
-            refraction: LiquidGlassRefraction(
-              distortion: 0.16,
-              distortionWidth: 26,
-              chromaticAberration: 0.008,
-            ),
-          ),
-          // Rest-подсветка в покое: ЛЁГКОЕ белое сияние, как на
-          // iOS 26. Раньше было 12% чёрного — именно это делало
-          // кнопки «темными при нажатии»: пилюля затемняла
-          // выбранный таб.
+          glassStyle: _glassPillGlass,
           rest: LiquidGlassStyle(
-            appearance: LiquidGlassAppearance(
-              color: isDark
-                  ? const Color(0x26FFFFFF)
-                  : const Color(0x1FFFFFFF),
-            ),
+            appearance: LiquidGlassAppearance(color: styles.restColor),
           ),
           // Spring-перенос: чуть-чуть овершут, пилюля «перелетает»
           // таб и садится.
@@ -469,16 +525,8 @@ class _MainShellState extends State<MainShell>
           travelDamping: 26,
           // Вырастает на 10px в движении.
           growHeight: 10,
-          motion: const LiquidGlassLensMotionSpec(
-            sampleWindow: 0.3,
-            sensitivity: 0.00007,
-            maxDeformation: 0.12,
-            responseTime: 0.18,
-          ),
-          magnifierPill: const LiquidGlassTabMagnifierPillStyle(
-            enabled: true,
-            magnification: 0.86,
-          ),
+          motion: _motionSpec,
+          magnifierPill: _magnifierOff,
           animated: true,
           animationDuration: const Duration(milliseconds: 280),
           animationCurve: Curves.easeOutCubic,
@@ -486,31 +534,28 @@ class _MainShellState extends State<MainShell>
     );
 
     return LiquidGlassScaffold(
-      pixelRatio: 1,
-      useSync: true,
-      // Adaptivity: единственное место, где включается sampler. Дальше
-      // наследуется на бар и на pill. Стоит 8 fps / pixelRatio 0.05
-      // — это примерно 20×40 px захват раз в 125ms, оверхед
-      // исчезающий.
-      adaptivity: const LiquidGlassScaffoldAdaptivity(
-        LiquidGlassAdaptivity(
-          // Тонкий adaptive tint, чтобы стекло не было «пустым»
-          // поверх тёмного/светлого. Очень прозрачный — рефракция
-          // делает основную работу.
-          glassColorOnDark: Color(0x14000000),
-          contentColorOnDark: Color(0xFFFFFFFF),
-          glassColorOnLight: Color(0x14FFFFFF),
-          contentColorOnLight: Color(0xFF1C1C1E),
-          duration: Duration(milliseconds: 320),
-          // Гистерезис 0.5/0.55 — band против strobe.
-          darkBelow: 0.50,
-          lightAbove: 0.55,
-        ),
-        // Драйвим status bar: один источник истины с навбаром.
-        systemChrome: LiquidGlassSystemChrome.statusBar,
-      ),
+      // pixelRatio 0.05 вместо 1.0: capture 8×40 px = 1.3 KB вместо
+      // ~1.3 MB на каждый кадр. Адаптивный вердикт получает ту же
+      // информацию (фон-«среднее»), что и при полном захвате — но без
+      // копирования экрана в текстуру каждый кадр.
+      pixelRatio: 0.05,
+      // realTimeCapture: false → capture-pipeline спит, пока бар не
+      // движется. Скролл контента внутри вкладок больше не запускает
+      // перезахват body. Capture просыпается только на ~280 ms движения
+      // пилюли при тапе вкладки.
+      realTimeCapture: false,
+      // useSync: false → убираем sync barrier на каждом кадре захвата.
+      // На Impeller это просто снимает stall, на Skia — заметный выигрыш
+      // по FPS при морфинге пилюли.
+      useSync: false,
+      adaptivity: _scaffoldAdaptivity,
       body: body,
-      bottomNavigationBar: bar,
+      bottomNavigationBar: RepaintBoundary(
+        // Изолируем бар от репейнтов scrollable-вкладок. Внутренние
+        // ListView/Stack экранов теперь не перекрашивают область
+        // навбара при каждом скролле.
+        child: bar,
+      ),
     );
   }
 }
@@ -518,8 +563,40 @@ class _MainShellState extends State<MainShell>
 class _NavItem {
   final IconData inactive, active;
   final String label;
-  _NavItem(this.inactive, this.active, this.label);
+  const _NavItem(this.inactive, this.active, this.label);
 }
+
+/// Кэш констант стилей, зависящих только от темы (isDark). Они const-объекты,
+/// но не получится сделать top-level const, потому что зависят от условия,
+/// вычисляемого в build. Поэтому храним две готовые ветки — light/dark — и
+/// берём подходящую за O(1) без аллокаций.
+class _DarkLightStyles {
+  final LiquidGlassShape shape;
+  final Color restColor;
+  final Color neutralFg;
+  final Color adaptivityColorOnDark;
+  final Color adaptivityColorOnLight;
+  const _DarkLightStyles._({
+    required this.shape,
+    required this.restColor,
+    required this.neutralFg,
+    required this.adaptivityColorOnDark,
+    required this.adaptivityColorOnLight,
+  });
+}
+
+// ── Константы оффлайн-баннера: вынесены в файловый скоуп, чтобы не
+// пересоздавать ImageFilter/BoxShadow/Border на каждом build (особенно
+// ImageFilter — он создаёт GPU-ресурс, и его dispose/replace дороже
+// самого blur-прохода). ──
+const BorderRadius _kOfflineRadius = BorderRadius.all(Radius.circular(100));
+final ImageFilter _offlineBlur = ImageFilter.blur(sigmaX: 24, sigmaY: 24);
+const Color _offlineGlassDark = Color(0xFF1C1C1E); // alpha 0xB8 = 0.72
+const Color _offlineGlassLight = Color(0xCCFFFFFF); // alpha 0.80
+final List<BoxShadow> _offlineShadowDark = cardShadow(true);
+final List<BoxShadow> _offlineShadowLight = cardShadow(false);
+const Color _offlineBorderDark = Color(0x1FFFFFFF); // alpha 0.12
+const Color _offlineBorderLight = Color(0x0F000000); // alpha 0.06
 
 class _LazyIndexedStack extends StatefulWidget {
   final int index;
@@ -577,63 +654,69 @@ class _OfflineBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final topPad = MediaQuery.paddingOf(context).top;
-    final glass = isDark
-        ? const Color(0xFF1C1C1E).withValues(alpha: 0.72)
-        : Colors.white.withValues(alpha: 0.80);
+    // Константные статические объекты подняты наружу из build —
+    // иначе каждый rebuild аллоцирует новый ImageFilter (и его GPU
+    // cleanup дороже самого blur).
+    final glass = isDark ? _offlineGlassDark : _offlineGlassLight;
+    final shadow = isDark ? _offlineShadowDark : _offlineShadowLight;
+    final borderColor = isDark ? _offlineBorderDark : _offlineBorderLight;
+    final activityColor = isDark ? C.darkText2 : C.text3;
+    final textColor = adaptiveText1(context);
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16, topPad + 8, 16, 0),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onVerticalDragEnd: (d) {
-          if ((d.primaryVelocity ?? 0) < -80) onDismiss();
-        },
-        child: Center(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(100),
-              boxShadow: cardShadow(isDark),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(100),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(14, 9, 14, 9),
-                  decoration: BoxDecoration(
-                    color: glass,
-                    borderRadius: BorderRadius.circular(100),
-                    border: Border.all(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.12)
-                          : Colors.black.withValues(alpha: 0.06),
+    return RepaintBoundary(
+      // Изолируем репейнт: BackdropFilter(blur 24) на всю ширину
+      // баннера и анимированный activity-indicator теперь не
+      // триггерят перерисовку navbar / ListView вкладок, и наоборот.
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(16, topPad + 8, 16, 0),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onVerticalDragEnd: (d) {
+            if ((d.primaryVelocity ?? 0) < -80) onDismiss();
+          },
+          child: Center(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: _kOfflineRadius,
+                boxShadow: shadow,
+              ),
+              child: ClipRRect(
+                borderRadius: _kOfflineRadius,
+                child: BackdropFilter(
+                  filter: _offlineBlur,
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(14, 9, 14, 9),
+                    decoration: BoxDecoration(
+                      color: glass,
+                      borderRadius: _kOfflineRadius,
+                      border: Border.all(color: borderColor),
                     ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(CupertinoIcons.wifi_slash,
-                          size: 15, color: C.red),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: adaptiveText1(context),
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: -0.2,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(CupertinoIcons.wifi_slash,
+                            size: 15, color: C.red),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.2,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 9),
-                      CupertinoActivityIndicator(
-                        radius: 7,
-                        color: isDark ? C.darkText2 : C.text3,
-                      ),
-                    ],
+                        const SizedBox(width: 9),
+                        CupertinoActivityIndicator(
+                          radius: 7,
+                          color: activityColor,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

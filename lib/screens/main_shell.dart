@@ -115,7 +115,9 @@ class _MainShellState extends State<MainShell>
     sampleWindow: 0.3,
     sensitivity: 0.00007,
     maxDeformation: 0.12,
-    responseTime: 0.18,
+    // Под новый travel ≈550 ms: линза должна жить синхронно
+    // с морфингом пилюли, не «догонять» его на хвосте.
+    responseTime: 0.30,
   );
 
   static const LiquidGlassAdaptivity _adaptivity = LiquidGlassAdaptivity(
@@ -519,17 +521,23 @@ class _MainShellState extends State<MainShell>
           rest: LiquidGlassStyle(
             appearance: LiquidGlassAppearance(color: styles.restColor),
           ),
-          // Spring-перенос: чуть-чуть овершут, пилюля «перелетает»
-          // таб и садится.
-          travelStiffness: 300,
-          travelDamping: 26,
-          // Вырастает на 10px в движении.
-          growHeight: 10,
+          // Spring-перенос: stiffness 200, damping 32 (ζ≈1.13) — слегка
+          // пере-демпфированный, без овершута, гасится гладко без
+          // хвоста. Длиннее ход (~550 ms) и более плавная кривая
+          // дают «шёлковое» скольжение вместо рывка.
+          travelStiffness: 200,
+          travelDamping: 32,
+          // Вырастает на 12px — чуть мягче squash при ускорении.
+          growHeight: 12,
           motion: _motionSpec,
           magnifierPill: _magnifierOff,
           animated: true,
-          animationDuration: const Duration(milliseconds: 280),
-          animationCurve: Curves.easeOutCubic,
+          // Длиннее, чем ход spring — ход успевает полностью
+          // затухнуть в окне анимации, без жёсткого «обрыва».
+          animationDuration: const Duration(milliseconds: 620),
+          // Очень мягкий ease-out: плавный старт, плавный
+          // финиш, без «утыкания» в конце.
+          animationCurve: Cubic(0.12, 0.85, 0.28, 1.0),
         ),
     );
 

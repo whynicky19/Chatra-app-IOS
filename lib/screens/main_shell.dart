@@ -481,7 +481,7 @@ class _MainShellState extends State<MainShell>
                   label: it.label,
                   iconBuilder: (context, i) => Icon(
                     i.selected ? it.active : it.inactive,
-                    size: i.underGlass ? 27 : 24,
+                    size: i.underGlass ? 24 : 24,
                     color: i.color,
                   ),
                 ))
@@ -508,7 +508,7 @@ class _MainShellState extends State<MainShell>
           iconSize: 24,
           labelFontSize: 10.5,
           iconLabelGap: 2,
-          underGlassIconSize: 27,
+          underGlassIconSize: 24,
           underGlassLabelFontSize: 10.5,
           selectedFontWeight: FontWeight.w700,
           unselectedFontWeight: FontWeight.w500,
@@ -542,19 +542,8 @@ class _MainShellState extends State<MainShell>
     );
 
     return LiquidGlassScaffold(
-      // pixelRatio 0.05 вместо 1.0: capture 8×40 px = 1.3 KB вместо
-      // ~1.3 MB на каждый кадр. Адаптивный вердикт получает ту же
-      // информацию (фон-«среднее»), что и при полном захвате — но без
-      // копирования экрана в текстуру каждый кадр.
       pixelRatio: 0.05,
-      // realTimeCapture: false → capture-pipeline спит, пока бар не
-      // движется. Скролл контента внутри вкладок больше не запускает
-      // перезахват body. Capture просыпается только на ~280 ms движения
-      // пилюли при тапе вкладки.
       realTimeCapture: false,
-      // useSync: false → убираем sync barrier на каждом кадре захвата.
-      // На Impeller это просто снимает stall, на Skia — заметный выигрыш
-      // по FPS при морфинге пилюли.
       useSync: false,
       adaptivity: _scaffoldAdaptivity,
       body: body,
@@ -562,7 +551,14 @@ class _MainShellState extends State<MainShell>
         // Изолируем бар от репейнтов scrollable-вкладок. Внутренние
         // ListView/Stack экранов теперь не перекрашивают область
         // навбара при каждом скролле.
-        child: bar,
+        child: Theme(
+          data: Theme.of(context).copyWith(
+            splashFactory: NoSplash.splashFactory,
+            splashColor: Colors.transparent,
+            highlightColor: Colors.transparent,
+          ),
+          child: bar,
+        ),
       ),
     );
   }

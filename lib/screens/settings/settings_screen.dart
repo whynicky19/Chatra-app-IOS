@@ -6,7 +6,6 @@ import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
-import '../../utils/initials.dart';
 import '../../widgets/app_backdrop.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/inset_group.dart';
@@ -74,7 +73,6 @@ class _SettingsScreenState extends State<SettingsScreen>
       // bottom: false — тот же edge-to-edge под навбар, что и на остальных
       // вкладках шелла; весь клиренс даёт bottomBarClearance().
       body: AppBackdrop(
-        accent: const Color(0xFF5856D6),
         child: SafeArea(
             bottom: false,
             child: ListView(
@@ -107,18 +105,12 @@ class _SettingsScreenState extends State<SettingsScreen>
                             ),
                             Container(
                               decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .surface
-                                    .withValues(alpha: isDark ? 0.78 : 0.92),
+                                color: Theme.of(context).colorScheme.surface,
                                 borderRadius:
                                     BorderRadius.circular(AppRadii.card),
                                 border: Border.all(
-                                    color: isDark
-                                        ? Colors.white.withValues(alpha: 0.07)
-                                        : Colors.white.withValues(alpha: 0.8),
+                                    color: groupSeparator(context),
                                     width: hairline(context)),
-                                boxShadow: cardShadow(isDark),
                               ),
                               padding:
                                   const EdgeInsets.fromLTRB(16, 16, 16, 18),
@@ -126,33 +118,6 @@ class _SettingsScreenState extends State<SettingsScreen>
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Row(children: [
-                                      Container(
-                                        width: 58,
-                                        height: 58,
-                                        alignment: Alignment.center,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          gradient: LinearGradient(
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                            colors: [
-                                              primary.withValues(alpha: 0.95),
-                                              const Color(0xFF5856D6)
-                                            ],
-                                          ),
-                                          boxShadow: primaryGlow(primary,
-                                              opacity: isDark ? 0.20 : 0.16),
-                                        ),
-                                        child: Text(
-                                            initialsFrom(auth.fullName,
-                                                email: auth.email),
-                                            style: const TextStyle(
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.w700,
-                                                color: Colors.white,
-                                                letterSpacing: -0.4)),
-                                      ),
-                                      const SizedBox(width: 14),
                                       Expanded(
                                           child: Column(
                                               crossAxisAlignment:

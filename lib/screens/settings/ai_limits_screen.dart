@@ -16,7 +16,8 @@ import 'settings_shared.dart';
 /// Экран «AI лимит»: сколько сообщений осталось на сегодня и когда сброс.
 class AiLimitsScreen extends StatefulWidget {
   const AiLimitsScreen({super.key});
-  @override State<AiLimitsScreen> createState() => _AiLimitsScreenState();
+  @override
+  State<AiLimitsScreen> createState() => _AiLimitsScreenState();
 }
 
 class _AiLimitsScreenState extends State<AiLimitsScreen> {
@@ -36,14 +37,25 @@ class _AiLimitsScreenState extends State<AiLimitsScreen> {
   }
 
   @override
-  void dispose() { _ticker?.cancel(); super.dispose(); }
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
 
   Future<void> _load() async {
     try {
-      final q = AiQuota.fromJson(await context.read<ApiService>().getAiLimits());
+      final q =
+          AiQuota.fromJson(await context.read<ApiService>().getAiLimits());
       if (!mounted) return;
-      if (q == null) { _fail(); return; }
-      setState(() { _quota = q; _loading = false; _refreshing = false; });
+      if (q == null) {
+        _fail();
+        return;
+      }
+      setState(() {
+        _quota = q;
+        _loading = false;
+        _refreshing = false;
+      });
     } catch (_) {
       if (mounted) _fail();
     }
@@ -51,11 +63,16 @@ class _AiLimitsScreenState extends State<AiLimitsScreen> {
 
   void _fail() {
     final hadData = _quota != null;
-    setState(() { _loading = false; _refreshing = false; });
+    setState(() {
+      _loading = false;
+      _refreshing = false;
+    });
     // Если цифры на экране уже были, они остаются — но молча оставить их
     // значит соврать, что обновление прошло. Тост сообщает, что показано
     // старое значение.
-    if (hadData) showToast(context, context.read<L10n>().t('connection_error'), error: true);
+    if (hadData)
+      showToast(context, context.read<L10n>().t('connection_error'),
+          error: true);
   }
 
   Future<void> _refresh() async {
@@ -103,7 +120,8 @@ class _RefreshAction extends StatelessWidget {
       onTap: busy ? null : onTap,
       label: l.t('refresh'),
       child: SizedBox(
-        width: 44, height: 44,
+        width: 44,
+        height: 44,
         child: Center(
           child: busy
               ? CupertinoActivityIndicator(radius: 9, color: primary)
@@ -127,9 +145,15 @@ class _QuotaHero extends StatelessWidget {
     final secondary = Theme.of(context).colorScheme.secondary;
 
     final exhausted = quota.exhausted;
-    final low = !exhausted && !quota.unlimited &&
-        (quota.left <= 5 || (quota.limit > 0 && quota.left / quota.limit <= 0.15));
-    final accent = exhausted ? C.red : low ? C.amberDk : primary;
+    final low = !exhausted &&
+        !quota.unlimited &&
+        (quota.left <= 5 ||
+            (quota.limit > 0 && quota.left / quota.limit <= 0.15));
+    final accent = exhausted
+        ? C.red
+        : low
+            ? C.amberDk
+            : primary;
 
     return _Card(
       child: Column(children: [
@@ -144,17 +168,29 @@ class _QuotaHero extends StatelessWidget {
             child: _UnlimitedCenter(accent: primary),
           )
         else
-          _AnimatedRing(quota: quota, accent: accent, gradient: [secondary, primary], flat: exhausted || low),
-
+          _AnimatedRing(
+              quota: quota,
+              accent: accent,
+              gradient: [secondary, primary],
+              flat: exhausted || low),
         if (quota.unlimited) ...[
           const SizedBox(height: 18),
-          _Note(text: l.t('ai_unlimited_note'), color: primary, icon: CupertinoIcons.sparkles),
+          _Note(
+              text: l.t('ai_unlimited_note'),
+              color: primary,
+              icon: CupertinoIcons.sparkles),
         ] else if (exhausted) ...[
           const SizedBox(height: 18),
-          _Note(text: l.t('ai_exhausted_note'), color: C.red, icon: CupertinoIcons.exclamationmark_circle_fill),
+          _Note(
+              text: l.t('ai_exhausted_note'),
+              color: C.red,
+              icon: CupertinoIcons.exclamationmark_circle_fill),
         ] else if (low) ...[
           const SizedBox(height: 18),
-          _Note(text: l.t('ai_low_note'), color: C.amberDk, icon: CupertinoIcons.exclamationmark_triangle_fill),
+          _Note(
+              text: l.t('ai_low_note'),
+              color: C.amberDk,
+              icon: CupertinoIcons.exclamationmark_triangle_fill),
         ],
       ]),
     );
@@ -164,7 +200,11 @@ class _QuotaHero extends StatelessWidget {
 /// Кольцо и число оживают одним общим прогрессом `t` — иначе дуга и цифра
 /// приходят к финалу вразнобой.
 class _AnimatedRing extends StatelessWidget {
-  const _AnimatedRing({required this.quota, required this.accent, required this.gradient, required this.flat});
+  const _AnimatedRing(
+      {required this.quota,
+      required this.accent,
+      required this.gradient,
+      required this.flat});
 
   final AiQuota quota;
   final Color accent;
@@ -174,24 +214,27 @@ class _AnimatedRing extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = context.watch<L10n>();
-    final fraction = quota.limit > 0 ? (quota.left / quota.limit).clamp(0.0, 1.0) : 0.0;
+    final fraction =
+        quota.limit > 0 ? (quota.left / quota.limit).clamp(0.0, 1.0) : 0.0;
     final track = quota.exhausted
-        ? C.red.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.20 : 0.12)
+        ? C.red.withValues(
+            alpha:
+                Theme.of(context).brightness == Brightness.dark ? 0.20 : 0.12)
         : adaptiveSurface2(context);
 
     Widget ring(double t) => _RingFrame(
-      painter: _RingPainter(
-        value: fraction * t,
-        track: track,
-        gradient: flat ? null : gradient,
-        solid: flat ? accent : null,
-      ),
-      child: _RingCenter(
-        value: (quota.left * t).round(),
-        label: l.t('ai_messages_left'),
-        color: flat ? accent : adaptiveText1(context),
-      ),
-    );
+          painter: _RingPainter(
+            value: fraction * t,
+            track: track,
+            gradient: flat ? null : gradient,
+            solid: flat ? accent : null,
+          ),
+          child: _RingCenter(
+            value: (quota.left * t).round(),
+            label: l.t('ai_messages_left'),
+            color: flat ? accent : adaptiveText1(context),
+          ),
+        );
 
     if (MediaQuery.disableAnimationsOf(context)) return ring(1);
 
@@ -213,7 +256,8 @@ class _RingFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 178, height: 178,
+      width: 178,
+      height: 178,
       child: CustomPaint(
         painter: painter,
         child: Center(child: child),
@@ -223,7 +267,8 @@ class _RingFrame extends StatelessWidget {
 }
 
 class _RingCenter extends StatelessWidget {
-  const _RingCenter({required this.value, required this.label, required this.color});
+  const _RingCenter(
+      {required this.value, required this.label, required this.color});
 
   final int value;
   final String label;
@@ -233,12 +278,22 @@ class _RingCenter extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(mainAxisSize: MainAxisSize.min, children: [
       Text('$value',
-          style: TextStyle(fontSize: 48, fontWeight: FontWeight.w700, letterSpacing: -1.6, height: 1, color: color)),
+          style: TextStyle(
+              fontSize: 48,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -1.6,
+              height: 1,
+              color: color)),
       const SizedBox(height: 4),
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Text(label, textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, height: 1.25, fontWeight: FontWeight.w500, color: adaptiveText3(context))),
+        child: Text(label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                fontSize: 13,
+                height: 1.25,
+                fontWeight: FontWeight.w500,
+                color: adaptiveText3(context))),
       ),
     ]);
   }
@@ -253,10 +308,18 @@ class _UnlimitedCenter extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.watch<L10n>();
     return Column(mainAxisSize: MainAxisSize.min, children: [
-      Text('∞', style: TextStyle(fontSize: 56, fontWeight: FontWeight.w700, height: 1, color: accent)),
+      Text('∞',
+          style: TextStyle(
+              fontSize: 56,
+              fontWeight: FontWeight.w700,
+              height: 1,
+              color: accent)),
       const SizedBox(height: 6),
       Text(l.t('ai_unlimited_badge'),
-          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: adaptiveText3(context))),
+          style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: adaptiveText3(context))),
     ]);
   }
 }
@@ -288,10 +351,13 @@ class _RingPainter extends CustomPainter {
     final radius = (size.shortestSide - _stroke) / 2;
     final rect = Rect.fromCircle(center: center, radius: radius);
 
-    canvas.drawCircle(center, radius, Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = _stroke
-      ..color = track);
+    canvas.drawCircle(
+        center,
+        radius,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = _stroke
+          ..color = track);
 
     if (value <= 0) return;
 
@@ -326,7 +392,10 @@ class _RingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_RingPainter old) =>
-      old.value != value || old.track != track || old.solid != solid || old.gradient != gradient;
+      old.value != value ||
+      old.track != track ||
+      old.solid != solid ||
+      old.gradient != gradient;
 }
 
 /// Цифры под кольцом: расход, потолок и время сброса — по строке на факт.
@@ -390,12 +459,19 @@ class _StatRow extends StatelessWidget {
       separatorInset: 16,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: Row(children: [
-        Expanded(child: Text(label,
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.4,
-                color: adaptiveTextSoft(context)))),
+        Expanded(
+            child: Text(label,
+                style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: -0.4,
+                    color: adaptiveTextSoft(context)))),
         const SizedBox(width: 12),
         Text(value,
-            style: TextStyle(fontSize: 17, letterSpacing: -0.4, color: adaptiveText3(context))),
+            style: TextStyle(
+                fontSize: 17,
+                letterSpacing: -0.4,
+                color: adaptiveText3(context))),
       ]),
     );
   }
@@ -420,10 +496,17 @@ class _Note extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadii.tile),
       ),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Padding(padding: const EdgeInsets.only(top: 1), child: Icon(icon, size: 15, color: color)),
+        Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Icon(icon, size: 15, color: color)),
         const SizedBox(width: 9),
-        Expanded(child: Text(text,
-            style: TextStyle(fontSize: 13, height: 1.4, fontWeight: FontWeight.w500, color: color))),
+        Expanded(
+            child: Text(text,
+                style: TextStyle(
+                    fontSize: 13,
+                    height: 1.4,
+                    fontWeight: FontWeight.w500,
+                    color: color))),
       ]),
     );
   }
@@ -431,22 +514,30 @@ class _Note extends StatelessWidget {
 
 class _QuotaSkeleton extends StatefulWidget {
   const _QuotaSkeleton();
-  @override State<_QuotaSkeleton> createState() => _QuotaSkeletonState();
+  @override
+  State<_QuotaSkeleton> createState() => _QuotaSkeletonState();
 }
 
-class _QuotaSkeletonState extends State<_QuotaSkeleton> with SingleTickerProviderStateMixin {
+class _QuotaSkeletonState extends State<_QuotaSkeleton>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _pulse = AnimationController(
-    vsync: this, duration: const Duration(milliseconds: 900))..repeat(reverse: true);
+      vsync: this, duration: const Duration(milliseconds: 900))
+    ..repeat(reverse: true);
 
   @override
-  void dispose() { _pulse.dispose(); super.dispose(); }
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final fill = adaptiveSurface2(context);
     final content = Column(children: [
-      _Card(child: SizedBox(
-        width: 178, height: 178,
+      _Card(
+          child: SizedBox(
+        width: 178,
+        height: 178,
         child: CustomPaint(painter: _RingPainter(value: 0, track: fill)),
       )),
       const SizedBox(height: 22),
@@ -458,11 +549,19 @@ class _QuotaSkeletonState extends State<_QuotaSkeleton> with SingleTickerProvide
             separatorInset: 16,
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
             child: Row(children: [
-              Container(width: 120, height: 12,
-                  decoration: BoxDecoration(color: fill, borderRadius: BorderRadius.circular(AppRadii.chip))),
+              Container(
+                  width: 120,
+                  height: 12,
+                  decoration: BoxDecoration(
+                      color: fill,
+                      borderRadius: BorderRadius.circular(AppRadii.chip))),
               const Spacer(),
-              Container(width: 34, height: 12,
-                  decoration: BoxDecoration(color: fill, borderRadius: BorderRadius.circular(AppRadii.chip))),
+              Container(
+                  width: 34,
+                  height: 12,
+                  decoration: BoxDecoration(
+                      color: fill,
+                      borderRadius: BorderRadius.circular(AppRadii.chip))),
             ]),
           ),
       ]),
@@ -488,12 +587,18 @@ class _ErrorCard extends StatelessWidget {
     final l = context.watch<L10n>();
     return _Card(
       child: Column(children: [
-        Icon(CupertinoIcons.wifi_slash, size: 30, color: adaptiveText4(context)),
+        Icon(CupertinoIcons.wifi_slash,
+            size: 30, color: adaptiveText4(context)),
         const SizedBox(height: 12),
-        Text(text, textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveTextSoft(context))),
+        Text(text,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: adaptiveTextSoft(context))),
         const SizedBox(height: 16),
-        AppButton.secondary(label: l.t('retry'), expand: false, onPressed: onRetry),
+        AppButton.secondary(
+            label: l.t('retry'), expand: false, onPressed: onRetry),
       ]),
     );
   }
@@ -506,13 +611,16 @@ class _Card extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppRadii.card),
-        border: Border.all(color: groupSeparator(context), width: hairline(context)),
+        border: Border.all(
+            color: groupSeparator(context), width: hairline(context)),
+        boxShadow: softShadow(isDark),
       ),
       child: Column(children: [child]),
     );

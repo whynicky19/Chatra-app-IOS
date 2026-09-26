@@ -415,7 +415,6 @@ class _AdminState extends State<AdminScreen>
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: AppBackdrop(
-        accent: const Color(0xFF5856D6),
         child: SafeArea(
             bottom: false,
             child: NestedScrollView(

@@ -64,13 +64,9 @@ class InsetGroup extends StatelessWidget {
   Widget build(BuildContext context) {
     if (children.isEmpty) return const SizedBox.shrink();
     final r = BorderRadius.circular(radius);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: color ??
-            Theme.of(context).colorScheme.surface.withValues(
-                  alpha: isDark ? 0.78 : 0.90,
-                ),
+        color: color ?? Theme.of(context).colorScheme.surface,
         borderRadius: r,
         border: Border.all(
             color: groupSeparator(context), width: hairline(context)),

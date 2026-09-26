@@ -86,27 +86,26 @@ class _AiScreenState extends State<AiScreen> {
         onCreate: _createChat,
       ),
       body: AppBackdrop(
-          accent: const Color(0xFF5856D6),
           child: Stack(children: [
-            Positioned.fill(
-              child: AiConversationView(
-                key: ValueKey('conv_$_sessionKey'),
-                threadId: _activeThreadId,
-                onThreadCreated: (id) => setState(() => _activeThreadId = id),
-              ),
-            ),
-            const Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: IgnorePointer(child: _StatusBarScrim())),
-            Positioned(
-              top: MediaQuery.paddingOf(context).top + 12,
-              left: 16,
-              child: _HistoryButton(
-                  onTap: () => _scaffoldKey.currentState?.openDrawer()),
-            ),
-          ])),
+        Positioned.fill(
+          child: AiConversationView(
+            key: ValueKey('conv_$_sessionKey'),
+            threadId: _activeThreadId,
+            onThreadCreated: (id) => setState(() => _activeThreadId = id),
+          ),
+        ),
+        const Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: IgnorePointer(child: _StatusBarScrim())),
+        Positioned(
+          top: MediaQuery.paddingOf(context).top + 12,
+          left: 16,
+          child: _HistoryButton(
+              onTap: () => _scaffoldKey.currentState?.openDrawer()),
+        ),
+      ])),
     );
   }
 }

@@ -16,7 +16,13 @@ import '../../widgets/cupertino_date_sheet.dart';
 import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
 import '../../widgets/wrapping_field.dart';
-import 'class_detail_utils.dart' show cleanContent, encodeUploadedFileUrl, fileDisplayName, fileUrlRe, mdFileRe;
+import 'class_detail_utils.dart'
+    show
+        cleanContent,
+        encodeUploadedFileUrl,
+        fileDisplayName,
+        fileUrlRe,
+        mdFileRe;
 
 /// Контроллеры критерия обязаны жить столько же, сколько сама строка, а не
 /// пересоздаваться на каждой перестройке экрана — иначе TextField теряет
@@ -40,6 +46,7 @@ class _Criterion {
 class AssignmentEditorScreen extends StatefulWidget {
   final int classId;
   final Map<String, dynamic>? assignment;
+
   /// Только для редактирования — открывает шторку вариантов задания
   /// (короткий CRUD-список, для него шторка остаётся подходящим форматом).
   final void Function(int assignmentId)? onManageVariants;
@@ -104,7 +111,8 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
   List<_Criterion> _parseCriteria(dynamic raw) {
     try {
       final list = (jsonDecode(raw ?? '[]') as List?) ?? [];
-      final parsed = list.map((c) => _Criterion(name: c['name'] ?? '')).toList();
+      final parsed =
+          list.map((c) => _Criterion(name: c['name'] ?? '')).toList();
       if (parsed.isNotEmpty) return parsed;
     } catch (_) {}
     return [_Criterion()];
@@ -162,7 +170,8 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
   }
 
   Future<void> _pickReference() async {
-    final picked = await pickUploadFiles(context, alreadyPicked: _referenceFiles.length);
+    final picked =
+        await pickUploadFiles(context, alreadyPicked: _referenceFiles.length);
     if (picked == null) return;
     setState(() => _referenceFiles.addAll(picked));
     _markDirty();
@@ -195,8 +204,10 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
         if (path == null) continue;
         final res = await api.uploadFile(path, pf.name);
         final url = res['url'] ?? res['file_url'] ?? res['path'];
-        if (url == null || url.toString().isEmpty) throw Exception('upload_failed');
-        uploadedUrls.add('${encodeUploadedFileUrl(url.toString())}#${Uri.encodeComponent(pf.name)}');
+        if (url == null || url.toString().isEmpty)
+          throw Exception('upload_failed');
+        uploadedUrls.add(
+            '${encodeUploadedFileUrl(url.toString())}#${Uri.encodeComponent(pf.name)}');
       }
     } catch (_) {
       if (mounted) {
@@ -206,9 +217,8 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
       return;
     }
 
-    final allUrls = [..._existingFiles, ...uploadedUrls]
-        .map((u) => api.fixUrl(u))
-        .toList();
+    final allUrls =
+        [..._existingFiles, ...uploadedUrls].map((u) => api.fixUrl(u)).toList();
     final cleanDesc = cleanContent(_descC.text.trim());
     final descWithFiles = allUrls.isEmpty
         ? cleanDesc
@@ -219,8 +229,16 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
     const maxScore = 100;
     final named = _criteria.where((c) => c.name.trim().isNotEmpty).toList();
     final finalCriteria = named.isEmpty
-        ? [{'name': l.t('default_criterion'), 'weight': maxScore, 'description': ''}]
-        : named.map((c) => {'name': c.name, 'weight': maxScore, 'description': ''}).toList();
+        ? [
+            {
+              'name': l.t('default_criterion'),
+              'weight': maxScore,
+              'description': ''
+            }
+          ]
+        : named
+            .map((c) => {'name': c.name, 'weight': maxScore, 'description': ''})
+            .toList();
 
     try {
       if (_isEdit) {
@@ -264,6 +282,7 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
   @override
   Widget build(BuildContext context) {
     final l = context.watch<L10n>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
@@ -277,52 +296,85 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
             icon: const Icon(CupertinoIcons.xmark),
             tooltip: 'Закрыть',
             onPressed: () async {
-              if (await _confirmDiscard() && context.mounted) Navigator.pop(context);
+              if (await _confirmDiscard() && context.mounted)
+                Navigator.pop(context);
             },
           ),
         ),
         body: SafeArea(
           child: ListView(
-            padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.viewInsetsOf(context).bottom + 24),
+            padding: EdgeInsets.fromLTRB(
+                20, 16, 20, MediaQuery.viewInsetsOf(context).bottom + 24),
             children: [
-              _label('${l.t('assignment_title')} *'),
-              WrappingField(
-                controller: _titleC,
-                hintText: l.t('assignment_title_hint'),
-                onChanged: (_) => _markDirty(),
-              ),
-              const SizedBox(height: 16),
-              _label(l.t('assignment_desc')),
-              TextField(
-                controller: _descC,
-                decoration: InputDecoration(hintText: l.t('assignment_desc_hint')),
-                maxLines: 4,
-                onChanged: (_) => _markDirty(),
-              ),
-              const SizedBox(height: 16),
-              _label(l.t('deadline')),
-              Tappable(
-                onTap: _pickDeadline,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).inputDecorationTheme.fillColor,
-                    borderRadius: BorderRadius.circular(AppRadii.tile),
-                  ),
-                  child: Row(children: [
-                    Text(_fmtDeadline(l),
-                        style: TextStyle(fontSize: 15, color: _deadline != null ? null : C.text4)),
-                    const Spacer(),
-                    const Icon(CupertinoIcons.calendar, size: 18, color: C.text4),
-                  ]),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(AppRadii.card),
+                  border:
+                      Border.all(color: adaptiveBorder(context), width: 0.5),
+                  boxShadow: softShadow(isDark),
                 ),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _label('${l.t('assignment_title')} *'),
+                      WrappingField(
+                        controller: _titleC,
+                        hintText: l.t('assignment_title_hint'),
+                        onChanged: (_) => _markDirty(),
+                      ),
+                      const SizedBox(height: 16),
+                      _label(l.t('assignment_desc')),
+                      TextField(
+                        controller: _descC,
+                        decoration: InputDecoration(
+                            hintText: l.t('assignment_desc_hint')),
+                        maxLines: 4,
+                        onChanged: (_) => _markDirty(),
+                      ),
+                      const SizedBox(height: 16),
+                      _label(l.t('deadline')),
+                      Tappable(
+                        onTap: _pickDeadline,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 14),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context)
+                                .inputDecorationTheme
+                                .fillColor,
+                            borderRadius: BorderRadius.circular(AppRadii.tile),
+                          ),
+                          child: Row(children: [
+                            Expanded(
+                                child: Text(_fmtDeadline(l),
+                                    style: TextStyle(
+                                        fontSize: 15,
+                                        color: _deadline != null
+                                            ? null
+                                            : C.text4))),
+                            const SizedBox(width: 10),
+                            const Icon(CupertinoIcons.calendar,
+                                size: 18, color: C.text4),
+                          ]),
+                        ),
+                      ),
+                    ]),
               ),
               const SizedBox(height: 20),
               if (_existingFiles.isNotEmpty) ...[
                 Row(children: [
-                  Text(l.t('current_files'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: C.text3, letterSpacing: 1)),
+                  Text(l.t('current_files'),
+                      style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: C.text3,
+                          letterSpacing: 1)),
                   const Spacer(),
-                  Text(l.t('tap_x_remove'), style: TextStyle(fontSize: 11, color: adaptiveText3(context))),
+                  Text(l.t('tap_x_remove'),
+                      style: TextStyle(
+                          fontSize: 11, color: adaptiveText3(context))),
                 ]),
                 const SizedBox(height: 8),
                 for (final url in _existingFiles)
@@ -333,29 +385,41 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
                 const SizedBox(height: 12),
               ],
               Row(children: [
-                Text(l.t('add_files_label'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: C.text3, letterSpacing: 1)),
+                Text(l.t('add_files_label'),
+                    style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: C.text3,
+                        letterSpacing: 1)),
                 const Spacer(),
                 Tappable(
                   onTap: _pickAttached,
                   child: Text('+ ${l.t('add')}',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.primary)),
                 ),
               ]),
               const SizedBox(height: 8),
               if (_newFiles.isEmpty)
                 Container(
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: Theme.of(context).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(AppRadii.tile)),
+                  decoration: BoxDecoration(
+                      color: Theme.of(context).inputDecorationTheme.fillColor,
+                      borderRadius: BorderRadius.circular(AppRadii.tile)),
                   child: Row(children: [
-                    const Icon(CupertinoIcons.paperclip, size: 15, color: C.text4),
+                    const Icon(CupertinoIcons.paperclip,
+                        size: 15, color: C.text4),
                     const SizedBox(width: 8),
-                    Text(l.t('no_new_files'), style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
+                    Text(l.t('no_new_files'),
+                        style: TextStyle(
+                            fontSize: 13, color: adaptiveText3(context))),
                   ]),
                 )
               else
                 for (final f in _newFiles)
                   _fileRow(f.name, () => setState(() => _newFiles.remove(f))),
-
               if (!_isEdit) ...[
                 const SizedBox(height: 20),
                 Container(
@@ -365,78 +429,135 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
                     borderRadius: BorderRadius.circular(AppRadii.tile),
                     border: Border.all(color: adaptiveBorder(context)),
                   ),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Row(children: [
-                      Container(width: 36, height: 36,
-                        decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.chip)),
-                        child: Icon(CupertinoIcons.checkmark_circle, size: 18, color: adaptiveText1(context))),
-                      const SizedBox(width: 10),
-                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Row(children: [
-                          Text(l.t('reference_solutions'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                          const Spacer(),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppRadii.chip)),
-                            child: Text(l.t('graded_by_ai'), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                  color: adaptiveSurface2(context),
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadii.chip)),
+                              child: Icon(CupertinoIcons.checkmark_circle,
+                                  size: 18, color: adaptiveText1(context))),
+                          const SizedBox(width: 10),
+                          Expanded(
+                              child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                Row(children: [
+                                  Text(l.t('reference_solutions'),
+                                      style: const TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600)),
+                                  const Spacer(),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary
+                                            .withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(
+                                            AppRadii.chip)),
+                                    child: Text(l.t('graded_by_ai'),
+                                        style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primary)),
+                                  ),
+                                ]),
+                                Text(l.t('reference_sub'),
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        color: adaptiveText3(context))),
+                              ])),
+                        ]),
+                        const SizedBox(height: 12),
+                        Tappable(
+                          onTap: _pickReference,
+                          child: Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                                borderRadius:
+                                    BorderRadius.circular(AppRadii.tile),
+                                border:
+                                    Border.all(color: adaptiveBorder(context))),
+                            child: Column(children: [
+                              const Icon(CupertinoIcons.arrow_up_doc,
+                                  size: 28, color: C.text3),
+                              const SizedBox(height: 6),
+                              Text(l.t('click_or_choose'),
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      color: adaptiveText3(context))),
+                              Text('PDF, DOCX, DOC, PPTX, XLSX, TXT, MD',
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      color: adaptiveText3(context))),
+                            ]),
                           ),
-                        ]),
-                        Text(l.t('reference_sub'), style: TextStyle(fontSize: 11, color: adaptiveText3(context))),
-                      ])),
-                    ]),
-                    const SizedBox(height: 12),
-                    Tappable(
-                      onTap: _pickReference,
-                      child: Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadii.tile), border: Border.all(color: adaptiveBorder(context))),
-                        child: Column(children: [
-                          const Icon(CupertinoIcons.arrow_up_doc, size: 28, color: C.text3),
-                          const SizedBox(height: 6),
-                          Text(l.t('click_or_choose'), style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
-                          Text('PDF, DOCX, DOC, PPTX, XLSX, TXT, MD', style: TextStyle(fontSize: 11, color: adaptiveText3(context))),
-                        ]),
-                      ),
-                    ),
-                    if (_referenceFiles.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      for (final f in _referenceFiles)
-                        _fileRow(f.name, () => setState(() => _referenceFiles.remove(f))),
-                    ],
-                  ]),
+                        ),
+                        if (_referenceFiles.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          for (final f in _referenceFiles)
+                            _fileRow(
+                                f.name,
+                                () =>
+                                    setState(() => _referenceFiles.remove(f))),
+                        ],
+                      ]),
                 ),
               ],
-
               const SizedBox(height: 20),
               Row(children: [
-                Text(l.t('grading_criteria'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: C.text3, letterSpacing: 1)),
+                Text(l.t('grading_criteria'),
+                    style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: C.text3,
+                        letterSpacing: 1)),
                 const Spacer(),
                 Tappable(
                   onTap: _addCriterion,
                   child: Text('+ ${l.t('add')}',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.primary)),
                 ),
               ]),
               const SizedBox(height: 12),
               for (var i = 0; i < _criteria.length; i++) _criterionRow(i, l),
-
               if (_isEdit && widget.onManageVariants != null) ...[
                 const SizedBox(height: 20),
                 Tappable(
-                  onTap: () => widget.onManageVariants!(widget.assignment!['id']),
+                  onTap: () =>
+                      widget.onManageVariants!(widget.assignment!['id']),
                   child: Container(
                     padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
+                    decoration: BoxDecoration(
+                        color: adaptiveSurface2(context),
+                        borderRadius: BorderRadius.circular(AppRadii.tile)),
                     child: Row(children: [
-                      Icon(CupertinoIcons.square_stack, size: 18, color: adaptiveText1(context)),
+                      Icon(CupertinoIcons.square_stack,
+                          size: 18, color: adaptiveText1(context)),
                       const SizedBox(width: 10),
-                      Expanded(child: Text(l.t('assignment_variants'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
-                      const Icon(CupertinoIcons.chevron_right, size: 16, color: C.text4),
+                      Expanded(
+                          child: Text(l.t('assignment_variants'),
+                              style: const TextStyle(
+                                  fontSize: 13, fontWeight: FontWeight.w600))),
+                      const Icon(CupertinoIcons.chevron_right,
+                          size: 16, color: C.text4),
                     ]),
                   ),
                 ),
               ],
-
               const SizedBox(height: 28),
               AppButton.primary(
                 label: l.t(_isEdit ? 'save' : 'create_assignment'),
@@ -453,18 +574,31 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
 
   Widget _label(String s) => Padding(
         padding: const EdgeInsets.only(bottom: 8),
-        child: Text(s, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: adaptiveText3(context), letterSpacing: 1)),
+        child: Text(s,
+            style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: adaptiveText3(context),
+                letterSpacing: 1)),
       );
 
   Widget _fileRow(String name, VoidCallback onRemove) => Container(
         margin: const EdgeInsets.only(bottom: 6),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
+        decoration: BoxDecoration(
+            color: adaptiveSurface2(context),
+            borderRadius: BorderRadius.circular(AppRadii.tile)),
         child: Row(children: [
           const Icon(CupertinoIcons.doc, size: 15, color: C.text3),
           const SizedBox(width: 8),
-          Expanded(child: Text(name, style: const TextStyle(fontSize: 13, color: C.text3), overflow: TextOverflow.ellipsis)),
-          Tappable(onTap: onRemove, label: 'Убрать файл', child: const Icon(CupertinoIcons.xmark, size: 15, color: C.red)),
+          Expanded(
+              child: Text(name,
+                  style: const TextStyle(fontSize: 13, color: C.text3),
+                  overflow: TextOverflow.ellipsis)),
+          Tappable(
+              onTap: onRemove,
+              label: 'Убрать файл',
+              child: const Icon(CupertinoIcons.xmark, size: 15, color: C.red)),
         ]),
       );
 
@@ -473,24 +607,37 @@ class _AssignmentEditorScreenState extends State<AssignmentEditorScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Theme.of(context).inputDecorationTheme.fillColor, borderRadius: BorderRadius.circular(AppRadii.tile)),
+      decoration: BoxDecoration(
+          color: Theme.of(context).inputDecorationTheme.fillColor,
+          borderRadius: BorderRadius.circular(AppRadii.tile)),
       // Номер и крестик прижаты к верху: поле критерия растёт вниз при длинной
       // формулировке, и по центру они уезжали бы от первой строки текста.
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Padding(
           padding: const EdgeInsets.only(top: 11),
-          child: Text('${i + 1}', style: const TextStyle(fontSize: 13, color: C.text4)),
+          child: Text('${i + 1}',
+              style: const TextStyle(fontSize: 13, color: C.text4)),
         ),
         const SizedBox(width: 8),
-        Expanded(child: WrappingField(
+        Expanded(
+            child: WrappingField(
           controller: c.nameC,
-          decoration: InputDecoration(hintText: l.t('criterion_short'), contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)),
-          onChanged: (v) { c.name = v; _markDirty(); },
+          decoration: InputDecoration(
+              hintText: l.t('criterion_short'),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10)),
+          onChanged: (v) {
+            c.name = v;
+            _markDirty();
+          },
         )),
         const SizedBox(width: 4),
         Padding(
           padding: const EdgeInsets.only(top: 10),
-          child: Tappable(onTap: () => _removeCriterion(i), label: 'Удалить критерий', child: const Icon(CupertinoIcons.xmark, size: 16, color: C.red)),
+          child: Tappable(
+              onTap: () => _removeCriterion(i),
+              label: 'Удалить критерий',
+              child: const Icon(CupertinoIcons.xmark, size: 16, color: C.red)),
         ),
       ]),
     );

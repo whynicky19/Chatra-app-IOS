@@ -7,6 +7,7 @@ import '../../theme/app_theme.dart';
 import '../../utils/haptics.dart';
 import '../../utils/password_strength.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/app_backdrop.dart';
 import '../../widgets/inset_group.dart';
 import '../../widgets/tappable.dart';
 import '../../widgets/toast.dart';
@@ -25,7 +26,11 @@ class SettingsGroup extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(left: 6, bottom: 8),
           child: Text(caption!.toUpperCase(),
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.6, color: adaptiveText3(context))),
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.6,
+                  color: adaptiveText3(context))),
         ),
       InsetGroup(children: children),
     ]);
@@ -44,7 +49,11 @@ class SettingsFooter extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(6, 10, 6, 0),
       child: Text(text,
-          style: TextStyle(fontSize: 13, height: 1.4, letterSpacing: -0.1, color: adaptiveText3(context))),
+          style: TextStyle(
+              fontSize: 13,
+              height: 1.4,
+              letterSpacing: -0.1,
+              color: adaptiveText3(context))),
     );
   }
 }
@@ -91,19 +100,28 @@ class SettingsRow extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 11, 16, 11),
       child: Row(children: [
         Container(
-          width: 30, height: 30,
+          width: 30,
+          height: 30,
           alignment: Alignment.center,
-          decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(8)),
+          decoration: BoxDecoration(
+              color: iconBg, borderRadius: BorderRadius.circular(8)),
           child: Icon(icon, size: 17, color: Colors.white),
         ),
         const SizedBox(width: 14),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Expanded(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(title,
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.4,
+              style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: -0.4,
                   color: titleColor ?? adaptiveTextSoft(context))),
           if (sub != null) ...[
             const SizedBox(height: 1),
-            Text(sub!, style: TextStyle(fontSize: 13, height: 1.3, color: adaptiveText3(context))),
+            Text(sub!,
+                style: TextStyle(
+                    fontSize: 13, height: 1.3, color: adaptiveText3(context))),
           ],
         ])),
         if (trailing != null)
@@ -111,10 +129,15 @@ class SettingsRow extends StatelessWidget {
         else ...[
           if (value != null) ...[
             const SizedBox(width: 8),
-            Text(value!, style: TextStyle(fontSize: 17, letterSpacing: -0.4, color: adaptiveText3(context))),
+            Text(value!,
+                style: TextStyle(
+                    fontSize: 17,
+                    letterSpacing: -0.4,
+                    color: adaptiveText3(context))),
           ],
           const SizedBox(width: 6),
-          Icon(CupertinoIcons.chevron_right, size: 14, color: adaptiveText4(context).withValues(alpha: 0.8)),
+          Icon(CupertinoIcons.chevron_right,
+              size: 14, color: adaptiveText4(context).withValues(alpha: 0.8)),
         ],
       ]),
     );
@@ -143,43 +166,74 @@ class SettingsSubScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: Column(children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 2, 8, 0),
-            child: Row(children: [
-              Tappable(
-                onTap: () => Navigator.pop(context),
-                label: 'Назад',
-                child: SizedBox(width: 44, height: 44,
-                    child: Icon(CupertinoIcons.back, size: 26, color: Theme.of(context).colorScheme.primary)),
+      backgroundColor: Colors.transparent,
+      body: AppBackdrop(
+        child: SafeArea(
+          bottom: false,
+          child: Column(children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 6, 12, 2),
+              child: Row(children: [
+                Tappable(
+                  onTap: () => Navigator.pop(context),
+                  label: 'Назад',
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: groupSeparator(context),
+                        width: hairline(context),
+                      ),
+                    ),
+                    child: Icon(CupertinoIcons.chevron_left,
+                        size: 18, color: Theme.of(context).colorScheme.primary),
+                  ),
+                ),
+                const Spacer(),
+                if (action != null) action!,
+              ]),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 18),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                        width: double.infinity,
+                        child: Text(title,
+                            style: TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.9,
+                                height: 1.1,
+                                color: adaptiveTextSoft(context)))),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 4),
+                      Text(subtitle!,
+                          style: TextStyle(
+                              fontSize: 15,
+                              letterSpacing: -0.2,
+                              height: 1.35,
+                              color: adaptiveText3(context))),
+                    ],
+                  ]),
+            ),
+            Expanded(
+                child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
+              children: children,
+            )),
+            if (footer != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Center(child: footer),
               ),
-              const Spacer(),
-              if (action != null) action!,
-            ]),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              SizedBox(width: double.infinity, child: Text(title,
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, letterSpacing: -0.9, height: 1.1, color: adaptiveTextSoft(context)))),
-              if (subtitle != null) ...[
-                const SizedBox(height: 4),
-                Text(subtitle!,
-                    style: TextStyle(fontSize: 15, letterSpacing: -0.2, height: 1.35, color: adaptiveText3(context))),
-              ],
-            ]),
-          ),
-          Expanded(child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
-            children: children,
-          )),
-          if (footer != null) Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Center(child: footer),
-          ),
-        ]),
+          ]),
+        ),
       ),
     );
   }
@@ -193,7 +247,8 @@ Future<void> openChangePassword(BuildContext context) async {
     backgroundColor: Colors.transparent,
     builder: (_) => const ChangePasswordSheet(),
   );
-  if (result == true && context.mounted) showToast(context, l.t('password_changed'));
+  if (result == true && context.mounted)
+    showToast(context, l.t('password_changed'));
 }
 
 Future<void> openDeleteAccount(BuildContext context) async {
@@ -204,12 +259,14 @@ Future<void> openDeleteAccount(BuildContext context) async {
     backgroundColor: Colors.transparent,
     builder: (_) => const DeleteAccountSheet(),
   );
-  if (deleted == true && context.mounted) showToast(context, l.t('account_deleted'));
+  if (deleted == true && context.mounted)
+    showToast(context, l.t('account_deleted'));
 }
 
 class ChangePasswordSheet extends StatefulWidget {
   const ChangePasswordSheet({super.key});
-  @override State<ChangePasswordSheet> createState() => _ChangePasswordSheetState();
+  @override
+  State<ChangePasswordSheet> createState() => _ChangePasswordSheetState();
 }
 
 class _ChangePasswordSheetState extends State<ChangePasswordSheet> {
@@ -220,7 +277,12 @@ class _ChangePasswordSheetState extends State<ChangePasswordSheet> {
   String? _error;
 
   @override
-  void dispose() { _current.dispose(); _new.dispose(); _newFocus.dispose(); super.dispose(); }
+  void dispose() {
+    _current.dispose();
+    _new.dispose();
+    _newFocus.dispose();
+    super.dispose();
+  }
 
   bool get _longEnough => _new.text.length >= 8;
   bool get _different => _new.text.isNotEmpty && _new.text != _current.text;
@@ -230,15 +292,23 @@ class _ChangePasswordSheetState extends State<ChangePasswordSheet> {
     final l = context.read<L10n>();
     if (!_valid || _busy) return;
     FocusScope.of(context).unfocus();
-    setState(() { _busy = true; _error = null; });
-    final err = await context.read<AuthProvider>().changePassword(_current.text, _new.text);
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final err = await context
+        .read<AuthProvider>()
+        .changePassword(_current.text, _new.text);
     if (!mounted) return;
     if (err == null) {
       hapticLight();
       Navigator.of(context).pop(true);
     } else {
       hapticMedium();
-      setState(() { _busy = false; _error = l.t(err); });
+      setState(() {
+        _busy = false;
+        _error = l.t(err);
+      });
     }
   }
 
@@ -253,21 +323,30 @@ class _ChangePasswordSheetState extends State<ChangePasswordSheet> {
       accent: primary,
       children: [
         SheetField(
-          label: l.t('current_password'), controller: _current,
-          obscure: !_showCurrent, onToggle: () => setState(() => _showCurrent = !_showCurrent),
+          label: l.t('current_password'),
+          controller: _current,
+          obscure: !_showCurrent,
+          onToggle: () => setState(() => _showCurrent = !_showCurrent),
           autofillHints: const [AutofillHints.password],
           textInputAction: TextInputAction.next,
           onSubmitted: () => _newFocus.requestFocus(),
-          onChanged: (_) => setState(() { _error = null; }),
+          onChanged: (_) => setState(() {
+            _error = null;
+          }),
         ),
         const SizedBox(height: 14),
         SheetField(
-          label: l.t('new_password'), controller: _new, focusNode: _newFocus,
-          obscure: !_showNew, onToggle: () => setState(() => _showNew = !_showNew),
+          label: l.t('new_password'),
+          controller: _new,
+          focusNode: _newFocus,
+          obscure: !_showNew,
+          onToggle: () => setState(() => _showNew = !_showNew),
           autofillHints: const [AutofillHints.newPassword],
           textInputAction: TextInputAction.done,
           onSubmitted: _submit,
-          onChanged: (_) => setState(() { _error = null; }),
+          onChanged: (_) => setState(() {
+            _error = null;
+          }),
         ),
 
         // Живой список требований вместо статичной подписи: галочка загорается
@@ -294,12 +373,17 @@ class _ChangePasswordSheetState extends State<ChangePasswordSheet> {
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOutCubic,
           alignment: Alignment.topCenter,
-          child: _error == null ? const SizedBox(width: double.infinity) : SheetError(_error!),
+          child: _error == null
+              ? const SizedBox(width: double.infinity)
+              : SheetError(_error!),
         ),
         const SizedBox(height: 22),
         SheetButton(
-          label: l.t('change_password'), color: primary,
-          enabled: _valid && !_busy, busy: _busy, onTap: _submit,
+          label: l.t('change_password'),
+          color: primary,
+          enabled: _valid && !_busy,
+          busy: _busy,
+          onTap: _submit,
         ),
       ],
     );
@@ -322,11 +406,16 @@ class _RuleRow extends StatelessWidget {
         AnimatedContainer(
           duration: d,
           curve: Curves.easeOut,
-          width: 18, height: 18,
+          width: 18,
+          height: 18,
           decoration: BoxDecoration(
             color: ok ? C.green : Colors.transparent,
             shape: BoxShape.circle,
-            border: ok ? null : Border.all(color: adaptiveText4(context).withValues(alpha: 0.5), width: 1.4),
+            border: ok
+                ? null
+                : Border.all(
+                    color: adaptiveText4(context).withValues(alpha: 0.5),
+                    width: 1.4),
           ),
           child: AnimatedScale(
             duration: d,
@@ -335,12 +424,14 @@ class _RuleRow extends StatelessWidget {
             child: AnimatedOpacity(
               duration: d,
               opacity: ok ? 1 : 0,
-              child: const Icon(CupertinoIcons.checkmark_alt, size: 12, color: Colors.white),
+              child: const Icon(CupertinoIcons.checkmark_alt,
+                  size: 12, color: Colors.white),
             ),
           ),
         ),
         const SizedBox(width: 10),
-        Expanded(child: AnimatedDefaultTextStyle(
+        Expanded(
+            child: AnimatedDefaultTextStyle(
           duration: d,
           style: TextStyle(
             fontSize: 13,
@@ -363,37 +454,52 @@ class _StrengthMeter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = context.watch<L10n>();
-    final color = score <= 40 ? C.red : score <= 60 ? C.amberDk : C.green;
+    final color = score <= 40
+        ? C.red
+        : score <= 60
+            ? C.amberDk
+            : C.green;
     final label = score <= 40
         ? l.t('password_weak')
-        : score <= 60 ? l.t('password_medium') : l.t('password_strong');
+        : score <= 60
+            ? l.t('password_medium')
+            : l.t('password_strong');
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
-        Expanded(child: Text(l.t('password_strength'),
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: adaptiveText3(context)))),
+        Expanded(
+            child: Text(l.t('password_strength'),
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: adaptiveText3(context)))),
         AnimatedDefaultTextStyle(
           duration: const Duration(milliseconds: 220),
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color),
+          style: TextStyle(
+              fontSize: 12, fontWeight: FontWeight.w600, color: color),
           child: Text(label),
         ),
       ]),
       const SizedBox(height: 7),
       ClipRRect(
         borderRadius: BorderRadius.circular(AppRadii.chip),
-        child: LayoutBuilder(builder: (context, box) => Stack(children: [
-          Container(height: 5, width: double.infinity, color: adaptiveSurface2(context)),
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: (score / 100).clamp(0.0, 1.0)),
-            duration: const Duration(milliseconds: 260),
-            curve: Curves.easeOutCubic,
-            builder: (context, v, _) => Container(
-              height: 5,
-              width: box.maxWidth * v,
-              color: color,
-            ),
-          ),
-        ])),
+        child: LayoutBuilder(
+            builder: (context, box) => Stack(children: [
+                  Container(
+                      height: 5,
+                      width: double.infinity,
+                      color: adaptiveSurface2(context)),
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: (score / 100).clamp(0.0, 1.0)),
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOutCubic,
+                    builder: (context, v, _) => Container(
+                      height: 5,
+                      width: box.maxWidth * v,
+                      color: color,
+                    ),
+                  ),
+                ])),
       ),
     ]);
   }
@@ -401,7 +507,8 @@ class _StrengthMeter extends StatelessWidget {
 
 class DeleteAccountSheet extends StatefulWidget {
   const DeleteAccountSheet({super.key});
-  @override State<DeleteAccountSheet> createState() => _DeleteAccountSheetState();
+  @override
+  State<DeleteAccountSheet> createState() => _DeleteAccountSheetState();
 }
 
 class _DeleteAccountSheetState extends State<DeleteAccountSheet> {
@@ -410,20 +517,29 @@ class _DeleteAccountSheetState extends State<DeleteAccountSheet> {
   String? _error;
 
   @override
-  void dispose() { _pw.dispose(); super.dispose(); }
+  void dispose() {
+    _pw.dispose();
+    super.dispose();
+  }
 
   Future<void> _submit() async {
     if (_pw.text.isEmpty || _busy) return;
     final l = context.read<L10n>();
     FocusScope.of(context).unfocus();
-    setState(() { _busy = true; _error = null; });
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
     final err = await context.read<AuthProvider>().deleteAccount(_pw.text);
     if (!mounted) return;
     if (err == null) {
       Navigator.of(context).pop(true);
     } else {
       hapticMedium();
-      setState(() { _busy = false; _error = l.t(err); });
+      setState(() {
+        _busy = false;
+        _error = l.t(err);
+      });
     }
   }
 
@@ -445,45 +561,63 @@ class _DeleteAccountSheetState extends State<DeleteAccountSheet> {
             color: C.red.withValues(alpha: isDark ? 0.14 : 0.07),
             borderRadius: BorderRadius.circular(AppRadii.tile),
           ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              const Icon(CupertinoIcons.exclamationmark_triangle_fill, color: C.red, size: 16),
+              const Icon(CupertinoIcons.exclamationmark_triangle_fill,
+                  color: C.red, size: 16),
               const SizedBox(width: 8),
-              Expanded(child: Text(l.t('delete_account_scope_title'),
-                  style: const TextStyle(fontSize: 13, color: C.red, fontWeight: FontWeight.w600, letterSpacing: -0.1))),
+              Expanded(
+                  child: Text(l.t('delete_account_scope_title'),
+                      style: const TextStyle(
+                          fontSize: 13,
+                          color: C.red,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.1))),
             ]),
             const SizedBox(height: 10),
-            _ScopeRow(CupertinoIcons.person_crop_circle, l.t('delete_scope_profile')),
+            _ScopeRow(
+                CupertinoIcons.person_crop_circle, l.t('delete_scope_profile')),
             _ScopeRow(CupertinoIcons.book, l.t('delete_scope_classes')),
             _ScopeRow(CupertinoIcons.doc_text, l.t('delete_scope_work')),
             _ScopeRow(CupertinoIcons.sparkles, l.t('delete_scope_ai')),
             const SizedBox(height: 4),
             Text(l.t('delete_account_no_undo'),
                 style: TextStyle(
-                    fontSize: 12, height: 1.35, fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
                     color: C.red.withValues(alpha: 0.85))),
           ]),
         ),
         const SizedBox(height: 16),
         SheetField(
-          label: l.t('confirm_password'), controller: _pw,
-          obscure: !_showPw, onToggle: () => setState(() => _showPw = !_showPw),
+          label: l.t('confirm_password'),
+          controller: _pw,
+          obscure: !_showPw,
+          onToggle: () => setState(() => _showPw = !_showPw),
           accent: C.red,
           autofillHints: const [AutofillHints.password],
           textInputAction: TextInputAction.done,
           onSubmitted: _submit,
-          onChanged: (_) => setState(() { _error = null; }),
+          onChanged: (_) => setState(() {
+            _error = null;
+          }),
         ),
         AnimatedSize(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOutCubic,
           alignment: Alignment.topCenter,
-          child: _error == null ? const SizedBox(width: double.infinity) : SheetError(_error!),
+          child: _error == null
+              ? const SizedBox(width: double.infinity)
+              : SheetError(_error!),
         ),
         const SizedBox(height: 22),
         SheetButton(
-          label: l.t('delete_account_confirm'), color: C.red,
-          enabled: _pw.text.isNotEmpty && !_busy, busy: _busy,
+          label: l.t('delete_account_confirm'),
+          color: C.red,
+          enabled: _pw.text.isNotEmpty && !_busy,
+          busy: _busy,
           onTap: _submit,
         ),
       ],
@@ -508,8 +642,12 @@ class _ScopeRow extends StatelessWidget {
           child: Icon(icon, size: 14, color: C.red.withValues(alpha: 0.75)),
         ),
         const SizedBox(width: 9),
-        Expanded(child: Text(text,
-            style: TextStyle(fontSize: 13, height: 1.35, color: C.red.withValues(alpha: 0.95)))),
+        Expanded(
+            child: Text(text,
+                style: TextStyle(
+                    fontSize: 13,
+                    height: 1.35,
+                    color: C.red.withValues(alpha: 0.95)))),
       ]),
     );
   }
@@ -521,8 +659,13 @@ class SheetScaffold extends StatelessWidget {
   final IconData? icon;
   final Color accent;
   final List<Widget> children;
-  const SheetScaffold({super.key, required this.title, this.icon, this.subtitle,
-    required this.accent, required this.children});
+  const SheetScaffold(
+      {super.key,
+      required this.title,
+      this.icon,
+      this.subtitle,
+      required this.accent,
+      required this.children});
 
   @override
   Widget build(BuildContext context) {
@@ -532,28 +675,54 @@ class SheetScaffold extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadii.sheet)),
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(AppRadii.sheet)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
-        child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 20),
-            decoration: BoxDecoration(color: C.text4.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(AppRadii.chip)))),
-          if (icon != null) ...[
-            Center(child: Container(width: 52, height: 52,
-              decoration: BoxDecoration(color: accent.withValues(alpha: 0.12), shape: BoxShape.circle),
-              child: Icon(icon, color: accent, size: 24))),
-            const SizedBox(height: 14),
-          ],
-          Text(title, textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: adaptiveTextSoft(context), letterSpacing: -0.3)),
-          if (subtitle != null) ...[
-            const SizedBox(height: 6),
-            Text(subtitle!, textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, height: 1.4, letterSpacing: -0.1, color: adaptiveText3(context))),
-          ],
-          const SizedBox(height: 22),
-          ...children,
-        ])),
+        child: SingleChildScrollView(
+            child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+              Center(
+                  child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 20),
+                      decoration: BoxDecoration(
+                          color: C.text4.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(AppRadii.chip)))),
+              if (icon != null) ...[
+                Center(
+                    child: Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                            color: accent.withValues(alpha: 0.12),
+                            shape: BoxShape.circle),
+                        child: Icon(icon, color: accent, size: 24))),
+                const SizedBox(height: 14),
+              ],
+              Text(title,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      color: adaptiveTextSoft(context),
+                      letterSpacing: -0.3)),
+              if (subtitle != null) ...[
+                const SizedBox(height: 6),
+                Text(subtitle!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontSize: 13,
+                        height: 1.4,
+                        letterSpacing: -0.1,
+                        color: adaptiveText3(context))),
+              ],
+              const SizedBox(height: 22),
+              ...children,
+            ])),
       ),
     );
   }
@@ -575,10 +744,19 @@ class SheetField extends StatefulWidget {
   final FocusNode? focusNode;
   final VoidCallback? onSubmitted;
 
-  const SheetField({super.key, required this.label, required this.controller, required this.obscure,
-    required this.onToggle, required this.onChanged, this.helper, this.accent,
-    this.autofillHints = const [], this.textInputAction = TextInputAction.done,
-    this.focusNode, this.onSubmitted});
+  const SheetField(
+      {super.key,
+      required this.label,
+      required this.controller,
+      required this.obscure,
+      required this.onToggle,
+      required this.onChanged,
+      this.helper,
+      this.accent,
+      this.autofillHints = const [],
+      this.textInputAction = TextInputAction.done,
+      this.focusNode,
+      this.onSubmitted});
 
   @override
   State<SheetField> createState() => _SheetFieldState();
@@ -610,19 +788,23 @@ class _SheetFieldState extends State<SheetField> {
   Widget build(BuildContext context) {
     final accent = widget.accent ?? Theme.of(context).colorScheme.primary;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Padding(padding: const EdgeInsets.only(bottom: 7, left: 2),
-        child: AnimatedDefaultTextStyle(
-          duration: const Duration(milliseconds: 160),
-          style: Theme.of(context).textTheme.titleSmall!
-              .copyWith(color: _focused ? accent : adaptiveText3(context)),
-          child: Text(widget.label),
-        )),
+      Padding(
+          padding: const EdgeInsets.only(bottom: 7, left: 2),
+          child: AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 160),
+            style: Theme.of(context)
+                .textTheme
+                .titleSmall!
+                .copyWith(color: _focused ? accent : adaptiveText3(context)),
+            child: Text(widget.label),
+          )),
       TextField(
         controller: widget.controller,
         focusNode: _node,
         obscureText: widget.obscure,
         onChanged: widget.onChanged,
-        onSubmitted: widget.onSubmitted == null ? null : (_) => widget.onSubmitted!(),
+        onSubmitted:
+            widget.onSubmitted == null ? null : (_) => widget.onSubmitted!(),
         autocorrect: false,
         enableSuggestions: false,
         autofillHints: widget.autofillHints,
@@ -633,21 +815,35 @@ class _SheetFieldState extends State<SheetField> {
             borderRadius: BorderRadius.circular(AppRadii.input),
             borderSide: BorderSide(color: accent, width: 1.8),
           ),
-          prefixIcon: Padding(padding: const EdgeInsets.only(left: 4),
-            child: Icon(CupertinoIcons.lock, size: 18,
-                color: _focused ? accent : adaptiveText4(context))),
+          prefixIcon: Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: Icon(CupertinoIcons.lock,
+                  size: 18, color: _focused ? accent : adaptiveText4(context))),
           suffixIcon: Tappable(
-            onTap: () { hapticSelection(); widget.onToggle(); },
+            onTap: () {
+              hapticSelection();
+              widget.onToggle();
+            },
             label: widget.obscure ? 'Показать пароль' : 'Скрыть пароль',
-            child: SizedBox(width: 44, height: 44,
-              child: Icon(widget.obscure ? CupertinoIcons.eye : CupertinoIcons.eye_slash,
-                  color: adaptiveText4(context), size: 18)),
+            child: SizedBox(
+                width: 44,
+                height: 44,
+                child: Icon(
+                    widget.obscure
+                        ? CupertinoIcons.eye
+                        : CupertinoIcons.eye_slash,
+                    color: adaptiveText4(context),
+                    size: 18)),
           ),
-          suffixIconConstraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+          suffixIconConstraints:
+              const BoxConstraints(minWidth: 44, minHeight: 44),
         ),
       ),
-      if (widget.helper != null) Padding(padding: const EdgeInsets.only(top: 6, left: 2),
-        child: Text(widget.helper!, style: TextStyle(fontSize: 13, color: adaptiveText3(context)))),
+      if (widget.helper != null)
+        Padding(
+            padding: const EdgeInsets.only(top: 6, left: 2),
+            child: Text(widget.helper!,
+                style: TextStyle(fontSize: 13, color: adaptiveText3(context)))),
     ]);
   }
 }
@@ -657,13 +853,19 @@ class SheetError extends StatelessWidget {
   const SheetError(this.text, {super.key});
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 12),
-    child: Row(children: [
-      const Icon(CupertinoIcons.exclamationmark_circle, color: C.red, size: 16),
-      const SizedBox(width: 8),
-      Expanded(child: Text(text, style: const TextStyle(color: C.red, fontSize: 13, fontWeight: FontWeight.w600))),
-    ]),
-  );
+        padding: const EdgeInsets.only(top: 12),
+        child: Row(children: [
+          const Icon(CupertinoIcons.exclamationmark_circle,
+              color: C.red, size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+              child: Text(text,
+                  style: const TextStyle(
+                      color: C.red,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600))),
+        ]),
+      );
 }
 
 class SheetButton extends StatelessWidget {
@@ -671,8 +873,13 @@ class SheetButton extends StatelessWidget {
   final Color color;
   final bool enabled, busy;
   final VoidCallback onTap;
-  const SheetButton({super.key, required this.label, required this.color,
-    required this.enabled, required this.busy, required this.onTap});
+  const SheetButton(
+      {super.key,
+      required this.label,
+      required this.color,
+      required this.enabled,
+      required this.busy,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) {

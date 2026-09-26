@@ -470,7 +470,6 @@ class _AiConversationViewState extends State<AiConversationView> {
   }
 
   Widget _emptyState(L10n l) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final tips = _tips(l);
     final isKZ = l.lang == 'KZ';
     final isEN = l.lang == 'EN';
@@ -488,29 +487,6 @@ class _AiConversationViewState extends State<AiConversationView> {
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: constraints.maxHeight),
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Container(
-              width: 76,
-              height: 76,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF0A84FF), Color(0xFF5856D6)],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF5856D6)
-                        .withValues(alpha: isDark ? 0.32 : 0.22),
-                    blurRadius: 32,
-                    offset: const Offset(0, 12),
-                  ),
-                ],
-              ),
-              child: const Icon(CupertinoIcons.sparkles,
-                  color: Colors.white, size: 32),
-            ),
-            const SizedBox(height: 20),
             Text('Chatra AI',
                 style: TextStyle(
                     fontSize: 30,

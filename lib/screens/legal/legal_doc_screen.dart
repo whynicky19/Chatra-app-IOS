@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_backdrop.dart';
 import '../../widgets/inset_group.dart' show hairline;
 
 /// Общий макет юридического документа (политика конфиденциальности, условия
@@ -70,8 +71,9 @@ class _LegalDocScreenState extends State<LegalDocScreen> {
     final topInset = MediaQuery.paddingOf(context).top;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Stack(children: [
+      backgroundColor: Colors.transparent,
+      body: AppBackdrop(
+          child: Stack(children: [
         Positioned.fill(
           child: ListView(
             controller: _scroll,
@@ -79,7 +81,8 @@ class _LegalDocScreenState extends State<LegalDocScreen> {
             children: [
               // ── Обложка ──────────────────────────────────────────────
               Container(
-                width: 52, height: 52,
+                width: 52,
+                height: 52,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: primary.withValues(alpha: isDark ? 0.18 : 0.12),
@@ -129,10 +132,12 @@ class _LegalDocScreenState extends State<LegalDocScreen> {
 
         // ── Строка навигации поверх контента ───────────────────────────
         Positioned(
-          top: 0, left: 0, right: 0,
+          top: 0,
+          left: 0,
+          right: 0,
           child: _navBar(context, isDark, title, topInset),
         ),
-      ]),
+      ])),
     );
   }
 
@@ -159,7 +164,8 @@ class _LegalDocScreenState extends State<LegalDocScreen> {
     );
   }
 
-  Widget _navBar(BuildContext context, bool isDark, String title, double topInset) {
+  Widget _navBar(
+      BuildContext context, bool isDark, String title, double topInset) {
     final bg = Theme.of(context).scaffoldBackgroundColor;
     return ClipRect(
       child: BackdropFilter(
@@ -172,7 +178,8 @@ class _LegalDocScreenState extends State<LegalDocScreen> {
             color: _collapsed ? bg.withValues(alpha: 0.80) : Colors.transparent,
             border: Border(
               bottom: BorderSide(
-                color: _collapsed ? adaptiveBorder(context) : Colors.transparent,
+                color:
+                    _collapsed ? adaptiveBorder(context) : Colors.transparent,
                 width: hairline(context),
               ),
             ),
@@ -215,14 +222,17 @@ class _LegalDocScreenState extends State<LegalDocScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
       decoration: BoxDecoration(
-        color: isDark ? C.darkSurface : Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppRadii.card),
-        border: Border.all(color: adaptiveBorder(context), width: hairline(context)),
+        border: Border.all(
+            color: adaptiveBorder(context), width: hairline(context)),
+        boxShadow: softShadow(isDark),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Container(
-            width: 32, height: 32,
+            width: 32,
+            height: 32,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: primary.withValues(alpha: isDark ? 0.18 : 0.12),

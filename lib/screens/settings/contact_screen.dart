@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../providers/l10n_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/tappable.dart';
+import '../../widgets/app_backdrop.dart';
 import '../../widgets/telegram_logo.dart';
 import '../../widgets/toast.dart';
 import '../../utils/haptics.dart';
@@ -15,7 +16,9 @@ const String kDeveloperTelegramUrl = 'https://t.me/whynickyy';
 String? get _telegramHandle {
   final path = Uri.parse(kDeveloperTelegramUrl).pathSegments;
   if (path.length != 1) return null;
-  return RegExp(r'^[A-Za-z0-9_]{5,32}$').hasMatch(path.first) ? path.first : null;
+  return RegExp(r'^[A-Za-z0-9_]{5,32}$').hasMatch(path.first)
+      ? path.first
+      : null;
 }
 
 String get _telegramLabel {
@@ -29,27 +32,37 @@ const _telegramBlue = Color(0xFF229ED9);
 
 class ContactScreen extends StatefulWidget {
   const ContactScreen({super.key});
-  @override State<ContactScreen> createState() => _ContactScreenState();
+  @override
+  State<ContactScreen> createState() => _ContactScreenState();
 }
 
-class _ContactScreenState extends State<ContactScreen> with SingleTickerProviderStateMixin {
+class _ContactScreenState extends State<ContactScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _entry;
 
   @override
   void initState() {
     super.initState();
-    _entry = AnimationController(vsync: this, duration: const Duration(milliseconds: 700))..forward();
+    _entry = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 700))
+      ..forward();
   }
 
   @override
-  void dispose() { _entry.dispose(); super.dispose(); }
+  void dispose() {
+    _entry.dispose();
+    super.dispose();
+  }
 
   Widget _animated(Widget child, double start, double end) {
-    final anim = CurvedAnimation(parent: _entry, curve: Interval(start, end, curve: Curves.easeOutCubic));
+    final anim = CurvedAnimation(
+        parent: _entry,
+        curve: Interval(start, end, curve: Curves.easeOutCubic));
     return FadeTransition(
       opacity: anim,
       child: SlideTransition(
-        position: Tween<Offset>(begin: const Offset(0, 0.04), end: Offset.zero).animate(anim),
+        position: Tween<Offset>(begin: const Offset(0, 0.04), end: Offset.zero)
+            .animate(anim),
         child: child,
       ),
     );
@@ -73,94 +86,121 @@ class _ContactScreenState extends State<ContactScreen> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     final surface = Theme.of(context).colorScheme.surface;
-    final isDark  = Theme.of(context).brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final l = context.watch<L10n>();
 
     return Scaffold(
-      body: SafeArea(
+      backgroundColor: Colors.transparent,
+      body: AppBackdrop(
+          child: SafeArea(
         bottom: false,
-        child: ListView(padding: const EdgeInsets.fromLTRB(16, 6, 16, 40), children: [
-
-          Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Tappable(
-                onTap: () => Navigator.pop(context),
-                label: 'Назад',
-                child: Container(
-                  width: 38, height: 38,
-                  decoration: BoxDecoration(
-                    color: surface,
-                    shape: BoxShape.circle,
-                    boxShadow: softShadow(isDark),
+        child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 6, 16, 40),
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Tappable(
+                    onTap: () => Navigator.pop(context),
+                    label: 'Назад',
+                    child: Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: surface,
+                        shape: BoxShape.circle,
+                        boxShadow: softShadow(isDark),
+                      ),
+                      child: Icon(CupertinoIcons.chevron_left,
+                          size: 17, color: adaptiveText1(context)),
+                    ),
                   ),
-                  child: Icon(CupertinoIcons.chevron_left, size: 17, color: adaptiveText1(context)),
                 ),
               ),
-            ),
-          ),
-
-          _animated(Padding(
-            padding: const EdgeInsets.fromLTRB(4, 8, 4, 28),
-            child: Column(children: [
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: primaryGlow(_telegramBlue, opacity: 0.30),
-                ),
-                child: const TelegramLogo(size: 76),
-              ),
-              const SizedBox(height: 18),
-              Text(l.t('contact_developer'),
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineLarge!.copyWith(
-                  color: adaptiveTextSoft(context), letterSpacing: -0.4)),
-              const SizedBox(height: 6),
-              Text(
-                l.t('contact_page_desc'),
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 15, color: adaptiveText3(context), height: 1.4)),
-            ]),
-          ), 0.0, 0.5),
-
-          _animated(Container(
-            decoration: BoxDecoration(
-              color: surface,
-              borderRadius: BorderRadius.circular(AppRadii.card),
-              boxShadow: cardShadow(isDark),
-            ),
-            padding: const EdgeInsets.all(16),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                const TelegramLogo(size: 32),
-                const SizedBox(width: 14),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Telegram',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: adaptiveTextSoft(context))),
-                  const SizedBox(height: 1),
-                  Text(_telegramLabel, style: TextStyle(fontSize: 13, color: adaptiveText3(context))),
-                ])),
-              ]),
-              const SizedBox(height: 16),
-
-              Tappable(
-                onTap: _openTelegram,
-                child: Container(
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: _telegramBlue,
-                    borderRadius: BorderRadius.circular(AppRadii.tile),
-                    boxShadow: primaryGlow(_telegramBlue, opacity: 0.30),
+              _animated(
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(4, 8, 4, 28),
+                    child: Column(children: [
+                      Container(
+                        decoration: const BoxDecoration(shape: BoxShape.circle),
+                        child: const TelegramLogo(size: 76),
+                      ),
+                      const SizedBox(height: 18),
+                      Text(l.t('contact_developer'),
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineLarge!
+                              .copyWith(
+                                  color: adaptiveTextSoft(context),
+                                  letterSpacing: -0.4)),
+                      const SizedBox(height: 6),
+                      Text(l.t('contact_page_desc'),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              fontSize: 15,
+                              color: adaptiveText3(context),
+                              height: 1.4)),
+                    ]),
                   ),
-                  child: Center(child: Text(l.t('write_telegram'),
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white))),
-                ),
-              ),
+                  0.0,
+                  0.5),
+              _animated(
+                  Container(
+                    decoration: BoxDecoration(
+                      color: surface,
+                      borderRadius: BorderRadius.circular(AppRadii.card),
+                      boxShadow: cardShadow(isDark),
+                    ),
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(children: [
+                            const TelegramLogo(size: 32),
+                            const SizedBox(width: 14),
+                            Expanded(
+                                child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                  Text('Telegram',
+                                      style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
+                                          color: adaptiveTextSoft(context))),
+                                  const SizedBox(height: 1),
+                                  Text(_telegramLabel,
+                                      style: TextStyle(
+                                          fontSize: 13,
+                                          color: adaptiveText3(context))),
+                                ])),
+                          ]),
+                          const SizedBox(height: 16),
+                          Tappable(
+                            onTap: _openTelegram,
+                            child: Container(
+                              height: 50,
+                              decoration: BoxDecoration(
+                                color: _telegramBlue,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadii.tile),
+                              ),
+                              child: Center(
+                                  child: Text(l.t('write_telegram'),
+                                      style: const TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white))),
+                            ),
+                          ),
+                        ]),
+                  ),
+                  0.15,
+                  0.7),
             ]),
-          ), 0.15, 0.7),
-        ]),
-      ),
+      )),
     );
   }
 }

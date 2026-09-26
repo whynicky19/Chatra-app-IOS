@@ -1,22 +1,24 @@
 import 'package:flutter/material.dart';
 import '../../../theme/app_theme.dart';
 
-/// Общая тёмная/светлая палитра для полноэкранных страниц лекции/задания —
-/// отдельная от основной темы приложения (там #F2F2F7/#1C1C1E), т.к. дизайн
-/// специально просил plain-black фон в духе Apple Notes/Files, а не серый.
+/// Общая тёмная/светлая палитра полноэкранных страниц лекции и задания.
+/// Системный grouped-фон отделяет контент от белых/графитовых карточек так же,
+/// как в Notes и Settings, не прибегая к декоративному свечению.
 Color detailBg(BuildContext context) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
-  return isDark ? const Color(0xFF111111) : Colors.white;
+  return isDark ? C.darkBg : C.bg;
 }
 
 Color detailSurface(BuildContext context) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
-  return isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF6F6F7);
+  return isDark ? C.darkSurface : C.surface;
 }
 
 Color detailBorder(BuildContext context) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
-  return isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06);
+  return isDark
+      ? Colors.white.withValues(alpha: 0.08)
+      : Colors.black.withValues(alpha: 0.06);
 }
 
 Color detailText1(BuildContext context) {
@@ -32,48 +34,54 @@ Color detailText2(BuildContext context) {
 /// Акцент берётся из темы приложения (teal/amber в зависимости от типа
 /// организации), а не хардкодится — иначе страница выпадает из общей темы
 /// при переключении школа/не школа.
-Color detailAccent(BuildContext context) => Theme.of(context).colorScheme.primary;
+Color detailAccent(BuildContext context) =>
+    Theme.of(context).colorScheme.primary;
 
 /// Базовая "сгруппированная" карточка в духе iOS Settings/Files — заливка
-Widget sectionCard(BuildContext context, bool isDark, {required List<Widget> children, EdgeInsetsGeometry? padding}) {
+Widget sectionCard(BuildContext context, bool isDark,
+    {required List<Widget> children, EdgeInsetsGeometry? padding}) {
   return Container(
     width: double.infinity,
     padding: padding ?? const EdgeInsets.all(16),
     decoration: BoxDecoration(
       color: detailSurface(context),
       borderRadius: BorderRadius.circular(AppRadii.card),
-      border: Border.all(color: detailBorder(context), width: 1 / MediaQuery.devicePixelRatioOf(context)),
+      border: Border.all(
+          color: detailBorder(context),
+          width: 1 / MediaQuery.devicePixelRatioOf(context)),
+      boxShadow: softShadow(isDark),
     ),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
+    child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start, children: children),
   );
 }
 
 TextStyle cardTitleStyle(BuildContext context) => TextStyle(
-  fontSize: 17,
-  fontWeight: FontWeight.w600,
-  letterSpacing: -0.3,
-  color: detailText1(context),
-);
+      fontSize: 17,
+      fontWeight: FontWeight.w600,
+      letterSpacing: -0.3,
+      color: detailText1(context),
+    );
 
 /// Подпись НАД сгруппированной секцией (заголовок группы в iOS): мелкий кегль
 TextStyle sectionCaptionStyle(BuildContext context) => TextStyle(
-  fontSize: 12,
-  fontWeight: FontWeight.w600,
-  letterSpacing: 0.6,
-  color: detailText2(context),
-);
+      fontSize: 12,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.6,
+      color: detailText2(context),
+    );
 
 /// Подпись-метка внутри карточки (над списком файлов, под заголовком).
 TextStyle cardCaptionStyle(BuildContext context) => TextStyle(
-  fontSize: 13,
-  fontWeight: FontWeight.w600,
-  letterSpacing: 0.1,
-  color: detailText2(context),
-);
+      fontSize: 13,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.1,
+      color: detailText2(context),
+    );
 
 TextStyle detailBodyStyle(BuildContext context) => TextStyle(
-  fontSize: 17,
-  height: 1.55,
-  letterSpacing: -0.2,
-  color: detailText1(context),
-);
+      fontSize: 17,
+      height: 1.55,
+      letterSpacing: -0.2,
+      color: detailText1(context),
+    );

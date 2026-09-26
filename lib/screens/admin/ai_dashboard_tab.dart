@@ -137,7 +137,8 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
   Widget build(BuildContext context) {
     final l = context.watch<L10n>();
     if (_loading && _data == null) {
-      return const Center(child: CupertinoActivityIndicator(radius: 13, color: C.text3));
+      return const Center(
+          child: CupertinoActivityIndicator(radius: 13, color: C.text3));
     }
     final d = _data;
     if (d == null) {
@@ -145,16 +146,20 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
         child: Padding(
           padding: const EdgeInsets.all(28),
           child: Text(l.t('card_load_error'),
-              textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: adaptiveText3(context))),
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: adaptiveText3(context))),
         ),
       );
     }
 
     final totals = (d['totals'] as Map?)?.cast<String, dynamic>() ?? const {};
-    final allTime = (d['totals_all_time'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final allTime =
+        (d['totals_all_time'] as Map?)?.cast<String, dynamic>() ?? const {};
     final groups = List<Map<String, dynamic>>.from(
-        ((d['by_group'] as List?) ?? const []).map((e) => (e as Map).cast<String, dynamic>()));
-    groups.sort((a, b) => ((b['total_tokens'] as num? ?? 0)).compareTo(a['total_tokens'] as num? ?? 0));
+        ((d['by_group'] as List?) ?? const [])
+            .map((e) => (e as Map).cast<String, dynamic>()));
+    groups.sort((a, b) => ((b['total_tokens'] as num? ?? 0))
+        .compareTo(a['total_tokens'] as num? ?? 0));
     final byDay = (d['by_day'] as List?) ?? const [];
     final byClass = (d['by_class'] as List?) ?? const [];
     final topUsers = (d['top_users'] as List?) ?? const [];
@@ -173,7 +178,6 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
             const SizedBox(height: 14),
             _budgetCard(l, limits),
             const SizedBox(height: 22),
-
             _SectionLabel(l.t('where_tokens_go')),
             const SizedBox(height: 8),
             if (groups.isEmpty)
@@ -184,28 +188,27 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
                 _kindCard(l, groups[i], total),
               ],
             ],
-
             if (byDay.isNotEmpty) ...[
               const SizedBox(height: 22),
               _SectionLabel(l.t('daily_usage')),
               const SizedBox(height: 8),
-              _DailyChart(days: byDay, groups: groups, endpointGroups: _endpointGroups(d)),
+              _DailyChart(
+                  days: byDay,
+                  groups: groups,
+                  endpointGroups: _endpointGroups(d)),
             ],
-
             if (byClass.isNotEmpty) ...[
               const SizedBox(height: 22),
               _SectionLabel(l.t('by_classes')),
               const SizedBox(height: 8),
               _rankList(l, byClass, isClass: true),
             ],
-
             if (topUsers.isNotEmpty) ...[
               const SizedBox(height: 22),
               _SectionLabel(l.t('by_users')),
               const SizedBox(height: 8),
               _rankList(l, topUsers, isClass: false),
             ],
-
             const SizedBox(height: 22),
             _SectionLabel('${l.t('detail_log')} · ${fmtInt(_logTotal)}'),
             const SizedBox(height: 8),
@@ -217,8 +220,11 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
                   child: Container(
                     padding: const EdgeInsets.fromLTRB(12, 6, 10, 6),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(100),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       Text(_kindFilterLabel,
@@ -228,7 +234,9 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
                               letterSpacing: -0.2,
                               color: Theme.of(context).colorScheme.primary)),
                       const SizedBox(width: 6),
-                      Icon(CupertinoIcons.xmark, size: 12, color: Theme.of(context).colorScheme.primary),
+                      Icon(CupertinoIcons.xmark,
+                          size: 12,
+                          color: Theme.of(context).colorScheme.primary),
                     ]),
                   ),
                 ),
@@ -246,7 +254,8 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
     final map = <String, String>{};
     for (final e in (d['by_endpoint'] as List?) ?? const []) {
       final m = e as Map;
-      map[(m['endpoint'] ?? '').toString()] = (m['group'] ?? 'other').toString();
+      map[(m['endpoint'] ?? '').toString()] =
+          (m['group'] ?? 'other').toString();
     }
     return map;
   }
@@ -254,7 +263,12 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
   Widget _periodControl(L10n l) {
     return Container(
       padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(100)),
+      decoration: BoxDecoration(
+        color: adaptiveSurface2(context),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+            color: groupSeparator(context), width: hairline(context)),
+      ),
       child: Row(children: [
         for (final p in _periods)
           Expanded(
@@ -265,19 +279,29 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
                 curve: Curves.easeOut,
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
-                  color: _days == p ? Theme.of(context).colorScheme.surface : Colors.transparent,
-                  borderRadius: BorderRadius.circular(100),
+                  color: _days == p
+                      ? Theme.of(context).colorScheme.surface
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
                   boxShadow: _days == p
-                      ? [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 3, offset: const Offset(0, 1))]
+                      ? [
+                          BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 3,
+                              offset: const Offset(0, 1))
+                        ]
                       : null,
                 ),
                 child: Center(
                   child: Text(_periodLabel(l, p),
                       style: TextStyle(
                           fontSize: 14,
-                          fontWeight: _days == p ? FontWeight.w600 : FontWeight.w500,
+                          fontWeight:
+                              _days == p ? FontWeight.w600 : FontWeight.w500,
                           letterSpacing: -0.2,
-                          color: _days == p ? adaptiveText1(context) : adaptiveText3(context))),
+                          color: _days == p
+                              ? adaptiveText1(context)
+                              : adaptiveText3(context))),
                 ),
               ),
             ),
@@ -287,31 +311,38 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
   }
 
   String _periodLabel(L10n l, int days) => switch (days) {
-    7 => '7 ${l.t('period_days')}',
-    30 => '30 ${l.t('period_days')}',
-    90 => '3 ${l.t('period_months')}',
-    _ => l.t('year_short'),
-  };
+        7 => '7 ${l.t('period_days')}',
+        30 => '30 ${l.t('period_days')}',
+        90 => '3 ${l.t('period_months')}',
+        _ => l.t('year_short'),
+      };
 
-  Widget _heroCard(L10n l, Map<String, dynamic> totals, Map<String, dynamic> allTime) {
+  Widget _heroCard(
+      L10n l, Map<String, dynamic> totals, Map<String, dynamic> allTime) {
     final primary = Theme.of(context).colorScheme.primary;
     final requests = (totals['request_count'] as num? ?? 0).toInt();
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 16, 18, 4),
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Theme.of(context).colorScheme.secondary, primary],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppRadii.card),
+        border: Border.all(
+            color: groupSeparator(context), width: hairline(context)),
+        boxShadow: softShadow(Theme.of(context).brightness == Brightness.dark),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Expanded(
-            child: Text(l.t('tokens_for_period').toUpperCase(),
-                style: const TextStyle(
-                    fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.7, color: Colors.white70)),
+            child: Row(children: [
+              Icon(CupertinoIcons.sparkles, size: 16, color: primary),
+              const SizedBox(width: 7),
+              Text(l.t('tokens_for_period').toUpperCase(),
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.7,
+                      color: adaptiveText3(context))),
+            ]),
           ),
           Tappable(
             onTap: _loadAll,
@@ -320,29 +351,35 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
                 width: 40,
                 height: 32,
                 child: Icon(CupertinoIcons.arrow_counterclockwise,
-                    size: 18, color: Colors.white.withValues(alpha: 0.9))),
+                    size: 18, color: primary)),
           ),
         ]),
         Text(fmtInt(totals['total_tokens']),
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 36,
                 fontWeight: FontWeight.w700,
                 height: 1.05,
                 letterSpacing: -1.2,
-                color: Colors.white,
-                fontFeatures: [FontFeature.tabularFigures()])),
+                color: adaptiveText1(context),
+                fontFeatures: const [FontFeature.tabularFigures()])),
         const SizedBox(height: 4),
         Text('${l.t('all_time_label')}: ${fmtInt(allTime['total_tokens'])}',
-            style: const TextStyle(fontSize: 13, color: Colors.white70)),
+            style: TextStyle(fontSize: 13, color: adaptiveText4(context))),
         const SizedBox(height: 14),
-        Row(children: [
-          _heroStat(fmtInt(requests), l.t('requests_label')),
-          _heroDivider(),
-          _heroStat(fmtInt(totals['avg_tokens']), l.t('avg_per_request')),
-          _heroDivider(),
-          _heroStat(fmtInt(totals['user_count']), l.t('active_users_label')),
-        ]),
-        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+          decoration: BoxDecoration(
+            color: adaptiveSurface2(context),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(children: [
+            _heroStat(fmtInt(requests), l.t('requests_label')),
+            _heroDivider(),
+            _heroStat(fmtInt(totals['avg_tokens']), l.t('avg_per_request')),
+            _heroDivider(),
+            _heroStat(fmtInt(totals['user_count']), l.t('active_users_label')),
+          ]),
+        ),
       ]),
     );
   }
@@ -352,16 +389,17 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
           Text(value,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
                   letterSpacing: -0.3,
-                  color: Colors.white,
-                  fontFeatures: [FontFeature.tabularFigures()])),
+                  color: adaptiveText1(context),
+                  fontFeatures: const [FontFeature.tabularFigures()])),
           Text(label,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 12, height: 1.2, color: Colors.white70)),
+              style: TextStyle(
+                  fontSize: 12, height: 1.2, color: adaptiveText4(context))),
         ]),
       );
 
@@ -369,7 +407,7 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
         width: 1,
         height: 30,
         margin: const EdgeInsets.symmetric(horizontal: 12),
-        color: Colors.white.withValues(alpha: 0.22),
+        color: groupSeparator(context),
       );
 
   Widget _budgetCard(L10n l, Map<String, dynamic> limits) {
@@ -377,7 +415,11 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
     final used = (limits['tokens_used_today'] as num? ?? 0).toInt();
     final messageLimit = (limits['daily_message_limit'] as num? ?? 0).toInt();
     final pct = budget > 0 ? (used / budget).clamp(0.0, 1.0) : 0.0;
-    final color = pct >= 0.9 ? C.red : pct >= 0.7 ? C.amber : Theme.of(context).colorScheme.primary;
+    final color = pct >= 0.9
+        ? C.red
+        : pct >= 0.7
+            ? C.amber
+            : Theme.of(context).colorScheme.primary;
     final pctText = budget <= 0
         ? '—'
         : pct > 0 && pct < 0.01
@@ -391,7 +433,10 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
           Expanded(
             child: Text(l.t('daily_budget'),
                 style: TextStyle(
-                    fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: adaptiveTextSoft(context))),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.2,
+                    color: adaptiveTextSoft(context))),
           ),
           Text(pctText,
               style: TextStyle(
@@ -410,7 +455,8 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
               : '${l.t('today_spent')}: ${fmtInt(used)} · ${l.t('budget_off')}',
           style: TextStyle(fontSize: 13, color: adaptiveText4(context)),
         ),
-        Text('${l.t('message_limit_label')}: ${messageLimit > 0 ? messageLimit : '∞'}',
+        Text(
+            '${l.t('message_limit_label')}: ${messageLimit > 0 ? messageLimit : '∞'}',
             style: TextStyle(fontSize: 13, color: adaptiveText4(context))),
       ]),
     );
@@ -436,13 +482,15 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
             width: 34,
             height: 34,
             alignment: Alignment.center,
-            decoration:
-                BoxDecoration(color: color.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(10)),
             child: Icon(kindIcon(group), size: 18, color: color),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text((g['label'] ?? '').toString(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -451,10 +499,12 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
                       fontWeight: FontWeight.w600,
                       letterSpacing: -0.3,
                       color: adaptiveTextSoft(context))),
-              Text('${fmtInt(requests)} ${l.t('requests_short')} · ~${fmtInt(tokens / (requests == 0 ? 1 : requests))} ${l.t('per_request_short')}',
+              Text(
+                  '${fmtInt(requests)} ${l.t('requests_short')} · ~${fmtInt(tokens / (requests == 0 ? 1 : requests))} ${l.t('per_request_short')}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 13, color: adaptiveText4(context))),
+                  style:
+                      TextStyle(fontSize: 13, color: adaptiveText4(context))),
             ]),
           ),
           const SizedBox(width: 10),
@@ -475,7 +525,8 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
         if (selected) ...[
           const SizedBox(height: 9),
           Text(l.t('filter_applied_to_log'),
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color)),
+              style: TextStyle(
+                  fontSize: 12, fontWeight: FontWeight.w600, color: color)),
         ],
       ]),
     );
@@ -488,11 +539,13 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
     });
     return InsetGroup(children: [
       for (var i = 0; i < rows.length; i++)
-        _rankRow(l, (rows[i] as Map).cast<String, dynamic>(), maxTokens, innerPos(i, rows.length), isClass, i),
+        _rankRow(l, (rows[i] as Map).cast<String, dynamic>(), maxTokens,
+            innerPos(i, rows.length), isClass, i),
     ]);
   }
 
-  Widget _rankRow(L10n l, Map<String, dynamic> r, int maxTokens, GroupPos pos, bool isClass, int index) {
+  Widget _rankRow(L10n l, Map<String, dynamic> r, int maxTokens, GroupPos pos,
+      bool isClass, int index) {
     final tokens = (r['total_tokens'] as num? ?? 0).toInt();
     final requests = (r['request_count'] as num? ?? 0).toInt();
     final primary = Theme.of(context).colorScheme.primary;
@@ -509,7 +562,9 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
         width: 26,
         height: 26,
         alignment: Alignment.center,
-        decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(8)),
+        decoration: BoxDecoration(
+            color: adaptiveSurface2(context),
+            borderRadius: BorderRadius.circular(8)),
         child: Text('${index + 1}',
             style: TextStyle(
                 fontSize: 12,
@@ -532,7 +587,8 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
         leading,
         const SizedBox(width: 11),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Expanded(
                 child: Text(title,
@@ -576,8 +632,13 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
     final groups = _endpointGroups(_data ?? const {});
     return InsetGroup(children: [
       for (var i = 0; i < _logs.length; i++)
-        _logRow(l, (_logs[i] as Map).cast<String, dynamic>(), groups,
-            (i == _logs.length - 1 && _logs.length >= _logTotal) ? GroupPos.last : GroupPos.middle),
+        _logRow(
+            l,
+            (_logs[i] as Map).cast<String, dynamic>(),
+            groups,
+            (i == _logs.length - 1 && _logs.length >= _logTotal)
+                ? GroupPos.last
+                : GroupPos.middle),
       if (_logs.length < _logTotal)
         GroupRow(
           pos: GroupPos.last,
@@ -586,7 +647,8 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Center(
             child: _logMoreLoading
-                ? CupertinoActivityIndicator(radius: 9, color: adaptiveText4(context))
+                ? CupertinoActivityIndicator(
+                    radius: 9, color: adaptiveText4(context))
                 : Text(l.t('show_more_full'),
                     style: TextStyle(
                         fontSize: 16,
@@ -598,7 +660,8 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
     ]);
   }
 
-  Widget _logRow(L10n l, Map<String, dynamic> item, Map<String, String> groups, GroupPos pos) {
+  Widget _logRow(L10n l, Map<String, dynamic> item, Map<String, String> groups,
+      GroupPos pos) {
     final endpoint = (item['endpoint'] ?? '').toString();
     final color = kindColor(context, groups[endpoint] ?? 'other');
     final userName = (item['user_name'] ?? item['user_email'] ?? '').toString();
@@ -619,16 +682,21 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
           width: 9,
           height: 9,
           margin: const EdgeInsets.only(top: 3),
-          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3)),
+          decoration: BoxDecoration(
+              color: color, borderRadius: BorderRadius.circular(3)),
         ),
         const SizedBox(width: 11),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text((item['label'] ?? endpoint).toString(),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                    fontSize: 15, fontWeight: FontWeight.w500, letterSpacing: -0.2, color: adaptiveTextSoft(context))),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: -0.2,
+                    color: adaptiveTextSoft(context))),
             const SizedBox(height: 1),
             Text(
               [
@@ -651,7 +719,8 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
                   letterSpacing: -0.2,
                   color: adaptiveTextSoft(context),
                   fontFeatures: const [FontFeature.tabularFigures()])),
-          Text('${fmtInt(item['prompt_tokens'])}+${fmtInt(item['completion_tokens'])}',
+          Text(
+              '${fmtInt(item['prompt_tokens'])}+${fmtInt(item['completion_tokens'])}',
               style: TextStyle(fontSize: 12, color: adaptiveText4(context))),
         ]),
       ]),
@@ -661,7 +730,8 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
   Widget _emptyBlock(String text) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 22),
         child: Center(
-          child: Text(text, textAlign: TextAlign.center,
+          child: Text(text,
+              textAlign: TextAlign.center,
               style: TextStyle(fontSize: 15, color: adaptiveText4(context))),
         ),
       );
@@ -670,7 +740,8 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
 /// Столбики расхода по дням, сложенные по видам запросов. С 92 дней период
 /// укрупняется до недель: 365 столбиков шириной в волосок ничего не показывают.
 class _DailyChart extends StatelessWidget {
-  const _DailyChart({required this.days, required this.groups, required this.endpointGroups});
+  const _DailyChart(
+      {required this.days, required this.groups, required this.endpointGroups});
 
   final List<dynamic> days;
   final List<Map<String, dynamic>> groups;
@@ -683,7 +754,8 @@ class _DailyChart extends StatelessWidget {
     if (buckets.isEmpty) return const SizedBox.shrink();
     final peak = buckets.fold<int>(1, (m, b) => b.total > m ? b.total : m);
     final bounds = _logBounds(buckets);
-    final order = groups.map((g) => (g['group'] ?? 'other').toString()).toList();
+    final order =
+        groups.map((g) => (g['group'] ?? 'other').toString()).toList();
     final weekly = days.length > 92;
 
     return GroupRow.card(
@@ -693,7 +765,10 @@ class _DailyChart extends StatelessWidget {
         Row(children: [
           Expanded(
             child: Text(weekly ? l.t('by_weeks') : l.t('by_days'),
-                style: TextStyle(fontSize: 13, letterSpacing: -0.2, color: adaptiveText4(context))),
+                style: TextStyle(
+                    fontSize: 13,
+                    letterSpacing: -0.2,
+                    color: adaptiveText4(context))),
           ),
           Text('${l.t('peak_label')} ${fmtCompact(peak, l)}',
               style: TextStyle(fontSize: 13, color: adaptiveText4(context))),
@@ -713,13 +788,17 @@ class _DailyChart extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Row(children: [
-          Text(buckets.first.label, style: TextStyle(fontSize: 11, color: adaptiveText4(context))),
+          Text(buckets.first.label,
+              style: TextStyle(fontSize: 11, color: adaptiveText4(context))),
           const Spacer(),
-          Text(buckets.last.label, style: TextStyle(fontSize: 11, color: adaptiveText4(context))),
+          Text(buckets.last.label,
+              style: TextStyle(fontSize: 11, color: adaptiveText4(context))),
         ]),
         const SizedBox(height: 8),
-        Text('${l.t('log_scale_note')} ${fmtCompact(bounds.$1, l)} — ${fmtCompact(bounds.$2, l)}',
-            style: TextStyle(fontSize: 11, height: 1.35, color: adaptiveText4(context))),
+        Text(
+            '${l.t('log_scale_note')} ${fmtCompact(bounds.$1, l)} — ${fmtCompact(bounds.$2, l)}',
+            style: TextStyle(
+                fontSize: 11, height: 1.35, color: adaptiveText4(context))),
         const SizedBox(height: 10),
         Wrap(spacing: 12, runSpacing: 6, children: [
           for (final g in groups)
@@ -728,12 +807,14 @@ class _DailyChart extends StatelessWidget {
                 width: 8,
                 height: 8,
                 decoration: BoxDecoration(
-                    color: kindColor(context, (g['group'] ?? 'other').toString()),
+                    color:
+                        kindColor(context, (g['group'] ?? 'other').toString()),
                     borderRadius: BorderRadius.circular(3)),
               ),
               const SizedBox(width: 6),
               Text((g['label'] ?? '').toString(),
-                  style: TextStyle(fontSize: 12, color: adaptiveText3(context))),
+                  style:
+                      TextStyle(fontSize: 12, color: adaptiveText3(context))),
             ]),
         ]),
       ]),
@@ -743,21 +824,27 @@ class _DailyChart extends StatelessWidget {
   /// Границы логарифмической шкалы — степени десяти вокруг данных: дневной
   /// расход отличается в тысячи раз, на линейной шкале всё легло бы в пиксель.
   (double bottom, double top) _logBounds(List<_Bucket> buckets) {
-    final values = buckets.where((b) => b.total > 0).map((b) => b.total).toList();
+    final values =
+        buckets.where((b) => b.total > 0).map((b) => b.total).toList();
     if (values.isEmpty) return (1, 10);
     final min = values.reduce((a, b) => a < b ? a : b);
     final max = values.reduce((a, b) => a > b ? a : b);
-    final bottom = math.max(1.0, math.pow(10, (math.log(min) / math.ln10).floor()).toDouble());
-    final top = math.max(bottom * 10, math.pow(10, (math.log(max) / math.ln10).ceil()).toDouble());
+    final bottom = math.max(
+        1.0, math.pow(10, (math.log(min) / math.ln10).floor()).toDouble());
+    final top = math.max(bottom * 10,
+        math.pow(10, (math.log(max) / math.ln10).ceil()).toDouble());
     return (bottom, top);
   }
 
-  Widget _column(BuildContext context, _Bucket b, (double, double) bounds, List<String> order) {
+  Widget _column(BuildContext context, _Bucket b, (double, double) bounds,
+      List<String> order) {
     const maxH = 112.0;
     if (b.total <= 0) {
       return Container(
         height: 2,
-        decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(1)),
+        decoration: BoxDecoration(
+            color: adaptiveSurface2(context),
+            borderRadius: BorderRadius.circular(1)),
       );
     }
 
@@ -774,7 +861,9 @@ class _DailyChart extends StatelessWidget {
     final span = (math.log(bounds.$2) - math.log(bounds.$1)) / math.ln10;
     final frac = span <= 0
         ? 1.0
-        : ((math.log(b.total) / math.ln10) - (math.log(bounds.$1) / math.ln10)) / span;
+        : ((math.log(b.total) / math.ln10) -
+                (math.log(bounds.$1) / math.ln10)) /
+            span;
     final height = (frac * maxH).clamp(4.0, maxH);
 
     return ClipRRect(
@@ -812,7 +901,8 @@ class _DailyChart extends StatelessWidget {
         total += b.total;
         b.byGroup.forEach((k, v) => byGroup[k] = (byGroup[k] ?? 0) + v);
       }
-      weeks.add(_Bucket(date: chunk.first.date, total: total, byGroup: byGroup));
+      weeks
+          .add(_Bucket(date: chunk.first.date, total: total, byGroup: byGroup));
     }
     return weeks;
   }
@@ -842,6 +932,9 @@ class _SectionLabel extends StatelessWidget {
         padding: const EdgeInsets.only(left: 6),
         child: Text(text.toUpperCase(),
             style: TextStyle(
-                fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.6, color: adaptiveText3(context))),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.6,
+                color: adaptiveText3(context))),
       );
 }

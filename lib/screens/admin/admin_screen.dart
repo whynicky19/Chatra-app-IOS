@@ -149,11 +149,8 @@ class _AdminState extends State<AdminScreen>
                   width: 76,
                   height: 76,
                   decoration: BoxDecoration(
-                      gradient: RadialGradient(colors: [
-                        C.green.withValues(alpha: 0.16),
-                        C.green.withValues(alpha: 0.03)
-                      ]),
-                      shape: BoxShape.circle),
+                      color: C.green.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(22)),
                   child: const Icon(CupertinoIcons.checkmark_shield_fill,
                       size: 32, color: C.green)),
               const SizedBox(height: 18),
@@ -215,7 +212,7 @@ class _AdminState extends State<AdminScreen>
                               horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             color: C.red.withValues(alpha: 0.13),
-                            borderRadius: BorderRadius.circular(100),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(l.t(reasonKey),
                               style: const TextStyle(
@@ -447,11 +444,28 @@ class _AdminState extends State<AdminScreen>
                           Tappable(
                             onTap: _showCreateDialog,
                             label: l.t('add'),
-                            child: SizedBox(
-                                width: 44,
-                                height: 44,
-                                child: Icon(CupertinoIcons.person_badge_plus,
-                                    color: primary, size: 24)),
+                            child: Container(
+                              height: 40,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 13),
+                              decoration: BoxDecoration(
+                                color: primary.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(CupertinoIcons.person_badge_plus,
+                                        color: primary, size: 19),
+                                    const SizedBox(width: 7),
+                                    Text(l.t('add'),
+                                        style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            letterSpacing: -0.2,
+                                            color: primary)),
+                                  ]),
+                            ),
                           ),
                         ]),
                   ),
@@ -741,7 +755,7 @@ class _AdminState extends State<AdminScreen>
             color: selected
                 ? primary.withValues(alpha: 0.13)
                 : Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(100),
+            borderRadius: BorderRadius.circular(10),
             border: selected
                 ? null
                 : Border.all(
@@ -859,7 +873,7 @@ class _AdminState extends State<AdminScreen>
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         decoration: BoxDecoration(
             color: color.withValues(alpha: 0.13),
-            borderRadius: BorderRadius.circular(100)),
+            borderRadius: BorderRadius.circular(7)),
         child: Text(text,
             style: TextStyle(
                 fontSize: 11, fontWeight: FontWeight.w600, color: color)),
@@ -904,11 +918,8 @@ class _AdminState extends State<AdminScreen>
               width: 76,
               height: 76,
               decoration: BoxDecoration(
-                  gradient: RadialGradient(colors: [
-                    primary.withValues(alpha: 0.16),
-                    primary.withValues(alpha: 0.03)
-                  ]),
-                  shape: BoxShape.circle),
+                  color: primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(22)),
               child: Icon(CupertinoIcons.book_fill, size: 32, color: primary)),
           const SizedBox(height: 18),
           Text(l.t('no_classes_admin'),
@@ -968,21 +979,21 @@ class _AdminState extends State<AdminScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         SizedBox(
-                            height: 120,
+                            height: 92,
                             width: double.infinity,
                             child: Stack(fit: StackFit.expand, children: [
                               _classCover(coverImg, i,
                                   icon: cls['cover_icon'] as String?,
                                   color: cls['cover_color'] as String?,
                                   coverSource: cls['cover_source'] as String?,
-                                  iconSize: 50),
+                                  iconSize: 38),
                               Positioned.fill(
                                   child: DecoratedBox(
                                       decoration: BoxDecoration(
                                           gradient: LinearGradient(
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
-                                stops: const [0.45, 1.0],
+                                stops: const [0.55, 1.0],
                                 colors: [
                                   Colors.transparent,
                                   Colors.black.withValues(alpha: 0.45)
@@ -992,7 +1003,7 @@ class _AdminState extends State<AdminScreen>
                                   top: 10,
                                   right: 10,
                                   child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(100),
+                                    borderRadius: BorderRadius.circular(9),
                                     child: BackdropFilter(
                                       filter: ImageFilter.blur(
                                           sigmaX: 12, sigmaY: 12),
@@ -1025,13 +1036,13 @@ class _AdminState extends State<AdminScreen>
                                   )),
                             ])),
                         Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 13, 16, 14),
+                            padding: const EdgeInsets.fromLTRB(15, 12, 15, 14),
                             child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(title,
                                       style: TextStyle(
-                                          fontSize: 19,
+                                          fontSize: 17,
                                           fontWeight: FontWeight.w600,
                                           letterSpacing: -0.5,
                                           height: 1.15,
@@ -1271,7 +1282,7 @@ class _AdminState extends State<AdminScreen>
                       color: selected
                           ? Theme.of(ctx).colorScheme.surface
                           : Colors.transparent,
-                      borderRadius: BorderRadius.circular(100),
+                      borderRadius: BorderRadius.circular(10),
                       boxShadow: selected
                           ? [
                               BoxShadow(
@@ -1358,7 +1369,7 @@ class _AdminState extends State<AdminScreen>
                       padding: const EdgeInsets.all(3),
                       decoration: BoxDecoration(
                           color: adaptiveSurface2(ctx),
-                          borderRadius: BorderRadius.circular(100)),
+                          borderRadius: BorderRadius.circular(13)),
                       child: Row(children: [
                         roleChip('student', l.t('role_student_short'),
                             const Color(0xFF059669)),
@@ -1413,48 +1424,51 @@ class _SummaryBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppRadii.card),
-        border: Border.all(
-            color: groupSeparator(context), width: hairline(context)),
-      ),
-      child: IntrinsicHeight(
-          child: Row(children: [
-        for (var i = 0; i < cells.length; i++) ...[
-          if (i > 0)
-            Container(
-              width: hairline(context),
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              color: groupSeparator(context),
+    final primary = Theme.of(context).colorScheme.primary;
+    final icons = <IconData>[
+      CupertinoIcons.person_2_fill,
+      CupertinoIcons.person_crop_rectangle_fill,
+      CupertinoIcons.person_fill,
+    ];
+    return Row(children: [
+      for (var i = 0; i < cells.length; i++) ...[
+        if (i > 0) const SizedBox(width: 8),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(12, 12, 10, 11),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                  color: groupSeparator(context), width: hairline(context)),
             ),
-          Expanded(
-              child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
-            child: Column(children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Icon(icons[i.clamp(0, icons.length - 1)],
+                  size: 16, color: primary),
+              const SizedBox(height: 9),
               Text(cells[i].$1,
                   style: TextStyle(
-                      fontSize: 26,
+                      fontSize: 25,
                       fontWeight: FontWeight.w700,
-                      height: 1.05,
+                      height: 1,
                       letterSpacing: -0.8,
                       color: adaptiveTextSoft(context),
                       fontFeatures: const [FontFeature.tabularFigures()])),
-              const SizedBox(height: 3),
+              const SizedBox(height: 4),
               Text(cells[i].$2,
-                  textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
                       letterSpacing: -0.1,
                       color: adaptiveText4(context))),
             ]),
-          )),
-        ],
-      ])),
-    );
+          ),
+        ),
+      ],
+    ]);
   }
 }
 
@@ -1480,7 +1494,7 @@ class _RoleBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
           color: color.withValues(alpha: 0.13),
-          borderRadius: BorderRadius.circular(100)),
+          borderRadius: BorderRadius.circular(8)),
       child: Text(label,
           style: TextStyle(
               fontSize: 13,
@@ -1506,7 +1520,7 @@ class _ReportActionChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.13),
-          borderRadius: BorderRadius.circular(100),
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Text(label,
             style: TextStyle(

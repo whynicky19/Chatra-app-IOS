@@ -197,6 +197,10 @@ class _HomeScreenState extends State<HomeScreen>
       backgroundColor: Colors.transparent,
       body: AppBackdrop(
         child: SafeArea(
+          // Контент прокручивается под status bar, поэтому сверху больше нет
+          // отдельной неподвижной полосы Safe Area. Начальная шапка всё равно
+          // учитывает вырез/индикаторы устройства своим отступом ниже.
+          top: false,
           bottom: false,
           child: CustomScrollView(slivers: [
             CupertinoSliverRefreshControl(
@@ -219,7 +223,8 @@ class _HomeScreenState extends State<HomeScreen>
                               child: child),
                         ),
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(22, 24, 22, 18),
+                      padding: EdgeInsets.fromLTRB(
+                          22, MediaQuery.paddingOf(context).top + 16, 22, 18),
                       child: Row(children: [
                         Expanded(
                             child: Text(l.t('classes'),

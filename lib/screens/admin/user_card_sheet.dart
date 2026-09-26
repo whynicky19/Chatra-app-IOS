@@ -33,7 +33,8 @@ Future<void> showUserCardSheet(
     useSafeArea: true,
     backgroundColor: Theme.of(context).colorScheme.surface,
     shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.sheet))),
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(AppRadii.sheet))),
     builder: (_) => _UserCardSheet(
       row: row,
       isSelf: isSelf,
@@ -132,21 +133,26 @@ class _UserCardSheetState extends State<_UserCardSheet> {
             InitialsAvatar(id: _userId, name: name, size: 52, radius: 16),
             const SizedBox(width: 14),
             Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.5,
-                        color: adaptiveTextSoft(context))),
-                const SizedBox(height: 2),
-                Text(email,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText4(context))),
-              ]),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.5,
+                            color: adaptiveTextSoft(context))),
+                    const SizedBox(height: 2),
+                    Text(email,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 15,
+                            letterSpacing: -0.2,
+                            color: adaptiveText4(context))),
+                  ]),
             ),
             Tappable(
               onTap: () => Navigator.pop(context),
@@ -154,7 +160,8 @@ class _UserCardSheetState extends State<_UserCardSheet> {
               child: SizedBox(
                   width: 44,
                   height: 44,
-                  child: Icon(CupertinoIcons.xmark, size: 19, color: adaptiveText4(context))),
+                  child: Icon(CupertinoIcons.xmark,
+                      size: 19, color: adaptiveText4(context))),
             ),
           ]),
         ),
@@ -164,9 +171,14 @@ class _UserCardSheetState extends State<_UserCardSheet> {
             // «Активен» — состояние по умолчанию: чип появляется только когда с
             // аккаунтом что-то не так.
             _Chip(text: _roleLabel(l, role), color: adaptiveText3(context)),
-            if (blocked) _Chip(text: l.t('blocked_short'), color: C.red, dot: true),
-            if (unlimited) _Chip(text: l.t('ai_unlimited'), color: Theme.of(context).colorScheme.primary),
-            if (unverified) _Chip(text: l.t('email_unverified_short'), color: C.amber),
+            if (blocked)
+              _Chip(text: l.t('blocked_short'), color: C.red, dot: true),
+            if (unlimited)
+              _Chip(
+                  text: l.t('ai_unlimited'),
+                  color: Theme.of(context).colorScheme.primary),
+            if (unverified)
+              _Chip(text: l.t('email_unverified_short'), color: C.amber),
           ]),
         ),
         Container(height: hairline(context), color: groupSeparator(context)),
@@ -179,7 +191,8 @@ class _UserCardSheetState extends State<_UserCardSheet> {
                         padding: const EdgeInsets.all(28),
                         child: Text(l.t('card_load_error'),
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 16, color: adaptiveText3(context))),
+                            style: TextStyle(
+                                fontSize: 16, color: adaptiveText3(context))),
                       ),
                     )
                   : ListView(
@@ -193,15 +206,16 @@ class _UserCardSheetState extends State<_UserCardSheet> {
   }
 
   String _roleLabel(L10n l, String role) => switch (role) {
-    'admin' => l.t('role_admin_short'),
-    'teacher' => l.t('role_teacher_short'),
-    _ => l.t('role_student_short'),
-  };
+        'admin' => l.t('role_admin_short'),
+        'teacher' => l.t('role_teacher_short'),
+        _ => l.t('role_student_short'),
+      };
 
   List<Widget> _body(L10n l, String role, bool blocked, bool unlimited) {
     final d = _detail!;
     final ai = (d['ai'] as Map?)?.cast<String, dynamic>() ?? const {};
-    final activity = (d['activity'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final activity =
+        (d['activity'] as Map?)?.cast<String, dynamic>() ?? const {};
     final classes = (d['classes'] as List?) ?? const [];
     final kinds = (ai['by_endpoint'] as List?) ?? const [];
     final maxKind = kinds.fold<int>(1, (m, k) {
@@ -213,18 +227,31 @@ class _UserCardSheetState extends State<_UserCardSheet> {
     final quota = (unlimited || messageLimit <= 0)
         ? 0.0
         : (messagesToday / messageLimit).clamp(0.0, 1.0);
-    final quotaColor = quota >= 0.9 ? C.red : quota >= 0.7 ? C.amber : Theme.of(context).colorScheme.primary;
+    final quotaColor = quota >= 0.9
+        ? C.red
+        : quota >= 0.7
+            ? C.amber
+            : Theme.of(context).colorScheme.primary;
     final generalTokens = (ai['general_tokens'] as num? ?? 0).toInt();
 
     return [
       _label(l.t('ai_usage_section')),
       const SizedBox(height: 8),
       Row(children: [
-        Expanded(child: _Tile(value: fmtInt(ai['total_tokens']), label: l.t('tokens_total_label'))),
+        Expanded(
+            child: _Tile(
+                value: fmtInt(ai['total_tokens']),
+                label: l.t('tokens_total_label'))),
         const SizedBox(width: 8),
-        Expanded(child: _Tile(value: fmtInt(ai['request_count']), label: l.t('requests_label'))),
+        Expanded(
+            child: _Tile(
+                value: fmtInt(ai['request_count']),
+                label: l.t('requests_label'))),
         const SizedBox(width: 8),
-        Expanded(child: _Tile(value: fmtInt(ai['avg_tokens']), label: l.t('avg_per_request'))),
+        Expanded(
+            child: _Tile(
+                value: fmtInt(ai['avg_tokens']),
+                label: l.t('avg_per_request'))),
       ]),
       const SizedBox(height: 14),
 
@@ -232,10 +259,15 @@ class _UserCardSheetState extends State<_UserCardSheet> {
       Row(children: [
         Expanded(
           child: Text(l.t('today_used'),
-              style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText4(context))),
+              style: TextStyle(
+                  fontSize: 15,
+                  letterSpacing: -0.2,
+                  color: adaptiveText4(context))),
         ),
         Text(
-          messageLimit > 0 ? '$messagesToday ${l.t('of_word')} $messageLimit' : '$messagesToday',
+          messageLimit > 0
+              ? '$messagesToday ${l.t('of_word')} $messageLimit'
+              : '$messagesToday',
           style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
@@ -294,13 +326,23 @@ class _UserCardSheetState extends State<_UserCardSheet> {
       _label(l.t('study_activity_section')),
       const SizedBox(height: 8),
       Row(children: [
-        Expanded(child: _Tile(value: fmtInt(activity['submissions']), label: l.t('submitted_works'), small: true)),
+        Expanded(
+            child: _Tile(
+                value: fmtInt(activity['submissions']),
+                label: l.t('submitted_works'),
+                small: true)),
         const SizedBox(width: 8),
-        Expanded(child: _Tile(value: fmtInt(activity['graded']), label: l.t('graded_works'), small: true)),
+        Expanded(
+            child: _Tile(
+                value: fmtInt(activity['graded']),
+                label: l.t('graded_works'),
+                small: true)),
         const SizedBox(width: 8),
         Expanded(
           child: _Tile(
-            value: activity['avg_score'] == null ? '—' : '${activity['avg_score']}',
+            value: activity['avg_score'] == null
+                ? '—'
+                : '${activity['avg_score']}',
             label: l.t('avg_score_label'),
             small: true,
           ),
@@ -308,8 +350,12 @@ class _UserCardSheetState extends State<_UserCardSheet> {
         const SizedBox(width: 8),
         Expanded(
           child: _Tile(
-            value: fmtInt(role == 'student' ? activity['posts'] : activity['assignments_created']),
-            label: role == 'student' ? l.t('posts_label') : l.t('assignments_label'),
+            value: fmtInt(role == 'student'
+                ? activity['posts']
+                : activity['assignments_created']),
+            label: role == 'student'
+                ? l.t('posts_label')
+                : l.t('assignments_label'),
             small: true,
           ),
         ),
@@ -319,8 +365,10 @@ class _UserCardSheetState extends State<_UserCardSheet> {
         color: adaptiveSurface2(context),
         radius: AppRadii.tile,
         children: [
-          _metaRow(l.t('last_activity'), fmtRelativeDate(d['last_active'] as String?, l), GroupPos.middle),
-          _metaRow(l.t('registered_at'), fmtLongDate(d['created_at'] as String?, l), GroupPos.middle),
+          _metaRow(l.t('last_activity'),
+              fmtRelativeDate(d['last_active'] as String?, l), GroupPos.middle),
+          _metaRow(l.t('registered_at'),
+              fmtLongDate(d['created_at'] as String?, l), GroupPos.middle),
           _metaRow(l.t('account_id'), '#${d['id']}', GroupPos.last),
         ],
       ),
@@ -336,10 +384,14 @@ class _UserCardSheetState extends State<_UserCardSheet> {
           icon: unlimited ? CupertinoIcons.bolt_fill : CupertinoIcons.bolt,
           color: C.amber,
           title: l.t('ai_unlimited'),
-          subtitle: unlimited ? l.t('ai_unlimited_on_sub') : l.t('ai_unlimited_off_sub'),
+          subtitle: unlimited
+              ? l.t('ai_unlimited_on_sub')
+              : l.t('ai_unlimited_off_sub'),
           trailing: IgnorePointer(
-              child: CupertinoLiquidSwitch(value: unlimited, onChanged: (_) {}, accent: C.amber)),
-          onTap: () => _run('toggle_ai_unlimited', () => widget.row['ai_unlimited'] = !unlimited),
+              child: CupertinoLiquidSwitch(
+                  value: unlimited, onChanged: (_) {}, accent: C.amber)),
+          onTap: () => _run('toggle_ai_unlimited',
+              () => widget.row['ai_unlimited'] = !unlimited),
         ),
         if (!widget.isSelf)
           _actionRow(
@@ -348,7 +400,8 @@ class _UserCardSheetState extends State<_UserCardSheet> {
             color: blocked ? C.green : C.red,
             title: blocked ? l.t('unblock') : l.t('block'),
             subtitle: blocked ? l.t('unblock_sub') : l.t('block_sub'),
-            onTap: () => _run(blocked ? 'unblock' : 'block', () => widget.row['is_active'] = blocked),
+            onTap: () => _run(blocked ? 'unblock' : 'block',
+                () => widget.row['is_active'] = blocked),
           ),
         if (!widget.isSelf)
           _actionRow(
@@ -382,12 +435,16 @@ class _UserCardSheetState extends State<_UserCardSheet> {
         padding: const EdgeInsets.only(left: 6),
         child: Text(text.toUpperCase(),
             style: TextStyle(
-                fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.6, color: adaptiveText3(context))),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.6,
+                color: adaptiveText3(context))),
       );
 
   Widget _emptyLine(String text) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Text(text, style: TextStyle(fontSize: 15, color: adaptiveText4(context))),
+        child: Text(text,
+            style: TextStyle(fontSize: 15, color: adaptiveText4(context))),
       );
 
   Widget _kindRow(Map k, int maxTokens, GroupPos pos) {
@@ -399,16 +456,27 @@ class _UserCardSheetState extends State<_UserCardSheet> {
       separatorInset: 12,
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       child: Row(children: [
-        Container(width: 9, height: 9, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3))),
+        Container(
+            width: 9,
+            height: 9,
+            decoration: BoxDecoration(
+                color: color, borderRadius: BorderRadius.circular(3))),
         const SizedBox(width: 10),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text((k['label'] ?? k['endpoint'] ?? '').toString(),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText2(context))),
+                style: TextStyle(
+                    fontSize: 15,
+                    letterSpacing: -0.2,
+                    color: adaptiveText2(context))),
             const SizedBox(height: 5),
-            MiniBar(value: maxTokens > 0 ? tokens / maxTokens : 0, color: color, height: 5),
+            MiniBar(
+                value: maxTokens > 0 ? tokens / maxTokens : 0,
+                color: color,
+                height: 5),
           ]),
         ),
         const SizedBox(width: 12),
@@ -420,7 +488,8 @@ class _UserCardSheetState extends State<_UserCardSheet> {
                   letterSpacing: -0.2,
                   color: adaptiveTextSoft(context),
                   fontFeatures: const [FontFeature.tabularFigures()])),
-          Text('${fmtInt(k['request_count'])} ${context.read<L10n>().t('requests_short')}',
+          Text(
+              '${fmtInt(k['request_count'])} ${context.read<L10n>().t('requests_short')}',
               style: TextStyle(fontSize: 12, color: adaptiveText4(context))),
         ]),
       ]),
@@ -442,9 +511,14 @@ class _UserCardSheetState extends State<_UserCardSheet> {
             // Тон подложки — из палитры обложек (глиф в SubjectIconOverlay
             // белый, на сером фоне он был бы не виден).
             child: Stack(fit: StackFit.expand, children: [
-              Container(color: kFallbackCoverOptions.colorFor(c['cover_color'] as String?).base),
+              Container(
+                  color: kFallbackCoverOptions
+                      .colorFor(c['cover_color'] as String?)
+                      .base),
               SubjectIconOverlay(
-                  icon: c['cover_icon'] as String?, color: c['cover_color'] as String?, size: 17),
+                  icon: c['cover_icon'] as String?,
+                  color: c['cover_color'] as String?,
+                  size: 17),
             ]),
           ),
         ),
@@ -454,11 +528,17 @@ class _UserCardSheetState extends State<_UserCardSheet> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.w500, letterSpacing: -0.3, color: adaptiveTextSoft(context))),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: -0.3,
+                  color: adaptiveTextSoft(context))),
         ),
         if ((c['role'] ?? '') == 'creator') ...[
           const SizedBox(width: 8),
-          _Chip(text: l.t('creator_short'), color: adaptiveText4(context), small: true),
+          _Chip(
+              text: l.t('creator_short'),
+              color: adaptiveText4(context),
+              small: true),
         ],
         const SizedBox(width: 10),
         Text(fmtInt(c['total_tokens']),
@@ -478,7 +558,11 @@ class _UserCardSheetState extends State<_UserCardSheet> {
         separatorInset: 12,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(children: [
-          Text(label, style: TextStyle(fontSize: 15, letterSpacing: -0.2, color: adaptiveText4(context))),
+          Text(label,
+              style: TextStyle(
+                  fontSize: 15,
+                  letterSpacing: -0.2,
+                  color: adaptiveText4(context))),
           const SizedBox(width: 12),
           Expanded(
             child: Text(value,
@@ -486,7 +570,10 @@ class _UserCardSheetState extends State<_UserCardSheet> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                    fontSize: 15, fontWeight: FontWeight.w500, letterSpacing: -0.2, color: adaptiveTextSoft(context))),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: -0.2,
+                    color: adaptiveTextSoft(context))),
           ),
         ]),
       );
@@ -497,16 +584,25 @@ class _UserCardSheetState extends State<_UserCardSheet> {
       final selected = role == value;
       return Expanded(
         child: Tappable(
-          onTap: (selected || widget.isSelf || _busy) ? null : () => _run(value, () => widget.row['role'] = value),
+          onTap: (selected || widget.isSelf || _busy)
+              ? null
+              : () => _run(value, () => widget.row['role'] = value),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 160),
             curve: Curves.easeOut,
             padding: const EdgeInsets.symmetric(vertical: 9),
             decoration: BoxDecoration(
-              color: selected ? Theme.of(context).colorScheme.surface : Colors.transparent,
-              borderRadius: BorderRadius.circular(100),
+              color: selected
+                  ? Theme.of(context).colorScheme.surface
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
               boxShadow: selected
-                  ? [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 3, offset: const Offset(0, 1))]
+                  ? [
+                      BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 3,
+                          offset: const Offset(0, 1))
+                    ]
                   : null,
             ),
             child: Center(
@@ -526,7 +622,9 @@ class _UserCardSheetState extends State<_UserCardSheet> {
       opacity: widget.isSelf ? 0.5 : 1,
       child: Container(
         padding: const EdgeInsets.all(3),
-        decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(100)),
+        decoration: BoxDecoration(
+            color: adaptiveSurface2(context),
+            borderRadius: BorderRadius.circular(13)),
         child: Row(children: [
           seg('student', l.t('role_student_short'), const Color(0xFF059669)),
           seg('teacher', l.t('role_teacher_short'), C.indigo),
@@ -556,12 +654,15 @@ class _UserCardSheetState extends State<_UserCardSheet> {
           width: 32,
           height: 32,
           alignment: Alignment.center,
-          decoration: BoxDecoration(color: color.withValues(alpha: 0.13), borderRadius: BorderRadius.circular(9)),
+          decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.13),
+              borderRadius: BorderRadius.circular(9)),
           child: Icon(icon, size: 18, color: color),
         ),
         const SizedBox(width: 14),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(title,
                 style: TextStyle(
                     fontSize: 17,
@@ -571,14 +672,19 @@ class _UserCardSheetState extends State<_UserCardSheet> {
             if (subtitle != null)
               Padding(
                 padding: const EdgeInsets.only(top: 1),
-                child: Text(subtitle, style: TextStyle(fontSize: 13, height: 1.3, color: adaptiveText4(context))),
+                child: Text(subtitle,
+                    style: TextStyle(
+                        fontSize: 13,
+                        height: 1.3,
+                        color: adaptiveText4(context))),
               ),
           ]),
         ),
         if (trailing != null)
           trailing
         else
-          Icon(CupertinoIcons.chevron_right, size: 14, color: adaptiveText4(context).withValues(alpha: 0.8)),
+          Icon(CupertinoIcons.chevron_right,
+              size: 14, color: adaptiveText4(context).withValues(alpha: 0.8)),
       ]),
     );
   }
@@ -595,7 +701,9 @@ class _Tile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(11, 10, 11, 11),
-      decoration: BoxDecoration(color: adaptiveSurface2(context), borderRadius: BorderRadius.circular(AppRadii.tile)),
+      decoration: BoxDecoration(
+          color: adaptiveSurface2(context),
+          borderRadius: BorderRadius.circular(AppRadii.tile)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         FittedBox(
           fit: BoxFit.scaleDown,
@@ -612,14 +720,19 @@ class _Tile extends StatelessWidget {
         Text(label,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 12, height: 1.2, color: adaptiveText4(context))),
+            style: TextStyle(
+                fontSize: 12, height: 1.2, color: adaptiveText4(context))),
       ]),
     );
   }
 }
 
 class _Chip extends StatelessWidget {
-  const _Chip({required this.text, required this.color, this.dot = false, this.small = false});
+  const _Chip(
+      {required this.text,
+      required this.color,
+      this.dot = false,
+      this.small = false});
 
   final String text;
   final Color color;
@@ -629,16 +742,25 @@ class _Chip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: small ? 8 : 10, vertical: small ? 2 : 4),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.13), borderRadius: BorderRadius.circular(100)),
+      padding: EdgeInsets.symmetric(
+          horizontal: small ? 8 : 10, vertical: small ? 2 : 4),
+      decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.13),
+          borderRadius: BorderRadius.circular(8)),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         if (dot) ...[
-          Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
           const SizedBox(width: 5),
         ],
         Text(text,
             style: TextStyle(
-                fontSize: small ? 11 : 13, fontWeight: FontWeight.w600, letterSpacing: -0.1, color: color)),
+                fontSize: small ? 11 : 13,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.1,
+                color: color)),
       ]),
     );
   }

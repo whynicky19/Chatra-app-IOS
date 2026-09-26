@@ -79,47 +79,84 @@ class _LegalDocScreenState extends State<LegalDocScreen> {
             controller: _scroll,
             padding: EdgeInsets.fromLTRB(20, topInset + 52, 20, 48),
             children: [
-              // ── Обложка ──────────────────────────────────────────────
-              Container(
-                width: 52,
-                height: 52,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: primary.withValues(alpha: isDark ? 0.18 : 0.12),
-                  borderRadius: BorderRadius.circular(AppRadii.tile),
-                ),
-                child: Icon(widget.headerIcon, size: 26, color: primary),
-              ),
-              const SizedBox(height: 16),
-              Text(title,
-                  style: TextStyle(
-                    fontSize: 34,
-                    fontWeight: FontWeight.w700,
-                    height: 1.08,
-                    letterSpacing: -0.9,
-                    color: adaptiveText1(context),
-                  )),
-              const SizedBox(height: 10),
-              _updatedPill(context, l),
-              const SizedBox(height: 22),
-
-              // ── Лид ──────────────────────────────────────────────────
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+                padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: primary.withValues(alpha: isDark ? 0.10 : 0.07),
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(AppRadii.card),
+                  border: Border.all(
+                    color: adaptiveBorder(context),
+                    width: hairline(context),
+                  ),
+                  boxShadow: softShadow(isDark),
                 ),
-                child: Text(l.t(widget.introKey),
-                    style: TextStyle(
-                      fontSize: 16.5,
-                      height: 1.55,
-                      letterSpacing: -0.2,
-                      color: adaptiveTextSoft(context),
-                    )),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 52,
+                        height: 52,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color:
+                              primary.withValues(alpha: isDark ? 0.18 : 0.11),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child:
+                            Icon(widget.headerIcon, size: 26, color: primary),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(title,
+                          style: TextStyle(
+                            fontSize: 30,
+                            fontWeight: FontWeight.w700,
+                            height: 1.08,
+                            letterSpacing: -0.8,
+                            color: adaptiveText1(context),
+                          )),
+                      const SizedBox(height: 10),
+                      _updatedPill(context, l),
+                      const SizedBox(height: 17),
+                      Container(
+                        height: hairline(context),
+                        color: adaptiveBorder(context),
+                      ),
+                      const SizedBox(height: 15),
+                      Text(l.t(widget.introKey),
+                          style: TextStyle(
+                            fontSize: 16,
+                            height: 1.55,
+                            letterSpacing: -0.2,
+                            color: adaptiveTextSoft(context),
+                          )),
+                    ]),
               ),
-              const SizedBox(height: 22),
+              const SizedBox(height: 24),
+
+              Row(children: [
+                Text(l.t('sections').toUpperCase(),
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.6,
+                        color: adaptiveText3(context))),
+                const Spacer(),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: adaptiveSurface2(context),
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  child: Text('${widget.sections.length}',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: adaptiveText3(context))),
+                ),
+              ]),
+              const SizedBox(height: 10),
 
               // ── Разделы ──────────────────────────────────────────────
               for (var i = 0; i < widget.sections.length; i++) ...[

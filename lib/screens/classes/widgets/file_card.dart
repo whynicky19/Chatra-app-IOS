@@ -1,7 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import '../../../theme/app_theme.dart';
 import '../../../widgets/inset_group.dart';
 import '../class_detail_utils.dart' show fileCacheKey;
 import 'detail_page_theme.dart';
@@ -17,19 +15,23 @@ class FileTypeVisual {
 FileTypeVisual fileTypeVisual(String ext) {
   switch (ext) {
     case 'pdf':
-      return const FileTypeVisual(CupertinoIcons.doc_text_fill, Color(0xFFE5484D));
+      return const FileTypeVisual(
+          CupertinoIcons.doc_text_fill, Color(0xFFE5484D));
     case 'pptx':
     case 'ppt':
       return const FileTypeVisual(CupertinoIcons.film, Color(0xFFF2A93B));
     case 'doc':
     case 'docx':
-      return const FileTypeVisual(CupertinoIcons.doc_text_fill, Color(0xFF3B9FF2));
+      return const FileTypeVisual(
+          CupertinoIcons.doc_text_fill, Color(0xFF3B9FF2));
     case 'xlsx':
     case 'xls':
-      return const FileTypeVisual(CupertinoIcons.square_grid_2x2_fill, Color(0xFF3BBF6E));
+      return const FileTypeVisual(
+          CupertinoIcons.square_grid_2x2_fill, Color(0xFF3BBF6E));
     case 'txt':
     case 'md':
-      return const FileTypeVisual(CupertinoIcons.doc_plaintext, Color(0xFFA681E8));
+      return const FileTypeVisual(
+          CupertinoIcons.doc_plaintext, Color(0xFFA681E8));
     case 'jpg':
     case 'jpeg':
     case 'png':
@@ -39,7 +41,8 @@ FileTypeVisual fileTypeVisual(String ext) {
     case 'mp4':
     case 'mov':
     case 'avi':
-      return const FileTypeVisual(CupertinoIcons.play_circle_fill, Color(0xFFC46BE0));
+      return const FileTypeVisual(
+          CupertinoIcons.play_circle_fill, Color(0xFFC46BE0));
     default:
       return const FileTypeVisual(CupertinoIcons.doc_fill, Color(0xFF9A9A9A));
   }
@@ -54,16 +57,12 @@ class FileEntry {
   final String? previewUrl;
   final String? sizeLabel;
 
-  const FileEntry({required this.name, required this.url, this.previewUrl, this.sizeLabel});
+  const FileEntry(
+      {required this.name, required this.url, this.previewUrl, this.sizeLabel});
 }
 
-/// Список вложений одной сгруппированной секцией в духе Apple Files: вместо
-/// стопки отдельных карточек с зазорами — одна группа, строки внутри разделены
-/// волосяной линией, выровненной по началу текста.
-///
-/// Раньше каждый файл был самостоятельной карточкой с рамкой: при трёх-четырёх
-/// вложениях страница превращалась в лестницу рамок, конкурирующих за
-/// внимание с самим заданием.
+/// Карточки вложений в духе Apple Files: тип файла заметен с первого взгляда,
+/// а круглая кнопка справа явно сообщает, что файл откроется на новом экране.
 class FileList extends StatelessWidget {
   const FileList({super.key, required this.files, required this.onOpen});
 
@@ -72,20 +71,18 @@ class FileList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InsetGroup(
-      color: detailSurface(context),
+    return Column(
       children: [
         for (var i = 0; i < files.length; i++)
-          GroupRow(
-            // Скругление даёт контейнер группы, строке остаются только
-            // разделитель и подсветка нажатия.
-            pos: innerPos(i, files.length),
-            color: Colors.transparent,
-            separatorInset: 64,
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-            label: 'Открыть файл ${files[i].name}',
-            onTap: () => onOpen(files[i]),
-            child: _FileRowContent(file: files[i]),
+          Padding(
+            padding: EdgeInsets.only(bottom: i == files.length - 1 ? 0 : 10),
+            child: GroupRow.card(
+              color: detailSurface(context),
+              padding: const EdgeInsets.fromLTRB(13, 12, 12, 12),
+              label: 'Открыть файл ${files[i].name}',
+              onTap: () => onOpen(files[i]),
+              child: _FileRowContent(file: files[i]),
+            ),
           ),
       ],
     );
@@ -109,28 +106,33 @@ class _FileRowContent extends StatelessWidget {
     // Без memCacheWidth/Height CachedNetworkImage декодирует превью в
     // исходном разрешении файла ради плитки 40×40 — в списке вложений с
     // несколькими фото это лишняя память и CPU на decode на каждую строку.
-    final previewPx = (40 * MediaQuery.devicePixelRatioOf(context)).round();
-    final hasPreview = _imagePreviewExts.contains(ext) && file.previewUrl != null;
+    final previewPx = (48 * MediaQuery.devicePixelRatioOf(context)).round();
+    final hasPreview =
+        _imagePreviewExts.contains(ext) && file.previewUrl != null;
 
     Widget fallback() => Container(
-      width: 40, height: 40,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: visual.color.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(AppRadii.chip),
-      ),
-      child: Icon(visual.icon, size: 20, color: visual.color),
-    );
+          width: 48,
+          height: 48,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: visual.color.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Icon(visual.icon, size: 23, color: visual.color),
+        );
 
     return Row(children: [
       hasPreview
           ? ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadii.chip),
+              borderRadius: BorderRadius.circular(14),
               child: CachedNetworkImage(
                 imageUrl: file.previewUrl!,
                 cacheKey: fileCacheKey(file.previewUrl!),
-                memCacheWidth: previewPx, memCacheHeight: previewPx,
-                width: 40, height: 40, fit: BoxFit.cover,
+                memCacheWidth: previewPx,
+                memCacheHeight: previewPx,
+                width: 48,
+                height: 48,
+                fit: BoxFit.cover,
                 fadeInDuration: const Duration(milliseconds: 150),
                 placeholder: (_, __) => fallback(),
                 errorWidget: (_, __, ___) => fallback(),
@@ -141,16 +143,23 @@ class _FileRowContent extends StatelessWidget {
       Expanded(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(name,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: -0.3, color: detailText1(context)),
-              maxLines: 1, overflow: TextOverflow.ellipsis),
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.3,
+                  color: detailText1(context)),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis),
           if (subtitle.isNotEmpty) ...[
             const SizedBox(height: 1),
-            Text(subtitle, style: TextStyle(fontSize: 13, color: detailText2(context))),
+            Text(subtitle,
+                style: TextStyle(fontSize: 13, color: detailText2(context))),
           ],
         ]),
       ),
       const SizedBox(width: 8),
-      Icon(CupertinoIcons.chevron_right, size: 14, color: detailText2(context).withValues(alpha: 0.8)),
+      Icon(CupertinoIcons.chevron_right,
+          size: 15, color: detailText2(context).withValues(alpha: 0.72)),
     ]);
   }
 }

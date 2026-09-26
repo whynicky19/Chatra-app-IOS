@@ -15,6 +15,8 @@ class SecuritySettingsScreen extends StatelessWidget {
     return SettingsSubScreen(
       title: l.t('security_section'),
       subtitle: l.t('security_section_sub'),
+      icon: CupertinoIcons.shield_lefthalf_fill,
+      accent: C.settingsTile,
       children: [
         // Оба пункта — одной группой с разделителем, как «Условия» и
         // «Конфиденциальность» в about_settings_screen или блок «Разделы» в

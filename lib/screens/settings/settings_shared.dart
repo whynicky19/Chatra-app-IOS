@@ -147,6 +147,8 @@ class SettingsRow extends StatelessWidget {
 class SettingsSubScreen extends StatelessWidget {
   final String title;
   final String? subtitle;
+  final IconData? icon;
+  final Color? accent;
   final List<Widget> children;
   final Widget? footer;
 
@@ -159,12 +161,16 @@ class SettingsSubScreen extends StatelessWidget {
     required this.title,
     required this.children,
     this.subtitle,
+    this.icon,
+    this.accent,
     this.footer,
     this.action,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final heroAccent = accent ?? Theme.of(context).colorScheme.primary;
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: AppBackdrop(
@@ -198,33 +204,64 @@ class SettingsSubScreen extends StatelessWidget {
               ]),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 18),
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                        width: double.infinity,
-                        child: Text(title,
-                            style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: -0.9,
-                                height: 1.1,
-                                color: adaptiveTextSoft(context)))),
-                    if (subtitle != null) ...[
-                      const SizedBox(height: 4),
-                      Text(subtitle!,
-                          style: TextStyle(
-                              fontSize: 15,
-                              letterSpacing: -0.2,
-                              height: 1.35,
-                              color: adaptiveText3(context))),
-                    ],
-                  ]),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(AppRadii.card),
+                  border: Border.all(
+                    color: groupSeparator(context),
+                    width: hairline(context),
+                  ),
+                  boxShadow: softShadow(isDark),
+                ),
+                child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      if (icon != null) ...[
+                        Container(
+                          width: 54,
+                          height: 54,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: heroAccent.withValues(
+                                alpha: isDark ? 0.18 : 0.11),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Icon(icon, size: 26, color: heroAccent),
+                        ),
+                        const SizedBox(width: 15),
+                      ],
+                      Expanded(
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(title,
+                                  style: TextStyle(
+                                      fontSize: 27,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: -0.75,
+                                      height: 1.08,
+                                      color: adaptiveTextSoft(context))),
+                              if (subtitle != null) ...[
+                                const SizedBox(height: 6),
+                                Text(subtitle!,
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        letterSpacing: -0.15,
+                                        height: 1.35,
+                                        color: adaptiveText3(context))),
+                              ],
+                            ]),
+                      ),
+                    ]),
+              ),
             ),
             Expanded(
                 child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
               children: children,
             )),
             if (footer != null)

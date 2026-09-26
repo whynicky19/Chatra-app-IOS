@@ -491,31 +491,65 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
                           l: l),
                       if (widget.content.isNotEmpty) ...[
                         const SizedBox(height: 26),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 2, bottom: 8),
-                          child: Text(l.t('description').toUpperCase(),
-                              style: sectionCaptionStyle(context)),
-                        ),
-                        // Тело лекции — обычный текст на фоне страницы, как в Apple
-                        // Notes: раньше он лежал в серой карточке, которая на
-                        // длинном конспекте читалась как бесконечная плашка.
-                        if (_canAnnotate)
-                          SelectionArea(
-                            contextMenuBuilder: _selectionMenu,
-                            child: SelectionListener(
-                              selectionNotifier: _selectionNotifier,
-                              child: body,
+                        sectionCard(context, isDark, children: [
+                          Row(children: [
+                            Container(
+                              width: 34,
+                              height: 34,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: accent.withValues(
+                                    alpha: isDark ? 0.17 : 0.10),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(CupertinoIcons.text_alignleft,
+                                  size: 17, color: accent),
                             ),
-                          )
-                        else
-                          body,
+                            const SizedBox(width: 11),
+                            Text(l.t('description'),
+                                style: cardTitleStyle(context)),
+                          ]),
+                          const SizedBox(height: 16),
+                          if (_canAnnotate)
+                            SelectionArea(
+                              contextMenuBuilder: _selectionMenu,
+                              child: SelectionListener(
+                                selectionNotifier: _selectionNotifier,
+                                child: body,
+                              ),
+                            )
+                          else
+                            body,
+                        ]),
                       ],
                       if (widget.files.isNotEmpty) ...[
                         SizedBox(height: widget.content.isNotEmpty ? 30 : 26),
                         Padding(
-                          padding: const EdgeInsets.only(left: 2, bottom: 8),
-                          child: Text(l.t('attached_files_edit').toUpperCase(),
-                              style: sectionCaptionStyle(context)),
+                          padding: const EdgeInsets.fromLTRB(2, 0, 2, 10),
+                          child: Row(children: [
+                            Icon(CupertinoIcons.paperclip,
+                                size: 15, color: accent),
+                            const SizedBox(width: 7),
+                            Expanded(
+                              child: Text(
+                                  l.t('attached_files_edit').toUpperCase(),
+                                  style: sectionCaptionStyle(context)),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 9, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: accent.withValues(
+                                    alpha: isDark ? 0.17 : 0.10),
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                              child: Text('${widget.files.length}',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: accent)),
+                            ),
+                          ]),
                         ),
                         FileList(
                           files: [

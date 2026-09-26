@@ -1,11 +1,10 @@
-/// Выбор оформления обложки предмета: цвет + предметная иконка + превью.
-/// Загрузки своей фотографии нет — обложку рисует бэкенд по паре «цвет + иконка».
+/// Выбор оформления обложки предмета: цвет + превью.
+/// Тематику обложки бэкенд выводит из названия курса; выбранный цвет задаёт палитру.
 /// При classId == null (предмет ещё не создан) кнопки генерации нет.
 library;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/l10n_provider.dart';
@@ -53,13 +52,8 @@ class CoverAppearance extends StatefulWidget {
   State<CoverAppearance> createState() => _CoverAppearanceState();
 }
 
-/// Сколько символов помещается в одну полоску пикера — она же ширина сетки.
-const _kIconsPerRow = 6;
-
 class _CoverAppearanceState extends State<CoverAppearance> {
   CoverOptions _options = CoverOptionsCache.current;
-
-  bool _expanded = false;
 
   @override
   void initState() {
@@ -67,38 +61,11 @@ class _CoverAppearanceState extends State<CoverAppearance> {
     _loadOptions();
   }
 
-  /// Свёрнутая полоска: первые символы списка, но выбранный всегда среди них —
-  /// иначе при редактировании непонятно, что вообще выбрано.
-  List<CoverIconOption> _collapsedRow() {
-    final all = _options.icons;
-    final head = all.take(_kIconsPerRow).toList();
-    if (head.any((i) => i.id == widget.icon)) return head;
-    final idx = all.indexWhere((i) => i.id == widget.icon);
-    if (idx == -1) return head;
-    return [all[idx], ...head.take(_kIconsPerRow - 1)];
-  }
-
   Future<void> _loadOptions() async {
     if (CoverOptionsCache.isLoaded) return;
     final api = context.read<ApiService>();
     final loaded = await CoverOptionsCache.load(api.getCoverOptions);
     if (mounted) setState(() => _options = loaded);
-  }
-
-  /// Символы секциями; неизвестная или пустая группа — одним блоком в конец,
-  /// чтобы ответ старого бэкенда без groups не потерял ни одного варианта.
-  List<({String label, List<CoverIconOption> icons})> _sections(String lang) {
-    final result = <({String label, List<CoverIconOption> icons})>[];
-    final taken = <String>{};
-    for (final g in _options.groups) {
-      final icons = _options.icons.where((i) => i.group == g.id).toList();
-      if (icons.isEmpty) continue;
-      taken.addAll(icons.map((i) => i.id));
-      result.add((label: coverGroupLabel(g.id, lang, g.label), icons: icons));
-    }
-    final rest = _options.icons.where((i) => !taken.contains(i.id)).toList();
-    if (rest.isNotEmpty) result.add((label: '', icons: rest));
-    return result;
   }
 
   @override
@@ -113,14 +80,12 @@ class _CoverAppearanceState extends State<CoverAppearance> {
         _preview(context, l, selected),
         if (widget.error != null) ...[
           const SizedBox(height: 8),
-          Text(widget.error!, style: const TextStyle(fontSize: 12, color: C.red)),
+          Text(widget.error!,
+              style: const TextStyle(fontSize: 12, color: C.red)),
         ],
         const SizedBox(height: 18),
         _label(context, l.t('cover_color')),
         _colorRow(context, selected),
-        const SizedBox(height: 18),
-        _label(context, l.t('cover_icon')),
-        _iconPicker(context, l, selected),
         if (widget.classId != null && _options.aiAvailable) ...[
           const SizedBox(height: 18),
           _generateButton(context, l, selected),
@@ -133,7 +98,9 @@ class _CoverAppearanceState extends State<CoverAppearance> {
         padding: const EdgeInsets.only(bottom: 8, left: 2),
         child: Text(text,
             style: TextStyle(
-                fontSize: 13, fontWeight: FontWeight.w600, color: adaptiveText3(context))),
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: adaptiveText3(context))),
       );
 
   Widget _preview(BuildContext context, L10n l, CoverColorOption color) {
@@ -148,7 +115,7 @@ class _CoverAppearanceState extends State<CoverAppearance> {
             url: (url == null || url.isEmpty)
                 ? null
                 : context.read<ApiService>().fixUrl(url),
-            icon: widget.icon,
+            icon: null,
             color: color.id,
             coverSource: widget.coverSource,
             iconSize: 60,
@@ -157,28 +124,33 @@ class _CoverAppearanceState extends State<CoverAppearance> {
           if (widget.generating)
             Container(
               color: Colors.black.withValues(alpha: 0.55),
-              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white)),
-                const SizedBox(height: 12),
-                Text(l.t('cover_generating'),
-                    style: const TextStyle(
-                        color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
-                // Генерация занимает до пары минут — без объяснения долгий
-                // спиннер выглядит как зависание.
-                const SizedBox(height: 6),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Text(l.t('cover_generating_hint'),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.75),
-                          fontSize: 12,
-                          height: 1.35)),
-                ),
-              ]),
+              child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2.4, color: Colors.white)),
+                    const SizedBox(height: 12),
+                    Text(l.t('cover_generating'),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600)),
+                    // Генерация занимает до пары минут — без объяснения долгий
+                    // спиннер выглядит как зависание.
+                    const SizedBox(height: 6),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Text(l.t('cover_generating_hint'),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.75),
+                              fontSize: 12,
+                              height: 1.35)),
+                    ),
+                  ]),
             ),
         ]),
       ),
@@ -191,7 +163,8 @@ class _CoverAppearanceState extends State<CoverAppearance> {
         children: [
           for (final c in _options.colors)
             Tappable(
-              onTap: widget.generating ? null : () => widget.onColorChanged(c.id),
+              onTap:
+                  widget.generating ? null : () => widget.onColorChanged(c.id),
               label: c.id,
               minSize: 0,
               child: Container(
@@ -205,117 +178,16 @@ class _CoverAppearanceState extends State<CoverAppearance> {
                       : null,
                 ),
                 child: c.id == selected.id
-                    ? const Icon(CupertinoIcons.check_mark, size: 16, color: Colors.white)
+                    ? const Icon(CupertinoIcons.check_mark,
+                        size: 16, color: Colors.white)
                     : null,
               ),
             ),
         ],
       );
 
-  Widget _iconPicker(BuildContext context, L10n l, CoverColorOption selected) {
-    final all = _options.icons;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (!_expanded)
-          _iconGrid(context, l, selected, _collapsedRow())
-        else
-          // Развёрнутый список ограничен по высоте и скроллится внутри: иначе
-          // он растягивает форму на несколько экранов.
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 300),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  for (final s in _sections(l.lang)) ...[
-                    if (s.label.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 6, left: 2),
-                        child: Text(
-                          s.label.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5,
-                            color: adaptiveText4(context),
-                          ),
-                        ),
-                      ),
-                    _iconGrid(context, l, selected, s.icons),
-                    const SizedBox(height: 14),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        if (all.length > _kIconsPerRow)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Tappable(
-              onTap: () => setState(() => _expanded = !_expanded),
-              label: _expanded
-                  ? l.t('cover_icons_less')
-                  : '${l.t('cover_icons_all')} (${all.length})',
-              minSize: 0,
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Text(
-                  _expanded
-                      ? l.t('cover_icons_less')
-                      : '${l.t('cover_icons_all')} (${all.length})',
-                  style: TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.w600, color: selected.hex),
-                ),
-                const SizedBox(width: 4),
-                Icon(
-                  _expanded ? CupertinoIcons.chevron_up : CupertinoIcons.chevron_down,
-                  size: 13,
-                  color: selected.hex,
-                ),
-              ]),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _iconGrid(BuildContext context, L10n l, CoverColorOption selected,
-          List<CoverIconOption> icons) =>
-      GridView.count(
-        crossAxisCount: _kIconsPerRow,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-        children: [
-          for (final i in icons)
-            Tappable(
-              onTap: widget.generating ? null : () => widget.onIconChanged(i.id),
-              label: coverIconLabel(i.id, l.lang),
-              minSize: 0,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: adaptiveSurface2(context),
-                  borderRadius: BorderRadius.circular(AppRadii.tile),
-                  border: Border.all(
-                    color: i.id == widget.icon ? selected.hex : adaptiveBorder(context),
-                    width: i.id == widget.icon ? 2 : 1.2,
-                  ),
-                ),
-                child: Center(
-                  child: SvgPicture.string(
-                    coverIconSvg(i.id,
-                        color: i.id == widget.icon ? selected.hex : adaptiveText3(context)),
-                    width: 21,
-                    height: 21,
-                  ),
-                ),
-              ),
-            ),
-        ],
-      );
-
-  Widget _generateButton(BuildContext context, L10n l, CoverColorOption selected) {
+  Widget _generateButton(
+      BuildContext context, L10n l, CoverColorOption selected) {
     final hasCover = widget.coverUrl != null && widget.coverUrl!.isNotEmpty;
     return OutlinedButton(
       onPressed: widget.generating ? null : widget.onGenerate,
@@ -327,7 +199,8 @@ class _CoverAppearanceState extends State<CoverAppearance> {
         fixedSize: const Size.fromHeight(48),
         padding: EdgeInsets.zero,
         backgroundColor: selected.hex.withValues(alpha: 0.08),
-        side: BorderSide(color: selected.hex.withValues(alpha: 0.5), width: 1.4),
+        side:
+            BorderSide(color: selected.hex.withValues(alpha: 0.5), width: 1.4),
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadii.button)),
       ),
@@ -347,7 +220,9 @@ class _CoverAppearanceState extends State<CoverAppearance> {
           : Text(
               hasCover ? l.t('cover_regenerate') : l.t('cover_generate'),
               style: TextStyle(
-                  fontSize: 15, fontWeight: FontWeight.w600, color: selected.hex),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: selected.hex),
             ),
     );
   }

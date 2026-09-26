@@ -89,6 +89,8 @@ class _AiLimitsScreenState extends State<AiLimitsScreen> {
     return SettingsSubScreen(
       title: l.t('ai_limit_section'),
       subtitle: l.t('ai_limit_section_sub'),
+      icon: CupertinoIcons.sparkles,
+      accent: Theme.of(context).colorScheme.primary,
       action: _RefreshAction(busy: _refreshing || _loading, onTap: _refresh),
       children: [
         if (_loading)

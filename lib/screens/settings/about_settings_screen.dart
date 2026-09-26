@@ -26,6 +26,8 @@ class AboutSettingsScreen extends StatelessWidget {
     return SettingsSubScreen(
       title: l.t('about_section'),
       subtitle: l.t('about_section_sub'),
+      icon: CupertinoIcons.info_circle_fill,
+      accent: const Color(0xFF5856D6),
       footer: const _VersionLabel(),
       children: [
         SettingsGroup(children: [
@@ -35,8 +37,10 @@ class AboutSettingsScreen extends StatelessWidget {
             iconBg: C.settingsTile,
             title: l.t('tos_title'),
             sub: l.t('tos_view'),
-            onTap: () => guardedPush(context,
-              MaterialPageRoute(builder: (_) => const TermsOfServiceScreen())),
+            onTap: () => guardedPush(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const TermsOfServiceScreen())),
           ),
           SettingsRow(
             pos: GroupPos.last,
@@ -45,7 +49,7 @@ class AboutSettingsScreen extends StatelessWidget {
             title: l.t('pp_title'),
             sub: l.t('pp_view'),
             onTap: () => guardedPush(context,
-              MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
+                MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
           ),
         ]),
         const SizedBox(height: 26),
@@ -58,19 +62,31 @@ class AboutSettingsScreen extends StatelessWidget {
             separatorInset: 60,
             padding: const EdgeInsets.fromLTRB(16, 11, 16, 11),
             onTap: () => guardedPush(context,
-              MaterialPageRoute(builder: (_) => const ContactScreen())),
+                MaterialPageRoute(builder: (_) => const ContactScreen())),
             child: Row(children: [
               const TelegramLogo(size: 30),
               const SizedBox(width: 14),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(l.t('contact_developer'),
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500, letterSpacing: -0.4, color: adaptiveTextSoft(context))),
-                const SizedBox(height: 1),
-                Text(l.t('contact_developer_sub'),
-                  style: TextStyle(fontSize: 13, height: 1.3, color: adaptiveText3(context))),
-              ])),
+              Expanded(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                    Text(l.t('contact_developer'),
+                        style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: -0.4,
+                            color: adaptiveTextSoft(context))),
+                    const SizedBox(height: 1),
+                    Text(l.t('contact_developer_sub'),
+                        style: TextStyle(
+                            fontSize: 13,
+                            height: 1.3,
+                            color: adaptiveText3(context))),
+                  ])),
               const SizedBox(width: 6),
-              Icon(CupertinoIcons.chevron_right, size: 14, color: adaptiveText4(context).withValues(alpha: 0.8)),
+              Icon(CupertinoIcons.chevron_right,
+                  size: 14,
+                  color: adaptiveText4(context).withValues(alpha: 0.8)),
             ]),
           ),
         ]),
@@ -81,7 +97,8 @@ class AboutSettingsScreen extends StatelessWidget {
 
 class _VersionLabel extends StatefulWidget {
   const _VersionLabel();
-  @override State<_VersionLabel> createState() => _VersionLabelState();
+  @override
+  State<_VersionLabel> createState() => _VersionLabelState();
 }
 
 class _VersionLabelState extends State<_VersionLabel> {

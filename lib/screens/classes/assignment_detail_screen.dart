@@ -1112,21 +1112,50 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
             ]),
           ),
       ]),
-      const SizedBox(height: 16),
-      Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-        ScoreRing(
-            score: score, maxScore: maxScore, size: 108, accentColor: accent),
-        if (gradedByAi && feedback.isNotEmpty) ...[
-          const SizedBox(width: 16),
-          Expanded(
-              child: Text(feedback,
+      const SizedBox(height: 18),
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+        decoration: BoxDecoration(
+          color: accent.withValues(alpha: isDark ? 0.12 : 0.07),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Center(
+          child: ScoreRing(
+              score: score, maxScore: maxScore, size: 138, accentColor: accent),
+        ),
+      ),
+      if (gradedByAi && feedback.isNotEmpty) ...[
+        const SizedBox(height: 14),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            color: adaptiveSurface2(context),
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Icon(CupertinoIcons.sparkles, size: 16, color: accent),
+              const SizedBox(width: 7),
+              Text(l.t('ai_check'),
                   style: TextStyle(
-                      fontSize: 15,
-                      height: 1.45,
-                      letterSpacing: -0.2,
-                      color: detailText2(context)))),
-        ],
-      ]),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: accent,
+                      letterSpacing: -0.1)),
+            ]),
+            const SizedBox(height: 9),
+            Text(feedback,
+                style: TextStyle(
+                    fontSize: 16,
+                    height: 1.5,
+                    letterSpacing: -0.2,
+                    color: detailText1(context))),
+          ]),
+        ),
+      ],
       if (criteriaScores.isNotEmpty) ...[
         const SizedBox(height: 22),
         Text(l.t('by_criteria').toUpperCase(),
@@ -1271,23 +1300,38 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
       required Color color}) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       decoration: BoxDecoration(
-          color: color.withValues(
-              alpha: Theme.of(context).brightness == Brightness.dark
-                  ? 0.12
-                  : 0.08),
-          borderRadius: BorderRadius.circular(AppRadii.card)),
+        color: detailSurface(context),
+        borderRadius: BorderRadius.circular(AppRadii.card),
+        border: Border.all(
+          color: detailBorder(context),
+          width: 1 / MediaQuery.devicePixelRatioOf(context),
+        ),
+        boxShadow: softShadow(Theme.of(context).brightness == Brightness.dark),
+      ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Icon(icon, size: 15, color: color),
-          const SizedBox(width: 7),
-          Text(title.toUpperCase(),
+          Container(
+            width: 34,
+            height: 34,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: color.withValues(
+                  alpha: Theme.of(context).brightness == Brightness.dark
+                      ? 0.17
+                      : 0.10),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 17, color: color),
+          ),
+          const SizedBox(width: 10),
+          Text(title,
               style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 17,
                   fontWeight: FontWeight.w600,
-                  color: color,
-                  letterSpacing: 0.6)),
+                  color: detailText1(context),
+                  letterSpacing: -0.35)),
         ]),
         const SizedBox(height: 10),
         for (final item in items) ...[

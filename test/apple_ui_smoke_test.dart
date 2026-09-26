@@ -56,7 +56,8 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('экран настроек (группы, переключатель, разделы) строится', (tester) async {
+  testWidgets('экран настроек (группы, переключатель, разделы) строится',
+      (tester) async {
     for (final dark in [false, true]) {
       await tester.pumpWidget(wrapSettings(dark: dark));
       await tester.pump(const Duration(milliseconds: 900));
@@ -68,7 +69,8 @@ void main() {
         for (var i = 1; i <= n; i++)
           {
             'id': i,
-            'title': '[LECTURE][$i] Лекция $i: очень длинное название лекции для проверки переноса',
+            'title':
+                '[LECTURE][$i] Лекция $i: очень длинное название лекции для проверки переноса',
             'body': jsonEncode({
               'content': 'Текст лекции ' * 20,
               'files': ['https://example.com/uploads/file$i.pdf#doc$i.pdf'],
@@ -121,13 +123,18 @@ void main() {
           },
       ];
 
-  testWidgets('список заданий студента (рейтинг + дедлайн + строки) строится', (tester) async {
+  testWidgets('список заданий студента (рейтинг + дедлайн + строки) строится',
+      (tester) async {
     for (final dark in [false, true]) {
       await tester.pumpWidget(wrap(
         ClassAssignmentsTab(
           assignments: assignments(3),
           mySubs: const [
-            {'assignment_id': 1, 'status': 'graded', 'grade': {'score': 87, 'graded_by': 'ai'}},
+            {
+              'assignment_id': 1,
+              'status': 'graded',
+              'grade': {'score': 87, 'graded_by': 'ai'}
+            },
             {'assignment_id': 2, 'status': 'submitted'},
           ],
           rating: const {'avg_score': 87.4, 'avg_percent': 91.2},
@@ -145,7 +152,8 @@ void main() {
     }
   });
 
-  testWidgets('список заданий учителя и пустое состояние строятся', (tester) async {
+  testWidgets('список заданий учителя и пустое состояние строятся',
+      (tester) async {
     for (final items in [assignments(2), <dynamic>[]]) {
       await tester.pumpWidget(wrap(
         ClassAssignmentsTab(
@@ -165,7 +173,8 @@ void main() {
     }
   });
 
-  testWidgets('страница лекции с текстом и вложениями строится', (tester) async {
+  testWidgets('страница лекции с текстом и вложениями строится',
+      (tester) async {
     await tester.pumpWidget(wrap(
       LectureDetailScreen(
         title: 'Лекция 3: интегралы и производные в приложениях',
@@ -188,8 +197,13 @@ void main() {
         padding: const EdgeInsets.all(16),
         child: FileList(
           files: const [
-            FileEntry(name: 'Задание.docx', url: 'https://e.com/a.docx', sizeLabel: '120 KB'),
-            FileEntry(name: 'Очень длинное имя файла без пробелов.pdf', url: 'https://e.com/b.pdf'),
+            FileEntry(
+                name: 'Задание.docx',
+                url: 'https://e.com/a.docx',
+                sizeLabel: '120 KB'),
+            FileEntry(
+                name: 'Очень длинное имя файла без пробелов.pdf',
+                url: 'https://e.com/b.pdf'),
           ],
           onOpen: (_) {},
         ),
@@ -211,7 +225,8 @@ void main() {
         // Длинное название и длинное описание + вложения.
         {
           'id': 2,
-          'title': '[LECTURE][2] Очень длинное название лекции, которое точно не влезает в одну строку экрана',
+          'title':
+              '[LECTURE][2] Очень длинное название лекции, которое точно не влезает в одну строку экрана',
           'body': jsonEncode({
             'content': 'Очень длинное описание лекции. ' * 30,
             'files': ['https://e.com/a.pdf#a.pdf', 'https://e.com/b.pdf#b.pdf'],
@@ -227,7 +242,8 @@ void main() {
       .map((w) => tester.getSize(find.byWidget(w)).height)
       .toSet();
 
-  testWidgets('карточки лекций одной высоты при разной длине текста', (tester) async {
+  testWidgets('карточки лекций одной высоты при разной длине текста',
+      (tester) async {
     await tester.pumpWidget(wrap(
       ClassPostsTab(
         posts: mixedPosts(),
@@ -240,18 +256,21 @@ void main() {
     ));
     await tester.pump(const Duration(milliseconds: 600));
 
-    expect(cardHeights(tester), hasLength(1), reason: 'высота карточек разошлась');
+    expect(cardHeights(tester), hasLength(1),
+        reason: 'высота карточек разошлась');
     // Шеврона «открыть» в списке быть не должно, троеточие — вертикальное.
     expect(find.byIcon(CupertinoIcons.chevron_right), findsNothing);
     expect(find.byIcon(CupertinoIcons.ellipsis_vertical), findsWidgets);
   });
 
-  testWidgets('карточки заданий одной высоты при разном описании и статусах', (tester) async {
+  testWidgets('карточки заданий одной высоты при разном описании и статусах',
+      (tester) async {
     final items = [
       {'id': 1, 'title': 'Короткое', 'max_score': 100},
       {
         'id': 2,
-        'title': 'Очень длинное название задания, которое точно не влезает в одну строку',
+        'title':
+            'Очень длинное название задания, которое точно не влезает в одну строку',
         'description': 'Описание задания. ' * 40,
         'max_score': 100,
         'deadline': '2026-08-20T23:59:00',
@@ -261,7 +280,11 @@ void main() {
       ClassAssignmentsTab(
         assignments: items,
         mySubs: const [
-          {'assignment_id': 2, 'status': 'graded', 'grade': {'score': 87, 'graded_by': 'ai'}},
+          {
+            'assignment_id': 2,
+            'status': 'graded',
+            'grade': {'score': 87, 'graded_by': 'ai'}
+          },
         ],
         rating: const {},
         isTeacher: true,
@@ -274,12 +297,14 @@ void main() {
     ));
     await tester.pump(const Duration(milliseconds: 600));
 
-    expect(cardHeights(tester), hasLength(1), reason: 'высота карточек разошлась');
+    expect(cardHeights(tester), hasLength(1),
+        reason: 'высота карточек разошлась');
     expect(find.byIcon(CupertinoIcons.chevron_right), findsNothing);
     expect(find.byIcon(CupertinoIcons.ellipsis_vertical), findsWidgets);
   });
 
-  testWidgets('карточка лекции и карточка задания одной высоты между собой', (tester) async {
+  testWidgets('карточка лекции и карточка задания одной высоты между собой',
+      (tester) async {
     await tester.pumpWidget(wrap(
       ClassPostsTab(
         posts: mixedPosts(),
@@ -297,7 +322,12 @@ void main() {
       ClassAssignmentsTab(
         assignments: const [
           {'id': 1, 'title': 'Короткое', 'max_score': 100},
-          {'id': 2, 'title': 'Другое задание', 'max_score': 100, 'deadline': '2026-08-20T23:59:00'},
+          {
+            'id': 2,
+            'title': 'Другое задание',
+            'max_score': 100,
+            'deadline': '2026-08-20T23:59:00'
+          },
         ],
         mySubs: const [],
         rating: const {},
@@ -316,12 +346,18 @@ void main() {
         reason: 'списки лекций и заданий должны иметь один ритм строк');
   });
 
-  testWidgets('просроченное задание не красит значок в красный', (tester) async {
+  testWidgets('просроченное задание не красит значок в красный',
+      (tester) async {
     await tester.pumpWidget(wrap(
       ClassAssignmentsTab(
         assignments: const [
           // Срок прошёл, работа не сдана.
-          {'id': 1, 'title': 'Просроченное', 'max_score': 100, 'deadline': '2020-01-01T23:59:00'},
+          {
+            'id': 1,
+            'title': 'Просроченное',
+            'max_score': 100,
+            'deadline': '2020-01-01T23:59:00'
+          },
         ],
         mySubs: const [],
         rating: const {},

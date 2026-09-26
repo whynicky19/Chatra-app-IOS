@@ -2,34 +2,43 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'detail_page_theme.dart';
 
-/// Круговой индикатор результата в духе Apple Fitness/Activity: анимированная
-/// заливка кольца при появлении, мягкое цветное свечение под кольцом вместо
-/// плоской тени. Один акцентный цвет (не завязан на "полосу" результата —
-/// экран задания везде использует единый голубой акцент).
+/// Круговой индикатор результата в духе Apple Fitness/Activity.
 class ScoreRing extends StatefulWidget {
   final num score;
   final num maxScore;
   final double size;
   final Color accentColor;
 
-  const ScoreRing({super.key, required this.score, required this.maxScore, required this.accentColor, this.size = 200});
+  const ScoreRing(
+      {super.key,
+      required this.score,
+      required this.maxScore,
+      required this.accentColor,
+      this.size = 200});
 
   @override
   State<ScoreRing> createState() => _ScoreRingState();
 }
 
-class _ScoreRingState extends State<ScoreRing> with SingleTickerProviderStateMixin {
+class _ScoreRingState extends State<ScoreRing>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _animation;
 
-  double get _pct => widget.maxScore <= 0 ? 0 : (widget.score / widget.maxScore).clamp(0, 1).toDouble();
+  double get _pct => widget.maxScore <= 0
+      ? 0
+      : (widget.score / widget.maxScore).clamp(0, 1).toDouble();
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400));
-    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
-    WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) _controller.forward(); });
+    _controller = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1400));
+    _animation =
+        CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _controller.forward();
+    });
   }
 
   @override
@@ -49,39 +58,40 @@ class _ScoreRingState extends State<ScoreRing> with SingleTickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final colors = [widget.accentColor.withValues(alpha: 0.75), widget.accentColor];
+    final colors = [
+      widget.accentColor.withValues(alpha: 0.75),
+      widget.accentColor
+    ];
 
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, _) {
         final animatedPct = _pct * _animation.value;
-        return Container(
+        return SizedBox(
           width: widget.size,
           height: widget.size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: widget.accentColor.withValues(alpha: (isDark ? 0.35 : 0.22) * _animation.value),
-                blurRadius: widget.size * 0.22,
-                spreadRadius: -widget.size * 0.03,
-                offset: Offset(0, widget.size * 0.06),
-              ),
-            ],
-          ),
           child: CustomPaint(
             painter: _RingPainter(
               progress: animatedPct,
               colors: colors,
-              trackColor: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.055),
+              trackColor: isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.black.withValues(alpha: 0.055),
             ),
             child: Center(
               child: Column(mainAxisSize: MainAxisSize.min, children: [
                 Text('${widget.score}',
-                    style: TextStyle(fontSize: widget.size * 0.24, fontWeight: FontWeight.w700,
-                        color: detailText1(context), height: 1, letterSpacing: -0.5)),
+                    style: TextStyle(
+                        fontSize: widget.size * 0.24,
+                        fontWeight: FontWeight.w700,
+                        color: detailText1(context),
+                        height: 1,
+                        letterSpacing: -0.5)),
                 Text('/ ${widget.maxScore}',
-                    style: TextStyle(fontSize: widget.size * 0.10, fontWeight: FontWeight.w600, color: detailText2(context))),
+                    style: TextStyle(
+                        fontSize: widget.size * 0.10,
+                        fontWeight: FontWeight.w600,
+                        color: detailText2(context))),
               ]),
             ),
           ),
@@ -96,7 +106,8 @@ class _RingPainter extends CustomPainter {
   final List<Color> colors;
   final Color trackColor;
 
-  _RingPainter({required this.progress, required this.colors, required this.trackColor});
+  _RingPainter(
+      {required this.progress, required this.colors, required this.trackColor});
 
   @override
   void paint(Canvas canvas, Size size) {

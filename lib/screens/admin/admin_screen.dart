@@ -28,9 +28,8 @@ class AdminScreen extends StatefulWidget {
   State<AdminScreen> createState() => _AdminState();
 }
 
-class _AdminState extends State<AdminScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabCtrl;
+class _AdminState extends State<AdminScreen> {
+  int? _section;
   List<dynamic> _users = [];
   List<Map<String, dynamic>> _allClassPosts = [];
   List<dynamic> _aiSummary = [];
@@ -47,7 +46,6 @@ class _AdminState extends State<AdminScreen>
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 4, vsync: this);
     _initAll();
   }
 
@@ -59,7 +57,6 @@ class _AdminState extends State<AdminScreen>
   @override
   void dispose() {
     _searchDebounce?.cancel();
-    _tabCtrl.dispose();
     super.dispose();
   }
 
@@ -403,151 +400,205 @@ class _AdminState extends State<AdminScreen>
   Widget build(BuildContext context) {
     final l = context.watch<L10n>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface = Theme.of(context).colorScheme.surface;
     final primary = Theme.of(context).colorScheme.primary;
     final teachers = _users.where((u) => u['role'] == 'teacher').length;
     final students = _users.where((u) => u['role'] == 'student').length;
     final tabSig = '$isDark|$primary|${l.lang}';
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: AppBackdrop(
-        child: SafeArea(
+    final page = _section == null
+        ? _overviewPage(l, primary, teachers, students)
+        : _sectionPage(l, primary, tabSig, _section!);
+
+    return PopScope(
+      canPop: _section == null,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _section != null) setState(() => _section = null);
+      },
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: AppBackdrop(
+          child: SafeArea(
             bottom: false,
-            child: NestedScrollView(
-              headerSliverBuilder: (ctx, _) => [
-                SliverToBoxAdapter(
-                    child: Column(children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 12, 14),
-                    child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                              child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                Text(l.t('admin'),
-                                    style: TextStyle(
-                                        fontSize: 34,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: -1,
-                                        height: 1.1,
-                                        color: adaptiveTextSoft(context))),
-                                const SizedBox(height: 3),
-                                Text(l.t('admin_sub'),
-                                    style: TextStyle(
-                                        fontSize: 15,
-                                        letterSpacing: -0.2,
-                                        color: adaptiveText3(context))),
-                              ])),
-                          Tappable(
-                            onTap: _showCreateDialog,
-                            label: l.t('add'),
-                            child: Container(
-                              height: 40,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 13),
-                              decoration: BoxDecoration(
-                                color: primary.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(CupertinoIcons.person_badge_plus,
-                                        color: primary, size: 19),
-                                    const SizedBox(width: 7),
-                                    Text(l.t('add'),
-                                        style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w600,
-                                            letterSpacing: -0.2,
-                                            color: primary)),
-                                  ]),
-                            ),
-                          ),
-                        ]),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    child: _SummaryBar(cells: [
-                      ('${_users.length}', l.t('total_label')),
-                      ('$teachers', l.t('teachers_label')),
-                      ('$students', l.t('students_label')),
-                    ]),
-                  ),
-                ])),
-              ],
-              body: Column(children: [
-                Container(
-                  height: 40,
-                  margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                  padding: const EdgeInsets.all(3),
-                  // Капсула, как нативный CupertinoSlidingSegmentedControl.
-                  decoration: BoxDecoration(
-                      color: adaptiveSurface2(context),
-                      borderRadius: BorderRadius.circular(100)),
-                  child: TabBar(
-                    controller: _tabCtrl,
-                    dividerColor: Colors.transparent,
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    indicatorAnimation: TabIndicatorAnimation.elastic,
-                    indicator: BoxDecoration(
-                      color: surface,
-                      borderRadius: BorderRadius.circular(100),
-                      boxShadow: [
-                        BoxShadow(
-                            color: Colors.black
-                                .withValues(alpha: isDark ? 0.30 : 0.08),
-                            blurRadius: 3,
-                            offset: const Offset(0, 1))
-                      ],
-                    ),
-                    splashFactory: NoSplash.splashFactory,
-                    overlayColor: WidgetStateProperty.all(Colors.transparent),
-                    labelColor: adaptiveText1(context),
-                    unselectedLabelColor: adaptiveText3(context),
-                    labelPadding: const EdgeInsets.symmetric(horizontal: 2),
-                    labelStyle: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: -0.2),
-                    unselectedLabelStyle: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: -0.2),
-                    tabs: [
-                      Tab(
-                          child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(l.t('users')))),
-                      const Tab(
-                          child: FittedBox(
-                              fit: BoxFit.scaleDown, child: Text('AI'))),
-                      Tab(
-                          child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(l.t('class_tab')))),
-                      Tab(
-                          child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(l.t('reports_queue')))),
-                    ],
-                  ),
-                ),
-                Expanded(
-                    child: TabBarView(controller: _tabCtrl, children: [
-                  _memoUsersTab(tabSig),
-                  const AiDashboardTab(),
-                  _memoClassesTab(tabSig),
-                  _reportsTab(),
-                ])),
-              ]),
-            )),
+            child: AnimatedSwitcher(
+              duration: MediaQuery.disableAnimationsOf(context)
+                  ? Duration.zero
+                  : const Duration(milliseconds: 220),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              child: page,
+            ),
+          ),
+        ),
       ),
     );
   }
+
+  Widget _overviewPage(L10n l, Color primary, int teachers, int students) {
+    return ListView(
+      key: const ValueKey('admin-overview'),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, bottomBarClearance(context)),
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 0, 0, 16),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l.t('admin'),
+                        style: TextStyle(
+                            fontSize: 34,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -1,
+                            height: 1.1,
+                            color: adaptiveTextSoft(context))),
+                    const SizedBox(height: 4),
+                    Text(l.t('admin_sub'),
+                        style: TextStyle(
+                            fontSize: 15,
+                            letterSpacing: -0.2,
+                            color: adaptiveText3(context))),
+                  ]),
+            ),
+            _createUserButton(l, primary),
+          ]),
+        ),
+        _SummaryBar(cells: [
+          ('${_users.length}', l.t('total_label')),
+          ('$teachers', l.t('teachers_label')),
+          ('$students', l.t('students_label')),
+        ]),
+        const SizedBox(height: 26),
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 9),
+          child: Text(l.t('sections').toUpperCase(),
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.6,
+                  color: adaptiveText3(context))),
+        ),
+        _AdminSectionCard(
+          key: const ValueKey('admin-section-users'),
+          icon: CupertinoIcons.person_2_fill,
+          title: l.t('users'),
+          subtitle: '${_users.length} · ${l.t('teachers_label')}: $teachers',
+          accent: primary,
+          onTap: () => setState(() => _section = 0),
+        ),
+        const SizedBox(height: 10),
+        _AdminSectionCard(
+          key: const ValueKey('admin-section-ai'),
+          icon: CupertinoIcons.sparkles,
+          title: 'AI',
+          subtitle: l.t('ai_usage_section'),
+          accent: C.indigo,
+          onTap: () => setState(() => _section = 1),
+        ),
+        const SizedBox(height: 10),
+        _AdminSectionCard(
+          key: const ValueKey('admin-section-classes'),
+          icon: CupertinoIcons.book_fill,
+          title: l.t('class_tab'),
+          subtitle: '${_allClassPosts.length} · ${l.t('members_label')}',
+          accent: C.green,
+          onTap: () => setState(() => _section = 2),
+        ),
+        const SizedBox(height: 10),
+        _AdminSectionCard(
+          key: const ValueKey('admin-section-reports'),
+          icon: CupertinoIcons.flag_fill,
+          title: l.t('reports_queue'),
+          subtitle: _reports.isEmpty
+              ? l.t('no_reports')
+              : '${_reports.length} · ${l.t('reports_queue')}',
+          accent: _reports.isEmpty ? adaptiveText4(context) : C.red,
+          onTap: () => setState(() => _section = 3),
+        ),
+      ],
+    );
+  }
+
+  Widget _sectionPage(L10n l, Color primary, String tabSig, int section) {
+    final titles = [l.t('users'), 'AI', l.t('class_tab'), l.t('reports_queue')];
+    final body = switch (section) {
+      0 => _memoUsersTab(tabSig),
+      1 => const AiDashboardTab(),
+      2 => _memoClassesTab(tabSig),
+      _ => _reportsTab(),
+    };
+
+    return Column(
+      key: ValueKey('admin-section-$section'),
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 4, 12, 10),
+          child: Row(children: [
+            Tappable(
+              onTap: () => setState(() => _section = null),
+              label: 'Назад',
+              child: const SizedBox(
+                width: 44,
+                height: 44,
+                child: Icon(CupertinoIcons.chevron_left, size: 21),
+              ),
+            ),
+            const SizedBox(width: 2),
+            Expanded(
+              child: Text(titles[section],
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.7,
+                      color: adaptiveTextSoft(context))),
+            ),
+            if (section == 0) _createUserButton(l, primary),
+            if (section == 3)
+              Tappable(
+                onTap: _reportsLoading ? null : _loadReports,
+                label: l.t('refresh'),
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: Center(
+                    child: _reportsLoading
+                        ? const CupertinoActivityIndicator(radius: 9)
+                        : Icon(CupertinoIcons.arrow_clockwise,
+                            size: 19, color: primary),
+                  ),
+                ),
+              ),
+          ]),
+        ),
+        Expanded(child: body),
+      ],
+    );
+  }
+
+  Widget _createUserButton(L10n l, Color primary) => Tappable(
+        onTap: _showCreateDialog,
+        label: l.t('add'),
+        child: Container(
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 13),
+          decoration: BoxDecoration(
+            color: primary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(CupertinoIcons.person_badge_plus, color: primary, size: 19),
+            const SizedBox(width: 7),
+            Text(l.t('add'),
+                style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.2,
+                    color: primary)),
+          ]),
+        ),
+      );
 
   Widget _memoUsersTab(String tl) {
     final sig = 'u|$_loading|${identityHashCode(_users)}|$_search|$_roleFilter'
@@ -1415,6 +1466,79 @@ class _AdminState extends State<AdminScreen>
         pwCtrl.dispose();
       });
     });
+  }
+}
+
+class _AdminSectionCard extends StatelessWidget {
+  const _AdminSectionCard({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.accent,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color accent;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Tappable(
+      onTap: onTap,
+      label: title,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 13, 12, 13),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(AppRadii.card),
+          border: Border.all(
+              color: groupSeparator(context), width: hairline(context)),
+          boxShadow: softShadow(isDark),
+        ),
+        child: Row(children: [
+          Container(
+            width: 42,
+            height: 42,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, size: 20, color: accent),
+          ),
+          const SizedBox(width: 13),
+          Expanded(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.4,
+                      color: adaptiveTextSoft(context))),
+              const SizedBox(height: 3),
+              Text(subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 13,
+                      letterSpacing: -0.1,
+                      color: adaptiveText4(context))),
+            ]),
+          ),
+          const SizedBox(width: 8),
+          Icon(CupertinoIcons.chevron_right,
+              size: 15, color: adaptiveText4(context)),
+        ]),
+      ),
+    );
   }
 }
 

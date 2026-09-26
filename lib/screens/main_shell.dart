@@ -19,9 +19,11 @@ class MainShell extends StatefulWidget {
 
   /// Запрос переключения вкладки извне (пуш «жалоба/заявка» ведёт в админку).
   /// Значения: 'admin'. Обрабатывается и сбрасывается _MainShellState.
-  static final ValueNotifier<String?> sectionRequest = ValueNotifier<String?>(null);
+  static final ValueNotifier<String?> sectionRequest =
+      ValueNotifier<String?>(null);
 
-  @override State<MainShell> createState() => _MainShellState();
+  @override
+  State<MainShell> createState() => _MainShellState();
 }
 
 class _MainShellState extends State<MainShell>
@@ -70,14 +72,16 @@ class _MainShellState extends State<MainShell>
     shape: LiquidGlassShape.continuousRoundedRectangle(
       cornerRadius: 30,
       clipQuality: LiquidGlassClipQuality.exact,
-      borderWidth: 0.3,
-      borderColor: Color(0x12FFFFFF),
-      lightIntensity: 0.4,
+      // В тёмной теме сильная белая optical border собиралась в заметные
+      // вертикальные полосы на боках капсулы. Оставляем лишь тонкий блик.
+      borderWidth: 0.1,
+      borderColor: Color(0x08FFFFFF),
+      lightIntensity: 0.16,
       lightDirection: 62,
       borderType: OpticalBorder(
-        borderSaturation: 0.6,
-        ambientIntensity: 0.18,
-        borderSolidity: 0.12,
+        borderSaturation: 0.25,
+        ambientIntensity: 0.06,
+        borderSolidity: 0.02,
       ),
     ),
     restColor: Color(0x26FFFFFF),
@@ -111,7 +115,8 @@ class _MainShellState extends State<MainShell>
   static const LiquidGlassTabMagnifierPillStyle _magnifierOff =
       LiquidGlassTabMagnifierPillStyle(enabled: false, magnification: 0.86);
 
-  static const LiquidGlassLensMotionSpec _motionSpec = LiquidGlassLensMotionSpec(
+  static const LiquidGlassLensMotionSpec _motionSpec =
+      LiquidGlassLensMotionSpec(
     sampleWindow: 0.3,
     sensitivity: 0.00007,
     maxDeformation: 0.12,
@@ -140,11 +145,13 @@ class _MainShellState extends State<MainShell>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _navAnim = AnimationController(vsync: this, duration: const Duration(milliseconds: 950));
+    _navAnim = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 950));
     _navAnim.forward();
 
     Connectivity().checkConnectivity().then(_applyConnectivity);
-    _connectSub = Connectivity().onConnectivityChanged.listen(_applyConnectivity);
+    _connectSub =
+        Connectivity().onConnectivityChanged.listen(_applyConnectivity);
 
     MainShell.sectionRequest.addListener(_onSectionRequest);
     // Пуш мог прийти до построения шелла (холодный старт по тапу).
@@ -155,7 +162,8 @@ class _MainShellState extends State<MainShell>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // В фоне опрашивать сеть незачем: это чистый расход батареи, а iOS ещё и
     // помечает приложение как активное в фоне.
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
       _recheckTimer?.cancel();
       _recheckTimer = null;
     } else if (state == AppLifecycleState.resumed) {
@@ -174,7 +182,8 @@ class _MainShellState extends State<MainShell>
   }
 
   void _applyConnectivity(List<ConnectivityResult> results) {
-    final online = results.isEmpty || results.any((v) => v != ConnectivityResult.none);
+    final online =
+        results.isEmpty || results.any((v) => v != ConnectivityResult.none);
     if (online) {
       _offlineDebounce?.cancel();
       _offlineDebounce = null;
@@ -257,7 +266,8 @@ class _MainShellState extends State<MainShell>
     final l10nTick = context.select<L10n, int>((l) => l.version);
 
     final screens = <Widget>[
-      const HomeScreen(), const AiScreen(),
+      const HomeScreen(),
+      const AiScreen(),
       if (isAdmin) const AdminScreen(),
       const SettingsScreen(),
     ];
@@ -276,7 +286,9 @@ class _MainShellState extends State<MainShell>
           l.t('nav_classes'),
         ),
         _NavItem(
-          useMaterial ? Icons.auto_awesome_outlined : CupertinoIcons.chat_bubble_2,
+          useMaterial
+              ? Icons.auto_awesome_outlined
+              : CupertinoIcons.chat_bubble_2,
           useMaterial ? Icons.auto_awesome : CupertinoIcons.chat_bubble_2_fill,
           l.t('nav_ai'),
         ),
@@ -318,38 +330,40 @@ class _MainShellState extends State<MainShell>
             ),
           ),
         ),
-          Positioned(
-            top: 0, left: 0, right: 0,
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 340),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInCubic,
-              layoutBuilder: (currentChild, previousChildren) => Stack(
-                alignment: Alignment.topCenter,
-                children: [
-                  ...previousChildren,
-                  if (currentChild != null) currentChild,
-                ],
-              ),
-              transitionBuilder: (child, anim) => FadeTransition(
-                opacity: anim,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, -1),
-                    end: Offset.zero,
-                  ).animate(anim),
-                  child: child,
-                ),
-              ),
-              child: (_isOnline || _bannerDismissed)
-                  ? const SizedBox.shrink(key: ValueKey('online'))
-                  : _OfflineBanner(
-                      key: const ValueKey('offline'),
-                      title: context.read<L10n>().t('no_connection'),
-                      onDismiss: () => setState(() => _bannerDismissed = true),
-                    ),
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 340),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            layoutBuilder: (currentChild, previousChildren) => Stack(
+              alignment: Alignment.topCenter,
+              children: [
+                ...previousChildren,
+                if (currentChild != null) currentChild,
+              ],
             ),
+            transitionBuilder: (child, anim) => FadeTransition(
+              opacity: anim,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, -1),
+                  end: Offset.zero,
+                ).animate(anim),
+                child: child,
+              ),
+            ),
+            child: (_isOnline || _bannerDismissed)
+                ? const SizedBox.shrink(key: ValueKey('online'))
+                : _OfflineBanner(
+                    key: const ValueKey('offline'),
+                    title: context.read<L10n>().t('no_connection'),
+                    onDismiss: () => setState(() => _bannerDismissed = true),
+                  ),
           ),
+        ),
       ]),
     );
 
@@ -394,8 +408,10 @@ class _MainShellState extends State<MainShell>
               curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
             ),
             child: SlideTransition(
-              position: Tween<Offset>(begin: const Offset(0, 1.2), end: Offset.zero)
-                  .animate(CurvedAnimation(parent: _navAnim, curve: Curves.easeOutCubic)),
+              position:
+                  Tween<Offset>(begin: const Offset(0, 1.2), end: Offset.zero)
+                      .animate(CurvedAnimation(
+                          parent: _navAnim, curve: Curves.easeOutCubic)),
               child: NavigationBarTheme(
                 data: NavigationBarThemeData(
                   // Чистый selected-цвет (без «голубоватого» accent).
@@ -476,69 +492,69 @@ class _MainShellState extends State<MainShell>
     final barWidth = (screenWidth - 16 * 2).clamp(280.0, 560.0);
 
     final bar = LiquidGlassTabBar(
-        items: items
-            .map((it) => LiquidGlassTabBarItem(
-                  label: it.label,
-                  iconBuilder: (context, i) => Icon(
-                    i.selected ? it.active : it.inactive,
-                    size: i.underGlass ? 24 : 24,
-                    color: i.color,
-                  ),
-                ))
-            .toList(),
-        selectedIndex: idx,
-        onChanged: _onTap,
-        width: barWidth,
-        height: 60,
-        itemPadding: 3,
-        // Дистанция от низа. LiquidGlassScaffold сам добавляет
-        // safe-area inset. Отрицательные значения сдвигают бар
-        // ближе к нижнему краю экрана (залезают под safe-area).
-        margin: const EdgeInsets.only(bottom: -12),
-        style: LiquidGlassStyle(
-          shape: styles.shape,
-          appearance: _barAppearance,
-          refraction: _barRefraction,
+      items: items
+          .map((it) => LiquidGlassTabBarItem(
+                label: it.label,
+                iconBuilder: (context, i) => Icon(
+                  i.selected ? it.active : it.inactive,
+                  size: i.underGlass ? 24 : 24,
+                  color: i.color,
+                ),
+              ))
+          .toList(),
+      selectedIndex: idx,
+      onChanged: _onTap,
+      width: barWidth,
+      height: 60,
+      itemPadding: 3,
+      // Дистанция от низа. LiquidGlassScaffold сам добавляет
+      // safe-area inset. Отрицательные значения сдвигают бар
+      // ближе к нижнему краю экрана (залезают под safe-area).
+      margin: const EdgeInsets.only(bottom: -12),
+      style: LiquidGlassStyle(
+        shape: styles.shape,
+        appearance: _barAppearance,
+        refraction: _barRefraction,
+      ),
+      itemStyle: LiquidGlassTabItemStyle(
+        // Один нейтральный цвет для selected и unselected — как в
+        // iOS 26. Отличается только вес/заполненность иконки.
+        selectedColor: neutralFg,
+        unselectedColor: neutralFg,
+        iconSize: 24,
+        labelFontSize: 10.5,
+        iconLabelGap: 2,
+        underGlassIconSize: 24,
+        underGlassLabelFontSize: 10.5,
+        selectedFontWeight: FontWeight.w700,
+        unselectedFontWeight: FontWeight.w500,
+      ),
+      pillStyle: LiquidGlassTabPillStyle(
+        // Glass-refracting morphing pill.
+        mode: LiquidGlassPillMode.both,
+        show: true,
+        glassStyle: _glassPillGlass,
+        rest: LiquidGlassStyle(
+          appearance: LiquidGlassAppearance(color: styles.restColor),
         ),
-        itemStyle: LiquidGlassTabItemStyle(
-          // Один нейтральный цвет для selected и unselected — как в
-          // iOS 26. Отличается только вес/заполненность иконки.
-          selectedColor: neutralFg,
-          unselectedColor: neutralFg,
-          iconSize: 24,
-          labelFontSize: 10.5,
-          iconLabelGap: 2,
-          underGlassIconSize: 24,
-          underGlassLabelFontSize: 10.5,
-          selectedFontWeight: FontWeight.w700,
-          unselectedFontWeight: FontWeight.w500,
-        ),
-        pillStyle: LiquidGlassTabPillStyle(
-          // Glass-refracting morphing pill.
-          mode: LiquidGlassPillMode.both,
-          show: true,
-          glassStyle: _glassPillGlass,
-          rest: LiquidGlassStyle(
-            appearance: LiquidGlassAppearance(color: styles.restColor),
-          ),
-          // Spring-перенос: stiffness 200, damping 32 (ζ≈1.13) — слегка
-          // пере-демпфированный, без овершута, гасится гладко без
-          // хвоста. Длиннее ход (~550 ms) и более плавная кривая
-          // дают «шёлковое» скольжение вместо рывка.
-          travelStiffness: 200,
-          travelDamping: 32,
-          // Вырастает на 12px — чуть мягче squash при ускорении.
-          growHeight: 12,
-          motion: _motionSpec,
-          magnifierPill: _magnifierOff,
-          animated: true,
-          // Длиннее, чем ход spring — ход успевает полностью
-          // затухнуть в окне анимации, без жёсткого «обрыва».
-          animationDuration: const Duration(milliseconds: 620),
-          // Очень мягкий ease-out: плавный старт, плавный
-          // финиш, без «утыкания» в конце.
-          animationCurve: Cubic(0.12, 0.85, 0.28, 1.0),
-        ),
+        // Spring-перенос: stiffness 200, damping 32 (ζ≈1.13) — слегка
+        // пере-демпфированный, без овершута, гасится гладко без
+        // хвоста. Длиннее ход (~550 ms) и более плавная кривая
+        // дают «шёлковое» скольжение вместо рывка.
+        travelStiffness: 200,
+        travelDamping: 32,
+        // Вырастает на 12px — чуть мягче squash при ускорении.
+        growHeight: 12,
+        motion: _motionSpec,
+        magnifierPill: _magnifierOff,
+        animated: true,
+        // Длиннее, чем ход spring — ход успевает полностью
+        // затухнуть в окне анимации, без жёсткого «обрыва».
+        animationDuration: const Duration(milliseconds: 620),
+        // Очень мягкий ease-out: плавный старт, плавный
+        // финиш, без «утыкания» в конце.
+        animationCurve: Cubic(0.12, 0.85, 0.28, 1.0),
+      ),
     );
 
     return LiquidGlassScaffold(

@@ -69,7 +69,8 @@ class _AiConversationViewState extends State<AiConversationView> {
     _loadQuota();
   }
 
-  String _historyKey(int threadId) => 'ai_chat_history_v2_${_uidPart}_$threadId';
+  String _historyKey(int threadId) =>
+      'ai_chat_history_v2_${_uidPart}_$threadId';
 
   Future<void> _restoreHistory(int threadId) async {
     final local = await _loadLocal(threadId);
@@ -87,7 +88,8 @@ class _AiConversationViewState extends State<AiConversationView> {
 
   Future<void> _loadQuota() async {
     try {
-      final q = AiQuota.fromJson(await context.read<ApiService>().getAiLimits());
+      final q =
+          AiQuota.fromJson(await context.read<ApiService>().getAiLimits());
       if (mounted && q != null) setState(() => _quota = q);
     } catch (_) {}
   }
@@ -106,13 +108,17 @@ class _AiConversationViewState extends State<AiConversationView> {
     }
   }
 
-  Future<void> _syncFromServer(int threadId, List<Map<String, String>> local) async {
+  Future<void> _syncFromServer(
+      int threadId, List<Map<String, String>> local) async {
     try {
       final api = context.read<ApiService>();
       var rows = await api.getAiHistory(threadId: threadId);
       if (rows.isEmpty && local.isNotEmpty) {
         rows = await api.importAiHistory(
-          local.map((m) => {'role': m['role'] ?? 'user', 'content': m['text'] ?? ''}).toList(),
+          local
+              .map((m) =>
+                  {'role': m['role'] ?? 'user', 'content': m['text'] ?? ''})
+              .toList(),
           threadId: threadId,
         );
       }
@@ -172,7 +178,11 @@ class _AiConversationViewState extends State<AiConversationView> {
     return [
       {
         'icon': CupertinoIcons.book,
-        'title': isKZ ? 'Тақырыпты түсіндір' : isEN ? 'Explain Topic' : 'Объяснить тему',
+        'title': isKZ
+            ? 'Тақырыпты түсіндір'
+            : isEN
+                ? 'Explain Topic'
+                : 'Объяснить тему',
         'desc': isKZ
             ? 'Күрделі тұжырымды қарапайым сөздермен'
             : isEN
@@ -182,7 +192,11 @@ class _AiConversationViewState extends State<AiConversationView> {
       },
       {
         'icon': CupertinoIcons.lightbulb,
-        'title': isKZ ? 'Тұжырымдарды ашу' : isEN ? 'Break Down Concepts' : 'Разобрать концепции',
+        'title': isKZ
+            ? 'Тұжырымдарды ашу'
+            : isEN
+                ? 'Break Down Concepts'
+                : 'Разобрать концепции',
         'desc': isKZ
             ? 'Тәсілдер арасындағы айырмашылықты түсін'
             : isEN
@@ -192,7 +206,11 @@ class _AiConversationViewState extends State<AiConversationView> {
       },
       {
         'icon': CupertinoIcons.pencil,
-        'title': isKZ ? 'Тапсырмаға көмек' : isEN ? 'Help with Task' : 'Помочь с заданием',
+        'title': isKZ
+            ? 'Тапсырмаға көмек'
+            : isEN
+                ? 'Help with Task'
+                : 'Помочь с заданием',
         'desc': isKZ
             ? 'Шешімді қайдан бастау керектігін айт'
             : isEN
@@ -202,7 +220,11 @@ class _AiConversationViewState extends State<AiConversationView> {
       },
       {
         'icon': CupertinoIcons.exclamationmark_triangle,
-        'title': isKZ ? 'Қателерді тап' : isEN ? 'Find Mistakes' : 'Найти ошибки',
+        'title': isKZ
+            ? 'Қателерді тап'
+            : isEN
+                ? 'Find Mistakes'
+                : 'Найти ошибки',
         'desc': isKZ
             ? 'Кодымды тексеріп, мәселелерді көрсет'
             : isEN
@@ -238,7 +260,8 @@ class _AiConversationViewState extends State<AiConversationView> {
     final text = override ?? _ctrl.text.trim();
     if (text.isEmpty || _loading) return;
     if (_quota?.exhausted == true) {
-      showToast(context, context.read<L10n>().t('ai_daily_exhausted'), error: true);
+      showToast(context, context.read<L10n>().t('ai_daily_exhausted'),
+          error: true);
       return;
     }
     hapticLight();
@@ -255,7 +278,8 @@ class _AiConversationViewState extends State<AiConversationView> {
     // Свой id на каждый запрос — если пользователь нажмёт «Стоп», именно он
     // уходит на /ai/chat/cancel (см. _stop), отдельно от CancelToken, который
     // рвёт только клиентское соединение и не обязательно долетает до сервера.
-    final requestId = '${DateTime.now().microsecondsSinceEpoch}_${identityHashCode(_cancelToken)}';
+    final requestId =
+        '${DateTime.now().microsecondsSinceEpoch}_${identityHashCode(_cancelToken)}';
     _pendingRequestId = requestId;
     try {
       final threadId = await _ensureThread();
@@ -263,7 +287,11 @@ class _AiConversationViewState extends State<AiConversationView> {
       if (threadId == null) throw Exception('no_thread');
       final api = context.read<ApiService>();
       final l = context.read<L10n>();
-      final sysLang = l.lang == 'KZ' ? 'казахском' : l.lang == 'EN' ? 'английском' : 'русском';
+      final sysLang = l.lang == 'KZ'
+          ? 'казахском'
+          : l.lang == 'EN'
+              ? 'английском'
+              : 'русском';
       final apiMsgs = <Map<String, dynamic>>[
         {
           'role': 'system',
@@ -275,18 +303,27 @@ class _AiConversationViewState extends State<AiConversationView> {
         // упиралась в лимит контекста модели. См. utils/ai_context.dart.
         ...aiContextWindow(_msgs),
       ];
-      final data = await api.aiChat(apiMsgs, threadId: threadId, cancelToken: _cancelToken, requestId: requestId);
+      final data = await api.aiChat(apiMsgs,
+          threadId: threadId, cancelToken: _cancelToken, requestId: requestId);
       if (!mounted) return;
       setState(() {
-        _msgs.add({'role': 'assistant', 'text': data['content'] ?? context.read<L10n>().t('no_answer'), 'time': _now()});
+        _msgs.add({
+          'role': 'assistant',
+          'text': data['content'] ?? context.read<L10n>().t('no_answer'),
+          'time': _now()
+        });
         _quota = AiQuota.fromJson(data['quota']) ?? _quota;
       });
       _saveHistory();
       final newTitle = data['thread_title']?.toString();
       if (newTitle != null && newTitle.isNotEmpty) {
-        context.read<AiChatsProvider>().patchLocal(threadId, title: newTitle, updatedAt: DateTime.now());
+        context
+            .read<AiChatsProvider>()
+            .patchLocal(threadId, title: newTitle, updatedAt: DateTime.now());
       } else {
-        context.read<AiChatsProvider>().patchLocal(threadId, updatedAt: DateTime.now());
+        context
+            .read<AiChatsProvider>()
+            .patchLocal(threadId, updatedAt: DateTime.now());
       }
     } catch (e) {
       if (!mounted) return;
@@ -298,7 +335,8 @@ class _AiConversationViewState extends State<AiConversationView> {
       } else {
         final l = context.read<L10n>();
         final resp = (e is DioException) ? e.response : null;
-        final detail = (resp?.data is Map) ? resp!.data['detail']?.toString() : null;
+        final detail =
+            (resp?.data is Map) ? resp!.data['detail']?.toString() : null;
         final errText = resp?.statusCode == 429
             ? (detail ?? l.t('ai_daily_exhausted'))
             : e.toString().contains('503')
@@ -306,7 +344,8 @@ class _AiConversationViewState extends State<AiConversationView> {
                 : l.t('connection_error');
         showToast(context, errText, error: true);
         if (_msgs.isNotEmpty && _msgs.last['role'] == 'user') {
-          setState(() => _msgs[_msgs.length - 1] = {..._msgs.last, 'failed': 'true'});
+          setState(() =>
+              _msgs[_msgs.length - 1] = {..._msgs.last, 'failed': 'true'});
         }
         _saveHistory();
         if (resp?.statusCode == 429) _loadQuota();
@@ -360,11 +399,13 @@ class _AiConversationViewState extends State<AiConversationView> {
         // Корректирующий джамп: если контент (картинки/markdown) доразметился
         // уже после первого прыжка, maxScrollExtent мог вырасти.
         Future.delayed(const Duration(milliseconds: 120), () {
-          if (_scroll.hasClients) _scroll.jumpTo(_scroll.position.maxScrollExtent);
+          if (_scroll.hasClients)
+            _scroll.jumpTo(_scroll.position.maxScrollExtent);
         });
         return;
       }
-      _scroll.animateTo(_scroll.position.maxScrollExtent, duration: const Duration(milliseconds: 350), curve: Curves.easeOut);
+      _scroll.animateTo(_scroll.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 350), curve: Curves.easeOut);
     });
   }
 
@@ -382,7 +423,9 @@ class _AiConversationViewState extends State<AiConversationView> {
           transitionBuilder: (child, anim) => FadeTransition(
             opacity: anim,
             child: SlideTransition(
-              position: Tween<Offset>(begin: const Offset(0, 0.04), end: Offset.zero).animate(anim),
+              position:
+                  Tween<Offset>(begin: const Offset(0, 0.04), end: Offset.zero)
+                      .animate(anim),
               child: child,
             ),
           ),
@@ -408,12 +451,21 @@ class _AiConversationViewState extends State<AiConversationView> {
                 child: Text(
                   l.t('ai_disclaimer'),
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12, color: adaptiveText4(context), height: 1.35, letterSpacing: -0.1),
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: adaptiveText4(context),
+                      height: 1.35,
+                      letterSpacing: -0.1),
                 ),
               )
             : const SizedBox(width: double.infinity),
       ),
-      _AiInputBar(ctrl: _ctrl, loading: _loading, quota: _quota, onSend: _send, onStop: _stop),
+      _AiInputBar(
+          ctrl: _ctrl,
+          loading: _loading,
+          quota: _quota,
+          onSend: _send,
+          onStop: _stop),
     ]);
   }
 
@@ -436,28 +488,51 @@ class _AiConversationViewState extends State<AiConversationView> {
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: constraints.maxHeight),
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Container(
+              width: 76,
+              height: 76,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF0A84FF), Color(0xFF5856D6)],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF5856D6)
+                        .withValues(alpha: isDark ? 0.32 : 0.22),
+                    blurRadius: 32,
+                    offset: const Offset(0, 12),
+                  ),
+                ],
+              ),
+              child: const Icon(CupertinoIcons.sparkles,
+                  color: Colors.white, size: 32),
+            ),
+            const SizedBox(height: 20),
             Text('Chatra AI',
-                style: TextStyle(fontSize: 30, fontWeight: FontWeight.w700, color: adaptiveText1(context), letterSpacing: -0.9, height: 1.1)),
+                style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.w700,
+                    color: adaptiveText1(context),
+                    letterSpacing: -0.9,
+                    height: 1.1)),
             const SizedBox(height: 8),
             Text(subtitle,
-                style: TextStyle(fontSize: 16, color: adaptiveText3(context), height: 1.35, letterSpacing: -0.2),
+                style: TextStyle(
+                    fontSize: 16,
+                    color: adaptiveText3(context),
+                    height: 1.35,
+                    letterSpacing: -0.2),
                 textAlign: TextAlign.center),
-            const SizedBox(height: 28),
+            const SizedBox(height: 30),
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 440),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isDark ? C.darkSurface : Colors.white,
-                  borderRadius: BorderRadius.circular(AppRadii.card),
-                  border: Border.all(color: adaptiveBorder(context).withValues(alpha: 0.5), width: hairline(context)),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(AppRadii.card),
-                  child: Column(children: [
-                    for (var i = 0; i < tips.length; i++) _suggestionRow(tips[i], i, tips.length),
-                  ]),
-                ),
-              ),
+              child: Column(children: [
+                for (var i = 0; i < tips.length; i++)
+                  _suggestionRow(tips[i], i, tips.length),
+              ]),
             ),
           ]),
         ),
@@ -470,31 +545,57 @@ class _AiConversationViewState extends State<AiConversationView> {
     return Entrance(
       index: index,
       rise: 0,
-      child: GroupRow(
-        pos: index == count - 1 ? GroupPos.last : GroupPos.middle,
-        color: Colors.transparent,
-        separatorInset: 56,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        onTap: () {
-          hapticSelection();
-          _send(tip['prompt'] as String);
-        },
-        child: Row(children: [
-          Container(
-            width: 28, height: 28,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(color: primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(9)),
-            child: Icon(tip['icon'] as IconData, size: 15, color: primary),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(tip['title'] as String,
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: adaptiveText1(context), letterSpacing: -0.3)),
-          ),
-          const SizedBox(width: 10),
-          Icon(CupertinoIcons.arrow_up_left, size: 15, color: adaptiveText4(context).withValues(alpha: 0.7)),
-        ]),
-      ),
+      child: Padding(
+          padding: EdgeInsets.only(bottom: index == count - 1 ? 0 : 10),
+          child: GroupRow.card(
+            color: Theme.of(context).colorScheme.surface.withValues(
+                alpha: Theme.of(context).brightness == Brightness.dark
+                    ? 0.76
+                    : 0.90),
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+            onTap: () {
+              hapticSelection();
+              _send(tip['prompt'] as String);
+            },
+            child: Row(children: [
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Icon(tip['icon'] as IconData, size: 20, color: primary),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(tip['title'] as String,
+                          style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: adaptiveText1(context),
+                              letterSpacing: -0.25)),
+                      const SizedBox(height: 2),
+                      Text(tip['desc'] as String,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontSize: 13,
+                              color: adaptiveText3(context),
+                              height: 1.25,
+                              letterSpacing: -0.1)),
+                    ]),
+              ),
+              const SizedBox(width: 10),
+              Icon(CupertinoIcons.arrow_up_left,
+                  size: 15,
+                  color: adaptiveText4(context).withValues(alpha: 0.7)),
+            ]),
+          )),
     );
   }
 
@@ -521,7 +622,10 @@ class _AiConversationViewState extends State<AiConversationView> {
           curve: Curves.easeOutCubic,
           builder: (_, t, child) => Opacity(
             opacity: t,
-            child: Transform.translate(offset: Offset(isUser ? 18 * (1 - t) : -18 * (1 - t), 8 * (1 - t)), child: child),
+            child: Transform.translate(
+                offset:
+                    Offset(isUser ? 18 * (1 - t) : -18 * (1 - t), 8 * (1 - t)),
+                child: child),
           ),
           child: bubble,
         );
@@ -564,18 +668,27 @@ class _AiConversationViewState extends State<AiConversationView> {
           Tappable(
             onTap: () => _retryFailed(index),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(CupertinoIcons.exclamationmark_circle, size: 12, color: C.red),
+              const Icon(CupertinoIcons.exclamationmark_circle,
+                  size: 12, color: C.red),
               const SizedBox(width: 3),
-              Text(l.t('not_sent'), style: const TextStyle(fontSize: 10.5, color: C.red)),
+              Text(l.t('not_sent'),
+                  style: const TextStyle(fontSize: 10.5, color: C.red)),
               const SizedBox(width: 6),
               Text('· ${l.t('retry')}',
-                  style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
+                  style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.primary)),
             ]),
           )
         else
           Padding(
             padding: const EdgeInsets.only(right: 3),
-            child: Text(timeStr, style: TextStyle(fontSize: 11.5, color: adaptiveText4(context), letterSpacing: -0.1)),
+            child: Text(timeStr,
+                style: TextStyle(
+                    fontSize: 11.5,
+                    color: adaptiveText4(context),
+                    letterSpacing: -0.1)),
           ),
       ]),
     );
@@ -589,50 +702,70 @@ class _AiConversationViewState extends State<AiConversationView> {
       padding: const EdgeInsets.only(bottom: 16, right: 52),
       child: Align(
         alignment: Alignment.centerLeft,
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-          Tappable(
-            onLongPress: () {
-              hapticMedium();
-              Clipboard.setData(ClipboardData(text: text));
-              showToast(context, l.t('copied'));
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: isDark ? C.darkSurface2 : Colors.white,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                  bottomLeft: Radius.circular(6),
-                  bottomRight: Radius.circular(20),
+        child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Tappable(
+                onLongPress: () {
+                  hapticMedium();
+                  Clipboard.setData(ClipboardData(text: text));
+                  showToast(context, l.t('copied'));
+                },
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isDark ? C.darkSurface2 : Colors.white,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                      bottomLeft: Radius.circular(6),
+                      bottomRight: Radius.circular(20),
+                    ),
+                    border: Border.all(
+                        color: adaptiveBorder(context)
+                            .withValues(alpha: isDark ? 0.35 : 0.45),
+                        width: hairline(context)),
+                  ),
+                  child: AiMessageContent(
+                    text: text,
+                    style: TextStyle(
+                        fontSize: 16.5,
+                        height: 1.45,
+                        letterSpacing: -0.2,
+                        color: adaptiveText1(context)),
+                  ),
                 ),
-                border: Border.all(color: adaptiveBorder(context).withValues(alpha: isDark ? 0.35 : 0.45), width: hairline(context)),
               ),
-              child: AiMessageContent(
-                text: text,
-                style: TextStyle(fontSize: 16.5, height: 1.45, letterSpacing: -0.2, color: adaptiveText1(context)),
+              Padding(
+                padding: const EdgeInsets.only(left: 7, top: 5),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  if ((m['time'] ?? '').isNotEmpty)
+                    Text(m['time']!,
+                        style: TextStyle(
+                            fontSize: 11.5,
+                            color: adaptiveText4(context),
+                            letterSpacing: -0.1)),
+                  if (isLast && !_loading) ...[
+                    if ((m['time'] ?? '').isNotEmpty) const SizedBox(width: 10),
+                    Tappable(
+                      onTap: _regenerateLast,
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(CupertinoIcons.arrow_2_squarepath,
+                            size: 10.5, color: C.text4.withValues(alpha: 0.8)),
+                        const SizedBox(width: 3),
+                        Text(l.t('retry'),
+                            style: TextStyle(
+                                fontSize: 11.5,
+                                color: adaptiveText4(context),
+                                letterSpacing: -0.1)),
+                      ]),
+                    ),
+                  ],
+                ]),
               ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(left: 7, top: 5),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              if ((m['time'] ?? '').isNotEmpty)
-                Text(m['time']!, style: TextStyle(fontSize: 11.5, color: adaptiveText4(context), letterSpacing: -0.1)),
-              if (isLast && !_loading) ...[
-                if ((m['time'] ?? '').isNotEmpty) const SizedBox(width: 10),
-                Tappable(
-                  onTap: _regenerateLast,
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(CupertinoIcons.arrow_2_squarepath, size: 10.5, color: C.text4.withValues(alpha: 0.8)),
-                    const SizedBox(width: 3),
-                    Text(l.t('retry'), style: TextStyle(fontSize: 11.5, color: adaptiveText4(context), letterSpacing: -0.1)),
-                  ]),
-                ),
-              ],
             ]),
-          ),
-        ]),
       ),
     );
   }
@@ -653,9 +786,14 @@ class _AiConversationViewState extends State<AiConversationView> {
               bottomLeft: Radius.circular(6),
               bottomRight: Radius.circular(20),
             ),
-            border: Border.all(color: adaptiveBorder(context).withValues(alpha: isDark ? 0.35 : 0.45), width: hairline(context)),
+            border: Border.all(
+                color: adaptiveBorder(context)
+                    .withValues(alpha: isDark ? 0.35 : 0.45),
+                width: hairline(context)),
           ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: List.generate(3, (i) => _Dot(delay: i * 180))),
+          child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(3, (i) => _Dot(delay: i * 180))),
         ),
       ),
     );
@@ -669,7 +807,12 @@ class _AiInputBar extends StatelessWidget {
   final VoidCallback onSend;
   final VoidCallback onStop;
 
-  const _AiInputBar({required this.ctrl, required this.loading, required this.onSend, required this.onStop, this.quota});
+  const _AiInputBar(
+      {required this.ctrl,
+      required this.loading,
+      required this.onSend,
+      required this.onStop,
+      this.quota});
 
   @override
   Widget build(BuildContext context) {
@@ -688,92 +831,118 @@ class _AiInputBar extends StatelessWidget {
 
     return ClipRect(
       child: BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-      child: Container(
-      // Ближе к плавающему навбару: его верхняя кромка на safeArea + 56
-      // (высота бара 64, снизу safeArea − 8), оставляем 6px зазора. С открытой
-      // клавиатурой отступ считается от неё. Clamp не даёт панели уехать под
-      // навбар во время анимации скрытия клавиатуры и убирает рывок в конце.
-      padding: EdgeInsets.fromLTRB(14, 10, 14, bottomBarInset(context)),
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.80),
-        border: Border(top: BorderSide(color: adaptiveBorder(context).withValues(alpha: 0.5), width: hairline(context))),
-      ),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        if (exhausted) AiLimitNotice(quota: quota!),
-        Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-          Expanded(
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOutCubic,
-              constraints: const BoxConstraints(minHeight: 46),
-              decoration: BoxDecoration(
-                color: surface,
-                borderRadius: BorderRadius.circular(23),
-                border: Border.all(color: adaptiveBorder(context).withValues(alpha: 0.45), width: hairline(context)),
-              ),
-              child: TextField(
-                controller: ctrl,
-                enabled: !exhausted,
-                style: TextStyle(fontSize: 16.5, height: 1.3, letterSpacing: -0.3, color: adaptiveText1(context)),
-                decoration: InputDecoration(
-                  hintText: hint,
-                  hintStyle: TextStyle(color: adaptiveText4(context), fontSize: 16.5, letterSpacing: -0.3),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  filled: false,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                ),
-                onSubmitted: (_) => onSend(),
-                maxLines: 6,
-                minLines: 1,
-              ),
-            ),
+        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+        child: Container(
+          // Ближе к плавающему навбару: его верхняя кромка на safeArea + 56
+          // (высота бара 64, снизу safeArea − 8), оставляем 6px зазора. С открытой
+          // клавиатурой отступ считается от неё. Clamp не даёт панели уехать под
+          // навбар во время анимации скрытия клавиатуры и убирает рывок в конце.
+          padding: EdgeInsets.fromLTRB(14, 10, 14, bottomBarInset(context)),
+          decoration: BoxDecoration(
+            color: Theme.of(context)
+                .scaffoldBackgroundColor
+                .withValues(alpha: 0.80),
+            border: Border(
+                top: BorderSide(
+                    color: adaptiveBorder(context).withValues(alpha: 0.5),
+                    width: hairline(context))),
           ),
-          const SizedBox(width: 10),
-          ValueListenableBuilder<TextEditingValue>(
-            valueListenable: ctrl,
-            builder: (context, value, _) {
-              final hasText = value.text.trim().isNotEmpty;
-              final active = hasText && !loading && !exhausted;
-              return Tappable(
-                onTap: loading ? onStop : (exhausted ? null : onSend),
-                label: loading ? 'Остановить генерацию' : 'Отправить сообщение',
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            if (exhausted) AiLimitNotice(quota: quota!),
+            Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Expanded(
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 220),
+                  duration: const Duration(milliseconds: 200),
                   curve: Curves.easeOutCubic,
-                  width: 46,
-                  height: 46,
+                  constraints: const BoxConstraints(minHeight: 46),
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: (active || loading) ? Theme.of(context).colorScheme.primary : adaptiveSurface2(context),
-                    border: (active || loading)
-                        ? null
-                        : Border.all(color: adaptiveBorder(context).withValues(alpha: 0.45), width: hairline(context)),
+                    color: surface,
+                    borderRadius: BorderRadius.circular(23),
+                    border: Border.all(
+                        color: adaptiveBorder(context).withValues(alpha: 0.45),
+                        width: hairline(context)),
                   ),
-                  child: loading
-                      ? const Center(
-                          child: Icon(CupertinoIcons.stop_fill, color: Colors.white, size: 18))
-                      : AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 180),
-                          switchInCurve: Curves.easeOutBack,
-                          switchOutCurve: Curves.easeIn,
-                          transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
-                          child: Icon(
-                            CupertinoIcons.arrow_up,
-                            key: ValueKey(active),
-                            color: active ? Colors.white : adaptiveText4(context),
-                            size: 20,
-                          ),
-                        ),
+                  child: TextField(
+                    controller: ctrl,
+                    enabled: !exhausted,
+                    style: TextStyle(
+                        fontSize: 16.5,
+                        height: 1.3,
+                        letterSpacing: -0.3,
+                        color: adaptiveText1(context)),
+                    decoration: InputDecoration(
+                      hintText: hint,
+                      hintStyle: TextStyle(
+                          color: adaptiveText4(context),
+                          fontSize: 16.5,
+                          letterSpacing: -0.3),
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      filled: false,
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 18, vertical: 12),
+                    ),
+                    onSubmitted: (_) => onSend(),
+                    maxLines: 6,
+                    minLines: 1,
+                  ),
                 ),
-              );
-            },
-          ),
-        ]),
-      ]),
-      ),
+              ),
+              const SizedBox(width: 10),
+              ValueListenableBuilder<TextEditingValue>(
+                valueListenable: ctrl,
+                builder: (context, value, _) {
+                  final hasText = value.text.trim().isNotEmpty;
+                  final active = hasText && !loading && !exhausted;
+                  return Tappable(
+                    onTap: loading ? onStop : (exhausted ? null : onSend),
+                    label: loading
+                        ? 'Остановить генерацию'
+                        : 'Отправить сообщение',
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOutCubic,
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: (active || loading)
+                            ? Theme.of(context).colorScheme.primary
+                            : adaptiveSurface2(context),
+                        border: (active || loading)
+                            ? null
+                            : Border.all(
+                                color: adaptiveBorder(context)
+                                    .withValues(alpha: 0.45),
+                                width: hairline(context)),
+                      ),
+                      child: loading
+                          ? const Center(
+                              child: Icon(CupertinoIcons.stop_fill,
+                                  color: Colors.white, size: 18))
+                          : AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 180),
+                              switchInCurve: Curves.easeOutBack,
+                              switchOutCurve: Curves.easeIn,
+                              transitionBuilder: (child, anim) =>
+                                  ScaleTransition(scale: anim, child: child),
+                              child: Icon(
+                                CupertinoIcons.arrow_up,
+                                key: ValueKey(active),
+                                color: active
+                                    ? Colors.white
+                                    : adaptiveText4(context),
+                                size: 20,
+                              ),
+                            ),
+                    ),
+                  );
+                },
+              ),
+            ]),
+          ]),
+        ),
       ),
     );
   }
@@ -793,7 +962,8 @@ class _DotState extends State<_Dot> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
+    _c = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 500));
     Future.delayed(Duration(milliseconds: widget.delay), () {
       if (mounted) _c.repeat(reverse: true);
     });
@@ -814,7 +984,8 @@ class _DotState extends State<_Dot> with SingleTickerProviderStateMixin {
           height: 7,
           margin: const EdgeInsets.symmetric(horizontal: 3),
           decoration: BoxDecoration(
-            color: adaptiveText4(context).withValues(alpha: 0.35 + _anim.value * 0.55),
+            color: adaptiveText4(context)
+                .withValues(alpha: 0.35 + _anim.value * 0.55),
             shape: BoxShape.circle,
           ),
           transform: Matrix4.translationValues(0, -4 * _anim.value, 0),

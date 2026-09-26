@@ -22,7 +22,7 @@ class CoverAppearance extends StatefulWidget {
   /// Сохранённая обложка предмета; null, пока предмет не создан.
   final String? coverUrl;
 
-  /// 'ai' | 'fallback' | 'upload' | null — см. classes.cover_source.
+  /// 'ai_hero' | 'ai' (legacy) | 'fallback' | 'upload' | null — см. classes.cover_source.
   final String? coverSource;
 
   /// null — предмет ещё не создан, кнопки генерации нет.
@@ -150,6 +150,7 @@ class _CoverAppearanceState extends State<CoverAppearance> {
                 : context.read<ApiService>().fixUrl(url),
             icon: widget.icon,
             color: color.id,
+            coverSource: widget.coverSource,
             iconSize: 60,
             memCacheWidth: 900,
           ),

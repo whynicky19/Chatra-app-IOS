@@ -401,7 +401,7 @@ class _CohortDeadlinesScreenState extends State<CohortDeadlinesScreen> {
             child: Text('$_draftsCount',
                 style: const TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                     color: Color(0xFF342900))),
           ),
           const SizedBox(width: 8),
@@ -532,7 +532,7 @@ class _CohortDeadlinesScreenState extends State<CohortDeadlinesScreen> {
                         child: Text(l.t('cd_published'),
                             style: const TextStyle(
                                 fontSize: 11,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w600,
                                 color: Color(0xFF2EBD6F))),
                       )
                     else
@@ -546,7 +546,7 @@ class _CohortDeadlinesScreenState extends State<CohortDeadlinesScreen> {
                         child: Text(l.t('draft'),
                             style: TextStyle(
                                 fontSize: 11,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w600,
                                 color: primary)),
                       ),
                   ]),

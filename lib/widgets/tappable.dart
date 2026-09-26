@@ -1,4 +1,5 @@
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -65,6 +66,7 @@ class _TappableState extends State<Tappable> {
   @override
   Widget build(BuildContext context) {
     final active = widget.onTap != null || widget.onLongPress != null;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
     Widget result = GestureDetector(
       behavior: widget.behavior ?? HitTestBehavior.opaque,
@@ -73,7 +75,8 @@ class _TappableState extends State<Tappable> {
       onTapCancel: active ? () => _setPressed(false) : null,
       onTap: active
           ? () {
-              if (widget.haptic && defaultTargetPlatform != TargetPlatform.android) {
+              if (widget.haptic &&
+                  defaultTargetPlatform != TargetPlatform.android) {
                 HapticFeedback.selectionClick();
               }
               widget.onTap?.call();
@@ -81,19 +84,26 @@ class _TappableState extends State<Tappable> {
           : null,
       onLongPress: widget.onLongPress,
       child: ConstrainedBox(
-        constraints: BoxConstraints(minWidth: widget.minSize, minHeight: widget.minSize),
+        constraints:
+            BoxConstraints(minWidth: widget.minSize, minHeight: widget.minSize),
         // widthFactor/heightFactor: 1 — без них Center() заполняет всё доступное
         // место родителя и утаскивает маленькую кнопку в центр «щедрого» слота.
         child: Center(
           widthFactor: 1,
           heightFactor: 1,
           child: AnimatedScale(
-            scale: _pressed ? widget.scale : 1.0,
-            duration: const Duration(milliseconds: 100),
+            // При Reduce Motion сохраняем мгновенное затемнение, но убираем
+            // пространственное движение — обратная связь остаётся понятной.
+            scale: _pressed && !reduceMotion ? widget.scale : 1.0,
+            duration: reduceMotion
+                ? Duration.zero
+                : const Duration(milliseconds: 100),
             curve: Curves.easeOut,
             child: AnimatedOpacity(
               opacity: _pressed && active ? 0.75 : 1.0,
-              duration: const Duration(milliseconds: 100),
+              duration: reduceMotion
+                  ? Duration.zero
+                  : const Duration(milliseconds: 100),
               curve: Curves.easeOut,
               child: widget.child,
             ),

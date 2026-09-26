@@ -85,7 +85,8 @@ void main() => CrashReporting.runGuarded(_start);
 
 Future<void> _start() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
+  SystemChrome.setPreferredOrientations(
+      [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
 
   LiquidGlassShaders.ensureLoaded().ignore();
 
@@ -107,9 +108,7 @@ Future<void> _start() async {
     return;
   }
 
-  final api = ApiService(
-  baseUrl: 'https://api.chatra.aican.cloud/api',
-  );
+  final api = ApiService(baseUrl: resolvedBaseUrl);
   final auth = AuthProvider(api);
   final org = OrgProvider();
   final theme = ThemeProvider();
@@ -172,23 +171,45 @@ class ChatraApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeMode = context.select<ThemeProvider, ThemeMode>((t) => t.mode);
-    final isSchool  = context.select<OrgProvider, bool>((o) => o.isSchool);
+    final isSchool = context.select<OrgProvider, bool>((o) => o.isSchool);
     return MaterialApp(
       navigatorKey: navigatorKey,
       title: 'Chatra', debugShowCheckedModeBanner: false,
-      theme:     isSchool ? AppTheme.lightSchool : AppTheme.light,
-      darkTheme: isSchool ? AppTheme.darkSchool  : AppTheme.dark,
+      theme: isSchool ? AppTheme.lightSchool : AppTheme.light,
+      darkTheme: isSchool ? AppTheme.darkSchool : AppTheme.dark,
       themeMode: themeMode,
-      themeAnimationDuration: Duration.zero,
-      builder: (context, child) => MediaQuery.withClampedTextScaling(
-        minScaleFactor: 1.0,
-        maxScaleFactor: 1.3,
-        child: GestureDetector(
-          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-          behavior: HitTestBehavior.translucent,
-          child: child!,
-        ),
-      ),
+      // Смена темы — короткий cross-fade. Мгновенная инверсия всего экрана
+      // ощущалась как вспышка, особенно при системном Auto режиме.
+      themeAnimationDuration: const Duration(milliseconds: 280),
+      themeAnimationCurve: Curves.easeOutCubic,
+      builder: (context, child) {
+        final theme = Theme.of(context);
+        final isDark = theme.brightness == Brightness.dark;
+        final overlay = SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+          statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+          systemNavigationBarColor: theme.scaffoldBackgroundColor,
+          systemNavigationBarDividerColor: Colors.transparent,
+          systemNavigationBarIconBrightness:
+              isDark ? Brightness.light : Brightness.dark,
+        );
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: overlay,
+          child: CupertinoTheme(
+            data: AppTheme.cupertinoFor(theme),
+            child: MediaQuery.withClampedTextScaling(
+              minScaleFactor: 1.0,
+              maxScaleFactor: 1.3,
+              child: GestureDetector(
+                onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+                behavior: HitTestBehavior.translucent,
+                child: child!,
+              ),
+            ),
+          ),
+        );
+      },
       home: const _AuthGate(),
       onGenerateRoute: (s) {
         switch (s.name) {
@@ -197,7 +218,8 @@ class ChatraApp extends StatelessWidget {
             // маршрута TypeError'ом.
             final id = s.arguments;
             if (id is! int) return null;
-            return MaterialPageRoute(builder: (_) => ClassDetailScreen(classId: id));
+            return MaterialPageRoute(
+                builder: (_) => ClassDetailScreen(classId: id));
           case '/archive':
             return MaterialPageRoute(builder: (_) => const ArchiveScreen());
           default:
@@ -277,7 +299,8 @@ class _AuthNavigatorState extends State<_AuthNavigator> {
       duration: const Duration(milliseconds: 250),
       child: _showRegister
           ? RegisterScreen(key: const ValueKey('register'), onGoLogin: _goLogin)
-          : LoginScreen(key: const ValueKey('login'), onGoRegister: _goRegister),
+          : LoginScreen(
+              key: const ValueKey('login'), onGoRegister: _goRegister),
     );
   }
 }
@@ -298,16 +321,32 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
-    _logoFade = CurvedAnimation(parent: _c, curve: const Interval(0.0, 0.5, curve: Curves.easeOut));
+    _c = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 480));
+    _logoFade = CurvedAnimation(
+        parent: _c, curve: const Interval(0.0, 0.5, curve: Curves.easeOut));
     _logoScale = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _c, curve: const Interval(0.0, 0.7, curve: Curves.easeOutBack)),
+      CurvedAnimation(
+          parent: _c,
+          curve: const Interval(0.0, 0.7, curve: Curves.easeOutCubic)),
     );
-    _textFade = CurvedAnimation(parent: _c, curve: const Interval(0.35, 0.85, curve: Curves.easeOut));
-    _textSlide = Tween<Offset>(begin: const Offset(0, 0.4), end: Offset.zero).animate(
-      CurvedAnimation(parent: _c, curve: const Interval(0.35, 1.0, curve: Curves.easeOutCubic)),
+    _textFade = CurvedAnimation(
+        parent: _c, curve: const Interval(0.35, 0.85, curve: Curves.easeOut));
+    _textSlide =
+        Tween<Offset>(begin: const Offset(0, 0.4), end: Offset.zero).animate(
+      CurvedAnimation(
+          parent: _c,
+          curve: const Interval(0.35, 1.0, curve: Curves.easeOutCubic)),
     );
     _c.forward();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context) && !_c.isCompleted) {
+      _c.value = 1;
+    }
   }
 
   @override
@@ -337,27 +376,39 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
                     child: ScaleTransition(
                       scale: _logoScale,
                       child: SizedBox(
-                        width: 168, height: 168,
+                        width: 168,
+                        height: 168,
                         child: Center(
                           child: Builder(builder: (_) {
                             final fallback = Container(
-                              width: 96, height: 96,
+                              width: 96,
+                              height: 96,
                               decoration: BoxDecoration(
                                 color: isDark ? C.darkSurface2 : C.surface2,
-                                borderRadius: BorderRadius.circular(AppRadii.card),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadii.card),
                               ),
                               alignment: Alignment.center,
                               child: Text('C',
-                                style: TextStyle(fontSize: 34, fontWeight: FontWeight.w700, color: wordColor)),
+                                  style: TextStyle(
+                                      fontSize: 34,
+                                      fontWeight: FontWeight.w700,
+                                      color: wordColor)),
                             );
                             if (isSchool) {
-                              return Image.asset('assets/logo-icon.png', width: 96, height: 96,
-                                  fit: BoxFit.contain, color: C.orange,
+                              return Image.asset('assets/logo-icon.png',
+                                  width: 96,
+                                  height: 96,
+                                  fit: BoxFit.contain,
+                                  color: C.orange,
                                   errorBuilder: (_, __, ___) => fallback);
                             }
                             return BrandGradient.mask(
-                              child: Image.asset('assets/logo-icon.png', width: 96, height: 96,
-                                  fit: BoxFit.contain, errorBuilder: (_, __, ___) => fallback),
+                              child: Image.asset('assets/logo-icon.png',
+                                  width: 96,
+                                  height: 96,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) => fallback),
                             );
                           }),
                         ),
@@ -372,14 +423,18 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
                       child: Column(children: [
                         Text('Chatra',
                             style: TextStyle(
-                              fontSize: 34, fontWeight: FontWeight.w700,
-                              color: wordColor, letterSpacing: -0.5,
+                              fontSize: 34,
+                              fontWeight: FontWeight.w700,
+                              color: wordColor,
+                              letterSpacing: -0.5,
                             )),
                         const SizedBox(height: 5),
                         Text('EDUCATION PLATFORM',
                             style: TextStyle(
-                              fontSize: 11, fontWeight: FontWeight.w600,
-                              color: (isDark ? Colors.white : C.text4).withValues(alpha: 0.55),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: (isDark ? Colors.white : C.text4)
+                                  .withValues(alpha: 0.55),
                               letterSpacing: 2.4,
                             )),
                       ]),
@@ -390,13 +445,16 @@ class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
             ),
           ),
           Positioned(
-            left: 0, right: 0, bottom: 54,
+            left: 0,
+            right: 0,
+            bottom: 54,
             child: FadeTransition(
               opacity: _textFade,
               child: Center(
                 child: CupertinoActivityIndicator(
                   radius: 13,
-                  color: (isDark ? Colors.white : C.text1).withValues(alpha: 0.45),
+                  color:
+                      (isDark ? Colors.white : C.text1).withValues(alpha: 0.45),
                 ),
               ),
             ),

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../models/ai_thread.dart';
 import '../../providers/ai_chats_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_backdrop.dart';
 import '../../widgets/tappable.dart';
 import 'widgets/ai_conversation_view.dart';
 import 'widgets/ai_history_drawer.dart';
@@ -78,27 +79,34 @@ class _AiScreenState extends State<AiScreen> {
     return Scaffold(
       key: _scaffoldKey,
       resizeToAvoidBottomInset: false,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: Colors.transparent,
       drawer: AiHistoryDrawer(
         activeThreadId: _activeThreadId,
         onSelect: _selectThread,
         onCreate: _createChat,
       ),
-      body: Stack(children: [
-        Positioned.fill(
-          child: AiConversationView(
-            key: ValueKey('conv_$_sessionKey'),
-            threadId: _activeThreadId,
-            onThreadCreated: (id) => setState(() => _activeThreadId = id),
-          ),
-        ),
-        const Positioned(top: 0, left: 0, right: 0, child: IgnorePointer(child: _StatusBarScrim())),
-        Positioned(
-          top: MediaQuery.paddingOf(context).top + 12,
-          left: 16,
-          child: _HistoryButton(onTap: () => _scaffoldKey.currentState?.openDrawer()),
-        ),
-      ]),
+      body: AppBackdrop(
+          accent: const Color(0xFF5856D6),
+          child: Stack(children: [
+            Positioned.fill(
+              child: AiConversationView(
+                key: ValueKey('conv_$_sessionKey'),
+                threadId: _activeThreadId,
+                onThreadCreated: (id) => setState(() => _activeThreadId = id),
+              ),
+            ),
+            const Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: IgnorePointer(child: _StatusBarScrim())),
+            Positioned(
+              top: MediaQuery.paddingOf(context).top + 12,
+              left: 16,
+              child: _HistoryButton(
+                  onTap: () => _scaffoldKey.currentState?.openDrawer()),
+            ),
+          ])),
     );
   }
 }
@@ -144,14 +152,19 @@ class _HistoryButton extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isDark ? C.darkSurface2.withValues(alpha: 0.7) : Colors.white.withValues(alpha: 0.72),
+              color: isDark
+                  ? C.darkSurface2.withValues(alpha: 0.7)
+                  : Colors.white.withValues(alpha: 0.72),
               border: Border.all(
-                color: isDark ? Colors.white.withValues(alpha: 0.14) : Colors.white.withValues(alpha: 0.6),
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.14)
+                    : Colors.white.withValues(alpha: 0.6),
                 width: 0.5,
               ),
               boxShadow: softShadow(isDark),
             ),
-            child: Icon(CupertinoIcons.sidebar_left, size: 20, color: adaptiveText1(context)),
+            child: Icon(CupertinoIcons.sidebar_left,
+                size: 20, color: adaptiveText1(context)),
           ),
         ),
       ),

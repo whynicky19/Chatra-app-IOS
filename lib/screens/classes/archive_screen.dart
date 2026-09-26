@@ -213,8 +213,9 @@ class _ArchiveCard extends StatelessWidget {
                               url: context.read<ApiService>().fixUrl(coverImg.toString()),
                               memCacheWidth: coverCacheWidth,
                             ),
-                    SubjectIconOverlay(icon: cls['cover_icon'] as String?,
-                        color: cls['cover_color'] as String?, size: 50),
+                    if (cls['cover_source'] != 'ai_hero')
+                      SubjectIconOverlay(icon: cls['cover_icon'] as String?,
+                          color: cls['cover_color'] as String?, size: 50),
                     Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
                       begin: Alignment.topCenter, end: Alignment.bottomCenter,
                       stops: const [0.45, 1.0],

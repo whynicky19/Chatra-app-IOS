@@ -42,7 +42,11 @@ class _CupertinoLiquidSwitchState extends State<CupertinoLiquidSwitch>
   void didUpdateWidget(covariant CupertinoLiquidSwitch old) {
     super.didUpdateWidget(old);
     if (old.value != widget.value) {
-      widget.value ? _c.forward() : _c.reverse();
+      if (MediaQuery.disableAnimationsOf(context)) {
+        _c.value = widget.value ? 1 : 0;
+      } else {
+        widget.value ? _c.forward() : _c.reverse();
+      }
     }
   }
 
@@ -55,103 +59,122 @@ class _CupertinoLiquidSwitchState extends State<CupertinoLiquidSwitch>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final accent = widget.accent;
     final offTrack = isDark ? const Color(0xFF39393D) : const Color(0xFFE9E9EA);
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
+    return Semantics(
+      toggled: widget.value,
+      button: true,
       onTap: () => widget.onChanged(!widget.value),
-      child: AnimatedBuilder(
-        animation: _t,
-        builder: (context, _) {
-          final t = _t.value;
-          final moving = math.sin(math.pi * t);
-          final track = Color.lerp(offTrack, accent, t)!;
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapUp: (_) => setState(() => _pressed = false),
+        onTapCancel: () => setState(() => _pressed = false),
+        onTap: () => widget.onChanged(!widget.value),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: _w, minHeight: 44),
+          child: Center(
+            child: AnimatedBuilder(
+              animation: _t,
+              builder: (context, _) {
+                final t = _t.value;
+                final moving = math.sin(math.pi * t);
+                final track = Color.lerp(offTrack, accent, t)!;
 
-          return SizedBox(
-            width: _w,
-            height: _h,
-            child: Stack(children: [
-              Container(
-                width: _w,
-                height: _h,
-                decoration: BoxDecoration(
-                  color: track,
-                  borderRadius: BorderRadius.circular(_h / 2),
-                  border: Border.all(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.06 + 0.05 * moving)
-                        : Colors.black.withValues(alpha: 0.05 + 0.03 * moving),
-                    width: 0.5,
-                  ),
-                ),
-                foregroundDecoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(_h / 2),
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.white.withValues(alpha: (isDark ? 0.05 : 0.16) + 0.10 * moving),
-                      Colors.white.withValues(alpha: 0.0),
-                      Colors.black.withValues(alpha: 0.035 + 0.02 * moving),
-                    ],
-                    stops: const [0.0, 0.28, 1.0],
-                  ),
-                ),
-              ),
-
-              Positioned(
-                top: _pad,
-                left: _pad + (_w - _h) * t,
-                child: AnimatedScale(
-                  duration: const Duration(milliseconds: 110),
-                  curve: Curves.easeOut,
-                  scale: _pressed ? 0.96 : 1.0,
-                  child: Container(
-                    width: _thumb,
-                    height: _thumb,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.black.withValues(alpha: 0.04), width: 0.5),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.15),
-                          blurRadius: 4,
-                          offset: const Offset(0, 3),
+                return SizedBox(
+                  width: _w,
+                  height: _h,
+                  child: Stack(children: [
+                    Container(
+                      width: _w,
+                      height: _h,
+                      decoration: BoxDecoration(
+                        color: track,
+                        borderRadius: BorderRadius.circular(_h / 2),
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.white
+                                  .withValues(alpha: 0.06 + 0.05 * moving)
+                              : Colors.black
+                                  .withValues(alpha: 0.05 + 0.03 * moving),
+                          width: 0.5,
                         ),
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
+                      ),
+                      foregroundDecoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(_h / 2),
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.white.withValues(
+                                alpha: (isDark ? 0.05 : 0.16) + 0.10 * moving),
+                            Colors.white.withValues(alpha: 0.0),
+                            Colors.black
+                                .withValues(alpha: 0.035 + 0.02 * moving),
+                          ],
+                          stops: const [0.0, 0.28, 1.0],
                         ),
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.06),
-                          blurRadius: 1,
-                        ),
-                      ],
-                    ),
-                    foregroundDecoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.white.withValues(alpha: 0.55),
-                          Colors.white.withValues(alpha: 0.0),
-                        ],
-                        stops: const [0.0, 0.22],
                       ),
                     ),
-                  ),
-                ),
-              ),
-            ]),
-          );
-        },
+                    Positioned(
+                      top: _pad,
+                      left: _pad + (_w - _h) * t,
+                      child: AnimatedScale(
+                        duration: reduceMotion
+                            ? Duration.zero
+                            : const Duration(milliseconds: 110),
+                        curve: Curves.easeOut,
+                        scale: _pressed ? 0.96 : 1.0,
+                        child: Container(
+                          width: _thumb,
+                          height: _thumb,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                                color: Colors.black.withValues(alpha: 0.04),
+                                width: 0.5),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black
+                                    .withValues(alpha: isDark ? 0.30 : 0.15),
+                                blurRadius: 4,
+                                offset: const Offset(0, 3),
+                              ),
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.06),
+                                blurRadius: 1,
+                              ),
+                            ],
+                          ),
+                          foregroundDecoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.white.withValues(alpha: 0.55),
+                                Colors.white.withValues(alpha: 0.0),
+                              ],
+                              stops: const [0.0, 0.22],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ]),
+                );
+              },
+            ),
+          ),
+        ),
       ),
     );
   }

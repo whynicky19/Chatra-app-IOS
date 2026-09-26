@@ -16,6 +16,7 @@ class ClassCoverSliver extends StatelessWidget {
 
   /// Слаг цвета обложки — из него берётся тон иконки.
   final String? coverColor;
+  final String? coverSource;
 
   final bool isTeacher;
   final bool isArchived;
@@ -31,6 +32,7 @@ class ClassCoverSliver extends StatelessWidget {
     required this.coverImg,
     this.coverIcon,
     this.coverColor,
+    this.coverSource,
     required this.isTeacher,
     required this.isArchived,
     required this.archivedLabel,
@@ -94,7 +96,8 @@ class ClassCoverSliver extends StatelessWidget {
             begin: Alignment.topLeft, end: Alignment.bottomRight,
           ))),
           cover,
-          SubjectIconOverlay(icon: coverIcon, color: coverColor, size: 74),
+          if (coverSource != 'ai_hero')
+            SubjectIconOverlay(icon: coverIcon, color: coverColor, size: 74),
           // Затемняем только низ, где лежат название и описание. Раньше сверху
           // тоже стояла плёнка ради контраста кнопок — но у них свои тёмные
           // кружки, а светлую пастельную обложку эта плёнка гасила в серое.

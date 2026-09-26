@@ -527,8 +527,9 @@ class _FoundClassCard extends StatelessWidget {
         SizedBox(height: 80, width: double.infinity,
           child: Stack(fit: StackFit.expand, children: [
             _Cover(data: data),
-            SubjectIconOverlay(icon: data['cover_icon'] as String?,
-                color: data['cover_color'] as String?, size: 34),
+            if (data['cover_source'] != 'ai_hero')
+              SubjectIconOverlay(icon: data['cover_icon'] as String?,
+                  color: data['cover_color'] as String?, size: 34),
           ])),
         Padding(padding: const EdgeInsets.all(12),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

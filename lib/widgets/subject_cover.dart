@@ -1,12 +1,6 @@
-/// Предметная иконка поверх обложки — и готовая обложка целиком для превью.
-/// Иконка НЕ входит в сохранённую картинку: бэкенд генерирует только фон,
-/// а глиф рисуется на клиенте, поэтому его можно менять без перегенерации.
-///
-/// Иконка НЕ входит в сохранённую картинку: бэкенд генерирует только фон
-/// (см. services/cover_art.py). Генеративные модели нестабильно рисуют символы
-/// вроде Σ или спирали ДНК, поэтому иконка — чистый SVG на стороне клиента:
-/// всегда одинаковая, её можно перекрасить или заменить без перегенерации всех
-/// обложек в хранилище.
+/// Готовая обложка. Для fallback и legacy `ai` клиент дорисовывает чистый
+/// SVG-глиф. Новая `ai_hero` уже содержит крупный тематический 3D-объект, поэтому
+/// дополнительный глиф на ней скрывается.
 library;
 
 import 'dart:ui' show ImageFilter;
@@ -73,6 +67,7 @@ class SubjectCover extends StatelessWidget {
   final String? url;
   final String? icon;
   final String? color;
+  final String? coverSource;
   final double iconSize;
   final int? memCacheWidth;
 
@@ -81,6 +76,7 @@ class SubjectCover extends StatelessWidget {
     required this.url,
     this.icon,
     this.color,
+    this.coverSource,
     this.iconSize = 44,
     this.memCacheWidth,
   });
@@ -97,7 +93,8 @@ class SubjectCover extends StatelessWidget {
           placeholderBuilder: (_) => const SizedBox.shrink(),
           errorBuilder: (_) => const SizedBox.shrink(),
         ),
-      SubjectIconOverlay(icon: icon, color: color, size: iconSize),
+      if (coverSource != 'ai_hero')
+        SubjectIconOverlay(icon: icon, color: color, size: iconSize),
     ]);
   }
 }

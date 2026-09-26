@@ -9,18 +9,25 @@ Future<T?> showAppDialog<T>(
   required WidgetBuilder builder,
   bool dismissible = true,
 }) {
+  final reduceMotion = MediaQuery.disableAnimationsOf(context);
   return showGeneralDialog<T>(
     context: context,
     barrierDismissible: dismissible,
     barrierLabel: 'dialog',
     barrierColor: Colors.black.withValues(alpha: 0.45),
-    transitionDuration: const Duration(milliseconds: 240),
+    transitionDuration: Duration(milliseconds: reduceMotion ? 140 : 240),
     pageBuilder: (ctx, _, __) => builder(ctx),
     transitionBuilder: (ctx, anim, _, child) {
-      final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutBack, reverseCurve: Curves.easeIn);
+      if (reduceMotion) return FadeTransition(opacity: anim, child: child);
+      final curved = CurvedAnimation(
+        parent: anim,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
+      );
       return FadeTransition(
         opacity: anim,
-        child: ScaleTransition(scale: Tween(begin: 0.94, end: 1.0).animate(curved), child: child),
+        child: ScaleTransition(
+            scale: Tween(begin: 0.94, end: 1.0).animate(curved), child: child),
       );
     },
   );
@@ -34,7 +41,8 @@ class AppDialogCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return AnimatedPadding(
-      padding: MediaQuery.viewInsetsOf(context) + const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+      padding: MediaQuery.viewInsetsOf(context) +
+          const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
       duration: const Duration(milliseconds: 150),
       curve: Curves.easeOut,
       child: Center(
@@ -67,13 +75,17 @@ class AppDialogIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    width: 58, height: 58,
-    decoration: BoxDecoration(
-      gradient: RadialGradient(colors: [color.withValues(alpha: 0.18), color.withValues(alpha: 0.07)]),
-      shape: BoxShape.circle,
-    ),
-    child: Icon(icon, size: 27, color: color),
-  );
+        width: 58,
+        height: 58,
+        decoration: BoxDecoration(
+          gradient: RadialGradient(colors: [
+            color.withValues(alpha: 0.18),
+            color.withValues(alpha: 0.07)
+          ]),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, size: 27, color: color),
+      );
 }
 
 class AppDialogActions extends StatelessWidget {
@@ -96,15 +108,18 @@ class AppDialogActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(children: [
-      Expanded(child: AppButton.secondary(
+      Expanded(
+          child: AppButton.secondary(
         label: cancelText,
         onPressed: busy ? null : onCancel,
         minHeight: 46,
       )),
       const SizedBox(width: 10),
-      Expanded(child: AppButton(
+      Expanded(
+          child: AppButton(
         label: confirmText,
-        variant: danger ? AppButtonVariant.destructive : AppButtonVariant.primary,
+        variant:
+            danger ? AppButtonVariant.destructive : AppButtonVariant.primary,
         onPressed: onConfirm,
         loading: busy,
         glow: true,
@@ -125,17 +140,28 @@ Future<bool?> showConfirmDialog(
 }) {
   return showAppDialog<bool>(context, builder: (ctx) {
     final accent = danger ? C.red : Theme.of(ctx).colorScheme.primary;
-    return AppDialogCard(child: Column(mainAxisSize: MainAxisSize.min, children: [
-      AppDialogIcon(icon: icon ?? (danger ? CupertinoIcons.exclamationmark_triangle : CupertinoIcons.question_circle), color: accent),
+    return AppDialogCard(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+      AppDialogIcon(
+          icon: icon ??
+              (danger
+                  ? CupertinoIcons.exclamationmark_triangle
+                  : CupertinoIcons.question_circle),
+          color: accent),
       const SizedBox(height: 14),
       Text(title,
-        textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: adaptiveText1(ctx), letterSpacing: -0.3)),
+          textAlign: TextAlign.center,
+          style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: adaptiveText1(ctx),
+              letterSpacing: -0.3)),
       if (message != null && message.isNotEmpty) ...[
         const SizedBox(height: 6),
         Text(message,
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 13, color: adaptiveText3(ctx), height: 1.45)),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                fontSize: 13, color: adaptiveText3(ctx), height: 1.45)),
       ],
       const SizedBox(height: 20),
       AppDialogActions(
@@ -154,7 +180,11 @@ class AppActionSheetAction {
   final IconData icon;
   final bool destructive;
   final VoidCallback onTap;
-  const AppActionSheetAction({required this.label, required this.icon, required this.onTap, this.destructive = false});
+  const AppActionSheetAction(
+      {required this.label,
+      required this.icon,
+      required this.onTap,
+      this.destructive = false});
 }
 
 Future<void> showAppActionSheet(
@@ -179,11 +209,20 @@ Future<void> showAppActionSheet(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Padding(
               padding: const EdgeInsets.only(top: 10, bottom: 4),
-              child: Container(width: 36, height: 4,
-                decoration: BoxDecoration(color: adaptiveBorder(ctx), borderRadius: BorderRadius.circular(AppRadii.chip))),
+              child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                      color: adaptiveBorder(ctx),
+                      borderRadius: BorderRadius.circular(AppRadii.chip))),
             ),
             for (int i = 0; i < actions.length; i++) ...[
-              if (i > 0) Divider(height: 1, indent: 20, endIndent: 20, color: adaptiveBorder(ctx)),
+              if (i > 0)
+                Divider(
+                    height: 1,
+                    indent: 20,
+                    endIndent: 20,
+                    color: adaptiveBorder(ctx)),
               _AppActionSheetTile(action: actions[i]),
             ],
           ]),
@@ -199,8 +238,12 @@ Future<void> showAppActionSheet(
               borderRadius: BorderRadius.circular(AppRadii.card),
               boxShadow: cardShadow(isDark),
             ),
-            child: Text(cancelText, textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Theme.of(ctx).colorScheme.primary)),
+            child: Text(cancelText,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(ctx).colorScheme.primary)),
           ),
         ),
       ]),
@@ -214,9 +257,13 @@ class _AppActionSheetTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = action.destructive ? C.red : Theme.of(context).colorScheme.primary;
+    final color =
+        action.destructive ? C.red : Theme.of(context).colorScheme.primary;
     return GestureDetector(
-      onTap: () { Navigator.pop(context); action.onTap(); },
+      onTap: () {
+        Navigator.pop(context);
+        action.onTap();
+      },
       child: Container(
         height: 54,
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -224,8 +271,10 @@ class _AppActionSheetTile extends StatelessWidget {
           Icon(action.icon, size: 19, color: color),
           const SizedBox(width: 14),
           Text(action.label,
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600,
-              color: action.destructive ? color : adaptiveText1(context))),
+              style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: action.destructive ? color : adaptiveText1(context))),
         ]),
       ),
     );
@@ -246,15 +295,23 @@ Future<String?> showInputDialog(
   final ctrl = TextEditingController();
   return showAppDialog<String>(context, builder: (ctx) {
     final accent = danger ? C.red : Theme.of(ctx).colorScheme.primary;
-    return AppDialogCard(child: Column(mainAxisSize: MainAxisSize.min, children: [
+    return AppDialogCard(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
       AppDialogIcon(icon: icon ?? CupertinoIcons.text_bubble, color: accent),
       const SizedBox(height: 14),
       Text(title,
-        textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: adaptiveText1(ctx), letterSpacing: -0.3)),
+          textAlign: TextAlign.center,
+          style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: adaptiveText1(ctx),
+              letterSpacing: -0.3)),
       if (message != null && message.isNotEmpty) ...[
         const SizedBox(height: 6),
-        Text(message, textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: adaptiveText3(ctx), height: 1.45)),
+        Text(message,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                fontSize: 13, color: adaptiveText3(ctx), height: 1.45)),
       ],
       const SizedBox(height: 16),
       // maxLines: 1 у вызывающих значит «значение в одну строку» (имя чата), а

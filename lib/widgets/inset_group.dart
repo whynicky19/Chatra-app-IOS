@@ -30,22 +30,31 @@ BorderRadius groupRadius(GroupPos pos, {double radius = AppRadii.card}) {
 
 Color groupSeparator(BuildContext context) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
-  return isDark ? Colors.white.withValues(alpha: 0.10) : Colors.black.withValues(alpha: 0.07);
+  return isDark
+      ? Colors.white.withValues(alpha: 0.10)
+      : Colors.black.withValues(alpha: 0.07);
 }
 
 Color groupPressFill(BuildContext context) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
-  return isDark ? Colors.white.withValues(alpha: 0.07) : Colors.black.withValues(alpha: 0.045);
+  return isDark
+      ? Colors.white.withValues(alpha: 0.07)
+      : Colors.black.withValues(alpha: 0.045);
 }
 
 /// Толщина линии в физический пиксель — как настоящие разделители iOS.
-double hairline(BuildContext context) => 1 / MediaQuery.devicePixelRatioOf(context);
+double hairline(BuildContext context) =>
+    1 / MediaQuery.devicePixelRatioOf(context);
 
 /// Контейнер сгруппированной секции: заливка, скругление, волосяная рамка.
 /// Строки внутри — [GroupRow] с `color: Colors.transparent` (заливку и
 /// скругление даёт контейнер, строке остаются разделитель и подсветка).
 class InsetGroup extends StatelessWidget {
-  const InsetGroup({super.key, required this.children, this.color, this.radius = AppRadii.card});
+  const InsetGroup(
+      {super.key,
+      required this.children,
+      this.color,
+      this.radius = AppRadii.card});
 
   final List<Widget> children;
   final Color? color;
@@ -55,11 +64,16 @@ class InsetGroup extends StatelessWidget {
   Widget build(BuildContext context) {
     if (children.isEmpty) return const SizedBox.shrink();
     final r = BorderRadius.circular(radius);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: color ?? Theme.of(context).colorScheme.surface,
+        color: color ??
+            Theme.of(context).colorScheme.surface.withValues(
+                  alpha: isDark ? 0.78 : 0.90,
+                ),
         borderRadius: r,
-        border: Border.all(color: groupSeparator(context), width: hairline(context)),
+        border: Border.all(
+            color: groupSeparator(context), width: hairline(context)),
       ),
       child: ClipRRect(borderRadius: r, child: Column(children: children)),
     );
@@ -67,7 +81,8 @@ class InsetGroup extends StatelessWidget {
 }
 
 /// Позиция строки внутри [InsetGroup] (последняя — без разделителя).
-GroupPos innerPos(int index, int count) => index == count - 1 ? GroupPos.last : GroupPos.middle;
+GroupPos innerPos(int index, int count) =>
+    index == count - 1 ? GroupPos.last : GroupPos.middle;
 
 /// Строка сгруппированного списка: заливка группы, скругление по [pos],
 /// разделитель снизу (кроме последней) и мгновенная подсветка по нажатию.
@@ -129,7 +144,8 @@ class _GroupRowState extends State<GroupRow> {
   Widget build(BuildContext context) {
     final active = widget.onTap != null || widget.onLongPress != null;
     final radius = groupRadius(widget.pos, radius: widget.radius);
-    final showSeparator = widget.pos == GroupPos.first || widget.pos == GroupPos.middle;
+    final showSeparator =
+        widget.pos == GroupPos.first || widget.pos == GroupPos.middle;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -138,7 +154,8 @@ class _GroupRowState extends State<GroupRow> {
         color: widget.color ?? Theme.of(context).colorScheme.surface,
         borderRadius: radius,
         border: widget.border
-            ? Border.all(color: groupSeparator(context), width: hairline(context))
+            ? Border.all(
+                color: groupSeparator(context), width: hairline(context))
             : null,
         boxShadow: widget.shadow ? softShadow(isDark) : null,
       ),
@@ -150,7 +167,9 @@ class _GroupRowState extends State<GroupRow> {
           AnimatedContainer(
             duration: const Duration(milliseconds: 90),
             curve: Curves.easeOut,
-            color: _pressed && active ? groupPressFill(context) : Colors.transparent,
+            color: _pressed && active
+                ? groupPressFill(context)
+                : Colors.transparent,
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 48),
               child: Padding(padding: widget.padding, child: widget.child),
@@ -159,7 +178,8 @@ class _GroupRowState extends State<GroupRow> {
           if (showSeparator)
             Padding(
               padding: EdgeInsets.only(left: widget.separatorInset),
-              child: Container(height: hairline(context), color: groupSeparator(context)),
+              child: Container(
+                  height: hairline(context), color: groupSeparator(context)),
             ),
         ]),
       ),
@@ -178,14 +198,16 @@ class _GroupRowState extends State<GroupRow> {
     }
 
     if (widget.label != null) {
-      result = Semantics(label: widget.label, button: true, enabled: active, child: result);
+      result = Semantics(
+          label: widget.label, button: true, enabled: active, child: result);
     }
     return result;
   }
 }
 
 class GroupHeader extends StatelessWidget {
-  const GroupHeader({super.key, required this.title, this.trailing, this.padding});
+  const GroupHeader(
+      {super.key, required this.title, this.trailing, this.padding});
 
   final String title;
   final Widget? trailing;
@@ -214,7 +236,8 @@ class GroupHeader extends StatelessWidget {
 }
 
 class SectionTitle extends StatelessWidget {
-  const SectionTitle({super.key, required this.title, this.trailing, this.padding});
+  const SectionTitle(
+      {super.key, required this.title, this.trailing, this.padding});
 
   final String title;
   final Widget? trailing;
@@ -244,7 +267,8 @@ class SectionTitle extends StatelessWidget {
 }
 
 class Entrance extends StatelessWidget {
-  const Entrance({super.key, required this.child, this.index = 0, this.rise = 12});
+  const Entrance(
+      {super.key, required this.child, this.index = 0, this.rise = 12});
 
   final Widget child;
   final int index;

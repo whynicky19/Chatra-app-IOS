@@ -16,7 +16,6 @@ import 'tappable.dart';
 
 class CoverAppearance extends StatefulWidget {
   final String color;
-  final String icon;
 
   /// Сохранённая обложка предмета; null, пока предмет не создан.
   final String? coverUrl;
@@ -31,15 +30,12 @@ class CoverAppearance extends StatefulWidget {
   final String? error;
 
   final ValueChanged<String> onColorChanged;
-  final ValueChanged<String> onIconChanged;
   final VoidCallback onGenerate;
 
   const CoverAppearance({
     super.key,
     required this.color,
-    required this.icon,
     required this.onColorChanged,
-    required this.onIconChanged,
     required this.onGenerate,
     this.coverUrl,
     this.coverSource,

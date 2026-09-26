@@ -13,7 +13,8 @@ import 'detail_page_theme.dart';
 /// Строка — отдельная карточка, а не ряд сгруппированного iOS-списка: у
 /// пометки переменная высота (две строки текста + заметка + подпись), и в
 /// сплошном списке с волосяными линиями они сливались в стену текста. Цвет
-/// пометки — кромка слева, как в самом документе.
+/// пометки показан отдельным образцом, чтобы список оставался спокойным и
+/// хорошо читался в обеих темах.
 class HighlightsSection extends StatelessWidget {
   final List<Annotation> items;
   final String Function(String) t;
@@ -59,10 +60,12 @@ class HighlightsSection extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(left: 2, bottom: 8),
           child: Row(children: [
-            Text(t('hl_section').toUpperCase(), style: sectionCaptionStyle(context)),
+            Text(t('hl_section').toUpperCase(),
+                style: sectionCaptionStyle(context)),
             const SizedBox(width: 6),
             Text('${items.length}',
-                style: sectionCaptionStyle(context).copyWith(color: detailText2(context))),
+                style: sectionCaptionStyle(context)
+                    .copyWith(color: detailText2(context))),
           ]),
         ),
       for (var i = 0; i < sorted.length; i++) ...[
@@ -78,13 +81,18 @@ class _Row extends StatelessWidget {
   final String Function(String) t;
   final ValueChanged<Annotation> onTap;
   final ValueChanged<Annotation> onDelete;
-  const _Row({required this.item, required this.t, required this.onTap, required this.onDelete});
+  const _Row(
+      {required this.item,
+      required this.t,
+      required this.onTap,
+      required this.onDelete});
 
   @override
   Widget build(BuildContext context) {
     final swatch = highlightSwatch(item.color);
     final meta = <String>[
-      if (item.lectureTitle != null && item.lectureTitle!.isNotEmpty) item.lectureTitle!,
+      if (item.lectureTitle != null && item.lectureTitle!.isNotEmpty)
+        item.lectureTitle!,
       if (item.page > 0) '${t('hl_page')} ${item.page}',
     ].join(' · ');
     final hasNote = item.comment != null && item.comment!.trim().isNotEmpty;
@@ -96,7 +104,7 @@ class _Row extends StatelessWidget {
       background: Container(
         decoration: BoxDecoration(
           color: C.red,
-          borderRadius: BorderRadius.circular(AppRadii.tile),
+          borderRadius: BorderRadius.circular(AppRadii.card),
         ),
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
@@ -109,92 +117,93 @@ class _Row extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             color: detailSurface(context),
-            borderRadius: BorderRadius.circular(AppRadii.tile),
+            borderRadius: BorderRadius.circular(AppRadii.card),
             border: Border.all(
               color: detailBorder(context),
               width: 1 / MediaQuery.devicePixelRatioOf(context),
             ),
+            boxShadow:
+                softShadow(Theme.of(context).brightness == Brightness.dark),
           ),
           clipBehavior: Clip.antiAlias,
-          // Кромка цвета — Positioned на всю высоту карточки: высоту задаёт
-          // содержимое строки, а не наоборот.
-          child: Stack(children: [
-            Row(children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 11, 10, 11),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Expanded(
-                        child: Text(
-                          // Чистим U+FFFD от PDFium: в старых пометках на месте
-                          // бюллетеней из Word сохранились «ромбы-вопросы».
-                          sanitizePdfSymbols(item.selectedText).trim(),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 15,
-                            height: 1.35,
-                            letterSpacing: -0.2,
-                            color: detailText1(context),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Icon(CupertinoIcons.chevron_right,
-                            size: 13,
-                            color: detailText2(context).withValues(alpha: 0.55)),
-                      ),
-                    ]),
-                    if (hasNote) ...[
-                      const SizedBox(height: 7),
-                      // Заметка — отдельной плашкой: это уже слова студента, а
-                      // не текст документа, и мешать их в один абзац нельзя.
-                      Container(
-                        padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
-                        decoration: BoxDecoration(
-                          color: swatch.withValues(alpha: 0.14),
-                          borderRadius: BorderRadius.circular(AppRadii.chip),
-                        ),
-                        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Icon(CupertinoIcons.text_bubble,
-                              size: 12, color: detailText2(context)),
-                          const SizedBox(width: 5),
-                          Expanded(
-                            child: Text(item.comment!.trim(),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  height: 1.3,
-                                  color: detailText1(context).withValues(alpha: 0.85),
-                                )),
-                          ),
-                        ]),
-                      ),
-                    ],
-                    if (meta.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Text(meta,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 12,
-                            letterSpacing: -0.1,
-                            color: detailText2(context),
-                          )),
-                    ],
-                  ]),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 12, 13),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Container(
+                  width: 24,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: swatch,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+                if (meta.isNotEmpty) ...[
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: Text(meta,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: -0.1,
+                          color: detailText2(context),
+                        )),
+                  ),
+                ] else
+                  const Spacer(),
+                Icon(CupertinoIcons.chevron_right,
+                    size: 13,
+                    color: detailText2(context).withValues(alpha: 0.5)),
+              ]),
+              const SizedBox(height: 10),
+              Text(
+                // Чистим U+FFFD от PDFium: в старых пометках на месте
+                // бюллетеней из Word сохранились «ромбы-вопросы».
+                sanitizePdfSymbols(item.selectedText).trim(),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 15,
+                  height: 1.4,
+                  letterSpacing: -0.2,
+                  fontWeight: FontWeight.w500,
+                  color: detailText1(context),
                 ),
               ),
+              if (hasNote) ...[
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                  decoration: BoxDecoration(
+                    color: adaptiveSurface2(context),
+                    borderRadius: BorderRadius.circular(AppRadii.tile),
+                  ),
+                  child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(CupertinoIcons.text_bubble,
+                            size: 13, color: swatch),
+                        const SizedBox(width: 7),
+                        Expanded(
+                          child: Text(item.comment!.trim(),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 13,
+                                height: 1.35,
+                                color: detailText1(context)
+                                    .withValues(alpha: 0.86),
+                              )),
+                        ),
+                      ]),
+                ),
+              ],
             ]),
-            Positioned(
-              left: 0, top: 0, bottom: 0, width: 4,
-              child: ColoredBox(color: swatch),
-            ),
-          ]),
+          ),
         ),
       ),
     );

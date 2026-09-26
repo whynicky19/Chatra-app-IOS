@@ -104,16 +104,13 @@ class _ContactScreenState extends State<ContactScreen>
                   child: Tappable(
                     onTap: () => Navigator.pop(context),
                     label: 'Назад',
-                    child: Container(
+                    child: SizedBox(
                       width: 38,
                       height: 38,
-                      decoration: BoxDecoration(
-                        color: surface,
-                        shape: BoxShape.circle,
-                        boxShadow: softShadow(isDark),
+                      child: Center(
+                        child: Icon(CupertinoIcons.chevron_left,
+                            size: 20, color: adaptiveText1(context)),
                       ),
-                      child: Icon(CupertinoIcons.chevron_left,
-                          size: 17, color: adaptiveText1(context)),
                     ),
                   ),
                 ),

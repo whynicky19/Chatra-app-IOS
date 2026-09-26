@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -134,7 +133,8 @@ class _RefreshAction extends StatelessWidget {
   }
 }
 
-/// Карточка-герой: кольцо остатка и, если остаток на исходе, строка-предупреждение.
+/// Карточка лимита в духе Screen Time: крупное число и линейная шкала без
+/// круговой диаграммы.
 class _QuotaHero extends StatelessWidget {
   const _QuotaHero({required this.quota});
 
@@ -144,8 +144,6 @@ class _QuotaHero extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.watch<L10n>();
     final primary = Theme.of(context).colorScheme.primary;
-    final secondary = Theme.of(context).colorScheme.secondary;
-
     final exhausted = quota.exhausted;
     final low = !exhausted &&
         !quota.unlimited &&
@@ -156,25 +154,61 @@ class _QuotaHero extends StatelessWidget {
         : low
             ? C.amberDk
             : primary;
+    final fraction = quota.unlimited || quota.limit <= 0
+        ? 1.0
+        : (quota.left / quota.limit).clamp(0.0, 1.0);
 
     return _Card(
-      child: Column(children: [
-        if (quota.unlimited)
-          _RingFrame(
-            painter: _RingPainter(
-              value: 1,
-              track: adaptiveSurface2(context),
-              gradient: [secondary, primary],
-              full: true,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(
+            quota.unlimited
+                ? l.t('ai_unlimited_badge')
+                : l.t('ai_messages_left'),
+            style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: adaptiveText3(context),
+                letterSpacing: -0.1)),
+        const SizedBox(height: 8),
+        Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Text(quota.unlimited ? '∞' : '${quota.left}',
+              style: TextStyle(
+                  fontSize: 46,
+                  fontWeight: FontWeight.w700,
+                  height: 0.95,
+                  letterSpacing: -1.5,
+                  color: quota.unlimited ? primary : accent,
+                  fontFeatures: const [FontFeature.tabularFigures()])),
+          if (!quota.unlimited) ...[
+            const SizedBox(width: 6),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 3),
+              child: Text('/ ${quota.limit}',
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: adaptiveText3(context),
+                      fontFeatures: const [FontFeature.tabularFigures()])),
             ),
-            child: _UnlimitedCenter(accent: primary),
-          )
-        else
-          _AnimatedRing(
-              quota: quota,
-              accent: accent,
-              gradient: [secondary, primary],
-              flat: exhausted || low),
+          ],
+          const Spacer(),
+          Icon(
+              quota.unlimited
+                  ? CupertinoIcons.sparkles
+                  : CupertinoIcons.bolt_fill,
+              size: 22,
+              color: accent),
+        ]),
+        const SizedBox(height: 18),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(3),
+          child: LinearProgressIndicator(
+            value: fraction,
+            minHeight: 7,
+            backgroundColor: adaptiveSurface2(context),
+            color: accent,
+          ),
+        ),
         if (quota.unlimited) ...[
           const SizedBox(height: 18),
           _Note(
@@ -199,208 +233,7 @@ class _QuotaHero extends StatelessWidget {
   }
 }
 
-/// Кольцо и число оживают одним общим прогрессом `t` — иначе дуга и цифра
-/// приходят к финалу вразнобой.
-class _AnimatedRing extends StatelessWidget {
-  const _AnimatedRing(
-      {required this.quota,
-      required this.accent,
-      required this.gradient,
-      required this.flat});
-
-  final AiQuota quota;
-  final Color accent;
-  final List<Color> gradient;
-  final bool flat;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.watch<L10n>();
-    final fraction =
-        quota.limit > 0 ? (quota.left / quota.limit).clamp(0.0, 1.0) : 0.0;
-    final track = quota.exhausted
-        ? C.red.withValues(
-            alpha:
-                Theme.of(context).brightness == Brightness.dark ? 0.20 : 0.12)
-        : adaptiveSurface2(context);
-
-    Widget ring(double t) => _RingFrame(
-          painter: _RingPainter(
-            value: fraction * t,
-            track: track,
-            gradient: flat ? null : gradient,
-            solid: flat ? accent : null,
-          ),
-          child: _RingCenter(
-            value: (quota.left * t).round(),
-            label: l.t('ai_messages_left'),
-            color: flat ? accent : adaptiveText1(context),
-          ),
-        );
-
-    if (MediaQuery.disableAnimationsOf(context)) return ring(1);
-
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 850),
-      curve: Curves.easeOutCubic,
-      builder: (context, t, _) => ring(t),
-    );
-  }
-}
-
-class _RingFrame extends StatelessWidget {
-  const _RingFrame({required this.painter, required this.child});
-
-  final CustomPainter painter;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 178,
-      height: 178,
-      child: CustomPaint(
-        painter: painter,
-        child: Center(child: child),
-      ),
-    );
-  }
-}
-
-class _RingCenter extends StatelessWidget {
-  const _RingCenter(
-      {required this.value, required this.label, required this.color});
-
-  final int value;
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(mainAxisSize: MainAxisSize.min, children: [
-      Text('$value',
-          style: TextStyle(
-              fontSize: 48,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -1.6,
-              height: 1,
-              color: color)),
-      const SizedBox(height: 4),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Text(label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-                fontSize: 13,
-                height: 1.25,
-                fontWeight: FontWeight.w500,
-                color: adaptiveText3(context))),
-      ),
-    ]);
-  }
-}
-
-class _UnlimitedCenter extends StatelessWidget {
-  const _UnlimitedCenter({required this.accent});
-
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.watch<L10n>();
-    return Column(mainAxisSize: MainAxisSize.min, children: [
-      Text('∞',
-          style: TextStyle(
-              fontSize: 56,
-              fontWeight: FontWeight.w700,
-              height: 1,
-              color: accent)),
-      const SizedBox(height: 6),
-      Text(l.t('ai_unlimited_badge'),
-          style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: adaptiveText3(context))),
-    ]);
-  }
-}
-
-/// Кольцо остатка: серая дорожка на весь круг и поверх неё дуга остатка.
-class _RingPainter extends CustomPainter {
-  _RingPainter({
-    required this.value,
-    required this.track,
-    this.gradient,
-    this.solid,
-    this.full = false,
-  });
-
-  /// Доля ОСТАТКА, 0..1.
-  final double value;
-  final Color track;
-  final List<Color>? gradient;
-  final Color? solid;
-
-  /// Замкнутое кольцо (безлимит) — рисуется целиком, без скруглённых торцов.
-  final bool full;
-
-  static const double _stroke = 13;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = size.center(Offset.zero);
-    final radius = (size.shortestSide - _stroke) / 2;
-    final rect = Rect.fromCircle(center: center, radius: radius);
-
-    canvas.drawCircle(
-        center,
-        radius,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = _stroke
-          ..color = track);
-
-    if (value <= 0) return;
-
-    final sweep = 2 * math.pi * value.clamp(0.0, 1.0);
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = _stroke
-      ..strokeCap = full ? StrokeCap.butt : StrokeCap.round;
-
-    final g = gradient;
-    if (g != null) {
-      // ЛИНЕЙНЫЙ, а не SweepGradient. У кругового градиента цвет — функция
-      // угла, поэтому на 12 часах, где начало дуги встречается с её концом,
-      // сходятся два РАЗНЫХ конца шкалы: у замкнутого кольца это давало
-      // видимый стык, а у почти полной дуги — заметный перепад между
-      // сближающимися торцами. Симметричные стопы стык не убирают: цвет
-      // сходится, но производная ломается, и глаз всё равно ловит полосу
-      // (эффект Маха). У линейного градиента цвет — функция ТОЧКИ, а не угла:
-      // в месте встречи это буквально одна и та же точка, разрыв невозможен
-      // ни при каком заполнении.
-      paint.shader = LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: g,
-      ).createShader(rect);
-    } else {
-      paint.color = solid ?? track;
-    }
-
-    canvas.drawArc(rect, -math.pi / 2, sweep, false, paint);
-  }
-
-  @override
-  bool shouldRepaint(_RingPainter old) =>
-      old.value != value ||
-      old.track != track ||
-      old.solid != solid ||
-      old.gradient != gradient;
-}
-
-/// Цифры под кольцом: расход, потолок и время сброса — по строке на факт.
+/// Расход, потолок и время сброса — по строке на факт.
 class _StatGroup extends StatelessWidget {
   const _StatGroup({required this.quota});
 
@@ -537,11 +370,29 @@ class _QuotaSkeletonState extends State<_QuotaSkeleton>
     final fill = adaptiveSurface2(context);
     final content = Column(children: [
       _Card(
-          child: SizedBox(
-        width: 178,
-        height: 178,
-        child: CustomPaint(painter: _RingPainter(value: 0, track: fill)),
-      )),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+              width: 108,
+              height: 12,
+              decoration: BoxDecoration(
+                  color: fill,
+                  borderRadius: BorderRadius.circular(AppRadii.chip))),
+          const SizedBox(height: 14),
+          Container(
+              width: 92,
+              height: 42,
+              decoration: BoxDecoration(
+                  color: fill,
+                  borderRadius: BorderRadius.circular(AppRadii.tile))),
+          const SizedBox(height: 20),
+          Container(
+              width: double.infinity,
+              height: 7,
+              decoration: BoxDecoration(
+                  color: fill,
+                  borderRadius: BorderRadius.circular(AppRadii.chip))),
+        ]),
+      ),
       const SizedBox(height: 22),
       InsetGroup(children: [
         for (var i = 0; i < 3; i++)

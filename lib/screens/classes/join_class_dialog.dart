@@ -21,7 +21,8 @@ import '../../widgets/toast.dart';
 /// Диалог ввода кода приглашения: нейтральные поверхности, акцентный цвет
 /// только у кнопки и активной ячейки.
 Future<void> showJoinClassDialog(BuildContext context) {
-  return showAppDialog(context,
+  return showAppDialog(
+    context,
     builder: (_) => const AppDialogCard(child: _JoinClassDialogContent()),
   );
 }
@@ -34,7 +35,8 @@ enum _Lookup { idle, checking, found, notFound, unavailable }
 class _JoinClassDialogContent extends StatefulWidget {
   const _JoinClassDialogContent();
   @override
-  State<_JoinClassDialogContent> createState() => _JoinClassDialogContentState();
+  State<_JoinClassDialogContent> createState() =>
+      _JoinClassDialogContentState();
 }
 
 class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
@@ -93,11 +95,18 @@ class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
 
     _lookupDebounce?.cancel();
     if (code.length < _length) {
-      setState(() { _state = _Lookup.idle; _found = null; });
+      setState(() {
+        _state = _Lookup.idle;
+        _found = null;
+      });
       return;
     }
-    setState(() { _state = _Lookup.checking; _found = null; });
-    _lookupDebounce = Timer(const Duration(milliseconds: 350), () => _lookup(code));
+    setState(() {
+      _state = _Lookup.checking;
+      _found = null;
+    });
+    _lookupDebounce =
+        Timer(const Duration(milliseconds: 350), () => _lookup(code));
   }
 
   Future<void> _lookup(String code) async {
@@ -126,7 +135,8 @@ class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
 
   /// Войти можно, когда предмет найден — или когда проверить код не удалось
   /// (тогда решает уже сам запрос на вход).
-  bool get _canJoin => !_busy &&
+  bool get _canJoin =>
+      !_busy &&
       _code.length == _length &&
       (_state == _Lookup.found || _state == _Lookup.unavailable);
 
@@ -150,9 +160,14 @@ class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
       Navigator.pushNamed(context, '/class', arguments: id);
     } catch (e) {
       if (!mounted) return;
-      setState(() { _busy = false; _shakeTick++; });
+      setState(() {
+        _busy = false;
+        _shakeTick++;
+      });
       hapticMedium();
-      final detail = (e is DioException && e.response?.data is Map) ? e.response?.data['detail'] : null;
+      final detail = (e is DioException && e.response?.data is Map)
+          ? e.response?.data['detail']
+          : null;
       final key = detail == 'no_active_cohort'
           ? 'no_active_cohort'
           : detail == 'archived_rejoin_blocked'
@@ -167,25 +182,38 @@ class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
     final l = context.watch<L10n>();
 
     return Column(mainAxisSize: MainAxisSize.min, children: [
-      Container(width: 60, height: 60,
-        decoration: BoxDecoration(color: adaptiveSurface2(context), shape: BoxShape.circle),
-        child: Icon(CupertinoIcons.number, color: adaptiveText1(context), size: 26)),
+      Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+              color: adaptiveSurface2(context), shape: BoxShape.circle),
+          child: Icon(CupertinoIcons.number,
+              color: adaptiveText1(context), size: 26)),
       const SizedBox(height: 16),
-      Text(l.t('join_class_title'), textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 21, fontWeight: FontWeight.w700, letterSpacing: -0.4, color: adaptiveText1(context))),
+      Text(l.t('join_class_title'),
+          textAlign: TextAlign.center,
+          style: TextStyle(
+              fontSize: 21,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.4,
+              color: adaptiveText1(context))),
       const SizedBox(height: 8),
-      Text(l.t('join_class_hint'), textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 13, color: adaptiveText3(context), height: 1.45)),
+      Text(l.t('join_class_hint'),
+          textAlign: TextAlign.center,
+          style: TextStyle(
+              fontSize: 13, color: adaptiveText3(context), height: 1.45)),
       const SizedBox(height: 22),
-
-      _Shaker(tick: _shakeTick, child: _CodeInput(
-        controller: _controller,
-        focus: _focus,
-        length: _length,
-        error: _state == _Lookup.notFound,
-        onSubmit: () { if (_canJoin) _join(); },
-      )),
-
+      _Shaker(
+          tick: _shakeTick,
+          child: _CodeInput(
+            controller: _controller,
+            focus: _focus,
+            length: _length,
+            error: _state == _Lookup.notFound,
+            onSubmit: () {
+              if (_canJoin) _join();
+            },
+          )),
       AnimatedSize(
         duration: const Duration(milliseconds: 260),
         curve: Curves.easeOutCubic,
@@ -197,7 +225,6 @@ class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
           child: _status(l),
         ),
       ),
-
       const SizedBox(height: 20),
       AppDialogActions(
         cancelText: l.t('cancel'),
@@ -224,13 +251,17 @@ class _JoinClassDialogContentState extends State<_JoinClassDialogContent> {
       case _Lookup.notFound:
         return _StatusLine(
           key: const ValueKey('notFound'),
-          child: _Banner(text: l.t('not_found'), color: C.red,
+          child: _Banner(
+              text: l.t('not_found'),
+              color: C.red,
               icon: CupertinoIcons.exclamationmark_circle_fill),
         );
       case _Lookup.unavailable:
         return _StatusLine(
           key: const ValueKey('unavailable'),
-          child: _Banner(text: l.t('code_check_failed'), color: C.amberDk,
+          child: _Banner(
+              text: l.t('code_check_failed'),
+              color: C.amberDk,
               icon: CupertinoIcons.wifi_slash),
         );
       case _Lookup.found:
@@ -251,9 +282,9 @@ class _StatusLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 16),
-    child: SizedBox(width: double.infinity, child: Center(child: child)),
-  );
+        padding: const EdgeInsets.only(top: 16),
+        child: SizedBox(width: double.infinity, child: Center(child: child)),
+      );
 }
 
 // ── Ввод кода ────────────────────────────────────────────────────────────────
@@ -289,7 +320,8 @@ class _CodeInput extends StatelessWidget {
             Row(children: [
               for (var i = 0; i < length; i++) ...[
                 if (i > 0) const SizedBox(width: 8),
-                Expanded(child: _CodeCell(
+                Expanded(
+                    child: _CodeCell(
                   char: i < text.length ? text[i] : '',
                   active: hasFocus && i == activeIndex && text.length < length,
                   error: error,
@@ -298,14 +330,16 @@ class _CodeInput extends StatelessWidget {
             ]),
             // Поле лежит поверх ячеек на всю строку: тап ставит курсор,
             // долгое нажатие даёт системную «Вставить».
-            Positioned.fill(child: TextField(
+            Positioned.fill(
+                child: TextField(
               controller: controller,
               focusNode: focus,
               autofocus: true,
               textAlignVertical: TextAlignVertical.center,
               showCursor: false,
               cursorColor: Colors.transparent,
-              style: const TextStyle(color: Colors.transparent, fontSize: 20, height: 1),
+              style: const TextStyle(
+                  color: Colors.transparent, fontSize: 20, height: 1),
               keyboardType: TextInputType.visiblePassword,
               textCapitalization: TextCapitalization.characters,
               textInputAction: TextInputAction.go,
@@ -316,9 +350,10 @@ class _CodeInput extends StatelessWidget {
                 FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
                 LengthLimitingTextInputFormatter(length),
                 TextInputFormatter.withFunction((_, next) => TextEditingValue(
-                  text: next.text.toUpperCase(),
-                  selection: TextSelection.collapsed(offset: next.text.length),
-                )),
+                      text: next.text.toUpperCase(),
+                      selection:
+                          TextSelection.collapsed(offset: next.text.length),
+                    )),
               ],
               decoration: const InputDecoration(
                 counterText: '',
@@ -338,7 +373,8 @@ class _CodeInput extends StatelessWidget {
 }
 
 class _CodeCell extends StatelessWidget {
-  const _CodeCell({required this.char, required this.active, required this.error});
+  const _CodeCell(
+      {required this.char, required this.active, required this.error});
 
   final String char;
   final bool active;
@@ -387,7 +423,10 @@ class _Glyph extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = Text(char,
         style: TextStyle(
-          fontSize: 22, fontWeight: FontWeight.w700, height: 1, color: color,
+          fontSize: 22,
+          fontWeight: FontWeight.w700,
+          height: 1,
+          color: color,
           fontFeatures: const [FontFeature.tabularFigures()],
         ));
 
@@ -421,13 +460,18 @@ class _CaretState extends State<_Caret> with SingleTickerProviderStateMixin {
     ..repeat(reverse: true);
 
   @override
-  void dispose() { _c.dispose(); super.dispose(); }
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final bar = Container(
-      width: 2, height: 24,
-      decoration: BoxDecoration(color: widget.color, borderRadius: BorderRadius.circular(1)),
+      width: 2,
+      height: 24,
+      decoration: BoxDecoration(
+          color: widget.color, borderRadius: BorderRadius.circular(1)),
     );
     if (MediaQuery.disableAnimationsOf(context)) return bar;
     return FadeTransition(
@@ -451,8 +495,8 @@ class _Shaker extends StatefulWidget {
 }
 
 class _ShakerState extends State<_Shaker> with SingleTickerProviderStateMixin {
-  late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 420));
+  late final AnimationController _c = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 420));
 
   @override
   void didUpdateWidget(_Shaker old) {
@@ -463,7 +507,10 @@ class _ShakerState extends State<_Shaker> with SingleTickerProviderStateMixin {
   }
 
   @override
-  void dispose() { _c.dispose(); super.dispose(); }
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -501,8 +548,13 @@ class _Banner extends StatelessWidget {
       child: Row(children: [
         Icon(icon, size: 16, color: color),
         const SizedBox(width: 8),
-        Expanded(child: Text(text,
-            style: TextStyle(fontSize: 13, color: color, fontWeight: FontWeight.w500, height: 1.35))),
+        Expanded(
+            child: Text(text,
+                style: TextStyle(
+                    fontSize: 13,
+                    color: color,
+                    fontWeight: FontWeight.w500,
+                    height: 1.35))),
       ]),
     );
   }
@@ -524,26 +576,44 @@ class _FoundClassCard extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        SizedBox(height: 80, width: double.infinity,
-          child: Stack(fit: StackFit.expand, children: [
-            _Cover(data: data),
-            if (data['cover_source'] != 'ai_hero')
-              SubjectIconOverlay(icon: data['cover_icon'] as String?,
-                  color: data['cover_color'] as String?, size: 34),
-          ])),
-        Padding(padding: const EdgeInsets.all(12),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              const Icon(CupertinoIcons.checkmark_circle_fill, size: 15, color: C.green),
-              const SizedBox(width: 6),
-              Expanded(child: Text(data['title'] ?? '',
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: adaptiveText1(context)),
-                  maxLines: 1, overflow: TextOverflow.ellipsis)),
-            ]),
-            if (teacher.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 3, left: 21),
-              child: Text(teacher,
-                  style: TextStyle(fontSize: 13, color: adaptiveText3(context), fontWeight: FontWeight.w600))),
-          ])),
+        SizedBox(
+            height: 80,
+            width: double.infinity,
+            child: Stack(fit: StackFit.expand, children: [
+              _Cover(data: data),
+              if (data['cover_source'] != 'ai_hero' &&
+                  data['cover_source'] != 'fallback')
+                SubjectIconOverlay(
+                    icon: data['cover_icon'] as String?,
+                    color: data['cover_color'] as String?,
+                    size: 34),
+            ])),
+        Padding(
+            padding: const EdgeInsets.all(12),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                const Icon(CupertinoIcons.checkmark_circle_fill,
+                    size: 15, color: C.green),
+                const SizedBox(width: 6),
+                Expanded(
+                    child: Text(data['title'] ?? '',
+                        style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                            color: adaptiveText1(context)),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis)),
+              ]),
+              if (teacher.isNotEmpty)
+                Padding(
+                    padding: const EdgeInsets.only(top: 3, left: 21),
+                    child: Text(teacher,
+                        style: TextStyle(
+                            fontSize: 13,
+                            color: adaptiveText3(context),
+                            fontWeight: FontWeight.w600))),
+            ])),
       ]),
     );
   }
@@ -565,8 +635,11 @@ class _Cover extends StatelessWidget {
       final bytes = decodeBase64Image(url);
       return bytes == null
           ? blank
-          : Image.memory(bytes, fit: BoxFit.cover, width: double.infinity,
-              gaplessPlayback: true, cacheWidth: 480);
+          : Image.memory(bytes,
+              fit: BoxFit.cover,
+              width: double.infinity,
+              gaplessPlayback: true,
+              cacheWidth: 480);
     }
     return NetworkCoverImage(
       url: context.read<ApiService>().fixUrl(url),

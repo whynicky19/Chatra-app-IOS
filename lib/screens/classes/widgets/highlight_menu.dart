@@ -1,8 +1,10 @@
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 import '../../../models/annotation.dart';
+import '../../../theme/app_theme.dart';
 import '../../../utils/haptics.dart';
 import 'viewer_action_sheet.dart';
 
@@ -11,9 +13,8 @@ import 'viewer_action_sheet.dart';
 ///
 /// Она пришвартована к низу экрана, а не висит у самого выделения: на телефоне
 /// всплывающее меню перекрывает как раз тот текст, который человек выделил, и
-/// уезжает за край у нижних строк. Тёмная карточка поверх светлой страницы
-/// читается как отдельный слой управления — так же, как панель разметки в
-/// Books и Files.
+/// уезжает за край у нижних строк. Материал адаптируется к теме и остаётся
+/// визуально отделённым от страницы, как панель разметки в Books и Files.
 class HighlightMenu extends StatelessWidget {
   /// Уже сохранённое выделение: тогда виден текущий цвет и доступно удаление.
   final Annotation? existing;
@@ -42,60 +43,70 @@ class HighlightMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const surface = Color(0xFF2A2A2E);
-    final divider = CupertinoColors.white.withValues(alpha: 0.12);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final surface = Theme.of(context).colorScheme.surface.withValues(
+          alpha: isDark ? 0.96 : 0.94,
+        );
 
-    // Поверхность непрозрачная намеренно: сквозь полупрозрачную панель с
-    // blur просвечивала жёлтая подсветка только что созданной пометки, если
-    // выделение лежало у нижнего края страницы — под подписями кнопок
-    // проступали жёлтые полосы.
     return ClipRRect(
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(AppRadii.card),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+        filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
         child: Container(
           decoration: BoxDecoration(
             color: surface,
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: [
-              BoxShadow(
-                color: CupertinoColors.black.withValues(alpha: 0.28),
-                blurRadius: 28,
-                offset: const Offset(0, 10),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(AppRadii.card),
+            border: Border.all(color: adaptiveBorder(context)),
+            boxShadow: cardShadow(isDark),
           ),
-          padding: const EdgeInsets.fromLTRB(10, 12, 10, 8),
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-              for (final c in highlightColors)
-                _Dot(
-                  key: ValueKey('hl-color-$c'),
-                  color: highlightSwatch(c),
-                  selected: existing?.color == c,
-                  onTap: () { hapticLight(); onColor(c); },
-                ),
-            ]),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              decoration: BoxDecoration(
+                color: adaptiveSurface2(context),
+                borderRadius: BorderRadius.circular(AppRadii.tile),
+              ),
+              child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    for (final c in highlightColors)
+                      _Dot(
+                        key: ValueKey('hl-color-$c'),
+                        color: highlightSwatch(c),
+                        selected: existing?.color == c,
+                        onTap: () {
+                          hapticLight();
+                          onColor(c);
+                        },
+                      ),
+                  ]),
+            ),
             const SizedBox(height: 10),
-            Container(height: 1, color: divider),
-            const SizedBox(height: 4),
             Row(children: [
-              Expanded(child: _Action(
+              Expanded(
+                  child: _Action(
                 icon: CupertinoIcons.text_bubble,
                 label: t('hl_note'),
                 active: existing?.comment != null,
+                accent: primary,
                 onTap: onNote,
               )),
-              Container(width: 1, height: 30, color: divider),
-              Expanded(child: _Action(
+              const SizedBox(width: 8),
+              Expanded(
+                  child: _Action(
                 icon: CupertinoIcons.sparkles,
                 label: t('hl_ask_ai'),
+                accent: primary,
                 onTap: onAskAi,
               )),
-              Container(width: 1, height: 30, color: divider),
-              Expanded(child: _Action(
+              const SizedBox(width: 8),
+              Expanded(
+                  child: _Action(
                 icon: CupertinoIcons.ellipsis,
                 label: t('hl_more'),
+                accent: primary,
                 onTap: () => (onMore ?? () => _showMore(context))(),
               )),
             ]),
@@ -131,33 +142,40 @@ class _Dot extends StatelessWidget {
   final Color color;
   final bool selected;
   final VoidCallback onTap;
-  const _Dot({super.key, required this.color, required this.selected, required this.onTap});
+  const _Dot(
+      {super.key,
+      required this.color,
+      required this.selected,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
-      // 44×44 по HIG — цель нажатия, а не размер самой точки.
+      // 44×44 по HIG — цель нажатия, цвет показан спокойным прямоугольным
+      // образцом, а не ещё одним декоративным шаром.
       child: SizedBox(
-        width: 52,
+        width: 48,
         height: 44,
         child: Center(
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 160),
             curve: Curves.easeOutCubic,
-            width: 28,
+            width: 38,
             height: 28,
             decoration: BoxDecoration(
               color: color,
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(8),
               border: selected
-                  ? Border.all(color: CupertinoColors.white, width: 2.5)
-                  : null,
-              boxShadow: selected
-                  ? [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 10)]
-                  : null,
+                  ? Border.all(
+                      color: Theme.of(context).colorScheme.primary, width: 2)
+                  : Border.all(color: adaptiveBorder(context)),
             ),
+            child: selected
+                ? Icon(CupertinoIcons.checkmark_alt,
+                    size: 14, color: Colors.black.withValues(alpha: 0.62))
+                : null,
           ),
         ),
       ),
@@ -169,26 +187,45 @@ class _Action extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool active;
+  final Color accent;
   final VoidCallback onTap;
-  const _Action({required this.icon, required this.label, required this.onTap, this.active = false});
+  const _Action({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    required this.accent,
+    this.active = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final color = active ? const Color(0xFF7CC5F5) : CupertinoColors.white;
+    final color = active ? accent : adaptiveText1(context);
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () { hapticSelection(); onTap(); },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+      onTap: () {
+        hapticSelection();
+        onTap();
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+        decoration: BoxDecoration(
+          color: active
+              ? accent.withValues(alpha: 0.12)
+              : adaptiveSurface2(context),
+          borderRadius: BorderRadius.circular(AppRadii.tile),
+        ),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 20, color: color),
-          const SizedBox(height: 5),
+          Icon(icon, size: 19, color: color),
+          const SizedBox(height: 6),
           Text(label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 12.5, fontWeight: FontWeight.w500,
-                letterSpacing: -0.2, color: color,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.2,
+                color: color,
               )),
         ]),
       ),

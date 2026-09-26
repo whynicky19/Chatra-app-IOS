@@ -31,7 +31,7 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
   bool _dirty = false;
 
   String _coverColor = kFallbackCoverOptions.defaultColor;
-  String _coverIcon = kFallbackCoverOptions.defaultIcon;
+  final String _coverIcon = kFallbackCoverOptions.defaultIcon;
 
   /// Предмет, созданный на первом шаге. Пока null — экран на шаге ввода
   /// данных; как только появился, экран переключается на работу с обложкой.
@@ -96,7 +96,9 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
       _generateCover();
     } catch (e) {
       if (!mounted) return;
-      final detail = (e is DioException && e.response?.data is Map) ? e.response?.data['detail'] : null;
+      final detail = (e is DioException && e.response?.data is Map)
+          ? e.response?.data['detail']
+          : null;
       showToast(context, detail?.toString() ?? l.t('error'), error: true);
       setState(() => _submitting = false);
     }
@@ -104,7 +106,7 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
 
   Future<void> _generateCover() async {
     final created = _created;
-    if (created == null || _generating) return;   // защита от двойного нажатия
+    if (created == null || _generating) return; // защита от двойного нажатия
     final l = context.read<L10n>();
     final api = context.read<ApiService>();
     // Базлайн до запроса: по нему узнаём результат, если POST упал
@@ -127,22 +129,25 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
     } catch (e) {
       if (!mounted) return;
       final dioE = e is DioException ? e : null;
-      final detail = (dioE?.response?.data is Map) ? dioE?.response?.data['detail'] : null;
+      final detail =
+          (dioE?.response?.data is Map) ? dioE?.response?.data['detail'] : null;
       if (detail == 'too_many_cover_generations') {
         setState(() => _coverError = l.t('cover_rate_limited'));
         return;
       }
       // Генерация уже идёт или связь оборвалась: сервер допишет результат
       // сам — ждём его вместо ложной ошибки.
-      final recoverable = detail == 'cover_generation_in_progress'
-          || dioE?.response == null
-          || (dioE?.response?.statusCode ?? 0) >= 500;
+      final recoverable = detail == 'cover_generation_in_progress' ||
+          dioE?.response == null ||
+          (dioE?.response?.statusCode ?? 0) >= 500;
       if (!recoverable) {
         setState(() => _coverError = l.t('cover_generate_failed'));
         return;
       }
-      final recovered = await api.awaitPendingCover((created['id'] as num).toInt(),
-          prevImage: prevImage, prevSource: prevSource);
+      final recovered = await api.awaitPendingCover(
+          (created['id'] as num).toInt(),
+          prevImage: prevImage,
+          prevSource: prevSource);
       if (!mounted) return;
       if (recovered != null) {
         setState(() => _created = {...created, ...recovered});
@@ -178,36 +183,44 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
                     icon: const Icon(CupertinoIcons.xmark, size: 20),
                     tooltip: 'Закрыть',
                     onPressed: () async {
-                      if (await _confirmDiscard() && context.mounted) Navigator.pop(context);
+                      if (await _confirmDiscard() && context.mounted)
+                        Navigator.pop(context);
                     },
                   ),
-                  Expanded(child: Text(
-                    _created == null ? l.t('create_class_title') : l.t('cover_appearance'),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: adaptiveText1(context)))),
+                  Expanded(
+                      child: Text(
+                          _created == null
+                              ? l.t('create_class_title')
+                              : l.t('cover_appearance'),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.2,
+                              color: adaptiveText1(context)))),
                   const SizedBox(width: 40),
                 ]),
               ),
               Expanded(
                 child: ListView(
-                  padding: EdgeInsets.fromLTRB(20, 8, 20, MediaQuery.viewInsetsOf(context).bottom + 28),
+                  padding: EdgeInsets.fromLTRB(
+                      20, 8, 20, MediaQuery.viewInsetsOf(context).bottom + 28),
                   children: [
                     if (_created == null) ..._classFields(l),
-
                     CoverAppearance(
                       color: _coverColor,
-                      icon: _coverIcon,
                       coverUrl: _created?['cover_image'] as String?,
                       coverSource: _created?['cover_source'] as String?,
                       classId: (_created?['id'] as num?)?.toInt(),
                       generating: _generating,
                       error: _coverError,
-                      onColorChanged: (v) { setState(() => _coverColor = v); _markDirty(); },
-                      onIconChanged: (v) { setState(() => _coverIcon = v); _markDirty(); },
+                      onColorChanged: (v) {
+                        setState(() => _coverColor = v);
+                        _markDirty();
+                      },
                       onGenerate: _generateCover,
                     ),
                     const SizedBox(height: 28),
-
                     if (_created == null)
                       AppButton.primary(
                         label: l.t('create'),
@@ -238,47 +251,49 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
   }
 
   List<Widget> _classFields(L10n l) => [
-                    _label('${l.t('class_name_required')} *'),
-                    WrappingField(
-                      controller: _nameC,
-                      hintText: l.t('class_name_hint'),
-                      onChanged: (_) => _markDirty(),
-                    ),
-                    const SizedBox(height: 18),
-
-                    _label(l.t('class_desc')),
-                    TextField(
-                      controller: _descC,
-                      decoration: InputDecoration(hintText: l.t('class_desc_hint')),
-                      maxLines: 3,
-                      onChanged: (_) => _markDirty(),
-                    ),
-                    const SizedBox(height: 18),
-
-                    Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Expanded(child: _label(l.t('period_label'))),
-                      const SizedBox(width: 14),
-                      Expanded(child: _label(l.t('teacher_label'))),
-                    ]),
-                    Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Expanded(child: TextField(
-                        controller: _periodC,
-                        decoration: InputDecoration(hintText: l.t('period_hint')),
-                        onChanged: (_) => _markDirty(),
-                      )),
-                      const SizedBox(width: 14),
-                      Expanded(child: WrappingField(
-                        controller: _teacherC,
-                        hintText: l.t('your_name_hint'),
-                        textCapitalization: TextCapitalization.words,
-                        onChanged: (_) => _markDirty(),
-                      )),
-                    ]),
-                    const SizedBox(height: 32),
+        _label('${l.t('class_name_required')} *'),
+        WrappingField(
+          controller: _nameC,
+          hintText: l.t('class_name_hint'),
+          onChanged: (_) => _markDirty(),
+        ),
+        const SizedBox(height: 18),
+        _label(l.t('class_desc')),
+        TextField(
+          controller: _descC,
+          decoration: InputDecoration(hintText: l.t('class_desc_hint')),
+          maxLines: 3,
+          onChanged: (_) => _markDirty(),
+        ),
+        const SizedBox(height: 18),
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(child: _label(l.t('period_label'))),
+          const SizedBox(width: 14),
+          Expanded(child: _label(l.t('teacher_label'))),
+        ]),
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(
+              child: TextField(
+            controller: _periodC,
+            decoration: InputDecoration(hintText: l.t('period_hint')),
+            onChanged: (_) => _markDirty(),
+          )),
+          const SizedBox(width: 14),
+          Expanded(
+              child: WrappingField(
+            controller: _teacherC,
+            hintText: l.t('your_name_hint'),
+            textCapitalization: TextCapitalization.words,
+            onChanged: (_) => _markDirty(),
+          )),
+        ]),
+        const SizedBox(height: 32),
       ];
 
   Widget _label(String s) => Padding(
         padding: const EdgeInsets.only(bottom: 8, left: 2),
-        child: Text(s, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: C.text3)),
+        child: Text(s,
+            style: const TextStyle(
+                fontSize: 13, fontWeight: FontWeight.w600, color: C.text3)),
       );
 }

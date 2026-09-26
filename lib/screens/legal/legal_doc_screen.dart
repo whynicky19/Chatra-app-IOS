@@ -141,20 +141,6 @@ class _LegalDocScreenState extends State<LegalDocScreen> {
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.6,
                         color: adaptiveText3(context))),
-                const Spacer(),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: adaptiveSurface2(context),
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                  child: Text('${widget.sections.length}',
-                      style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: adaptiveText3(context))),
-                ),
               ]),
               const SizedBox(height: 10),
 

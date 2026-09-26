@@ -183,20 +183,14 @@ class SettingsSubScreen extends StatelessWidget {
                 Tappable(
                   onTap: () => Navigator.pop(context),
                   label: 'Назад',
-                  child: Container(
+                  child: SizedBox(
                     width: 40,
                     height: 40,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: groupSeparator(context),
-                        width: hairline(context),
-                      ),
+                    child: Center(
+                      child: Icon(CupertinoIcons.chevron_left,
+                          size: 21,
+                          color: Theme.of(context).colorScheme.primary),
                     ),
-                    child: Icon(CupertinoIcons.chevron_left,
-                        size: 18, color: Theme.of(context).colorScheme.primary),
                   ),
                 ),
                 const Spacer(),

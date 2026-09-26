@@ -98,7 +98,8 @@ class _BodyState extends State<_Body> {
   @override
   Widget build(BuildContext context) {
     final t = widget.t;
-    final hasNote = widget.item.comment != null && widget.item.comment!.trim().isNotEmpty;
+    final hasNote =
+        widget.item.comment != null && widget.item.comment!.trim().isNotEmpty;
 
     return Column(mainAxisSize: MainAxisSize.min, children: [
       Padding(
@@ -142,32 +143,43 @@ class _BodyState extends State<_Body> {
       ),
       Padding(
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-        child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-          for (final c in highlightColors)
-            _Dot(
-              color: highlightSwatch(c),
-              selected: c == _color,
-              onTap: () {
-                hapticLight();
-                setState(() => _color = c);
-                widget.onColor(c);
-              },
-            ),
-        ]),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          decoration: BoxDecoration(
+            color: adaptiveSurface2(context),
+            borderRadius: BorderRadius.circular(AppRadii.tile),
+          ),
+          child:
+              Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+            for (final c in highlightColors)
+              _Dot(
+                color: highlightSwatch(c),
+                selected: c == _color,
+                onTap: () {
+                  hapticLight();
+                  setState(() => _color = c);
+                  widget.onColor(c);
+                },
+              ),
+          ]),
+        ),
       ),
-      Divider(height: 1, indent: 20, endIndent: 20, color: adaptiveBorder(context)),
+      Divider(
+          height: 1, indent: 20, endIndent: 20, color: adaptiveBorder(context)),
       _Tile(
         icon: CupertinoIcons.text_bubble,
         label: hasNote ? t('hl_note_edit') : t('hl_note'),
         onTap: widget.onNote,
       ),
-      Divider(height: 1, indent: 20, endIndent: 20, color: adaptiveBorder(context)),
+      Divider(
+          height: 1, indent: 20, endIndent: 20, color: adaptiveBorder(context)),
       _Tile(
         icon: CupertinoIcons.sparkles,
         label: t('hl_ask_ai'),
         onTap: widget.onAskAi,
       ),
-      Divider(height: 1, indent: 20, endIndent: 20, color: adaptiveBorder(context)),
+      Divider(
+          height: 1, indent: 20, endIndent: 20, color: adaptiveBorder(context)),
       _Tile(
         icon: CupertinoIcons.delete,
         label: t('delete'),
@@ -182,30 +194,37 @@ class _Dot extends StatelessWidget {
   final Color color;
   final bool selected;
   final VoidCallback onTap;
-  const _Dot({required this.color, required this.selected, required this.onTap});
+  const _Dot(
+      {required this.color, required this.selected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
-      // 44 по высоте — цель нажатия по HIG, а не размер кружка.
+      // 44 по высоте — цель нажатия по HIG; сам образец прямоугольный,
+      // чтобы цвет не выглядел ещё одним декоративным шаром.
       child: SizedBox(
-        width: 56,
+        width: 48,
         height: 44,
         child: Center(
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 160),
             curve: Curves.easeOutCubic,
-            width: 28,
+            width: 38,
             height: 28,
             decoration: BoxDecoration(
               color: color,
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(8),
               border: selected
-                  ? Border.all(color: adaptiveText1(context), width: 2.5)
-                  : null,
+                  ? Border.all(
+                      color: Theme.of(context).colorScheme.primary, width: 2)
+                  : Border.all(color: adaptiveBorder(context)),
             ),
+            child: selected
+                ? Icon(CupertinoIcons.checkmark_alt,
+                    size: 14, color: Colors.black.withValues(alpha: 0.62))
+                : null,
           ),
         ),
       ),

@@ -153,20 +153,16 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
             ),
         ]),
         const SizedBox(height: 16),
-        Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-          ScoreRing(
-              score: score, maxScore: maxScore, size: 108, accentColor: accent),
-          if (feedback != null && feedback.isNotEmpty) ...[
-            const SizedBox(width: 16),
-            Expanded(
-                child: Text(feedback,
-                    style: TextStyle(
-                        fontSize: 15,
-                        height: 1.45,
-                        letterSpacing: -0.2,
-                        color: detailText2(context)))),
-          ],
-        ]),
+        ScoreSummary(score: score, maxScore: maxScore, accentColor: accent),
+        if (feedback != null && feedback.isNotEmpty) ...[
+          const SizedBox(height: 14),
+          Text(feedback,
+              style: TextStyle(
+                  fontSize: 15,
+                  height: 1.45,
+                  letterSpacing: -0.2,
+                  color: detailText2(context))),
+        ],
         if (criteria.isNotEmpty) ...[
           const SizedBox(height: 22),
           Text(l.t('by_criteria').toUpperCase(),
@@ -630,48 +626,79 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                             decoration: BoxDecoration(
                               color: leadColor.withValues(
                                   alpha: isDark ? 0.18 : 0.12),
-                              borderRadius: BorderRadius.circular(AppRadii.tile),
+                              borderRadius:
+                                  BorderRadius.circular(AppRadii.tile),
                             ),
                             child: Icon(leadIcon, size: 21, color: leadColor),
                           ),
                           const SizedBox(width: 14),
                           Expanded(
-                            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              Text(a['title'] ?? '',
-                                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600,
-                                      height: 1.25, letterSpacing: -0.4,
-                                      color: adaptiveText1(context)),
-                                  maxLines: 1, overflow: TextOverflow.ellipsis),
-                              const SizedBox(height: 4),
-                              Row(children: [
-                                if (deadline == null && !showBadge && !showScore)
-                                  Text('${a['max_score'] ?? 100} ${l.t('pts')}',
-                                      style: TextStyle(fontSize: 15, letterSpacing: -0.2,
-                                          color: adaptiveText4(context))),
-                                if (deadline != null)
-                                  Text(_fmtDate(deadline),
-                                      style: TextStyle(fontSize: 15, letterSpacing: -0.2,
-                                          color: adaptiveText4(context))),
-                                if (deadline != null && showBadge)
-                                  Text('  ·  ', style: TextStyle(fontSize: 15,
-                                      color: adaptiveText4(context))),
-                                if (showBadge)
-                                  Flexible(child: Text(statusText,
-                                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500,
-                                          color: statusColor, letterSpacing: -0.2),
-                                      maxLines: 1, overflow: TextOverflow.ellipsis)),
-                              ]),
-                            ]),
+                            child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(a['title'] ?? '',
+                                      style: TextStyle(
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.w600,
+                                          height: 1.25,
+                                          letterSpacing: -0.4,
+                                          color: adaptiveText1(context)),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis),
+                                  const SizedBox(height: 4),
+                                  Row(children: [
+                                    if (deadline == null &&
+                                        !showBadge &&
+                                        !showScore)
+                                      Text(
+                                          '${a['max_score'] ?? 100} ${l.t('pts')}',
+                                          style: TextStyle(
+                                              fontSize: 15,
+                                              letterSpacing: -0.2,
+                                              color: adaptiveText4(context))),
+                                    if (deadline != null)
+                                      Text(_fmtDate(deadline),
+                                          style: TextStyle(
+                                              fontSize: 15,
+                                              letterSpacing: -0.2,
+                                              color: adaptiveText4(context))),
+                                    if (deadline != null && showBadge)
+                                      Text('  ·  ',
+                                          style: TextStyle(
+                                              fontSize: 15,
+                                              color: adaptiveText4(context))),
+                                    if (showBadge)
+                                      Flexible(
+                                          child: Text(statusText,
+                                              style: TextStyle(
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: statusColor,
+                                                  letterSpacing: -0.2),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis)),
+                                  ]),
+                                ]),
                           ),
                           if (showScore) ...[
                             const SizedBox(width: 10),
-                            RichText(text: TextSpan(children: [
-                              TextSpan(text: '${grade['score']}',
-                                  style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w700,
-                                      color: C.green, letterSpacing: -0.5,
-                                      fontFeatures: [FontFeature.tabularFigures()])),
-                              TextSpan(text: '/${a['max_score']}',
-                                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500,
+                            RichText(
+                                text: TextSpan(children: [
+                              TextSpan(
+                                  text: '${grade['score']}',
+                                  style: const TextStyle(
+                                      fontSize: 19,
+                                      fontWeight: FontWeight.w700,
+                                      color: C.green,
+                                      letterSpacing: -0.5,
+                                      fontFeatures: [
+                                        FontFeature.tabularFigures()
+                                      ])),
+                              TextSpan(
+                                  text: '/${a['max_score']}',
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
                                       color: adaptiveText4(context))),
                             ])),
                           ],
@@ -679,7 +706,9 @@ class _ClassAssignmentsTabState extends State<ClassAssignmentsTab> {
                             Tappable(
                               onTap: () => _showAssignmentActions(a),
                               label: 'Действия с заданием',
-                              child: SizedBox(width: 40, height: 46,
+                              child: SizedBox(
+                                  width: 40,
+                                  height: 46,
                                   child: Icon(CupertinoIcons.ellipsis_vertical,
                                       size: 18, color: adaptiveText4(context))),
                             ),

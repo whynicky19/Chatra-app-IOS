@@ -781,40 +781,32 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
   // ── Плавающая верхняя панель: круглые кнопки "назад" / меню ──
   Widget _topBar(BuildContext context, bool isDark) {
     return Row(children: [
-      _circleButton(context, isDark,
+      _topButton(context,
           icon: CupertinoIcons.back,
           label: 'Назад',
           onTap: () => Navigator.pop(context)),
       const Spacer(),
       if (widget.isTeacher)
-        _circleButton(context, isDark,
+        _topButton(context,
             icon: CupertinoIcons.ellipsis,
             label: 'Действия с заданием',
             onTap: _openMenu),
     ]);
   }
 
-  Widget _circleButton(BuildContext context, bool isDark,
+  Widget _topButton(BuildContext context,
       {required IconData icon,
       required String label,
       required VoidCallback onTap}) {
     return Tappable(
       onTap: onTap,
       label: label,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
+      child: SizedBox(
         width: 40,
         height: 40,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: detailSurface(context),
-          shape: BoxShape.circle,
-          border: Border.all(
-              color: detailBorder(context),
-              width: 1 / MediaQuery.devicePixelRatioOf(context)),
-          boxShadow: softShadow(isDark),
+        child: Center(
+          child: Icon(icon, size: 20, color: detailText1(context)),
         ),
-        child: Icon(icon, size: 19, color: detailText1(context)),
       ),
     );
   }
@@ -1113,18 +1105,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
           ),
       ]),
       const SizedBox(height: 18),
-      Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
-        decoration: BoxDecoration(
-          color: accent.withValues(alpha: isDark ? 0.12 : 0.07),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Center(
-          child: ScoreRing(
-              score: score, maxScore: maxScore, size: 138, accentColor: accent),
-        ),
-      ),
+      ScoreSummary(score: score, maxScore: maxScore, accentColor: accent),
       if (gradedByAi && feedback.isNotEmpty) ...[
         const SizedBox(height: 14),
         Container(

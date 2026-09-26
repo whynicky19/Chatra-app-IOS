@@ -39,7 +39,8 @@ class ArchiveScreen extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(8, 6, 16, 0),
               child: Row(children: [
                 IconButton(
-                  icon: Icon(CupertinoIcons.back, color: adaptiveText1(context)),
+                  icon:
+                      Icon(CupertinoIcons.back, color: adaptiveText1(context)),
                   tooltip: 'Назад',
                   onPressed: () => Navigator.pop(context),
                 ),
@@ -50,34 +51,47 @@ class ArchiveScreen extends StatelessWidget {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 18),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
-                  Container(
-                    width: 44, height: 44,
-                    decoration: BoxDecoration(
-                      color: adaptiveSurface2(context),
-                      borderRadius: BorderRadius.circular(AppRadii.tile),
-                    ),
-                    child: Icon(CupertinoIcons.archivebox,
-                        size: 22, color: adaptiveText1(context).withValues(alpha: 0.7)),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(l.t('archive'),
-                          style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700,
-                              color: adaptiveText1(context), letterSpacing: -0.4, height: 1.05)),
-                      const SizedBox(height: 3),
-                      Text(l.t('archive_subtitle'),
-                          style: TextStyle(fontSize: 13,
-                              color: adaptiveText1(context).withValues(alpha: 0.55), height: 1.35)),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: adaptiveSurface2(context),
+                          borderRadius: BorderRadius.circular(AppRadii.tile),
+                        ),
+                        child: Icon(CupertinoIcons.archivebox,
+                            size: 22,
+                            color:
+                                adaptiveText1(context).withValues(alpha: 0.7)),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(l.t('archive'),
+                                  style: TextStyle(
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.w700,
+                                      color: adaptiveText1(context),
+                                      letterSpacing: -0.4,
+                                      height: 1.05)),
+                              const SizedBox(height: 3),
+                              Text(l.t('archive_subtitle'),
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      color: adaptiveText1(context)
+                                          .withValues(alpha: 0.55),
+                                      height: 1.35)),
+                            ]),
+                      ),
                     ]),
-                  ),
-                ]),
-              ]),
+                  ]),
             ),
           ),
-
           if (classes.isEmpty)
             SliverFillRemaining(
               hasScrollBody: false,
@@ -122,24 +136,30 @@ class _EmptyArchive extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 76, height: 76,
+              width: 76,
+              height: 76,
               decoration: BoxDecoration(
                 color: adaptiveSurface2(context),
                 borderRadius: BorderRadius.circular(AppRadii.card),
               ),
               child: Icon(CupertinoIcons.archivebox,
-                  size: 34, color: adaptiveText1(context).withValues(alpha: 0.4)),
+                  size: 34,
+                  color: adaptiveText1(context).withValues(alpha: 0.4)),
             ),
             const SizedBox(height: 16),
             Text(l.t('archive_empty'),
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600,
+                style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
                     color: adaptiveText1(context).withValues(alpha: 0.8))),
             const SizedBox(height: 6),
             SizedBox(
               width: 260,
               child: Text(l.t('archive_empty_sub'),
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13, height: 1.5,
+                  style: TextStyle(
+                      fontSize: 13,
+                      height: 1.5,
                       color: adaptiveText1(context).withValues(alpha: 0.5))),
             ),
           ],
@@ -163,10 +183,26 @@ class _ArchiveCard extends StatelessWidget {
   });
 
   static const List<double> _muted = [
-    0.685, 0.286, 0.029, 0, 0,
-    0.085, 0.886, 0.029, 0, 0,
-    0.085, 0.286, 0.629, 0, 0,
-    0,     0,     0,     1, 0,
+    0.685,
+    0.286,
+    0.029,
+    0,
+    0,
+    0.085,
+    0.886,
+    0.029,
+    0,
+    0,
+    0.085,
+    0.286,
+    0.629,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
   ];
 
   @override
@@ -178,7 +214,9 @@ class _ArchiveCard extends StatelessWidget {
     final teacher = (cls['teacher'] ?? cls['teacher_name'] ?? '').toString();
     // Полноширинная карточка — кэш-растр по ширине экрана × DPR, иначе на
     // retina обложка декодируется мельче виджета и размывается при растяжке.
-    final coverCacheWidth = (MediaQuery.sizeOf(context).width * MediaQuery.devicePixelRatioOf(context)).round();
+    final coverCacheWidth = (MediaQuery.sizeOf(context).width *
+            MediaQuery.devicePixelRatioOf(context))
+        .round();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
@@ -190,36 +228,59 @@ class _ArchiveCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppRadii.card),
             boxShadow: cardShadow(isDark),
           ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
               child: SizedBox(
-                height: 120, width: double.infinity,
+                height: 120,
+                width: double.infinity,
                 child: ColorFiltered(
                   colorFilter: const ColorFilter.matrix(_muted),
                   child: Stack(fit: StackFit.expand, children: [
-                    Container(decoration: BoxDecoration(gradient: LinearGradient(
-                        colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight))),
+                    Container(
+                        decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                                colors: colors,
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight))),
                     if (coverImg != null)
                       coverImg.toString().startsWith('data:')
                           ? Builder(builder: (_) {
-                              final bytes = decodeBase64Image(coverImg.toString());
+                              final bytes =
+                                  decodeBase64Image(coverImg.toString());
                               return bytes != null
-                                  ? Image.memory(bytes, fit: BoxFit.cover, width: double.infinity,
-                                      gaplessPlayback: true, cacheWidth: coverCacheWidth)
+                                  ? Image.memory(bytes,
+                                      fit: BoxFit.cover,
+                                      width: double.infinity,
+                                      gaplessPlayback: true,
+                                      cacheWidth: coverCacheWidth)
                                   : const SizedBox.shrink();
                             })
                           : NetworkCoverImage(
-                              url: context.read<ApiService>().fixUrl(coverImg.toString()),
+                              url: context
+                                  .read<ApiService>()
+                                  .fixUrl(coverImg.toString()),
                               memCacheWidth: coverCacheWidth,
                             ),
-                    if (cls['cover_source'] != 'ai_hero')
-                      SubjectIconOverlay(icon: cls['cover_icon'] as String?,
-                          color: cls['cover_color'] as String?, size: 50),
-                    Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
-                      begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                    if (cls['cover_source'] != 'ai_hero' &&
+                        cls['cover_source'] != 'fallback')
+                      SubjectIconOverlay(
+                          icon: cls['cover_icon'] as String?,
+                          color: cls['cover_color'] as String?,
+                          size: 50),
+                    Positioned.fill(
+                        child: DecoratedBox(
+                            decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
                       stops: const [0.45, 1.0],
-                      colors: [Colors.transparent, Colors.black.withValues(alpha: 0.35)],
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.35)
+                      ],
                     )))),
                   ]),
                 ),
@@ -229,38 +290,59 @@ class _ArchiveCard extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
               child: Row(children: [
                 Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Row(children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: adaptiveText1(context).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(AppRadii.chip),
-                        ),
-                        child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(CupertinoIcons.archivebox, size: 10,
-                              color: adaptiveText1(context).withValues(alpha: 0.55)),
-                          const SizedBox(width: 4),
-                          Text(l.t('archived_badge').toUpperCase(),
-                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.4,
-                                  color: adaptiveText1(context).withValues(alpha: 0.55))),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color:
+                                  adaptiveText1(context).withValues(alpha: 0.1),
+                              borderRadius:
+                                  BorderRadius.circular(AppRadii.chip),
+                            ),
+                            child:
+                                Row(mainAxisSize: MainAxisSize.min, children: [
+                              Icon(CupertinoIcons.archivebox,
+                                  size: 10,
+                                  color: adaptiveText1(context)
+                                      .withValues(alpha: 0.55)),
+                              const SizedBox(width: 4),
+                              Text(l.t('archived_badge').toUpperCase(),
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.4,
+                                      color: adaptiveText1(context)
+                                          .withValues(alpha: 0.55))),
+                            ]),
+                          ),
                         ]),
-                      ),
-                    ]),
-                    const SizedBox(height: 8),
-                    Text(title, maxLines: 1, overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600,
-                            color: adaptiveText1(context), letterSpacing: -0.3)),
-                    if (teacher.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(teacher, maxLines: 1, overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 13,
-                              color: adaptiveText1(context).withValues(alpha: 0.55))),
-                    ],
-                  ]),
+                        const SizedBox(height: 8),
+                        Text(title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w600,
+                                color: adaptiveText1(context),
+                                letterSpacing: -0.3)),
+                        if (teacher.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(teacher,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  color: adaptiveText1(context)
+                                      .withValues(alpha: 0.55))),
+                        ],
+                      ]),
                 ),
-                Icon(CupertinoIcons.chevron_right, size: 18,
+                Icon(CupertinoIcons.chevron_right,
+                    size: 18,
                     color: adaptiveText1(context).withValues(alpha: 0.35)),
               ]),
             ),

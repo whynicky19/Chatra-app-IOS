@@ -1,150 +1,78 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
+
 import 'detail_page_theme.dart';
 
-/// Круговой индикатор результата в духе Apple Fitness/Activity.
-class ScoreRing extends StatefulWidget {
+/// Линейный результат без круговой диаграммы: число остаётся главным,
+/// а тонкая шкала даёт быстрый визуальный контекст.
+class ScoreSummary extends StatelessWidget {
+  const ScoreSummary({
+    super.key,
+    required this.score,
+    required this.maxScore,
+    required this.accentColor,
+  });
+
   final num score;
   final num maxScore;
-  final double size;
   final Color accentColor;
-
-  const ScoreRing(
-      {super.key,
-      required this.score,
-      required this.maxScore,
-      required this.accentColor,
-      this.size = 200});
-
-  @override
-  State<ScoreRing> createState() => _ScoreRingState();
-}
-
-class _ScoreRingState extends State<ScoreRing>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _animation;
-
-  double get _pct => widget.maxScore <= 0
-      ? 0
-      : (widget.score / widget.maxScore).clamp(0, 1).toDouble();
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1400));
-    _animation =
-        CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _controller.forward();
-    });
-  }
-
-  @override
-  void didUpdateWidget(covariant ScoreRing old) {
-    super.didUpdateWidget(old);
-    if (old.score != widget.score || old.maxScore != widget.maxScore) {
-      _controller.forward(from: 0);
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final colors = [
-      widget.accentColor.withValues(alpha: 0.75),
-      widget.accentColor
-    ];
+    final fraction = maxScore <= 0
+        ? 0.0
+        : (score.toDouble() / maxScore.toDouble()).clamp(0.0, 1.0);
+    final percent = (fraction * 100).round();
 
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, _) {
-        final animatedPct = _pct * _animation.value;
-        return SizedBox(
-          width: widget.size,
-          height: widget.size,
-          child: CustomPaint(
-            painter: _RingPainter(
-              progress: animatedPct,
-              colors: colors,
-              trackColor: isDark
-                  ? Colors.white.withValues(alpha: 0.08)
-                  : Colors.black.withValues(alpha: 0.055),
-            ),
-            child: Center(
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                Text('${widget.score}',
-                    style: TextStyle(
-                        fontSize: widget.size * 0.24,
-                        fontWeight: FontWeight.w700,
-                        color: detailText1(context),
-                        height: 1,
-                        letterSpacing: -0.5)),
-                Text('/ ${widget.maxScore}',
-                    style: TextStyle(
-                        fontSize: widget.size * 0.10,
-                        fontWeight: FontWeight.w600,
-                        color: detailText2(context))),
-              ]),
-            ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 15, 16, 16),
+      decoration: BoxDecoration(
+        color: accentColor.withValues(alpha: isDark ? 0.13 : 0.08),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Text('$score',
+              style: TextStyle(
+                fontSize: 38,
+                fontWeight: FontWeight.w700,
+                height: 0.95,
+                letterSpacing: -1.2,
+                color: detailText1(context),
+                fontFeatures: const [FontFeature.tabularFigures()],
+              )),
+          const SizedBox(width: 5),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 2),
+            child: Text('/ $maxScore',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: detailText2(context),
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                )),
           ),
-        );
-      },
+          const Spacer(),
+          Text('$percent%',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: accentColor,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              )),
+        ]),
+        const SizedBox(height: 14),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(3),
+          child: LinearProgressIndicator(
+            value: fraction,
+            minHeight: 6,
+            backgroundColor: accentColor.withValues(alpha: 0.16),
+            color: accentColor,
+          ),
+        ),
+      ]),
     );
   }
-}
-
-class _RingPainter extends CustomPainter {
-  final double progress;
-  final List<Color> colors;
-  final Color trackColor;
-
-  _RingPainter(
-      {required this.progress, required this.colors, required this.trackColor});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = size.center(Offset.zero);
-    final strokeWidth = size.width * 0.085;
-    final radius = (size.width - strokeWidth) / 2;
-    final rect = Rect.fromCircle(center: center, radius: radius);
-
-    final track = Paint()
-      ..color = trackColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-    canvas.drawCircle(center, radius, track);
-
-    if (progress <= 0.001) return;
-
-    final sweep = 2 * math.pi * progress;
-    final gradient = SweepGradient(
-      startAngle: 0,
-      endAngle: sweep,
-      colors: colors,
-      transform: const GradientRotation(-math.pi / 2),
-    );
-    final fg = Paint()
-      ..shader = gradient.createShader(rect)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawArc(rect, -math.pi / 2, sweep, false, fg);
-  }
-
-  @override
-  bool shouldRepaint(covariant _RingPainter oldDelegate) =>
-      oldDelegate.progress != progress ||
-      oldDelegate.trackColor != trackColor ||
-      oldDelegate.colors[0] != colors[0] ||
-      oldDelegate.colors[1] != colors[1];
 }

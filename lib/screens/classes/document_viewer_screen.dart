@@ -827,7 +827,8 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
               },
               onNote: () async {
                 final range = await firstRange();
-                final text = sanitizePdfSymbols(await delegate.getSelectedText());
+                final text =
+                    sanitizePdfSymbols(await delegate.getSelectedText());
                 dismiss();
                 if (range == null) return;
                 final note = await _askNote(null, quote: text);
@@ -836,13 +837,15 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
                     comment: note.isEmpty ? null : note);
               },
               onAskAi: () async {
-                final text = sanitizePdfSymbols(await delegate.getSelectedText());
+                final text =
+                    sanitizePdfSymbols(await delegate.getSelectedText());
                 final range = await firstRange();
                 dismiss();
                 if (mounted) _askAiWith(text, range?.pageNumber);
               },
               onCopy: () async {
-                final text = sanitizePdfSymbols(await delegate.getSelectedText());
+                final text =
+                    sanitizePdfSymbols(await delegate.getSelectedText());
                 dismiss();
                 if (text.isNotEmpty) {
                   await Clipboard.setData(ClipboardData(text: text));
@@ -989,7 +992,8 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen>
 
   void _askAi() {
     final saved = _selectedSaved;
-    final text = sanitizePdfSymbols(saved?.selectedText ?? _selectionText).trim();
+    final text =
+        sanitizePdfSymbols(saved?.selectedText ?? _selectionText).trim();
     if (text.isEmpty) return;
     final page = saved?.page ?? _selection?.pageNumber ?? _page;
     // Отдельного ИИ-экрана нет: вопрос возвращается на экран класса и уходит
@@ -1532,7 +1536,7 @@ class _BarButton extends StatelessWidget {
       );
 }
 
-/// «12 из 47» — маленькая капсула над страницей.
+/// «12 из 47» — компактный прямоугольный индикатор над страницей.
 class _PageChip extends StatelessWidget {
   final String text;
   const _PageChip({required this.text});
@@ -1545,16 +1549,11 @@ class _PageChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: (isDark ? const Color(0xFF2A2A2E) : CupertinoColors.white)
             .withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(100),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: detailBorder(context),
           width: 1 / MediaQuery.devicePixelRatioOf(context),
         ),
-        boxShadow: [
-          BoxShadow(
-              color: CupertinoColors.black.withValues(alpha: 0.06),
-              blurRadius: 8)
-        ],
       ),
       child: Text(text,
           style: TextStyle(
@@ -1583,7 +1582,6 @@ class _Sheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = detailAccent(context);
     return Material(
       type: MaterialType.transparency,
       child: Container(
@@ -1615,35 +1613,25 @@ class _Sheet extends StatelessWidget {
                     color: detailText1(context),
                   )),
               if (count > 0) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(AppRadii.chip),
-                  ),
-                  child: Text('$count',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: accent,
-                      )),
-                ),
+                const SizedBox(width: 7),
+                Text('· $count',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: detailText2(context),
+                    )),
               ],
               const Spacer(),
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: () => Navigator.pop(context),
-                child: Container(
+                child: SizedBox(
                   width: 30,
                   height: 30,
-                  decoration: BoxDecoration(
-                    color: detailSurface(context),
-                    shape: BoxShape.circle,
+                  child: Center(
+                    child: Icon(CupertinoIcons.xmark,
+                        size: 17, color: detailText2(context)),
                   ),
-                  child: Icon(CupertinoIcons.xmark,
-                      size: 14, color: detailText2(context)),
                 ),
               ),
             ]),

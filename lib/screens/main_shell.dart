@@ -91,9 +91,14 @@ class _MainShellState extends State<MainShell>
   );
 
   static const LiquidGlassAppearance _barAppearance = LiquidGlassAppearance(
-    color: Color(0x0FFFFFFF),
-    blur: LiquidGlassBlur(sigmaX: 2, sigmaY: 2),
-    shadow: LiquidGlassShadow(blur: 22, opacity: 0.14),
+    // Средне-плотный frosted material: фон всё ещё читается сквозь бар,
+    // но больше не просвечивает так сильно, будто стекла почти нет.
+    // При включённой adaptivity цвет ниже служит fallback, а рабочий tint
+    // берётся из _adaptivity в зависимости от яркости контента под баром.
+    color: Color(0x3DFFFFFF),
+    saturation: 1.08,
+    blur: LiquidGlassBlur(sigmaX: 10, sigmaY: 10),
+    shadow: LiquidGlassShadow(blur: 24, opacity: 0.18),
   );
 
   static const LiquidGlassRefraction _barRefraction = LiquidGlassRefraction(
@@ -126,9 +131,12 @@ class _MainShellState extends State<MainShell>
   );
 
   static const LiquidGlassAdaptivity _adaptivity = LiquidGlassAdaptivity(
-    glassColorOnDark: Color(0x14000000),
+    // Стекло «соглашается» с фоном: дымчатое на тёмном контенте и
+    // молочное на светлом. Разная плотность сохраняет одинаковое
+    // визуальное отделение бара в обеих темах.
+    glassColorOnDark: Color(0x52000000),
     contentColorOnDark: Color(0xFFFFFFFF),
-    glassColorOnLight: Color(0x14FFFFFF),
+    glassColorOnLight: Color(0x73FFFFFF),
     contentColorOnLight: Color(0xFF1C1C1E),
     duration: Duration(milliseconds: 320),
     darkBelow: 0.50,
@@ -507,10 +515,9 @@ class _MainShellState extends State<MainShell>
       width: barWidth,
       height: 60,
       itemPadding: 3,
-      // Дистанция от низа. LiquidGlassScaffold сам добавляет
-      // safe-area inset. Отрицательные значения сдвигают бар
-      // ближе к нижнему краю экрана (залезают под safe-area).
-      margin: const EdgeInsets.only(bottom: -12),
+      // Позиционирование выполняет внешний Transform ниже. Сам бар обёрнут
+      // в RepaintBoundary, поэтому scaffold не читает его margin напрямую.
+      margin: EdgeInsets.zero,
       style: LiquidGlassStyle(
         shape: styles.shape,
         appearance: _barAppearance,
@@ -553,7 +560,7 @@ class _MainShellState extends State<MainShell>
         animationDuration: const Duration(milliseconds: 620),
         // Очень мягкий ease-out: плавный старт, плавный
         // финиш, без «утыкания» в конце.
-        animationCurve: Cubic(0.12, 0.85, 0.28, 1.0),
+        animationCurve: const Cubic(0.12, 0.85, 0.28, 1.0),
       ),
     );
 
@@ -563,17 +570,22 @@ class _MainShellState extends State<MainShell>
       useSync: false,
       adaptivity: _scaffoldAdaptivity,
       body: body,
-      bottomNavigationBar: RepaintBoundary(
-        // Изолируем бар от репейнтов scrollable-вкладок. Внутренние
-        // ListView/Stack экранов теперь не перекрашивают область
-        // навбара при каждом скролле.
-        child: Theme(
-          data: Theme.of(context).copyWith(
-            splashFactory: NoSplash.splashFactory,
-            splashColor: Colors.transparent,
-            highlightColor: Colors.transparent,
+      bottomNavigationBar: Transform.translate(
+        // Scaffold ставит внешний слот над safe-area. Опускаем плавающую
+        // капсулу ближе к Home Indicator, сохраняя безопасный зазор.
+        offset: const Offset(0, 14),
+        child: RepaintBoundary(
+          // Изолируем бар от репейнтов scrollable-вкладок. Внутренние
+          // ListView/Stack экранов теперь не перекрашивают область
+          // навбара при каждом скролле.
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              splashFactory: NoSplash.splashFactory,
+              splashColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+            ),
+            child: bar,
           ),
-          child: bar,
         ),
       ),
     );

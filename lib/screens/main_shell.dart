@@ -130,22 +130,35 @@ class _MainShellState extends State<MainShell>
     responseTime: 0.30,
   );
 
-  static const LiquidGlassAdaptivity _adaptivity = LiquidGlassAdaptivity(
-    // Стекло «соглашается» с фоном: дымчатое на тёмном контенте и
-    // молочное на светлом. Разная плотность сохраняет одинаковое
-    // визуальное отделение бара в обеих темах.
+  // Плотный navbar является самостоятельной поверхностью, поэтому его
+  // палитра следует теме приложения, а не яркости карточки под ним.
+  static const LiquidGlassAdaptivity _lightAdaptivity = LiquidGlassAdaptivity(
     glassColorOnDark: Color(0x52000000),
     contentColorOnDark: Color(0xFFFFFFFF),
     glassColorOnLight: Color(0x73FFFFFF),
     contentColorOnLight: Color(0xFF1C1C1E),
     duration: Duration(milliseconds: 320),
-    darkBelow: 0.50,
-    lightAbove: 0.55,
+    permanentBrightness: Brightness.light,
   );
 
-  static const LiquidGlassScaffoldAdaptivity _scaffoldAdaptivity =
+  static const LiquidGlassAdaptivity _darkAdaptivity = LiquidGlassAdaptivity(
+    glassColorOnDark: Color(0x52000000),
+    contentColorOnDark: Color(0xFFFFFFFF),
+    glassColorOnLight: Color(0x73FFFFFF),
+    contentColorOnLight: Color(0xFF1C1C1E),
+    duration: Duration(milliseconds: 320),
+    permanentBrightness: Brightness.dark,
+  );
+
+  static const LiquidGlassScaffoldAdaptivity _lightScaffoldAdaptivity =
       LiquidGlassScaffoldAdaptivity(
-    _adaptivity,
+    _lightAdaptivity,
+    systemChrome: LiquidGlassSystemChrome.statusBar,
+  );
+
+  static const LiquidGlassScaffoldAdaptivity _darkScaffoldAdaptivity =
+      LiquidGlassScaffoldAdaptivity(
+    _darkAdaptivity,
     systemChrome: LiquidGlassSystemChrome.statusBar,
   );
 
@@ -568,7 +581,7 @@ class _MainShellState extends State<MainShell>
       pixelRatio: 0.05,
       realTimeCapture: false,
       useSync: false,
-      adaptivity: _scaffoldAdaptivity,
+      adaptivity: isDark ? _darkScaffoldAdaptivity : _lightScaffoldAdaptivity,
       body: body,
       bottomNavigationBar: Transform.translate(
         // Scaffold ставит внешний слот над safe-area. Опускаем плавающую

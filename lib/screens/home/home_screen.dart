@@ -56,9 +56,8 @@ class _HomeScreenState extends State<HomeScreen>
     // время начального build это «setState() called during build».
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      provider.loadJoined();
-      // Бейдж уведомлений — после списка классов, а не параллельно: его четыре
-      // запроса иначе приходятся ровно на кадры первого экрана после логина.
+      // load() одновременно получает доступные предметы и членство. Бейдж
+      // запускаем после него, чтобы не дублировать GET /classes/ при входе.
       provider.load().whenComplete(() {
         if (mounted) provider.loadNotifBadge();
       });
@@ -204,13 +203,10 @@ class _HomeScreenState extends State<HomeScreen>
           bottom: false,
           child: CustomScrollView(slivers: [
             CupertinoSliverRefreshControl(
-              onRefresh: () {
+              onRefresh: () async {
                 final p = context.read<ClassesProvider>();
-                return Future.wait([
-                  p.load(),
-                  p.loadJoined(),
-                  p.loadNotifBadge(),
-                ]);
+                await p.load();
+                await p.loadNotifBadge();
               },
             ),
             SliverToBoxAdapter(
@@ -445,9 +441,10 @@ class _HomeScreenState extends State<HomeScreen>
                         },
                         onLeave: () async {
                           await context.read<ClassesProvider>().leaveClass(id);
-                          if (context.mounted)
+                          if (context.mounted) {
                             showToast(
                                 context, context.read<L10n>().t('left_class'));
+                          }
                         },
                         onCopyCode: () {
                           final code = (cls['invite_code'] ?? '').toString();
@@ -1057,7 +1054,16 @@ class _ClassCard extends StatelessWidget {
                 ? const Color(0xE6181A1F)
                 : Colors.white.withValues(alpha: 0.92),
             borderRadius: BorderRadius.circular(AppRadii.card),
-            boxShadow: cardShadow(isDark),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.28 : 0.07),
+                  blurRadius: 20,
+                  offset: const Offset(0, 6)),
+              BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.12 : 0.03),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1)),
+            ],
             border: Border.all(
               color: Colors.white.withValues(alpha: isDark ? 0.07 : 0.72),
               width: 0.5,

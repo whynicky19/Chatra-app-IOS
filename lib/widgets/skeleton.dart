@@ -21,6 +21,7 @@ class SkeletonBox extends StatefulWidget {
 class _SkeletonBoxState extends State<SkeletonBox>
     with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
+  bool _reduceMotion = false;
 
   @override
   void initState() {
@@ -28,7 +29,21 @@ class _SkeletonBoxState extends State<SkeletonBox>
     _ctrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1400),
-    )..repeat();
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduce = MediaQuery.disableAnimationsOf(context);
+    if (reduce == _reduceMotion && (_ctrl.isAnimating || reduce)) return;
+    _reduceMotion = reduce;
+    if (reduce) {
+      _ctrl.stop();
+      _ctrl.value = 0;
+    } else {
+      _ctrl.repeat();
+    }
   }
 
   @override
@@ -43,26 +58,37 @@ class _SkeletonBoxState extends State<SkeletonBox>
     final base = isDark ? C.darkSurface2 : const Color(0xFFE2E9EC);
     final highlight = isDark ? const Color(0xFF1F3540) : Colors.white;
 
+    if (_reduceMotion) {
+      return Container(
+        width: widget.width,
+        height: widget.height,
+        decoration: BoxDecoration(
+          color: base,
+          borderRadius: BorderRadius.circular(widget.borderRadius),
+        ),
+      );
+    }
+
     // Своя граница перерисовки: иначе мерцание каждого блока перекрашивало бы
     // весь список скелетонов целиком каждый кадр.
     return RepaintBoundary(
       child: AnimatedBuilder(
-      animation: _ctrl,
-      builder: (_, __) {
-        final spotX = -2.0 + 4.0 * _ctrl.value;
-        return Container(
-          width: widget.width,
-          height: widget.height,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(widget.borderRadius),
-            gradient: LinearGradient(
-              begin: Alignment(spotX - 0.8, 0),
-              end: Alignment(spotX + 0.8, 0),
-              colors: [base, highlight, base],
+        animation: _ctrl,
+        builder: (_, __) {
+          final spotX = -2.0 + 4.0 * _ctrl.value;
+          return Container(
+            width: widget.width,
+            height: widget.height,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(widget.borderRadius),
+              gradient: LinearGradient(
+                begin: Alignment(spotX - 0.8, 0),
+                end: Alignment(spotX + 0.8, 0),
+                colors: [base, highlight, base],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
       ),
     );
   }
@@ -81,16 +107,28 @@ class SkeletonClassCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: surface,
         borderRadius: BorderRadius.circular(AppRadii.card),
-        boxShadow: cardShadow(isDark),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.28 : 0.07),
+              blurRadius: 20,
+              offset: const Offset(0, 6)),
+          BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.12 : 0.03),
+              blurRadius: 4,
+              offset: const Offset(0, 1)),
+        ],
       ),
-      child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      child:
+          const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         ClipRRect(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          child: SkeletonBox(width: double.infinity, height: 168, borderRadius: 0),
+          child:
+              SkeletonBox(width: double.infinity, height: 168, borderRadius: 0),
         ),
         Padding(
           padding: EdgeInsets.fromLTRB(16, 14, 16, 14),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             SkeletonBox(width: 190, height: 16, borderRadius: 8),
             SizedBox(height: 10),
             Row(children: [
@@ -131,19 +169,26 @@ class SkeletonNotifCard extends StatelessWidget {
             const SizedBox(width: 12),
             const SkeletonBox(width: 22, height: 22, borderRadius: 6),
             const SizedBox(width: 16),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const SkeletonBox(width: 104, height: 10, borderRadius: 5),
-              const SizedBox(height: 8),
-              SkeletonBox(width: MediaQuery.sizeOf(context).width * 0.5, height: 14, borderRadius: 7),
-              const SizedBox(height: 8),
-              const SkeletonBox(width: 92, height: 11, borderRadius: 6),
-            ])),
+            Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  const SkeletonBox(width: 104, height: 10, borderRadius: 5),
+                  const SizedBox(height: 8),
+                  SkeletonBox(
+                      width: MediaQuery.sizeOf(context).width * 0.5,
+                      height: 14,
+                      borderRadius: 7),
+                  const SizedBox(height: 8),
+                  const SkeletonBox(width: 92, height: 11, borderRadius: 6),
+                ])),
           ]),
         ),
         if (pos == GroupPos.first || pos == GroupPos.middle)
           Padding(
             padding: const EdgeInsets.only(left: 64),
-            child: Container(height: hairline(context), color: groupSeparator(context)),
+            child: Container(
+                height: hairline(context), color: groupSeparator(context)),
           ),
       ]),
     );

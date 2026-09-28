@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../../models/annotation.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/haptics.dart';
+import '../../../widgets/tappable.dart';
 import 'viewer_action_sheet.dart';
 
 /// Панель действий над выделенным фрагментом: цвета, «Заметка», «Спросить AI»,
@@ -150,8 +151,7 @@ class _Dot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
+    return Tappable(
       onTap: onTap,
       // 44×44 по HIG — цель нажатия, цвет показан спокойным прямоугольным
       // образцом, а не ещё одним декоративным шаром.
@@ -160,8 +160,8 @@ class _Dot extends StatelessWidget {
         height: 44,
         child: Center(
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 160),
-            curve: Curves.easeOutCubic,
+            duration: AppMotion.quick(context),
+            curve: AppMotion.curve,
             width: 38,
             height: 28,
             decoration: BoxDecoration(
@@ -200,14 +200,13 @@ class _Action extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = active ? accent : adaptiveText1(context);
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
+    return Tappable(
       onTap: () {
         hapticSelection();
         onTap();
       },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
+        duration: AppMotion.quick(context),
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
         decoration: BoxDecoration(
           color: active
@@ -248,12 +247,13 @@ class HighlightMenuDock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
     return AnimatedSlide(
-      duration: const Duration(milliseconds: 240),
-      curve: Curves.easeOutCubic,
-      offset: visible ? Offset.zero : const Offset(0, 0.35),
+      duration: AppMotion.standard(context),
+      curve: AppMotion.curve,
+      offset: visible || reduceMotion ? Offset.zero : const Offset(0, 0.25),
       child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 180),
+        duration: AppMotion.quick(context),
         opacity: visible ? 1 : 0,
         child: IgnorePointer(
           ignoring: !visible,

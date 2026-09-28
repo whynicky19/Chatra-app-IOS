@@ -12,15 +12,14 @@ class AppBackdrop extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final base = theme.scaffoldBackgroundColor;
+    final top = Color.lerp(base, theme.colorScheme.surface, 0.22)!;
     return DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: isDark
-              ? const [Color(0xFF0B0B0D), Color(0xFF101012)]
-              : const [Color(0xFFF7F7FA), Color(0xFFF2F2F7)],
+          colors: [top, base],
         ),
       ),
       child: child,

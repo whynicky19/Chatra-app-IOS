@@ -11,65 +11,50 @@ class TermsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = context.watch<L10n>();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: AppBackdrop(
-          child: SafeArea(
-        bottom: false,
-        child: Column(children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(6, 6, 16, 4),
-            child: Row(children: [
-              IconButton(
-                icon: Icon(CupertinoIcons.back, color: adaptiveText1(context)),
-                tooltip: 'Назад',
-                onPressed: () => Navigator.pop(context),
-              ),
-              Expanded(
-                  child: Text(l.t('terms_title'),
-                      style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
-                          color: adaptiveText1(context),
-                          letterSpacing: -0.3))),
-            ]),
-          ),
-          Expanded(
-              child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(AppRadii.tile),
+    final theme = Theme.of(context);
+    final title = l.t('terms_title');
+    return CupertinoTheme(
+      data: AppTheme.cupertinoFor(theme),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: AppBackdrop(
+          child: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              CupertinoSliverNavigationBar(
+                backgroundColor:
+                    theme.scaffoldBackgroundColor.withValues(alpha: 0.84),
+                border: null,
+                middle: Text(title),
+                largeTitle: Text(title),
+                leading: CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: () => Navigator.pop(context),
+                  child: const Icon(CupertinoIcons.chevron_left, size: 21),
                 ),
-                child: Icon(CupertinoIcons.checkmark_shield,
-                    size: 28, color: Theme.of(context).colorScheme.primary),
               ),
-              const SizedBox(height: 18),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: isDark ? C.darkSurface : Colors.white,
-                  borderRadius: BorderRadius.circular(AppRadii.card),
-                  boxShadow: cardShadow(isDark),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 48),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(CupertinoIcons.checkmark_shield,
+                            size: 22, color: theme.colorScheme.primary),
+                        const SizedBox(height: 18),
+                        Text(l.t('terms_body'),
+                            style: TextStyle(
+                                fontSize: 17,
+                                height: 1.6,
+                                letterSpacing: -0.2,
+                                color: adaptiveText2(context))),
+                      ]),
                 ),
-                child: Text(l.t('terms_body'),
-                    style: TextStyle(
-                        fontSize: 15,
-                        height: 1.55,
-                        color: adaptiveText2(context))),
               ),
             ],
-          )),
-        ]),
-      )),
+          ),
+        ),
+      ),
     );
   }
 }

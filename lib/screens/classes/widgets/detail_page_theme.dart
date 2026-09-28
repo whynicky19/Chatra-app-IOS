@@ -37,7 +37,8 @@ Color detailText2(BuildContext context) {
 Color detailAccent(BuildContext context) =>
     Theme.of(context).colorScheme.primary;
 
-/// Базовая "сгруппированная" карточка в духе iOS Settings/Files — заливка
+/// Базовая сгруппированная секция. Её отделяет заливка и hairline, без тени:
+/// тень зарезервирована для плавающих поверхностей и модальных слоёв.
 Widget sectionCard(BuildContext context, bool isDark,
     {required List<Widget> children, EdgeInsetsGeometry? padding}) {
   return Container(
@@ -49,7 +50,6 @@ Widget sectionCard(BuildContext context, bool isDark,
       border: Border.all(
           color: detailBorder(context),
           width: 1 / MediaQuery.devicePixelRatioOf(context)),
-      boxShadow: softShadow(isDark),
     ),
     child: Column(
         crossAxisAlignment: CrossAxisAlignment.start, children: children),

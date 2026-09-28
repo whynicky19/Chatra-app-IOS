@@ -328,7 +328,6 @@ class _AiDashboardTabState extends State<AiDashboardTab> {
         borderRadius: BorderRadius.circular(AppRadii.card),
         border: Border.all(
             color: groupSeparator(context), width: hairline(context)),
-        boxShadow: softShadow(Theme.of(context).brightness == Brightness.dark),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [

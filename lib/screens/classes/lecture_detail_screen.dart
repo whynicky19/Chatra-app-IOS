@@ -491,36 +491,22 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
                           l: l),
                       if (widget.content.isNotEmpty) ...[
                         const SizedBox(height: 26),
-                        sectionCard(context, isDark, children: [
-                          Row(children: [
-                            Container(
-                              width: 34,
-                              height: 34,
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: accent.withValues(
-                                    alpha: isDark ? 0.17 : 0.10),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Icon(CupertinoIcons.text_alignleft,
-                                  size: 17, color: accent),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: Text(l.t('description').toUpperCase(),
+                              style: sectionCaptionStyle(context)),
+                        ),
+                        const SizedBox(height: 12),
+                        if (_canAnnotate)
+                          SelectionArea(
+                            contextMenuBuilder: _selectionMenu,
+                            child: SelectionListener(
+                              selectionNotifier: _selectionNotifier,
+                              child: body,
                             ),
-                            const SizedBox(width: 11),
-                            Text(l.t('description'),
-                                style: cardTitleStyle(context)),
-                          ]),
-                          const SizedBox(height: 16),
-                          if (_canAnnotate)
-                            SelectionArea(
-                              contextMenuBuilder: _selectionMenu,
-                              child: SelectionListener(
-                                selectionNotifier: _selectionNotifier,
-                                child: body,
-                              ),
-                            )
-                          else
-                            body,
-                        ]),
+                          )
+                        else
+                          body,
                       ],
                       if (widget.files.isNotEmpty) ...[
                         SizedBox(height: widget.content.isNotEmpty ? 30 : 26),
@@ -535,20 +521,11 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
                                   l.t('attached_files_edit').toUpperCase(),
                                   style: sectionCaptionStyle(context)),
                             ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 9, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: accent.withValues(
-                                    alpha: isDark ? 0.17 : 0.10),
-                                borderRadius: BorderRadius.circular(100),
-                              ),
-                              child: Text('${widget.files.length}',
-                                  style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: accent)),
-                            ),
+                            Text('${widget.files.length}',
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: detailText2(context))),
                           ]),
                         ),
                         FileList(

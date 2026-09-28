@@ -109,7 +109,7 @@ class GroupRow extends StatefulWidget {
   })  : pos = GroupPos.only,
         separatorInset = 0,
         border = true,
-        shadow = true;
+        shadow = false;
 
   final Widget child;
   final GroupPos pos;
@@ -161,7 +161,7 @@ class _GroupRowState extends State<GroupRow> {
           // 90ms — отклик на палец, а не анимация: подсветка появляется
           // на нажатии (onTapDown), а не по завершении тапа.
           AnimatedContainer(
-            duration: const Duration(milliseconds: 90),
+            duration: AppMotion.quick(context),
             curve: Curves.easeOut,
             color: _pressed && active
                 ? groupPressFill(context)
@@ -271,17 +271,5 @@ class Entrance extends StatelessWidget {
   final double rise;
 
   @override
-  Widget build(BuildContext context) {
-    final ms = 240 + index.clamp(0, 6) * 45;
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: Duration(milliseconds: ms),
-      curve: Curves.easeOutCubic,
-      builder: (_, t, c) => Opacity(
-        opacity: t.clamp(0.0, 1.0),
-        child: Transform.translate(offset: Offset(0, rise * (1 - t)), child: c),
-      ),
-      child: child,
-    );
-  }
+  Widget build(BuildContext context) => child;
 }

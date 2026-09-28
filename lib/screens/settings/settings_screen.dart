@@ -24,41 +24,23 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen>
-    with SingleTickerProviderStateMixin {
+class _SettingsScreenState extends State<SettingsScreen> {
   final _nameCtrl = TextEditingController();
-  late AnimationController _entry;
   bool _saving = false;
 
   @override
   void initState() {
     super.initState();
     _nameCtrl.text = context.read<AuthProvider>().fullName;
-    _entry = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 800))
-      ..forward();
   }
 
   @override
   void dispose() {
-    _entry.dispose();
     _nameCtrl.dispose();
     super.dispose();
   }
 
-  Widget _animated(Widget child, double start, double end) {
-    final anim = CurvedAnimation(
-        parent: _entry,
-        curve: Interval(start, end, curve: Curves.easeOutCubic));
-    return FadeTransition(
-      opacity: anim,
-      child: SlideTransition(
-        position: Tween<Offset>(begin: const Offset(0, 0.04), end: Offset.zero)
-            .animate(anim),
-        child: child,
-      ),
-    );
-  }
+  Widget _animated(Widget child, double _, double __) => child;
 
   @override
   Widget build(BuildContext context) {
@@ -145,21 +127,12 @@ class _SettingsScreenState extends State<SettingsScreen>
                                                         context))),
                                           ])),
                                       const SizedBox(width: 10),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 10, vertical: 4),
-                                        decoration: BoxDecoration(
-                                            color:
-                                                primary.withValues(alpha: 0.12),
-                                            borderRadius:
-                                                BorderRadius.circular(100)),
-                                        child: Text(_roleLabel(auth.role, l),
-                                            style: TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w600,
-                                                letterSpacing: -0.1,
-                                                color: primary)),
-                                      ),
+                                      Text(_roleLabel(auth.role, l),
+                                          style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              letterSpacing: -0.1,
+                                              color: primary)),
                                     ]),
                                     const SizedBox(height: 18),
                                     Container(

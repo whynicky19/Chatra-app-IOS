@@ -5,6 +5,7 @@ import '../../../models/annotation.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/haptics.dart';
 import '../../../utils/pdf_text_sanitize.dart';
+import '../../../widgets/tappable.dart';
 
 /// Шторка действий по уже сохранённой пометке — в стиле приложения.
 ///
@@ -199,8 +200,7 @@ class _Dot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
+    return Tappable(
       onTap: onTap,
       // 44 по высоте — цель нажатия по HIG; сам образец прямоугольный,
       // чтобы цвет не выглядел ещё одним декоративным шаром.
@@ -209,8 +209,8 @@ class _Dot extends StatelessWidget {
         height: 44,
         child: Center(
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 160),
-            curve: Curves.easeOutCubic,
+            duration: AppMotion.quick(context),
+            curve: AppMotion.curve,
             width: 38,
             height: 28,
             decoration: BoxDecoration(
@@ -247,8 +247,7 @@ class _Tile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = destructive ? C.red : Theme.of(context).colorScheme.primary;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
+    return Tappable(
       onTap: () {
         Navigator.pop(context);
         onTap();

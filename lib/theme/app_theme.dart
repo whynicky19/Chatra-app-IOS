@@ -93,6 +93,33 @@ class AppRadii {
   static const double dialog = card;
 }
 
+/// Единая сетка отступов. Значения кратны четырём, чтобы экраны не выглядели
+/// собранными из случайных 13/17/19 px и сохраняли один ритм при Dynamic Type.
+class AppSpacing {
+  static const double xxs = 4;
+  static const double xs = 8;
+  static const double sm = 12;
+  static const double md = 16;
+  static const double lg = 24;
+  static const double xl = 32;
+}
+
+/// Движение — это обратная связь, а не украшение. Все новые переходы должны
+/// брать длительность отсюда и уважать системный Reduced Motion.
+class AppMotion {
+  static Duration quick(BuildContext context) =>
+      MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 120);
+
+  static Duration standard(BuildContext context) =>
+      MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 220);
+
+  static Curve get curve => Curves.easeOutCubic;
+}
+
 /// Градиент КРУПНОЙ карточки. Отделён от `colorScheme.primary`: у школы в
 /// светлой теме карточка графитовая, а оранжевый остаётся только акцентом.
 @immutable
@@ -124,36 +151,24 @@ BrandFill brandFill(BuildContext context) =>
 
 List<BoxShadow> cardShadow(bool isDark) => [
       BoxShadow(
-          color: Colors.black.withValues(alpha: isDark ? 0.28 : 0.07),
-          blurRadius: 20,
-          offset: const Offset(0, 6)),
-      BoxShadow(
-          color: Colors.black.withValues(alpha: isDark ? 0.12 : 0.03),
-          blurRadius: 4,
-          offset: const Offset(0, 1)),
-    ];
-
-List<BoxShadow> tealGlow({double opacity = 0.38}) => [
-      BoxShadow(
-          color: C.teal.withValues(alpha: opacity),
-          blurRadius: 22,
-          offset: const Offset(0, 7),
+          color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.055),
+          blurRadius: 18,
+          offset: const Offset(0, 5),
           spreadRadius: -4),
     ];
 
-List<BoxShadow> primaryGlow(Color color, {double opacity = 0.38}) => [
-      BoxShadow(
-          color: color.withValues(alpha: opacity),
-          blurRadius: 22,
-          offset: const Offset(0, 7),
-          spreadRadius: -4),
-    ];
+/// Цветное свечение быстро удешевляет интерфейс и плохо адаптируется к тёмной
+/// теме. Алиасы оставлены для совместимости, но намеренно не рисуют glow.
+List<BoxShadow> tealGlow({double opacity = 0.38}) => const [];
+
+List<BoxShadow> primaryGlow(Color color, {double opacity = 0.38}) => const [];
 
 List<BoxShadow> softShadow(bool isDark) => [
       BoxShadow(
-          color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.04),
-          blurRadius: 12,
-          offset: const Offset(0, 3)),
+          color: Colors.black.withValues(alpha: isDark ? 0.16 : 0.035),
+          blurRadius: 10,
+          offset: const Offset(0, 3),
+          spreadRadius: -3),
     ];
 
 Color adaptiveSurface2(BuildContext context) {

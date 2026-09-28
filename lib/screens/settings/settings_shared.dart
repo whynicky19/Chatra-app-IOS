@@ -169,101 +169,63 @@ class SettingsSubScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final heroAccent = accent ?? Theme.of(context).colorScheme.primary;
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: AppBackdrop(
-        child: SafeArea(
-          bottom: false,
-          child: Column(children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 6, 12, 2),
-              child: Row(children: [
-                Tappable(
+    final theme = Theme.of(context);
+    final bg = theme.scaffoldBackgroundColor;
+    final bottom = MediaQuery.paddingOf(context).bottom;
+    return CupertinoTheme(
+      data: AppTheme.cupertinoFor(theme),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: AppBackdrop(
+          child: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              CupertinoSliverNavigationBar(
+                backgroundColor: bg.withValues(alpha: 0.84),
+                border: null,
+                stretch: true,
+                middle: Text(title),
+                largeTitle:
+                    Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                leading: Tappable(
                   onTap: () => Navigator.pop(context),
                   label: 'Назад',
                   child: SizedBox(
-                    width: 40,
-                    height: 40,
+                    width: 44,
+                    height: 44,
                     child: Center(
                       child: Icon(CupertinoIcons.chevron_left,
-                          size: 21,
-                          color: Theme.of(context).colorScheme.primary),
+                          size: 21, color: theme.colorScheme.primary),
                     ),
                   ),
                 ),
-                const Spacer(),
-                if (action != null) action!,
-              ]),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(AppRadii.card),
-                  border: Border.all(
-                    color: groupSeparator(context),
-                    width: hairline(context),
-                  ),
-                  boxShadow: softShadow(isDark),
-                ),
-                child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      if (icon != null) ...[
-                        Container(
-                          width: 54,
-                          height: 54,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: heroAccent.withValues(
-                                alpha: isDark ? 0.18 : 0.11),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Icon(icon, size: 26, color: heroAccent),
-                        ),
-                        const SizedBox(width: 15),
-                      ],
-                      Expanded(
-                        child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(title,
-                                  style: TextStyle(
-                                      fontSize: 27,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: -0.75,
-                                      height: 1.08,
-                                      color: adaptiveTextSoft(context))),
-                              if (subtitle != null) ...[
-                                const SizedBox(height: 6),
-                                Text(subtitle!,
-                                    style: TextStyle(
-                                        fontSize: 14,
-                                        letterSpacing: -0.15,
-                                        height: 1.35,
-                                        color: adaptiveText3(context))),
-                              ],
-                            ]),
+                trailing: action,
+              ),
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(16, 8, 16, 36 + bottom),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    if (subtitle != null) ...[
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(4, 0, 4, 20),
+                        child: Text(subtitle!,
+                            style: TextStyle(
+                                fontSize: 15,
+                                letterSpacing: -0.15,
+                                height: 1.4,
+                                color: adaptiveText3(context))),
                       ),
-                    ]),
+                    ],
+                    ...children,
+                    if (footer != null) ...[
+                      const SizedBox(height: 28),
+                      Center(child: footer!),
+                    ],
+                  ]),
+                ),
               ),
-            ),
-            Expanded(
-                child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-              children: children,
-            )),
-            if (footer != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Center(child: footer),
-              ),
-          ]),
+            ],
+          ),
         ),
       ),
     );

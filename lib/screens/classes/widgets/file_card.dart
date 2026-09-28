@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show Colors;
 import '../../../widgets/inset_group.dart';
 import '../class_detail_utils.dart' show fileCacheKey;
 import 'detail_page_theme.dart';
@@ -61,8 +62,8 @@ class FileEntry {
       {required this.name, required this.url, this.previewUrl, this.sizeLabel});
 }
 
-/// Карточки вложений в духе Apple Files: тип файла заметен с первого взгляда,
-/// а круглая кнопка справа явно сообщает, что файл откроется на новом экране.
+/// Единый сгруппированный список в духе Apple Files: все вложения воспринимаются
+/// одной секцией, а не стопкой конкурирующих карточек.
 class FileList extends StatelessWidget {
   const FileList({super.key, required this.files, required this.onOpen});
 
@@ -71,18 +72,18 @@ class FileList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return InsetGroup(
+      color: detailSurface(context),
       children: [
         for (var i = 0; i < files.length; i++)
-          Padding(
-            padding: EdgeInsets.only(bottom: i == files.length - 1 ? 0 : 10),
-            child: GroupRow.card(
-              color: detailSurface(context),
-              padding: const EdgeInsets.fromLTRB(13, 12, 12, 12),
-              label: 'Открыть файл ${files[i].name}',
-              onTap: () => onOpen(files[i]),
-              child: _FileRowContent(file: files[i]),
-            ),
+          GroupRow(
+            pos: innerPos(i, files.length),
+            color: Colors.transparent,
+            separatorInset: 73,
+            padding: const EdgeInsets.fromLTRB(13, 10, 12, 10),
+            label: 'Открыть файл ${files[i].name}',
+            onTap: () => onOpen(files[i]),
+            child: _FileRowContent(file: files[i]),
           ),
       ],
     );

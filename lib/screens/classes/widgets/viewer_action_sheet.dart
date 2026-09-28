@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../theme/app_theme.dart';
 import '../../../utils/haptics.dart';
+import '../../../widgets/tappable.dart';
 
 /// Пункт кастомной шторки действий (см. [showAppActionSheet]).
 class AppActionSheetAction {
@@ -85,7 +86,7 @@ Future<T?> showAppActionSheet<T>(
           ]),
         ),
         const SizedBox(height: 8),
-        GestureDetector(
+        Tappable(
           onTap: () {
             hapticSelection();
             Navigator.pop(ctx);
@@ -121,8 +122,7 @@ class _Tile extends StatelessWidget {
   Widget build(BuildContext context) {
     final color =
         action.destructive ? C.red : Theme.of(context).colorScheme.primary;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
+    return Tappable(
       onTap: () {
         hapticSelection();
         Navigator.pop(context);

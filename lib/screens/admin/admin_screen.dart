@@ -1487,7 +1487,6 @@ class _AdminSectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Tappable(
       onTap: onTap,
       label: title,
@@ -1498,7 +1497,6 @@ class _AdminSectionCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadii.card),
           border: Border.all(
               color: groupSeparator(context), width: hairline(context)),
-          boxShadow: softShadow(isDark),
         ),
         child: Row(children: [
           Container(
@@ -1548,51 +1546,51 @@ class _SummaryBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
-    final icons = <IconData>[
-      CupertinoIcons.person_2_fill,
-      CupertinoIcons.person_crop_rectangle_fill,
-      CupertinoIcons.person_fill,
-    ];
-    return Row(children: [
-      for (var i = 0; i < cells.length; i++) ...[
-        if (i > 0) const SizedBox(width: 8),
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(12, 12, 10, 11),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                  color: groupSeparator(context), width: hairline(context)),
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadii.card),
+        border: Border.all(
+            color: groupSeparator(context), width: hairline(context)),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 15),
+      child: Row(children: [
+        for (var i = 0; i < cells.length; i++) ...[
+          if (i > 0)
+            Container(
+                width: hairline(context),
+                height: 40,
+                color: groupSeparator(context)),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Column(children: [
+                Text(cells[i].$1,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        height: 1,
+                        letterSpacing: -0.8,
+                        color: adaptiveTextSoft(context),
+                        fontFeatures: const [FontFeature.tabularFigures()])),
+                const SizedBox(height: 6),
+                Text(cells[i].$2,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: -0.1,
+                        color: adaptiveText3(context))),
+              ]),
             ),
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Icon(icons[i.clamp(0, icons.length - 1)],
-                  size: 16, color: primary),
-              const SizedBox(height: 9),
-              Text(cells[i].$1,
-                  style: TextStyle(
-                      fontSize: 25,
-                      fontWeight: FontWeight.w700,
-                      height: 1,
-                      letterSpacing: -0.8,
-                      color: adaptiveTextSoft(context),
-                      fontFeatures: const [FontFeature.tabularFigures()])),
-              const SizedBox(height: 4),
-              Text(cells[i].$2,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: -0.1,
-                      color: adaptiveText4(context))),
-            ]),
           ),
-        ),
-      ],
-    ]);
+        ],
+      ]),
+    );
   }
 }
 

@@ -417,18 +417,11 @@ class _AiConversationViewState extends State<AiConversationView> {
     return Column(children: [
       Expanded(
         child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 280),
+          duration: AppMotion.standard(context),
           switchInCurve: Curves.easeOutCubic,
           switchOutCurve: Curves.easeIn,
-          transitionBuilder: (child, anim) => FadeTransition(
-            opacity: anim,
-            child: SlideTransition(
-              position:
-                  Tween<Offset>(begin: const Offset(0, 0.04), end: Offset.zero)
-                      .animate(anim),
-              child: child,
-            ),
-          ),
+          transitionBuilder: (child, anim) =>
+              FadeTransition(opacity: anim, child: child),
           child: (_msgs.isEmpty && widget.threadId == null)
               ? _emptyState(l)
               : AnimatedOpacity(
@@ -442,7 +435,7 @@ class _AiConversationViewState extends State<AiConversationView> {
       // Дисклеймер живёт только в пустом чате — как только появляется первое
       // сообщение, он плавно схлопывается, освобождая место композеру.
       AnimatedSize(
-        duration: const Duration(milliseconds: 220),
+        duration: AppMotion.standard(context),
         curve: Curves.easeOut,
         alignment: Alignment.bottomCenter,
         child: _msgs.isEmpty
@@ -505,7 +498,7 @@ class _AiConversationViewState extends State<AiConversationView> {
             const SizedBox(height: 30),
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 440),
-              child: Column(children: [
+              child: InsetGroup(children: [
                 for (var i = 0; i < tips.length; i++)
                   _suggestionRow(tips[i], i, tips.length),
               ]),
@@ -518,60 +511,48 @@ class _AiConversationViewState extends State<AiConversationView> {
 
   Widget _suggestionRow(Map<String, dynamic> tip, int index, int count) {
     final primary = Theme.of(context).colorScheme.primary;
-    return Entrance(
-      index: index,
-      rise: 0,
-      child: Padding(
-          padding: EdgeInsets.only(bottom: index == count - 1 ? 0 : 10),
-          child: GroupRow.card(
-            color: Theme.of(context).colorScheme.surface.withValues(
-                alpha: Theme.of(context).brightness == Brightness.dark
-                    ? 0.76
-                    : 0.90),
-            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
-            onTap: () {
-              hapticSelection();
-              _send(tip['prompt'] as String);
-            },
-            child: Row(children: [
-              Container(
-                width: 42,
-                height: 42,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(13),
-                ),
-                child: Icon(tip['icon'] as IconData, size: 20, color: primary),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(tip['title'] as String,
-                          style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: adaptiveText1(context),
-                              letterSpacing: -0.25)),
-                      const SizedBox(height: 2),
-                      Text(tip['desc'] as String,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                              fontSize: 13,
-                              color: adaptiveText3(context),
-                              height: 1.25,
-                              letterSpacing: -0.1)),
-                    ]),
-              ),
-              const SizedBox(width: 10),
-              Icon(CupertinoIcons.arrow_up_left,
-                  size: 15,
-                  color: adaptiveText4(context).withValues(alpha: 0.7)),
-            ]),
-          )),
+    return GroupRow(
+      pos: innerPos(index, count),
+      color: Colors.transparent,
+      separatorInset: 69,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      onTap: () {
+        hapticSelection();
+        _send(tip['prompt'] as String);
+      },
+      child: Row(children: [
+        Container(
+          width: 40,
+          height: 40,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: primary.withValues(alpha: 0.11),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(tip['icon'] as IconData, size: 19, color: primary),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(tip['title'] as String,
+                style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: adaptiveText1(context),
+                    letterSpacing: -0.25)),
+            const SizedBox(height: 2),
+            Text(tip['desc'] as String,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    fontSize: 13,
+                    color: adaptiveText3(context),
+                    height: 1.25,
+                    letterSpacing: -0.1)),
+          ]),
+        ),
+      ]),
     );
   }
 
@@ -594,14 +575,16 @@ class _AiConversationViewState extends State<AiConversationView> {
         return TweenAnimationBuilder<double>(
           key: ValueKey('msg_$i'),
           tween: Tween(begin: 0.0, end: 1.0),
-          duration: const Duration(milliseconds: 300),
+          duration: AppMotion.standard(context),
           curve: Curves.easeOutCubic,
           builder: (_, t, child) => Opacity(
             opacity: t,
-            child: Transform.translate(
-                offset:
-                    Offset(isUser ? 18 * (1 - t) : -18 * (1 - t), 8 * (1 - t)),
-                child: child),
+            child: MediaQuery.disableAnimationsOf(context)
+                ? child
+                : Transform.translate(
+                    offset: Offset(
+                        isUser ? 12 * (1 - t) : -12 * (1 - t), 4 * (1 - t)),
+                    child: child),
           ),
           child: bubble,
         );
@@ -818,17 +801,13 @@ class _AiInputBar extends StatelessWidget {
             color: Theme.of(context)
                 .scaffoldBackgroundColor
                 .withValues(alpha: 0.80),
-            border: Border(
-                top: BorderSide(
-                    color: adaptiveBorder(context).withValues(alpha: 0.5),
-                    width: hairline(context))),
           ),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             if (exhausted) AiLimitNotice(quota: quota!),
             Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
               Expanded(
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
+                  duration: AppMotion.standard(context),
                   curve: Curves.easeOutCubic,
                   constraints: const BoxConstraints(minHeight: 46),
                   decoration: BoxDecoration(
@@ -877,7 +856,7 @@ class _AiInputBar extends StatelessWidget {
                         ? 'Остановить генерацию'
                         : 'Отправить сообщение',
                     child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 220),
+                      duration: AppMotion.standard(context),
                       curve: Curves.easeOutCubic,
                       width: 46,
                       height: 46,
@@ -898,8 +877,8 @@ class _AiInputBar extends StatelessWidget {
                               child: Icon(CupertinoIcons.stop_fill,
                                   color: Colors.white, size: 18))
                           : AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 180),
-                              switchInCurve: Curves.easeOutBack,
+                              duration: AppMotion.quick(context),
+                              switchInCurve: Curves.easeOut,
                               switchOutCurve: Curves.easeIn,
                               transitionBuilder: (child, anim) =>
                                   ScaleTransition(scale: anim, child: child),
@@ -953,18 +932,25 @@ class _DotState extends State<_Dot> with SingleTickerProviderStateMixin {
   }
 
   @override
-  Widget build(BuildContext context) => AnimatedBuilder(
+  Widget build(BuildContext context) {
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    return TickerMode(
+      enabled: !reduceMotion,
+      child: AnimatedBuilder(
         animation: _anim,
         builder: (_, __) => Container(
           width: 7,
           height: 7,
           margin: const EdgeInsets.symmetric(horizontal: 3),
           decoration: BoxDecoration(
-            color: adaptiveText4(context)
-                .withValues(alpha: 0.35 + _anim.value * 0.55),
+            color: adaptiveText4(context).withValues(
+                alpha: reduceMotion ? 0.7 : 0.35 + _anim.value * 0.55),
             shape: BoxShape.circle,
           ),
-          transform: Matrix4.translationValues(0, -4 * _anim.value, 0),
+          transform: Matrix4.translationValues(
+              0, reduceMotion ? 0 : -4 * _anim.value, 0),
         ),
-      );
+      ),
+    );
+  }
 }

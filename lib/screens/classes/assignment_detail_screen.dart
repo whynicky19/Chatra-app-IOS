@@ -1087,55 +1087,42 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
             child: Text(l.t('preliminary_assessment'),
                 style: cardTitleStyle(context))),
         if (gradedByAi)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.13),
-                borderRadius: BorderRadius.circular(100)),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(CupertinoIcons.sparkles, size: 11, color: accent),
-              const SizedBox(width: 4),
-              Text(l.t('ai_check'),
-                  style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: accent,
-                      letterSpacing: -0.1)),
-            ]),
-          ),
+          Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(CupertinoIcons.sparkles, size: 13, color: accent),
+            const SizedBox(width: 5),
+            Text(l.t('ai_check'),
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: accent,
+                    letterSpacing: -0.1)),
+          ]),
       ]),
       const SizedBox(height: 18),
       ScoreSummary(score: score, maxScore: maxScore, accentColor: accent),
       if (gradedByAi && feedback.isNotEmpty) ...[
-        const SizedBox(height: 14),
+        const SizedBox(height: 18),
         Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(15),
-          decoration: BoxDecoration(
-            color: adaptiveSurface2(context),
-            borderRadius: BorderRadius.circular(15),
-          ),
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Icon(CupertinoIcons.sparkles, size: 16, color: accent),
-              const SizedBox(width: 7),
-              Text(l.t('ai_check'),
-                  style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: accent,
-                      letterSpacing: -0.1)),
-            ]),
-            const SizedBox(height: 9),
-            Text(feedback,
-                style: TextStyle(
-                    fontSize: 16,
-                    height: 1.5,
-                    letterSpacing: -0.2,
-                    color: detailText1(context))),
-          ]),
-        ),
+            height: 1 / MediaQuery.devicePixelRatioOf(context),
+            color: detailBorder(context)),
+        const SizedBox(height: 16),
+        Row(children: [
+          Icon(CupertinoIcons.sparkles, size: 15, color: accent),
+          const SizedBox(width: 7),
+          Text(l.t('ai_check'),
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: accent,
+                  letterSpacing: -0.1)),
+        ]),
+        const SizedBox(height: 9),
+        Text(feedback,
+            style: TextStyle(
+                fontSize: 16,
+                height: 1.5,
+                letterSpacing: -0.2,
+                color: detailText1(context))),
       ],
       if (criteriaScores.isNotEmpty) ...[
         const SizedBox(height: 22),

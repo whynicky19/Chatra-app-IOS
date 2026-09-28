@@ -1,5 +1,3 @@
-import 'dart:ui' show ImageFilter;
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -34,255 +32,112 @@ class LegalDocScreen extends StatefulWidget {
 }
 
 class _LegalDocScreenState extends State<LegalDocScreen> {
-  final _scroll = ScrollController();
-
-  /// Крупный заголовок уехал под навбар — показываем компактный.
-  bool _collapsed = false;
-
-  /// Порог переключения. Меньше высоты блока с крупным заголовком, чтобы
-  /// компактный проявлялся ровно в момент, когда крупный уходит за край, а не
-  /// раньше и не позже.
-  static const _collapseAt = 52.0;
-
-  @override
-  void initState() {
-    super.initState();
-    _scroll.addListener(_onScroll);
-  }
-
-  void _onScroll() {
-    final collapsed = _scroll.hasClients && _scroll.offset > _collapseAt;
-    if (collapsed != _collapsed) setState(() => _collapsed = collapsed);
-  }
-
-  @override
-  void dispose() {
-    _scroll.removeListener(_onScroll);
-    _scroll.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final l = context.watch<L10n>();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = Theme.of(context).colorScheme.primary;
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
     final title = l.t(widget.titleKey);
-    final topInset = MediaQuery.paddingOf(context).top;
+    final bottom = MediaQuery.paddingOf(context).bottom;
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: AppBackdrop(
-          child: Stack(children: [
-        Positioned.fill(
-          child: ListView(
-            controller: _scroll,
-            padding: EdgeInsets.fromLTRB(20, topInset + 52, 20, 48),
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(AppRadii.card),
-                  border: Border.all(
-                    color: adaptiveBorder(context),
-                    width: hairline(context),
-                  ),
-                  boxShadow: softShadow(isDark),
+    return CupertinoTheme(
+      data: AppTheme.cupertinoFor(theme),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: AppBackdrop(
+          child: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              CupertinoSliverNavigationBar(
+                backgroundColor:
+                    theme.scaffoldBackgroundColor.withValues(alpha: 0.84),
+                border: null,
+                stretch: true,
+                middle: Text(title),
+                largeTitle:
+                    Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                leading: CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: () => Navigator.pop(context),
+                  child: const Icon(CupertinoIcons.chevron_left, size: 21),
                 ),
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 52,
-                        height: 52,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color:
-                              primary.withValues(alpha: isDark ? 0.18 : 0.11),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child:
-                            Icon(widget.headerIcon, size: 26, color: primary),
+              ),
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(20, 8, 20, 40 + bottom),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    Row(children: [
+                      Icon(widget.headerIcon, size: 18, color: primary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                            '${l.t('pp_updated_label')}: ${widget.updated}',
+                            style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: adaptiveText3(context))),
                       ),
-                      const SizedBox(height: 16),
-                      Text(title,
-                          style: TextStyle(
-                            fontSize: 30,
-                            fontWeight: FontWeight.w700,
-                            height: 1.08,
-                            letterSpacing: -0.8,
-                            color: adaptiveText1(context),
-                          )),
-                      const SizedBox(height: 10),
-                      _updatedPill(context, l),
-                      const SizedBox(height: 17),
-                      Container(
-                        height: hairline(context),
-                        color: adaptiveBorder(context),
-                      ),
-                      const SizedBox(height: 15),
-                      Text(l.t(widget.introKey),
-                          style: TextStyle(
-                            fontSize: 16,
+                    ]),
+                    const SizedBox(height: 20),
+                    Text(l.t(widget.introKey),
+                        style: TextStyle(
+                            fontSize: 17,
                             height: 1.55,
                             letterSpacing: -0.2,
-                            color: adaptiveTextSoft(context),
-                          )),
-                    ]),
+                            color: adaptiveTextSoft(context))),
+                    const SizedBox(height: 30),
+                    Text(l.t('sections').toUpperCase(),
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.6,
+                            color: adaptiveText3(context))),
+                    for (var i = 0; i < widget.sections.length; i++) ...[
+                      const SizedBox(height: 22),
+                      _section(context, primary, widget.sections[i]),
+                      if (i != widget.sections.length - 1) ...[
+                        const SizedBox(height: 22),
+                        Container(
+                            height: hairline(context),
+                            color: adaptiveBorder(context)
+                                .withValues(alpha: 0.55)),
+                      ],
+                    ],
+                  ]),
+                ),
               ),
-              const SizedBox(height: 24),
-
-              Row(children: [
-                Text(l.t('sections').toUpperCase(),
-                    style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.6,
-                        color: adaptiveText3(context))),
-              ]),
-              const SizedBox(height: 10),
-
-              // ── Разделы ──────────────────────────────────────────────
-              for (var i = 0; i < widget.sections.length; i++) ...[
-                _card(context, isDark, primary, widget.sections[i]),
-                if (i != widget.sections.length - 1) const SizedBox(height: 12),
-              ],
             ],
           ),
         ),
-
-        // ── Строка навигации поверх контента ───────────────────────────
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          child: _navBar(context, isDark, title, topInset),
-        ),
-      ])),
-    );
-  }
-
-  Widget _updatedPill(BuildContext context, L10n l) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
-        decoration: BoxDecoration(
-          color: adaptiveSurface2(context),
-          borderRadius: BorderRadius.circular(100),
-        ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(CupertinoIcons.clock, size: 12, color: adaptiveText4(context)),
-          const SizedBox(width: 5),
-          Text('${l.t('pp_updated_label')}: ${widget.updated}',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: adaptiveText3(context),
-              )),
-        ]),
       ),
     );
   }
 
-  Widget _navBar(
-      BuildContext context, bool isDark, String title, double topInset) {
-    final bg = Theme.of(context).scaffoldBackgroundColor;
-    return ClipRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-          padding: EdgeInsets.only(top: topInset),
-          decoration: BoxDecoration(
-            color: _collapsed ? bg.withValues(alpha: 0.80) : Colors.transparent,
-            border: Border(
-              bottom: BorderSide(
-                color:
-                    _collapsed ? adaptiveBorder(context) : Colors.transparent,
-                width: hairline(context),
-              ),
-            ),
-          ),
-          child: SizedBox(
-            height: 52,
-            child: Row(children: [
-              IconButton(
-                icon: Icon(CupertinoIcons.back, color: adaptiveText1(context)),
-                tooltip: 'Назад',
-                onPressed: () => Navigator.pop(context),
-              ),
-              Expanded(
-                child: AnimatedOpacity(
-                  opacity: _collapsed ? 1 : 0,
-                  duration: const Duration(milliseconds: 180),
-                  curve: Curves.easeOut,
-                  child: Text(title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: -0.4,
-                        color: adaptiveText1(context),
-                      )),
-                ),
-              ),
-              const SizedBox(width: 48),
-            ]),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _card(BuildContext context, bool isDark, Color primary,
-      (IconData, String, String) section) {
+  Widget _section(
+      BuildContext context, Color primary, (IconData, String, String) section) {
     final l = context.read<L10n>();
-    return Container(
-      padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppRadii.card),
-        border: Border.all(
-            color: adaptiveBorder(context), width: hairline(context)),
-        boxShadow: softShadow(isDark),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Container(
-            width: 32,
-            height: 32,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: primary.withValues(alpha: isDark ? 0.18 : 0.12),
-              borderRadius: BorderRadius.circular(AppRadii.chip),
-            ),
-            child: Icon(section.$1, size: 17, color: primary),
-          ),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Text(l.t(section.$2),
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: -0.4,
-                  color: adaptiveText1(context),
-                )),
-          ),
-        ]),
-        const SizedBox(height: 12),
-        Text(l.t(section.$3),
-            style: TextStyle(
-              fontSize: 16,
-              height: 1.6,
-              letterSpacing: -0.2,
-              color: adaptiveText2(context),
-            )),
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        Icon(section.$1, size: 18, color: primary),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(l.t(section.$2),
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.4,
+                color: adaptiveText1(context),
+              )),
+        ),
       ]),
-    );
+      const SizedBox(height: 12),
+      Text(l.t(section.$3),
+          style: TextStyle(
+            fontSize: 16,
+            height: 1.6,
+            letterSpacing: -0.2,
+            color: adaptiveText2(context),
+          )),
+    ]);
   }
 }

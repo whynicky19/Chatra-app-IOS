@@ -356,8 +356,22 @@ class _QuotaSkeleton extends StatefulWidget {
 class _QuotaSkeletonState extends State<_QuotaSkeleton>
     with SingleTickerProviderStateMixin {
   late final AnimationController _pulse = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 900))
-    ..repeat(reverse: true);
+      vsync: this, duration: const Duration(milliseconds: 900));
+  bool _reduceMotion = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduce = MediaQuery.disableAnimationsOf(context);
+    if (reduce == _reduceMotion && (_pulse.isAnimating || reduce)) return;
+    _reduceMotion = reduce;
+    if (reduce) {
+      _pulse.stop();
+      _pulse.value = 0.5;
+    } else {
+      _pulse.repeat(reverse: true);
+    }
+  }
 
   @override
   void dispose() {
@@ -464,7 +478,6 @@ class _Card extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
@@ -473,7 +486,6 @@ class _Card extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadii.card),
         border: Border.all(
             color: groupSeparator(context), width: hairline(context)),
-        boxShadow: softShadow(isDark),
       ),
       child: Column(children: [child]),
     );

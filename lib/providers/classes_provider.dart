@@ -60,9 +60,13 @@ class ClassesProvider extends ChangeNotifier {
     errorMessage = null;
     notifyListeners();
     try {
-      final list = await _api.getAllClasses();
+      // /classes/all доступен только администратору. Для студента и
+      // преподавателя /classes/ уже возвращает ровно доступные им предметы.
+      final list =
+          _auth.isAdmin ? await _api.getAllClasses() : await _api.getClasses();
       _cachedAllClasses =
           list.map((c) => _normalizeClass(c as Map<String, dynamic>)).toList();
+      if (!_auth.isAdmin) await _applyJoinedClasses(list);
     } catch (e) {
       logError('ClassesProvider.load', e);
       errorMessage = 'err_load_data';
@@ -91,14 +95,8 @@ class ClassesProvider extends ChangeNotifier {
     final uid = _auth.userId ?? 0;
     try {
       final list = await _api.getClasses();
-      _myClassesRaw = list;
-      joinedClassIds = list.map((c) => (c['id'] as num).toInt()).toSet();
-      archivedClassIds = list
-          .where((c) => c['is_archived_for_user'] == true)
-          .map((c) => (c['id'] as num).toInt())
-          .toSet();
+      await _applyJoinedClasses(list);
       notifyListeners();
-      await _saveJoined();
     } catch (e) {
       try {
         final prefs = await SharedPreferences.getInstance();
@@ -111,6 +109,16 @@ class ClassesProvider extends ChangeNotifier {
         notifyListeners();
       }
     }
+  }
+
+  Future<void> _applyJoinedClasses(List<dynamic> list) async {
+    _myClassesRaw = list;
+    joinedClassIds = list.map((c) => (c['id'] as num).toInt()).toSet();
+    archivedClassIds = list
+        .where((c) => c['is_archived_for_user'] == true)
+        .map((c) => (c['id'] as num).toInt())
+        .toSet();
+    await _saveJoined();
   }
 
   Future<void> _saveJoined() async {
@@ -170,7 +178,8 @@ class ClassesProvider extends ChangeNotifier {
     try {
       await _api.deleteClass(id);
     } on DioException catch (e) {
-      final detail = (e.response?.data is Map) ? e.response?.data['detail'] : null;
+      final detail =
+          (e.response?.data is Map) ? e.response?.data['detail'] : null;
       logError('ClassesProvider.deleteClass', e);
       errorMessage = detail?.toString() ?? 'err_delete_class';
       notifyListeners();
@@ -193,8 +202,11 @@ class ClassesProvider extends ChangeNotifier {
       String? coverIcon}) async {
     try {
       await _api.createClass(name,
-          description: description, teacher: teacher, period: period,
-          coverColor: coverColor, coverIcon: coverIcon);
+          description: description,
+          teacher: teacher,
+          period: period,
+          coverColor: coverColor,
+          coverIcon: coverIcon);
     } catch (e) {
       logError('ClassesProvider.createClass', e);
       errorMessage = 'err_create_class';
@@ -215,9 +227,13 @@ class ClassesProvider extends ChangeNotifier {
   }
 
   void patchCachedClass(int id, Map<String, dynamic> raw) {
-    final idx = _cachedAllClasses.indexWhere((c) => (c['id'] as num?)?.toInt() == id);
+    final idx =
+        _cachedAllClasses.indexWhere((c) => (c['id'] as num?)?.toInt() == id);
     if (idx < 0) return;
-    _cachedAllClasses[idx] = {..._cachedAllClasses[idx], ..._normalizeClass(raw)};
+    _cachedAllClasses[idx] = {
+      ..._cachedAllClasses[idx],
+      ..._normalizeClass(raw)
+    };
     notifyListeners();
   }
 
@@ -253,11 +269,15 @@ class ClassesProvider extends ChangeNotifier {
         return isOwn || isJoined;
       }).toList();
     }
-    return allClasses.where((c) => joinedClassIds.contains(c['id'] as int)).toList();
+    return allClasses
+        .where((c) => joinedClassIds.contains(c['id'] as int))
+        .toList();
   }
 
   bool _isArchived(Map<String, dynamic> c) =>
-      !_auth.isTeacher && !_auth.isAdmin && archivedClassIds.contains(c['id'] as int);
+      !_auth.isTeacher &&
+      !_auth.isAdmin &&
+      archivedClassIds.contains(c['id'] as int);
 
   List<Map<String, dynamic>> get activeClasses =>
       classes.where((c) => !_isArchived(c)).toList();
